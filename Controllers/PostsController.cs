@@ -9,10 +9,12 @@ namespace PostApiService.Controllers
     public class PostsController : Controller
     {
         private readonly IPostService _postsService;
+        private readonly ICommentService _commentService;
 
-        public PostsController(IPostService postsService)
+        public PostsController(IPostService postsService, ICommentService commentService)
         {
             _postsService = postsService;
+            _commentService = commentService;
         }
         [HttpGet]
         public async Task<IActionResult> GetPosts()
@@ -44,6 +46,32 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> DeletePost(int id)
         {
             await _postsService.DeletePostAsync(id);
+            return Ok();
+        }
+
+        [HttpPost("{postId}/comments")]
+        public async Task<IActionResult> AddComment(int postId, [FromBody] Comment comment)
+        {
+            await _commentService.AddCommentAsync(postId, comment);
+            return Ok();
+        }
+
+        [HttpPut("comments/{commentId}")]
+        public async Task<IActionResult> EditComment(int commentId, [FromBody] Comment comment)
+        {
+            if (commentId != comment.CommentId)
+            {
+                return BadRequest();
+            }
+
+            await _commentService.EditCommentAsync(comment);
+            return Ok();
+        }
+
+        [HttpDelete("comments/{commentId}")]
+        public async Task<IActionResult> DeleteComment(int commentId)
+        {
+            await _commentService.DeleteCommentAsync(commentId);
             return Ok();
         }
     }

@@ -3,6 +3,8 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace PostApiService.Migrations
 {
     /// <inheritdoc />
@@ -46,6 +48,25 @@ namespace PostApiService.Migrations
                         principalTable: "Posts",
                         principalColumn: "PostId",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "Posts",
+                columns: new[] { "PostId", "Content", "CreateAt", "Title" },
+                values: new object[,]
+                {
+                    { 1, "This is the content of the first post.", new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(76), "First Post" },
+                    { 2, "This is the content of the second post.", new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(137), "Second Post" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "Comments",
+                columns: new[] { "CommentId", "Author", "Content", "CreatedAt", "PostId" },
+                values: new object[,]
+                {
+                    { 1, "John Doe", "Great post!", new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(415), 1 },
+                    { 2, "Jane Doe", "I totally agree with this!", new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(421), 1 },
+                    { 3, "Alice", "This is a comment on the second post.", new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(425), 2 }
                 });
 
             migrationBuilder.CreateIndex(

@@ -53,7 +53,7 @@ namespace PostApiService.Migrations
                             CommentId = 1,
                             Author = "John Doe",
                             Content = "Great post!",
-                            CreatedAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9958),
+                            CreatedAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(3504),
                             PostId = 1
                         },
                         new
@@ -61,7 +61,7 @@ namespace PostApiService.Migrations
                             CommentId = 2,
                             Author = "Jane Doe",
                             Content = "I totally agree with this!",
-                            CreatedAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9979),
+                            CreatedAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(3565),
                             PostId = 1
                         },
                         new
@@ -69,7 +69,7 @@ namespace PostApiService.Migrations
                             CommentId = 3,
                             Author = "Alice",
                             Content = "This is a comment on the second post.",
-                            CreatedAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9986),
+                            CreatedAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(3570),
                             PostId = 2
                         });
                 });
@@ -100,14 +100,14 @@ namespace PostApiService.Migrations
                         {
                             PostId = 1,
                             Content = "This is the content of the first post.",
-                            CreateAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9048),
+                            CreateAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(2401),
                             Title = "First Post"
                         },
                         new
                         {
                             PostId = 2,
                             Content = "This is the content of the second post.",
-                            CreateAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9142),
+                            CreateAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(2487),
                             Title = "Second Post"
                         });
                 });

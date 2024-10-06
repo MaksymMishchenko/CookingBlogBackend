@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241006175601_SeedDataInitial")]
-    partial class SeedDataInitial
+    [Migration("20241006190649_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -56,7 +56,7 @@ namespace PostApiService.Migrations
                             CommentId = 1,
                             Author = "John Doe",
                             Content = "Great post!",
-                            CreatedAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9958),
+                            CreatedAt = new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(415),
                             PostId = 1
                         },
                         new
@@ -64,7 +64,7 @@ namespace PostApiService.Migrations
                             CommentId = 2,
                             Author = "Jane Doe",
                             Content = "I totally agree with this!",
-                            CreatedAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9979),
+                            CreatedAt = new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(421),
                             PostId = 1
                         },
                         new
@@ -72,7 +72,7 @@ namespace PostApiService.Migrations
                             CommentId = 3,
                             Author = "Alice",
                             Content = "This is a comment on the second post.",
-                            CreatedAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9986),
+                            CreatedAt = new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(425),
                             PostId = 2
                         });
                 });
@@ -103,14 +103,14 @@ namespace PostApiService.Migrations
                         {
                             PostId = 1,
                             Content = "This is the content of the first post.",
-                            CreateAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9048),
+                            CreateAt = new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(76),
                             Title = "First Post"
                         },
                         new
                         {
                             PostId = 2,
                             Content = "This is the content of the second post.",
-                            CreateAt = new DateTime(2024, 10, 6, 20, 56, 0, 545, DateTimeKind.Local).AddTicks(9142),
+                            CreateAt = new DateTime(2024, 10, 6, 22, 6, 48, 313, DateTimeKind.Local).AddTicks(137),
                             Title = "Second Post"
                         });
                 });
