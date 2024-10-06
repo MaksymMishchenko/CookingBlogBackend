@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PostApiService.Dto;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -36,11 +37,25 @@ namespace PostApiService.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<Post>> GetAllPosts()
+        public async Task<List<PostDto>> GetAllPosts()
         {
             return await _context.Posts
-                .AsNoTracking()
-                .ToListAsync();
-        }        
+                .Include(p => p.Comments)
+                .Select(p => new PostDto
+                {
+                    PostId = p.PostId,
+                    Title = p.Title,
+                    Content = p.Content,
+                    CreateAt = p.CreateAt,
+                    Comments = p.Comments.Select(c => new CommentDto
+                    {
+                        CommentId = c.CommentId,
+                        Author = c.Author,
+                        Content = c.Content,
+                        CreateAt = c.CreatedAt
+                    }).ToList()
+
+                }).ToListAsync();
+        }
     }
 }
