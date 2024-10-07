@@ -37,7 +37,7 @@ namespace PostApiService.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task<List<PostDto>> GetAllPosts()
+        public async Task<List<PostDto>> GetAllPostsAsync()
         {
             return await _context.Posts
                 .Include(p => p.Comments)
@@ -56,6 +56,28 @@ namespace PostApiService.Services
                     }).ToList()
 
                 }).ToListAsync();
+        }
+
+        public async Task<PostDto> GetPostByIdAsync(int postId)
+        {
+            return await _context.Posts
+            .Where(p => p.PostId == postId)
+            .Include(p => p.Comments)
+            .Select(p => new PostDto
+            {
+                PostId = p.PostId,
+                Title = p.Title,
+                Content = p.Content,
+                CreateAt = p.CreateAt,
+                Comments = p.Comments.Select(c => new CommentDto
+                {
+                    CommentId = c.CommentId,
+                    Author = c.Author,
+                    Content = c.Content,
+                    CreateAt = c.CreatedAt
+                }).ToList()
+
+            }).FirstOrDefaultAsync();
         }
     }
 }

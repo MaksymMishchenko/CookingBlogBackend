@@ -19,8 +19,15 @@ namespace PostApiService.Controllers
         [HttpGet]
         public async Task<IActionResult> GetPosts()
         {
-            var posts = await _postsService.GetAllPosts();
+            var posts = await _postsService.GetAllPostsAsync();
             return Ok(posts);
+        }
+
+        [HttpGet("{postId}")]
+        public async Task<IActionResult> GetPostById(int postId)
+        {
+            var post = await _postsService.GetPostByIdAsync(postId);            
+            return Ok(post);
         }
 
         [HttpPost]
