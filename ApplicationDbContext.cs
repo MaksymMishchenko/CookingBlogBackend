@@ -19,15 +19,27 @@ public class ApplicationDbContext : DbContext
             {
                 PostId = 1,
                 Title = "First Post",
+                Description = "Description for first post",
                 Content = "This is the content of the first post.",
-                CreateAt = DateTime.Now
+                Author = "Peter Jack",
+                CreateAt = DateTime.Now,
+                ImageUrl = "/images/placeholder.jpg",
+                MetaTitle = "Meta title info",
+                MetaDescription = "This is meta description",
+                Slug = "http://localhost:4200/first-post"
             },
             new Post
             {
                 PostId = 2,
                 Title = "Second Post",
+                Description = "Description for second post",
                 Content = "This is the content of the second post.",
-                CreateAt = DateTime.Now
+                Author = "Jay Way",
+                CreateAt = DateTime.Now,
+                ImageUrl = "/images/placeholder.jpg",
+                MetaTitle = "Meta title info 2",
+                MetaDescription = "This is meta description 2",
+                Slug = "http://localhost:4200/second-post"
             }
         );
 
