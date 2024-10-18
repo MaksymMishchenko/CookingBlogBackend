@@ -13,6 +13,15 @@ namespace PostApiService.Services
         {
             _context = context;
         }
+
+        /// <summary>
+        /// Asynchronously adds a new post to the database and sets its creation timestamp.
+        /// </summary>
+        /// <param name="post">The post object to be added, which must include the required fields.</param>
+        /// <remarks>
+        /// This method sets the <see cref="Post.CreateAt"/> property to the current date and time 
+        /// before adding the post to the database context and saving the changes.
+        /// </remarks>
         public async Task AddPostAsync(Post post)
         {
             post.CreateAt = DateTime.Now;
