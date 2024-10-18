@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostApiService", "PostApiService.csproj", "{C218129F-B1CD-4417-BF3F-C402F20B8846}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PostApiService", "PostApiService.csproj", "{C218129F-B1CD-4417-BF3F-C402F20B8846}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostApiService.Tests", "..\PostApiService.Tests\PostApiService.Tests.csproj", "{C2DA6D15-2023-42AD-8E0E-C89098D7EAF6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{C218129F-B1CD-4417-BF3F-C402F20B8846}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C218129F-B1CD-4417-BF3F-C402F20B8846}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C218129F-B1CD-4417-BF3F-C402F20B8846}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2DA6D15-2023-42AD-8E0E-C89098D7EAF6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2DA6D15-2023-42AD-8E0E-C89098D7EAF6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2DA6D15-2023-42AD-8E0E-C89098D7EAF6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2DA6D15-2023-42AD-8E0E-C89098D7EAF6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
