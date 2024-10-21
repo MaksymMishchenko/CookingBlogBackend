@@ -32,8 +32,13 @@ namespace PostApiService.Services
 
         public async Task EditCommentAsync(Comment comment)
         {
-            _context.Comments.Update(comment);
-            await _context.SaveChangesAsync();
-        }        
+            var existingComment = await _context.Comments.FindAsync(comment.CommentId);
+            if (existingComment != null)
+            {
+                existingComment.Content = comment.Content; 
+                existingComment.PostId = comment.PostId; 
+                await _context.SaveChangesAsync();
+            }
+        }
     }
 }
