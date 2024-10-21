@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Interfaces;
+﻿using PostApiService.Interfaces;
 using PostApiService.Models;
 
 namespace PostApiService.Services
@@ -35,6 +34,6 @@ namespace PostApiService.Services
         {
             _context.Comments.Update(comment);
             await _context.SaveChangesAsync();
-        }       
+        }        
     }
 }
