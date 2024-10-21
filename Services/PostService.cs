@@ -82,8 +82,14 @@ namespace PostApiService.Services
             {
                 PostId = p.PostId,
                 Title = p.Title,
+                Description = p.Description,
                 Content = p.Content,
+                Author = p.Author,
                 CreateAt = p.CreateAt,
+                ImageUrl = p.ImageUrl,
+                MetaTitle = p.MetaTitle,
+                MetaDescription = p.MetaDescription,
+                Slug = p.Slug,
                 Comments = p.Comments.Select(c => new CommentDto
                 {
                     CommentId = c.CommentId,
