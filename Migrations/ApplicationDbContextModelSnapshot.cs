@@ -53,7 +53,7 @@ namespace PostApiService.Migrations
                             CommentId = 1,
                             Author = "John Doe",
                             Content = "Great post!",
-                            CreatedAt = new DateTime(2024, 10, 17, 22, 34, 51, 611, DateTimeKind.Local).AddTicks(8842),
+                            CreatedAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(723),
                             PostId = 1
                         },
                         new
@@ -61,7 +61,7 @@ namespace PostApiService.Migrations
                             CommentId = 2,
                             Author = "Jane Doe",
                             Content = "I totally agree with this!",
-                            CreatedAt = new DateTime(2024, 10, 17, 22, 34, 51, 611, DateTimeKind.Local).AddTicks(8854),
+                            CreatedAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(731),
                             PostId = 1
                         },
                         new
@@ -69,7 +69,7 @@ namespace PostApiService.Migrations
                             CommentId = 3,
                             Author = "Alice",
                             Content = "This is a comment on the second post.",
-                            CreatedAt = new DateTime(2024, 10, 17, 22, 34, 51, 611, DateTimeKind.Local).AddTicks(8862),
+                            CreatedAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(735),
                             PostId = 2
                         });
                 });
@@ -123,9 +123,9 @@ namespace PostApiService.Migrations
                             PostId = 1,
                             Author = "Peter Jack",
                             Content = "This is the content of the first post.",
-                            CreateAt = new DateTime(2024, 10, 17, 22, 34, 51, 611, DateTimeKind.Local).AddTicks(8214),
+                            CreateAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(442),
                             Description = "Description for first post",
-                            ImageUrl = "https://ibb.co/3M2k1wQ",
+                            ImageUrl = "/images/placeholder.jpg",
                             MetaDescription = "This is meta description",
                             MetaTitle = "Meta title info",
                             Slug = "http://localhost:4200/first-post",
@@ -136,9 +136,9 @@ namespace PostApiService.Migrations
                             PostId = 2,
                             Author = "Jay Way",
                             Content = "This is the content of the second post.",
-                            CreateAt = new DateTime(2024, 10, 17, 22, 34, 51, 611, DateTimeKind.Local).AddTicks(8324),
+                            CreateAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(516),
                             Description = "Description for second post",
-                            ImageUrl = "https://ibb.co/3M2k1wQ",
+                            ImageUrl = "/images/placeholder.jpg",
                             MetaDescription = "This is meta description 2",
                             MetaTitle = "Meta title info 2",
                             Slug = "http://localhost:4200/second-post",
