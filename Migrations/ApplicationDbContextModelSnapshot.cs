@@ -16,7 +16,7 @@ namespace PostApiService.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.8")
+                .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -46,32 +46,6 @@ namespace PostApiService.Migrations
                     b.HasIndex("PostId");
 
                     b.ToTable("Comments");
-
-                    b.HasData(
-                        new
-                        {
-                            CommentId = 1,
-                            Author = "John Doe",
-                            Content = "Great post!",
-                            CreatedAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(723),
-                            PostId = 1
-                        },
-                        new
-                        {
-                            CommentId = 2,
-                            Author = "Jane Doe",
-                            Content = "I totally agree with this!",
-                            CreatedAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(731),
-                            PostId = 1
-                        },
-                        new
-                        {
-                            CommentId = 3,
-                            Author = "Alice",
-                            Content = "This is a comment on the second post.",
-                            CreatedAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(735),
-                            PostId = 2
-                        });
                 });
 
             modelBuilder.Entity("PostApiService.Models.Post", b =>
@@ -116,34 +90,6 @@ namespace PostApiService.Migrations
                     b.HasKey("PostId");
 
                     b.ToTable("Posts");
-
-                    b.HasData(
-                        new
-                        {
-                            PostId = 1,
-                            Author = "Peter Jack",
-                            Content = "This is the content of the first post.",
-                            CreateAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(442),
-                            Description = "Description for first post",
-                            ImageUrl = "/images/placeholder.jpg",
-                            MetaDescription = "This is meta description",
-                            MetaTitle = "Meta title info",
-                            Slug = "http://localhost:4200/first-post",
-                            Title = "First Post"
-                        },
-                        new
-                        {
-                            PostId = 2,
-                            Author = "Jay Way",
-                            Content = "This is the content of the second post.",
-                            CreateAt = new DateTime(2024, 10, 22, 14, 54, 25, 495, DateTimeKind.Local).AddTicks(516),
-                            Description = "Description for second post",
-                            ImageUrl = "/images/placeholder.jpg",
-                            MetaDescription = "This is meta description 2",
-                            MetaTitle = "Meta title info 2",
-                            Slug = "http://localhost:4200/second-post",
-                            Title = "Second Post"
-                        });
                 });
 
             modelBuilder.Entity("PostApiService.Models.Comment", b =>

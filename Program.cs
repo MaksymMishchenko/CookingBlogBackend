@@ -10,6 +10,7 @@ if (builder.Environment.IsDevelopment())
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    builder.Services.AddTransient<DataSeeder>();
 }
 
 else if (builder.Environment.IsEnvironment("Test"))
@@ -21,7 +22,7 @@ else if (builder.Environment.IsEnvironment("Test"))
 else
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));    
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
 
@@ -44,6 +45,21 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    try
+    {
+        var context = services.GetRequiredService<ApplicationDbContext>();
+        var seeder = services.GetRequiredService<DataSeeder>();
+        await seeder.SeedDataAsync(); // Seed the data when the app starts
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"An error occurred during seeding: {ex.Message}");
+    }
+}
 
 app.UseCors("AllowAllOrigins");
 

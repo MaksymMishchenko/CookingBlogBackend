@@ -11,15 +11,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20241006190711_SeedDataInitial")]
-    partial class SeedDataInitial
+    [Migration("20241023174850_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.8")
+                .HasAnnotation("ProductVersion", "8.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -49,32 +49,6 @@ namespace PostApiService.Migrations
                     b.HasIndex("PostId");
 
                     b.ToTable("Comments");
-
-                    b.HasData(
-                        new
-                        {
-                            CommentId = 1,
-                            Author = "John Doe",
-                            Content = "Great post!",
-                            CreatedAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(3504),
-                            PostId = 1
-                        },
-                        new
-                        {
-                            CommentId = 2,
-                            Author = "Jane Doe",
-                            Content = "I totally agree with this!",
-                            CreatedAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(3565),
-                            PostId = 1
-                        },
-                        new
-                        {
-                            CommentId = 3,
-                            Author = "Alice",
-                            Content = "This is a comment on the second post.",
-                            CreatedAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(3570),
-                            PostId = 2
-                        });
                 });
 
             modelBuilder.Entity("PostApiService.Models.Post", b =>
@@ -85,11 +59,33 @@ namespace PostApiService.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PostId"));
 
+                    b.Property<string>("Author")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Content")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreateAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MetaDescription")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MetaTitle")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Title")
                         .HasColumnType("nvarchar(max)");
@@ -97,22 +93,6 @@ namespace PostApiService.Migrations
                     b.HasKey("PostId");
 
                     b.ToTable("Posts");
-
-                    b.HasData(
-                        new
-                        {
-                            PostId = 1,
-                            Content = "This is the content of the first post.",
-                            CreateAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(2401),
-                            Title = "First Post"
-                        },
-                        new
-                        {
-                            PostId = 2,
-                            Content = "This is the content of the second post.",
-                            CreateAt = new DateTime(2024, 10, 6, 22, 7, 10, 703, DateTimeKind.Local).AddTicks(2487),
-                            Title = "Second Post"
-                        });
                 });
 
             modelBuilder.Entity("PostApiService.Models.Comment", b =>
