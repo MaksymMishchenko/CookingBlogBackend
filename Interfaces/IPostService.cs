@@ -7,7 +7,7 @@ namespace PostApiService.Interfaces
     {
         Task<List<PostDto>> GetAllPostsAsync();
 
-        Task<PostDto> GetPostByIdAsync(int postId);
+        Task<Post> GetPostByIdAsync(int postId);
         Task AddPostAsync(Post post);
         Task EditPostAsync(Post post);
         Task DeletePostAsync(int postId);

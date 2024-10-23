@@ -73,32 +73,12 @@ namespace PostApiService.Services
                 }).ToListAsync();
         }
 
-        public async Task<PostDto> GetPostByIdAsync(int postId)
+        public async Task<Post> GetPostByIdAsync(int postId)
         {
             return await _context.Posts
             .Where(p => p.PostId == postId)
             .Include(p => p.Comments)
-            .Select(p => new PostDto
-            {
-                PostId = p.PostId,
-                Title = p.Title,
-                Description = p.Description,
-                Content = p.Content,
-                Author = p.Author,
-                CreateAt = p.CreateAt,
-                ImageUrl = p.ImageUrl,
-                MetaTitle = p.MetaTitle,
-                MetaDescription = p.MetaDescription,
-                Slug = p.Slug,
-                Comments = p.Comments.Select(c => new CommentDto
-                {
-                    CommentId = c.CommentId,
-                    Author = c.Author,
-                    Content = c.Content,
-                    CreateAt = c.CreatedAt
-                }).ToList()
-
-            }).FirstOrDefaultAsync();
+            .FirstOrDefaultAsync();            
         }
     }
 }
