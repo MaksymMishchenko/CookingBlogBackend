@@ -8,16 +8,14 @@ namespace PostApiService.Controllers
     [Route("api/[controller]")]
     public class PostsController : Controller
     {
-        private readonly IPostService _postsService;
-        private readonly ICommentService _commentService;
+        private readonly IPostService _postsService;        
 
-        public PostsController(IPostService postsService, ICommentService commentService)
+        public PostsController(IPostService postsService)
         {
-            _postsService = postsService;
-            _commentService = commentService;
+            _postsService = postsService;           
         }
         [HttpGet]
-        public async Task<IActionResult> GetPosts()
+        public async Task<IActionResult> GetAllPosts()
         {
             var posts = await _postsService.GetAllPostsAsync();
             return Ok(posts);
@@ -54,32 +52,6 @@ namespace PostApiService.Controllers
         {
             await _postsService.DeletePostAsync(id);
             return Ok();
-        }
-
-        [HttpPost("{postId}/comments")]
-        public async Task<IActionResult> AddComment(int postId, [FromBody] Comment comment)
-        {
-            await _commentService.AddCommentAsync(postId, comment);
-            return Ok();
-        }
-
-        [HttpPut("comments/{commentId}")]
-        public async Task<IActionResult> EditComment(int commentId, [FromBody] Comment comment)
-        {
-            if (commentId != comment.CommentId)
-            {
-                return BadRequest();
-            }
-
-            await _commentService.EditCommentAsync(comment);
-            return Ok();
-        }
-
-        [HttpDelete("comments/{commentId}")]
-        public async Task<IActionResult> DeleteComment(int commentId)
-        {
-            await _commentService.DeleteCommentAsync(commentId);
-            return Ok();
-        }
+        }        
     }
 }
