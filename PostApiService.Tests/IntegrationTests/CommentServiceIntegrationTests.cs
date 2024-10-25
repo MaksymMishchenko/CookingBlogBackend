@@ -6,17 +6,13 @@ namespace PostApiService.Tests.IntegrationTests
 {
     public class CommentServiceIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
-        private readonly ApplicationDbContext _context;
-        private PostService _postService;
-        private CommentService _commentService;
+        private readonly IntegrationTestFixture _fixture;
         public CommentServiceIntegrationTests(IntegrationTestFixture fixture)
         {
-            _context = fixture.Context;
-            _postService = new PostService(_context);
-            _commentService = new CommentService(_context);
+            _fixture = fixture;
         }
 
-        private async Task SeedTestData()
+        private async Task SeedTestData(ApplicationDbContext context)
         {
             var post1 = new Post
             {
@@ -42,17 +38,19 @@ namespace PostApiService.Tests.IntegrationTests
                 Comments = new List<Comment>()
             };
 
-            await _postService.AddPostAsync(post1);
-            await _postService.AddPostAsync(post2);
+            await context.AddRangeAsync(post1, post2);
+            await context.SaveChangesAsync();
         }
 
         [Fact]
         public async Task AddCommentAsync_Should_Add_Comment_To_Specific_Post()
         {
             // Arrange
-            await SeedTestData();
+            using var context = _fixture.CreateContext();
+            var commentService = new CommentService(context);
+            await SeedTestData(context);
 
-            var post = await _context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-one");
+            var post = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-one");
             Assert.NotNull(post);
 
             var postId = post.PostId;
@@ -65,10 +63,10 @@ namespace PostApiService.Tests.IntegrationTests
             };
 
             // Act
-            await _commentService.AddCommentAsync(postId, comment);
+            await commentService.AddCommentAsync(postId, comment);
 
             // Assert
-            var updatedPost = await _context.Posts
+            var updatedPost = await context.Posts
                 .Include(p => p.Comments)
                 .FirstOrDefaultAsync(p => p.PostId == postId);
             Assert.NotNull(post);
@@ -81,8 +79,11 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task EditCommentAsync_Should_Edit_Comment_If_Exist()
         {
             // Arrange
-            await SeedTestData();
-            var post = await _context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-two");
+            using var context = _fixture.CreateContext();
+            var commentService = new CommentService(context);
+            await SeedTestData(context);
+
+            var post = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-two");
             Assert.NotNull(post);
             var postId = post.PostId;
 
@@ -93,17 +94,17 @@ namespace PostApiService.Tests.IntegrationTests
                 CreatedAt = DateTime.Now
             };
 
-            await _commentService.AddCommentAsync(postId, comment);
+            await commentService.AddCommentAsync(postId, comment);
             Assert.Contains(post.Comments, c => c.Content == comment.Content
             && c.Author == comment.Author);
 
             comment.Content = "Edited Comment content for post 2";
 
             // Act
-            await _commentService.EditCommentAsync(comment);
+            await commentService.EditCommentAsync(comment);
 
             // Assert
-            var editedComment = await _context.Comments.FirstOrDefaultAsync(c => c.Content == comment.Content);
+            var editedComment = await context.Comments.FirstOrDefaultAsync(c => c.Content == comment.Content);
             Assert.NotNull(editedComment);
             Assert.Equal(comment.Content, editedComment.Content);
         }
@@ -112,9 +113,11 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task DeleteCommentAsync_Should_Remove_Comment_If_Exists()
         {
             // Arrange
-            await SeedTestData();
+            using var context = _fixture.CreateContext();
+            var commentService = new CommentService(context);
+            await SeedTestData(context);
 
-            var post = await _context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-two");
+            var post = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-two");
             Assert.NotNull(post);
             var postId = post.PostId;
 
@@ -125,18 +128,19 @@ namespace PostApiService.Tests.IntegrationTests
                 CreatedAt = DateTime.Now
             };
 
-            await _commentService.AddCommentAsync(postId, comment);
+            await commentService.AddCommentAsync(postId, comment);
 
-            var initialCommentCount = await _context.Comments.CountAsync();
+            var initialCommentCount = await context.Comments.CountAsync();
 
             // Act
-            await _commentService.DeleteCommentAsync(comment.CommentId);
+            await commentService.DeleteCommentAsync(comment.CommentId);
 
             // Assert
-            var deletedComment = await _context.Comments.FindAsync(comment.CommentId);
-            var finalCommentCount = await _context.Comments.CountAsync();
+            var deletedComment = await context.Comments.FindAsync(comment.CommentId);
+            var finalCommentCount = await context.Comments.CountAsync();
             Assert.Null(deletedComment);
             Assert.Equal(initialCommentCount - 1, finalCommentCount);
         }
     }
 }
+

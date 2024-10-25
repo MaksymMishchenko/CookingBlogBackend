@@ -2,24 +2,19 @@
 
 namespace PostApiService.Tests.IntegrationTests
 {
-    public class IntegrationTestFixture : IDisposable
+    public class IntegrationTestFixture
     {
-        public ApplicationDbContext Context { get; private set; }
-
-        public IntegrationTestFixture()
+        public ApplicationDbContext CreateContext()
         {
 
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-            .UseSqlServer("Server=(localdb)\\ProjectModels;Database=TestPostApiDb;Trusted_Connection=true;")
-            .Options;
+                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+                .Options;
 
-            Context = new ApplicationDbContext(options);
-            Context.Database.Migrate();
-        }
-        public void Dispose()
-        {
-            Context.Database.EnsureDeleted();
-            Context.Dispose();
+            var context = new ApplicationDbContext(options);
+            context.Database.EnsureCreated();
+
+            return context;
         }
     }
 }

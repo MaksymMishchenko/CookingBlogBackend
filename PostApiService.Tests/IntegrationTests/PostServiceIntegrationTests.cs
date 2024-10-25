@@ -6,16 +6,14 @@ namespace PostApiService.Tests.IntegrationTests
 {
     public class PostServiceIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
-        private readonly ApplicationDbContext _context;
-        private PostService _postService;
+        private readonly IntegrationTestFixture _fixture;
 
         public PostServiceIntegrationTests(IntegrationTestFixture fixture)
         {
-            _context = fixture.Context;
-            _postService = new PostService(_context);
+            _fixture = fixture;
         }
 
-        private async Task SeedTestData()
+        private async Task SeedTestData(ApplicationDbContext context)
         {
             var post1 = new Post
             {
@@ -39,16 +37,19 @@ namespace PostApiService.Tests.IntegrationTests
                 Slug = "test-post-two"
             };
 
-            await _postService.AddPostAsync(post1);
-            await _postService.AddPostAsync(post2);
+            await context.Posts.AddRangeAsync(post1, post2);
+            await context.SaveChangesAsync();
         }
 
         [Fact]
         public async Task AddPostAsync_Should_Add_Post_And_SaveChanges()
         {
-            const int postsCollectionCount = 3;
             // Arrange
-            await SeedTestData();
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+            await SeedTestData(context);
+
+            const int postsCollectionCount = 3;
 
             var post3 = new Post
             {
@@ -62,11 +63,11 @@ namespace PostApiService.Tests.IntegrationTests
             };
 
             // Act
-            await _postService.AddPostAsync(post3);
+            await postService.AddPostAsync(post3);
 
             // Assert
-            var addedPost = await _context.Posts.FindAsync(post3.PostId);
-            var postCount = await _context.Posts.CountAsync();
+            var addedPost = await context.Posts.FindAsync(post3.PostId);
+            var postCount = await context.Posts.CountAsync();
             Assert.NotNull(addedPost);
             Assert.Equal(postsCollectionCount, postCount);
             Assert.Equal(post3.Title, addedPost.Title);
@@ -81,22 +82,24 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task EditPostAsync_Should_Edit_Post_And_SaveChanges()
         {
-            await SeedTestData();
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+            await SeedTestData(context);
 
             int postToBeUpdatedId = 1;
 
-            // Arrange            
-            var postToBeUpdated = await _postService.GetPostByIdAsync(postToBeUpdatedId);
+            var postToBeUpdated = await postService.GetPostByIdAsync(postToBeUpdatedId);
             Assert.NotNull(postToBeUpdated);
 
             postToBeUpdated.Title = "Changed post title";
             postToBeUpdated.MetaTitle = "Changed Test Post Meta Title";
 
             // Act
-            await _postService.EditPostAsync(postToBeUpdated);
+            await postService.EditPostAsync(postToBeUpdated);
 
             // Assert
-            var updatedPost = await _context.Posts.FirstOrDefaultAsync(p => p.PostId == postToBeUpdatedId);
+            var updatedPost = await context.Posts.FirstOrDefaultAsync(p => p.PostId == postToBeUpdatedId);
             Assert.NotNull(updatedPost);
             Assert.Equal(postToBeUpdatedId, updatedPost.PostId);
             Assert.Equal("Changed post title", updatedPost.Title);
@@ -107,21 +110,23 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task DeletePostAsync_Should_Remove_Post_If_Exists()
         {
             // Arrange
-            await SeedTestData();
-            int totalCount = await _context.Posts.CountAsync();
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+            await SeedTestData(context);
+            int totalCount = await context.Posts.CountAsync();
             Assert.Equal(2, totalCount);
 
-            var postToBeRemoved = await _context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-one");
+            var postToBeRemoved = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-one");
             Assert.NotNull(postToBeRemoved);
 
             // Act
-            await _postService.DeletePostAsync(postToBeRemoved.PostId);
+            await postService.DeletePostAsync(postToBeRemoved.PostId);
 
             // Assert
-            var deletedPost = await _context.Posts.FindAsync(postToBeRemoved.PostId);
+            var deletedPost = await context.Posts.FindAsync(postToBeRemoved.PostId);
             Assert.Null(deletedPost);
 
-            int totalCountAfterRemove = await _context.Posts.CountAsync();
+            int totalCountAfterRemove = await context.Posts.CountAsync();
             Assert.Equal(1, totalCountAfterRemove);
         }
 
@@ -129,7 +134,9 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetAllPostsAsync_Should_Return_All_Posts()
         {
             // Arrange
-            await SeedTestData();
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+            await SeedTestData(context);
 
             var post3 = new Post
             {
@@ -142,14 +149,14 @@ namespace PostApiService.Tests.IntegrationTests
                 Slug = "test-post-three"
             };
 
-            await _postService.AddPostAsync(post3);
+            await postService.AddPostAsync(post3);
 
             // Act
-            var posts = await _postService.GetAllPostsAsync();
+            var posts = await postService.GetAllPostsAsync();
 
             // Assert
             Assert.NotNull(posts);
-            var totalCount = await _context.Posts.CountAsync();
+            var totalCount = await context.Posts.CountAsync();
             Assert.Equal(3, totalCount);
         }
 
@@ -157,13 +164,15 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetPostByIdAsync_Should_Return_Post_If_Found()
         {
             // Arrange
-            await SeedTestData();
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+            await SeedTestData(context);
 
-            var addedPost = await _context.Posts.FirstOrDefaultAsync(p => p.Content == "Content of the test post 2.");
+            var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Content == "Content of the test post 2.");
             Assert.NotNull(addedPost);
 
             // Act
-            var foundedPost = await _postService.GetPostByIdAsync(addedPost.PostId);
+            var foundedPost = await postService.GetPostByIdAsync(addedPost.PostId);
 
             // Assert
             Assert.NotNull(foundedPost);

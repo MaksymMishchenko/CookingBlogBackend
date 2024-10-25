@@ -16,7 +16,8 @@ if (builder.Environment.IsDevelopment())
 else if (builder.Environment.IsEnvironment("Test"))
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("TestConnection")));
+    //options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
+    options.UseInMemoryDatabase("TestDb"));
 }
 
 else
@@ -46,18 +47,21 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
+if (!app.Environment.IsEnvironment("Test")) // Skip seeding in Testing environment
 {
-    var services = scope.ServiceProvider;
-    try
+    using (var scope = app.Services.CreateScope())
     {
-        var context = services.GetRequiredService<ApplicationDbContext>();
-        var seeder = services.GetRequiredService<DataSeeder>();
-        await seeder.SeedDataAsync(); // Seed the data when the app starts
-    }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"An error occurred during seeding: {ex.Message}");
+        var services = scope.ServiceProvider;
+        try
+        {
+            var context = services.GetRequiredService<ApplicationDbContext>();
+            var seeder = services.GetRequiredService<DataSeeder>();
+            await seeder.SeedDataAsync(); // Seed the data when the app starts
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"An error occurred during seeding: {ex.Message}");
+        }
     }
 }
 
@@ -77,3 +81,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public partial class Program;
