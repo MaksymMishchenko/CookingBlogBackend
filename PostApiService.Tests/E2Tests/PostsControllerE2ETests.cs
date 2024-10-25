@@ -2,41 +2,52 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using PostApiService.Models;
+using System.Text;
 using System.Text.Json;
 
 namespace PostApiService.Tests.E2Tests
 {
     public class PostsControllerE2ETests : IClassFixture<WebApplicationFactory<Program>>
     {
-        private readonly HttpClient _client;
-        private readonly WebApplicationFactory<Program> _factory;
+        private HttpClient _client;
+        private WebApplicationFactory<Program> _factory;
         public PostsControllerE2ETests(WebApplicationFactory<Program> factory)
         {
-            _factory = factory.WithWebHostBuilder(builder =>
+            _factory = factory;
+        }
+
+        private WebApplicationFactory<Program> CreateFactory()
+        {
+            return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Test");
                 builder.ConfigureServices(services =>
                 {
+                    // Remove the existing DbContext registration
                     var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
                     if (descriptor != null)
                     {
                         services.Remove(descriptor);
                     }
 
+                    // Use a new in-memory database with a unique name for each test
                     services.AddDbContext<ApplicationDbContext>(options =>
                     {
                         options.UseInMemoryDatabase("TestDb");
                     });
                 });
             });
-            _client = _factory.CreateClient();
         }
 
         [Fact]
         public async Task GetPosts_ReturnsOk_WithListOfPosts()
         {
             // Arrange
+            var factory = CreateFactory();
+            _client = factory.CreateClient();
+
             var post1 = CreateTestPost(
                  "Test Post 1",
                  "Post Content",
@@ -59,8 +70,8 @@ namespace PostApiService.Tests.E2Tests
                 "Some meta description 2"
                 );
 
-            await SeedPostAsync(post1);
-            await SeedPostAsync(post2);
+            await SeedPostAsync(post1, factory);
+            await SeedPostAsync(post2, factory);
 
             // Act
             var response = await _client.GetAsync("/api/Posts");
@@ -82,6 +93,9 @@ namespace PostApiService.Tests.E2Tests
         public async Task GetPostById_ShouldReturnOk_WithPostById()
         {
             // Arrange
+            var factory = CreateFactory();
+            _client = factory.CreateClient();
+
             var post1 = CreateTestPost(
                 "Test Post 1",
                 "Post Content",
@@ -104,8 +118,8 @@ namespace PostApiService.Tests.E2Tests
                 "Some meta description 2"
                 );
 
-            await SeedPostAsync(post1);
-            await SeedPostAsync(post2);
+            await SeedPostAsync(post1, factory);
+            await SeedPostAsync(post2, factory);
 
             // Act
             var response = await _client.GetAsync($"/api/Posts/{post2.PostId}");
@@ -119,6 +133,47 @@ namespace PostApiService.Tests.E2Tests
             Assert.NotNull(post);
             Assert.Equal(post2.Title, post.Title);
             Assert.Equal(post2.Slug, post.Slug);
+        }
+
+        [Fact]
+        public async Task AddPost_ShouldAddPost_ReturnOk_WhenPostIsValid()
+        {
+            // Arrange
+            var factory = CreateFactory();
+            _client = factory.CreateClient();
+
+            var postToBeAdded = CreateTestPost(
+                "Test title",
+                "Test Content",
+                "Test Author",
+                "src/image.jpg",
+                "Test Description",
+                "Test Slug",
+                "Test Meta Title",
+                "Test Meta Description"
+                );
+
+            var postJson = JsonSerializer.Serialize(postToBeAdded);
+            var content = new StringContent(postJson, Encoding.UTF8, "application/json");
+
+            // Act
+            var response = await _client.PostAsync("/api/Posts", content);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                //var postCount = await context.Posts.CountAsync();
+                //Assert.Equal(1, postCount); // Expecting 1 post in the database
+
+                var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == postToBeAdded.Title);
+                Assert.NotNull(addedPost);
+                Assert.Equal(postToBeAdded.Content, addedPost.Content);
+                Assert.Equal(postToBeAdded.Author, addedPost.Author);
+            }
         }
 
         private Post CreateTestPost(
@@ -145,9 +200,9 @@ namespace PostApiService.Tests.E2Tests
             };
         }
 
-        private async Task SeedPostAsync(Post post)
+        private async Task SeedPostAsync(Post post, WebApplicationFactory<Program> factory)
         {
-            using (var scope = _factory.Services.CreateScope())
+            using (var scope = factory.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 context.Posts.Add(post);
