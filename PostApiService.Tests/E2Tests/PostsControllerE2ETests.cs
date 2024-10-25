@@ -174,7 +174,7 @@ namespace PostApiService.Tests.E2Tests
             using (var scope = factory.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                
+
                 var postCount = await context.Posts.CountAsync();
                 Assert.Equal(1, postCount); // Expecting 1 post in the database
 
@@ -213,7 +213,6 @@ namespace PostApiService.Tests.E2Tests
             var content = new StringContent(updatedPostJson, Encoding.UTF8, "application/json");
 
             // Act
-
             var response = await _client.PutAsync($"api/posts/{post.PostId}", content);
 
             // Assert
@@ -226,6 +225,41 @@ namespace PostApiService.Tests.E2Tests
                 Assert.NotNull(editedPost);
                 Assert.Equal("Changed", editedPost.Title);
                 Assert.Equal("changed-slug", editedPost.Slug);
+                await context.Database.EnsureDeletedAsync();
+            }
+        }
+
+        [Fact]
+        public async Task DeletePost_ShouldRemovePost_IfExists()
+        {
+            // Arrange
+            var factory = CreateFactory();
+            _client = factory.CreateClient();
+
+            var postToBeDeleted = CreateTestPost(
+                "Removed title",
+                "Removed Content",
+                "Removed Author",
+                "src/remove.jpg",
+                "Removed Description",
+                "Removed Slug",
+                "Removed Meta Title",
+                "Removed Meta Description"
+            );
+
+            await SeedPostAsync(postToBeDeleted, factory);
+
+            // Act
+            var response = await _client.DeleteAsync($"api/posts/{postToBeDeleted.PostId}");
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var deletedPost = await context.Posts.FindAsync(postToBeDeleted.PostId);
+                Assert.Null(deletedPost);
                 await context.Database.EnsureDeletedAsync();
             }
         }
