@@ -16,8 +16,7 @@ if (builder.Environment.IsDevelopment())
 else if (builder.Environment.IsEnvironment("Test"))
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase(Guid.NewGuid().ToString()));
-    //options.UseInMemoryDatabase("TestDb"));
+    options.UseInMemoryDatabase(Guid.NewGuid().ToString()));    
 }
 
 else

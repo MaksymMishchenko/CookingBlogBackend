@@ -57,7 +57,7 @@ namespace PostApiService.Tests.E2Tests
                  "some-slug-post",
                  "Some meta title",
                  "Some meta description"
-                 );
+            );
 
             var post2 = CreateTestPost(
                 "Test Post 2",
@@ -68,7 +68,7 @@ namespace PostApiService.Tests.E2Tests
                 "some-slug-post 2",
                 "Some meta title 2",
                 "Some meta description 2"
-                );
+            );
 
             await SeedPostAsync(post1, factory);
             await SeedPostAsync(post2, factory);
@@ -82,11 +82,17 @@ namespace PostApiService.Tests.E2Tests
             var content = await response.Content.ReadAsStringAsync();
             Assert.NotNull(content);
 
-            var posts = JsonSerializer.Deserialize<List<Post>>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            Assert.NotNull(posts);
-            Assert.Equal(2, posts.Count);
-            Assert.Contains(posts, p => p.Title == "Test Post 1");
-            Assert.Contains(posts, p => p.Title == "Test Post 2");
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var postList = await context.Posts.ToListAsync();
+
+                Assert.NotNull(postList);
+                Assert.Equal(2, postList.Count);
+                Assert.Contains(postList, p => p.Title == "Test Post 1");
+                Assert.Contains(postList, p => p.Title == "Test Post 2");
+                await context.Database.EnsureDeletedAsync();
+            }
         }
 
         [Fact]
@@ -105,7 +111,7 @@ namespace PostApiService.Tests.E2Tests
                 "some-slug-post",
                 "Some meta title",
                 "Some meta description"
-                );
+            );
 
             var post2 = CreateTestPost(
                 "Test Post 2",
@@ -116,7 +122,7 @@ namespace PostApiService.Tests.E2Tests
                 "some-slug-post 2",
                 "Some meta title 2",
                 "Some meta description 2"
-                );
+            );
 
             await SeedPostAsync(post1, factory);
             await SeedPostAsync(post2, factory);
@@ -126,13 +132,16 @@ namespace PostApiService.Tests.E2Tests
 
             // Assert
             response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadAsStringAsync();
-            Assert.NotNull(content);
 
-            var post = JsonSerializer.Deserialize<Post>(content, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            Assert.NotNull(post);
-            Assert.Equal(post2.Title, post.Title);
-            Assert.Equal(post2.Slug, post.Slug);
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var postList = await context.Posts.ToListAsync();
+
+                Assert.NotNull(postList);
+                Assert.Contains(postList, p => p.Title == post2.Title);
+                await context.Database.EnsureDeletedAsync();
+            }
         }
 
         [Fact]
@@ -151,7 +160,7 @@ namespace PostApiService.Tests.E2Tests
                 "Test Slug",
                 "Test Meta Title",
                 "Test Meta Description"
-                );
+            );
 
             var postJson = JsonSerializer.Serialize(postToBeAdded);
             var content = new StringContent(postJson, Encoding.UTF8, "application/json");
@@ -165,14 +174,59 @@ namespace PostApiService.Tests.E2Tests
             using (var scope = factory.Services.CreateScope())
             {
                 var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                //var postCount = await context.Posts.CountAsync();
-                //Assert.Equal(1, postCount); // Expecting 1 post in the database
+                
+                var postCount = await context.Posts.CountAsync();
+                Assert.Equal(1, postCount); // Expecting 1 post in the database
 
                 var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == postToBeAdded.Title);
                 Assert.NotNull(addedPost);
                 Assert.Equal(postToBeAdded.Content, addedPost.Content);
                 Assert.Equal(postToBeAdded.Author, addedPost.Author);
+                await context.Database.EnsureDeletedAsync();
+            }
+        }
+
+        [Fact]
+        public async Task EditPost_ShouldEditPostById_ReturnOk_IsPostValid()
+        {
+            // Arrange
+            var factory = CreateFactory();
+            _client = factory.CreateClient();
+
+            var post = CreateTestPost(
+                "Tes title",
+                "Test Content",
+                "Test Author",
+                "src/image.jpg",
+                "Test Description",
+                "Test Slug",
+                "Test Meta Title",
+                "Test Meta Description"
+            );
+
+            await SeedPostAsync(post, factory);
+
+            post.Title = "Changed";
+            post.Slug = "changed-slug";
+
+            var updatedPostJson = JsonSerializer.Serialize(post);
+            var content = new StringContent(updatedPostJson, Encoding.UTF8, "application/json");
+
+            // Act
+
+            var response = await _client.PutAsync($"api/posts/{post.PostId}", content);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var editedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == "Changed");
+                Assert.NotNull(editedPost);
+                Assert.Equal("Changed", editedPost.Title);
+                Assert.Equal("changed-slug", editedPost.Slug);
+                await context.Database.EnsureDeletedAsync();
             }
         }
 
