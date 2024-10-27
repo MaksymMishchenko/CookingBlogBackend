@@ -15,7 +15,7 @@ namespace PostApiService.Tests.E2Tests
         private WebApplicationFactory<Program> _factory;
         public PostsControllerE2ETests(WebApplicationFactory<Program> factory)
         {
-            _factory = factory;
+            _factory = factory;           
         }
 
         private WebApplicationFactory<Program> CreateFactory()
