@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models;
 using System.Net;
+using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 
@@ -149,6 +150,52 @@ namespace PostApiService.Tests.E2Tests
                     && c.Author == "Test Author");
                 Assert.NotNull(editedComment);
                 Assert.Equal(updatedComment.Content, editedComment.Content);
+                await context.Database.EnsureDeletedAsync();
+            }
+        }
+
+        [Fact]
+        public async Task DeleteComment_ShoulRemoveCommentById()
+        {
+            // Arrange
+            var factory = CreateFactory();
+            var client = factory.CreateClient();
+
+            var postId = 1;
+
+            var initialPost = CreateTestPost(
+               "Post title",
+               "Post content",
+               "Post author",
+               "postimg.jpg",
+               "Post description",
+               "post-slug",
+               "Meta title",
+               "Meta description"
+                );
+
+            await SeedPostAsync(initialPost, factory);
+
+            var initialComment = new Comment
+            {
+                Content = "Initial comment",
+                Author = "Initial author",
+                PostId = postId
+            };
+
+            var commentResponse = await client.PostAsJsonAsync($"/api/comments/posts/{postId}", initialComment);
+            Assert.Equal(HttpStatusCode.OK, commentResponse.StatusCode);
+
+            // Act
+            var response = await client.DeleteAsync($"/api/comments/{initialComment.CommentId}");
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            using (var scope = factory.Services.CreateScope())
+            {
+                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var removedPost = await context.Comments.FindAsync(initialComment.CommentId);
+                Assert.Null(removedPost);
                 await context.Database.EnsureDeletedAsync();
             }
         }
