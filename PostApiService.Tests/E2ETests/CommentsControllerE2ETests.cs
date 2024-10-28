@@ -19,34 +19,12 @@ namespace PostApiService.Tests.E2Tests
             _fixture = fixture;
             _client = fixture.Client;
 
-        }
-        //private WebApplicationFactory<Program> CreateFactory()
-        //{
-        //    return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-        //    {
-        //        builder.UseEnvironment("Test");
-        //        builder.ConfigureServices(services =>
-        //        {
-        //            var dbDescriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-
-        //            if (dbDescriptor != null)
-        //            {
-        //                services.Remove(dbDescriptor);
-        //            }
-
-        //            services.AddDbContext<ApplicationDbContext>(options =>
-        //            {
-        //                options.UseInMemoryDatabase("TestDb");
-        //            });
-        //        });
-        //    });
-        //}
+        }        
 
         [Fact]
         public async Task AddComment_ReturnsOk_WhenCommentIsAddedSuccessfully()
         {
             // Arrange           
-
             int postId = 1;
             var post = CreateTestPost(
                 "Post title",
