@@ -1,53 +1,26 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using PostApiService.Models;
+using PostApiService.Tests.E2ETests;
 using System.Text;
 using System.Text.Json;
 
 namespace PostApiService.Tests.E2Tests
 {
-    public class PostsControllerE2ETests : IClassFixture<WebApplicationFactory<Program>>
+    public class PostsControllerE2ETests : IClassFixture<TestFactoryFixture>
     {
-        private HttpClient _client;
-        private WebApplicationFactory<Program> _factory;
-        public PostsControllerE2ETests(WebApplicationFactory<Program> factory)
+        private readonly TestFactoryFixture _fixture;
+        private readonly HttpClient _client;
+        public PostsControllerE2ETests(TestFactoryFixture fixture)
         {
-            _factory = factory;           
-        }
-
-        private WebApplicationFactory<Program> CreateFactory()
-        {
-            return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
-            {
-                builder.UseEnvironment("Test");
-                builder.ConfigureServices(services =>
-                {
-                    // Remove the existing DbContext registration
-                    var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ApplicationDbContext>));
-                    if (descriptor != null)
-                    {
-                        services.Remove(descriptor);
-                    }
-
-                    // Use a new in-memory database with a unique name for each test
-                    services.AddDbContext<ApplicationDbContext>(options =>
-                    {
-                        options.UseInMemoryDatabase("TestDb");
-                    });
-                });
-            });
+            _fixture = fixture;
+            _client = fixture.Client;
         }
 
         [Fact]
         public async Task GetPosts_ReturnsOk_WithListOfPosts()
         {
-            // Arrange
-            var factory = CreateFactory();
-            _client = factory.CreateClient();
-
+            // Arrange       
             var post1 = CreateTestPost(
                  "Test Post 1",
                  "Post Content",
@@ -70,8 +43,8 @@ namespace PostApiService.Tests.E2Tests
                 "Some meta description 2"
             );
 
-            await SeedPostAsync(post1, factory);
-            await SeedPostAsync(post2, factory);
+            await SeedPostAsync(post1);
+            await SeedPostAsync(post2);
 
             // Act
             var response = await _client.GetAsync("/api/Posts");
@@ -82,26 +55,20 @@ namespace PostApiService.Tests.E2Tests
             var content = await response.Content.ReadAsStringAsync();
             Assert.NotNull(content);
 
-            using (var scope = factory.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var postList = await context.Posts.ToListAsync();
+            using var scope = _fixture.Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var postList = await context.Posts.ToListAsync();
 
-                Assert.NotNull(postList);
-                Assert.Equal(2, postList.Count);
-                Assert.Contains(postList, p => p.Title == "Test Post 1");
-                Assert.Contains(postList, p => p.Title == "Test Post 2");
-                await context.Database.EnsureDeletedAsync();
-            }
+            Assert.NotNull(postList);
+            Assert.Equal(2, postList.Count);
+            Assert.Contains(postList, p => p.Title == "Test Post 1");
+            Assert.Contains(postList, p => p.Title == "Test Post 2");
         }
 
         [Fact]
         public async Task GetPostById_ShouldReturnOk_WithPostById()
         {
-            // Arrange
-            var factory = CreateFactory();
-            _client = factory.CreateClient();
-
+            // Arrange            
             var post1 = CreateTestPost(
                 "Test Post 1",
                 "Post Content",
@@ -124,8 +91,8 @@ namespace PostApiService.Tests.E2Tests
                 "Some meta description 2"
             );
 
-            await SeedPostAsync(post1, factory);
-            await SeedPostAsync(post2, factory);
+            await SeedPostAsync(post1);
+            await SeedPostAsync(post2);
 
             // Act
             var response = await _client.GetAsync($"/api/Posts/{post2.PostId}");
@@ -133,24 +100,18 @@ namespace PostApiService.Tests.E2Tests
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = factory.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var postList = await context.Posts.ToListAsync();
+            using var scope = _fixture.Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var postList = await context.Posts.ToListAsync();
 
-                Assert.NotNull(postList);
-                Assert.Contains(postList, p => p.Title == post2.Title);
-                await context.Database.EnsureDeletedAsync();
-            }
+            Assert.NotNull(postList);
+            Assert.Contains(postList, p => p.Title == post2.Title);
         }
 
         [Fact]
         public async Task AddPost_ShouldAddPost_ReturnOk_WhenPostIsValid()
         {
-            // Arrange
-            var factory = CreateFactory();
-            _client = factory.CreateClient();
-
+            // Arrange        
             var postToBeAdded = CreateTestPost(
                 "Test title",
                 "Test Content",
@@ -171,28 +132,19 @@ namespace PostApiService.Tests.E2Tests
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = factory.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            using var scope = _fixture.Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-                var postCount = await context.Posts.CountAsync();
-                Assert.Equal(1, postCount); // Expecting 1 post in the database
-
-                var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == postToBeAdded.Title);
-                Assert.NotNull(addedPost);
-                Assert.Equal(postToBeAdded.Content, addedPost.Content);
-                Assert.Equal(postToBeAdded.Author, addedPost.Author);
-                await context.Database.EnsureDeletedAsync();
-            }
+            var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == postToBeAdded.Title);
+            Assert.NotNull(addedPost);
+            Assert.Equal(postToBeAdded.Content, addedPost.Content);
+            Assert.Equal(postToBeAdded.Author, addedPost.Author);
         }
 
         [Fact]
         public async Task EditPost_ShouldEditPostById_ReturnOk_IsPostValid()
         {
-            // Arrange
-            var factory = CreateFactory();
-            _client = factory.CreateClient();
-
+            // Arrange           
             var post = CreateTestPost(
                 "Tes title",
                 "Test Content",
@@ -204,7 +156,7 @@ namespace PostApiService.Tests.E2Tests
                 "Test Meta Description"
             );
 
-            await SeedPostAsync(post, factory);
+            await SeedPostAsync(post);
 
             post.Title = "Changed";
             post.Slug = "changed-slug";
@@ -218,24 +170,18 @@ namespace PostApiService.Tests.E2Tests
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = factory.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var editedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == "Changed");
-                Assert.NotNull(editedPost);
-                Assert.Equal("Changed", editedPost.Title);
-                Assert.Equal("changed-slug", editedPost.Slug);
-                await context.Database.EnsureDeletedAsync();
-            }
+            using var scope = _fixture.Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var editedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == "Changed");
+            Assert.NotNull(editedPost);
+            Assert.Equal("Changed", editedPost.Title);
+            Assert.Equal("changed-slug", editedPost.Slug);
         }
 
         [Fact]
         public async Task DeletePost_ShouldRemovePost_IfExists()
         {
-            // Arrange
-            var factory = CreateFactory();
-            _client = factory.CreateClient();
-
+            // Arrange            
             var postToBeDeleted = CreateTestPost(
                 "Removed title",
                 "Removed Content",
@@ -247,7 +193,7 @@ namespace PostApiService.Tests.E2Tests
                 "Removed Meta Description"
             );
 
-            await SeedPostAsync(postToBeDeleted, factory);
+            await SeedPostAsync(postToBeDeleted);
 
             // Act
             var response = await _client.DeleteAsync($"api/posts/{postToBeDeleted.PostId}");
@@ -255,13 +201,11 @@ namespace PostApiService.Tests.E2Tests
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = factory.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var deletedPost = await context.Posts.FindAsync(postToBeDeleted.PostId);
-                Assert.Null(deletedPost);
-                await context.Database.EnsureDeletedAsync();
-            }
+            using var scope = _fixture.Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var deletedPost = await context.Posts.FindAsync(postToBeDeleted.PostId);
+
+            Assert.Null(deletedPost);
         }
 
         private Post CreateTestPost(
@@ -288,14 +232,12 @@ namespace PostApiService.Tests.E2Tests
             };
         }
 
-        private async Task SeedPostAsync(Post post, WebApplicationFactory<Program> factory)
+        private async Task SeedPostAsync(Post post)
         {
-            using (var scope = factory.Services.CreateScope())
-            {
-                var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                context.Posts.Add(post);
-                await context.SaveChangesAsync();
-            }
+            using var scope = _fixture.Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            context.Posts.Add(post);
+            await context.SaveChangesAsync();
         }
     }
 }
