@@ -1,23 +1,36 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Services;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
 namespace PostApiService.Tests.IntegrationTests
 {
-    public class IntegrationTestFixture : IDisposable
+    public class IntegrationTestFixture
     {
-        public ApplicationDbContext Context { get; private set; }
-        public PostService PostService { get; private set; }
+        private readonly DbContextOptions<ApplicationDbContext> _options;
+        public ApplicationDbContext Context { get; }
+
         public IntegrationTestFixture()
-        {
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
-                .UseInMemoryDatabase(Guid.NewGuid().ToString())
+        {            
+            _options = new DbContextOptionsBuilder<ApplicationDbContext>()
+                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
-            Context = new ApplicationDbContext(options);
-            PostService = new PostService(Context);
+          
+            Context = new ApplicationDbContext(_options);           
+            Context.Database.EnsureCreated();
+        }
+
+        public ApplicationDbContext CreateContext()
+        {           
+            return new ApplicationDbContext(_options);
         }
 
         public void Dispose()
         {
+            // Clean up the database after tests
+            Context.Database.EnsureDeleted();
             Context.Dispose();
         }
     }

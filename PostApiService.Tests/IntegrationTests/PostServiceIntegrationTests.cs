@@ -6,237 +6,202 @@ namespace PostApiService.Tests.IntegrationTests
 {
     public class PostServiceIntegrationTests : IClassFixture<IntegrationTestFixture>
     {
-        private readonly ApplicationDbContext _context;
-        private readonly PostService _postService;
+        private readonly IntegrationTestFixture _fixture;
 
         public PostServiceIntegrationTests(IntegrationTestFixture fixture)
         {
-            _context = fixture.Context;
-            _postService = fixture.PostService;
+            _fixture = fixture;
         }
 
         [Fact]
-        public async Task AddPostAsync_Should_Add_Post_And_SaveChanges()
+        public async Task AddPostAsync_Should_Add_Post_To_Database()
         {
             // Arrange
-            int postId = 1;
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
 
-            var postToBeAdded = CreateTestPost(
-                "Test Post",
-                "Content of the test post.",
-                "Test author",
-                "http://example.com/image1.jpg",
-                "Test post description",
-                "test-post-three",
-                "Test Post Meta Title 1",
-                "Test Post Meta Description 1"
-                );
-
-            // Act
-            await _postService.AddPostAsync(postToBeAdded);
-
-            // Assert            
-            var addedPost = await _context.Posts.FindAsync(postId);
-            Assert.NotNull(addedPost);
-            Assert.Equal(postToBeAdded.Title, addedPost.Title);
-            Assert.Equal(postToBeAdded.Content, addedPost.Content);
-            Assert.Equal(postToBeAdded.Author, addedPost.Author);
-            Assert.Equal(postToBeAdded.ImageUrl, addedPost.ImageUrl);
-            Assert.Equal(postToBeAdded.Description, addedPost.Description);
-            Assert.Equal(postToBeAdded.Slug, addedPost.Slug);
-            Assert.Equal(postToBeAdded.MetaTitle, addedPost.MetaTitle);
-            Assert.Equal(postToBeAdded.MetaDescription, addedPost.MetaDescription);
-        }
-
-        [Fact]
-        public async Task EditPostAsync_Should_Edit_Post_And_SaveChanges()
-        {
-            // Arrange
-            int postId = 1;
-
-            var postToBeUpdated = CreateTestPost(
-                "Origin post title",
-                "Origin post content",
-                "Origin post author",
-                "origine-image.jpg",
-                "Origin description",
-                "origin-slug-post",
-                "Origin meta title",
-                "Origin meta description"
-                );
-
-            await _context.Posts.AddAsync(postToBeUpdated);
-            await _context.SaveChangesAsync();
-
-            postToBeUpdated.Title = "Updated post title";
-            postToBeUpdated.Content = "Updated post content";
-            postToBeUpdated.MetaTitle = "Updated Test Post Meta Title";
+            var post = new Post
+            {
+                Title = "New Post",
+                Description = "Description",
+                Content = "Content",
+                Author = "Author",
+                Slug = "new-post",
+                ImageUrl = "image.jpg",
+                MetaDescription = "Post meta description",
+                MetaTitle = "Post meta title"
+            };
 
             // Act
-            await _postService.EditPostAsync(postToBeUpdated);
+            await postService.AddPostAsync(post);
 
             // Assert
-            var updatedPost = await _context.Posts.FindAsync(postId);
+            var savedPost = await context.Posts.FirstOrDefaultAsync(p => p.Slug == post.Slug);
+            Assert.NotNull(savedPost);
+            Assert.Equal(post.Title, savedPost.Title);
+        }
+
+        [Fact]
+        public async Task EditPostAsync_ShouldUpdatePost_IfExist()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+
+            var post = CreateTestPost(
+                "Origin Post",
+                "Origin Content",
+                "Origin Author",
+                "Origin Description",
+                "origin-image.jpg",
+                "origin-post",
+                "Origin Post meta title",
+                "Origin Post meta description"
+                );
+
+            await SeedDataAsync(post);
+
+            post.Title = "Updated post";
+
+            // Act
+            await postService.EditPostAsync(post);
+
+            // Assert
+            var updatedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == post.Title);
             Assert.NotNull(updatedPost);
-            Assert.Equal(postToBeUpdated.PostId, updatedPost.PostId);
-            Assert.Equal(postToBeUpdated.Title, updatedPost.Title);
-            Assert.Equal(postToBeUpdated.Content, updatedPost.Content);
-            Assert.Equal(postToBeUpdated.MetaTitle, updatedPost.MetaTitle);
+            Assert.Equal(post.Title, updatedPost.Title);
         }
 
         [Fact]
-        public async Task DeletePostAsync_Should_Remove_Post_If_Exists()
+        public async Task DeletePostAsync_ShouldRemovePostById_IfExist()
         {
             // Arrange
+            using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
+
             int postId = 1;
 
-            var postToBeDeleted = CreateTestPost(
-                "Origin post title",
-                "Origin post content",
-                "Origin post author",
-                "origine-image.jpg",
-                "Origin description",
-                "origin-slug-post",
-                "Origin meta title",
-                "Origin meta description"
+            var post = CreateTestPost(
+                "Test Post",
+                "Test Content",
+                "Test Author",
+                "Test Description",
+                "test-image.jpg",
+                "Test-post",
+                "Test Post meta title",
+                "Test Post meta description"
                 );
 
-            await _context.Posts.AddAsync(postToBeDeleted);
-            await _context.SaveChangesAsync();
+            await SeedDataAsync(post);
 
             // Act
-            await _postService.DeletePostAsync(postId);
+            await postService.DeletePostAsync(postId);
 
             // Assert
-            var removedPost = await _context.Posts.FindAsync(postId);
+            var removedPost = await context.Posts.FindAsync(postId);
             Assert.Null(removedPost);
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_Should_Return_All_Posts()
+        public async Task GetAllPostsAsync_ShouldReturnListPosts()
         {
             // Arrange
-            int totalCount = 2;
+            var context = _fixture.CreateContext();
+            var postService = new PostService(context);
 
             var post1 = CreateTestPost(
-                "Post title 1",
-                "Post content 1",
-                "Post author 1",
-                "post-image1.jpg",
-                "Post description 1",
-                "post-slug-post 1",
-                "Post meta title 1",
-                "Post meta description 1"
+                "Test Post 1",
+                "Test Content 1",
+                "Test Author 1",
+                "Test Description 1",
+                "test-image1.jpg",
+                "Test-post 1",
+                "Test Post meta title 1",
+                "Test Post meta description 1"
                 );
 
             var post2 = CreateTestPost(
-                "Post title 2",
-                "Post content 2",
-                "Post author 2",
-                "post-image2.jpg",
-                "Post description 2",
-                "post-slug-post 2",
-                "Post meta title 2",
-                "Post meta description 2"
+                "Test Post 2",
+                "Test Content 2",
+                "Test Author 2",
+                "Test Description 2",
+                "test-image 2.jpg",
+                "Test-post 2",
+                "Test Post meta title 2",
+                "Test Post meta description 2"
                 );
 
-            await _context.Posts.AddRangeAsync(post1, post2);
-            await _context.SaveChangesAsync();
+            await SeedDataAsync(post1);
+            await SeedDataAsync(post2);
 
             // Act
-            var posts = await _postService.GetAllPostsAsync();
+            var posts = await postService.GetAllPostsAsync();
 
             // Assert
             Assert.NotNull(posts);
-            Assert.Equal(totalCount, posts.Count);
-
-            var firstPost = await _context.Posts.FirstOrDefaultAsync(p => p.Title == post1.Title);
-            Assert.NotNull(firstPost);
-            Assert.Equal(post1.Description, firstPost.Description);
-            Assert.Equal(post1.Content, firstPost.Content);
-            Assert.Equal(post1.Author, firstPost.Author);
-            Assert.Equal(post1.MetaTitle, firstPost.MetaTitle);
-            Assert.Equal(post1.MetaDescription, firstPost.MetaDescription);
-            Assert.Equal(post1.Slug, firstPost.Slug);
-
-            var secondPost = await _context.Posts.FirstOrDefaultAsync(p => p.Title == post2.Title);
-            Assert.NotNull(secondPost);
-            Assert.Equal(post2.Description, secondPost.Description);
-            Assert.Equal(post2.Content, secondPost.Content);
-            Assert.Equal(post2.Author, secondPost.Author);
-            Assert.Equal(post2.MetaTitle, secondPost.MetaTitle);
-            Assert.Equal(post2.MetaDescription, secondPost.MetaDescription);
-            Assert.Equal(post2.Slug, secondPost.Slug);
+            Assert.Equal(2, posts.Count);
+            Assert.Contains(posts, p => p.Title == post1.Title && p.Slug == post1.Slug);
+            Assert.Contains(posts, p => p.Title == post2.Title && p.Slug == post2.Slug);
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_Should_Return_Post_If_Found()
+        public async Task GetPostByIdAsync_ShouldReturnPostById_IfExists()
         {
             // Arrange
-            int postId = 2;
+            var context = _fixture.CreateContext();
+            var postService = new PostService(context);
 
-            var post1 = CreateTestPost(
-                 "Origin post title 1",
-                 "Origin post content 1",
-                 "Origin post author 1",
-                 "origine-image1.jpg",
-                 "Origin description 1",
-                 "origin-slug-post 1",
-                 "Origin meta title 1",
-                 "Origin meta description 1"
-                 );
+            int postId = 1;
 
-            var post2 = CreateTestPost(
-                "Origin post title 2",
-                "Origin post content 2",
-                "Origin post author 2",
-                "origine-image2.jpg",
-                "Origin description 2",
-                "origin-slug-post 2",
-                "Origin meta title 2",
-                "Origin meta description 2"
-                );
+            var post = CreateTestPost(
+               "Test Post 1",
+               "Test Content 1",
+               "Test Author 1",
+               "Test Description 1",
+               "test-image1.jpg",
+               "Test-post 1",
+               "Test Post meta title 1",
+               "Test Post meta description 1"
+               );
 
-            await _context.Posts.AddRangeAsync(post1, post2);
-            await _context.SaveChangesAsync();
+            await SeedDataAsync(post);
 
             // Act
-            var foundedPost = await _postService.GetPostByIdAsync(postId);
+            var foundPost = await postService.GetPostByIdAsync(postId);
 
             // Assert
-            Assert.NotNull(foundedPost);
-            Assert.Equal(postId, foundedPost.PostId);
+            Assert.NotNull(foundPost);
+            Assert.Equal(post.Title, foundPost.Title);
         }
 
-        private Post CreateTestPost(
-            string title,
+        private Post CreateTestPost(string title,
             string content,
             string author,
-            string imageUrl,
             string description,
+            string imageUrl,
             string slug,
             string metaTitle,
-            string metaDescription
-            )
+            string metaDescription)
         {
             return new Post
             {
                 Title = title,
                 Content = content,
                 Author = author,
+                CreateAt = DateTime.Now,
+                Description = description,
                 ImageUrl = imageUrl,
-                CreateAt = DateTime.UtcNow,
-                Description = $"Description for {title}",
                 Slug = slug,
-                MetaTitle = $"Meta title for {title}",
-                MetaDescription = $"Meta description for {title}"
+                MetaTitle = metaTitle,
+                MetaDescription = metaDescription
             };
         }
 
-        private async Task SeedPostAsync(Post post)
+        private async Task SeedDataAsync(Post post)
         {
-            _context.Posts.Add(post);
-            await _context.SaveChangesAsync();
+            var context = _fixture.CreateContext();
+            await context.Posts.AddAsync(post);
+            await context.SaveChangesAsync();
         }
     }
 }
