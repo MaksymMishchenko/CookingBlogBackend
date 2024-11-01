@@ -59,7 +59,7 @@ namespace PostApiService.Tests.IntegrationTests
                 "Origin Post meta description"
                 );
 
-            await SeedDataAsync(post);
+            await postService.AddPostAsync(post);
 
             post.Title = "Updated post";
 
@@ -92,7 +92,7 @@ namespace PostApiService.Tests.IntegrationTests
                 "Test Post meta description"
                 );
 
-            await SeedDataAsync(post);
+            await postService.AddPostAsync(post);
 
             // Act
             await postService.DeletePostAsync(postId);
@@ -106,7 +106,7 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetAllPostsAsync_ShouldReturnListPosts()
         {
             // Arrange
-            var context = _fixture.CreateContext();
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context);
 
             var post1 = CreateTestPost(
@@ -131,8 +131,8 @@ namespace PostApiService.Tests.IntegrationTests
                 "Test Post meta description 2"
                 );
 
-            await SeedDataAsync(post1);
-            await SeedDataAsync(post2);
+            await postService.AddPostAsync(post1);
+            await postService.AddPostAsync(post2);
 
             // Act
             var posts = await postService.GetAllPostsAsync();
@@ -148,7 +148,7 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetPostByIdAsync_ShouldReturnPostById_IfExists()
         {
             // Arrange
-            var context = _fixture.CreateContext();
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context);
 
             int postId = 1;
@@ -164,7 +164,7 @@ namespace PostApiService.Tests.IntegrationTests
                "Test Post meta description 1"
                );
 
-            await SeedDataAsync(post);
+            await postService.AddPostAsync(post);
 
             // Act
             var foundPost = await postService.GetPostByIdAsync(postId);
@@ -195,13 +195,6 @@ namespace PostApiService.Tests.IntegrationTests
                 MetaTitle = metaTitle,
                 MetaDescription = metaDescription
             };
-        }
-
-        private async Task SeedDataAsync(Post post)
-        {
-            var context = _fixture.CreateContext();
-            await context.Posts.AddAsync(post);
-            await context.SaveChangesAsync();
         }
     }
 }

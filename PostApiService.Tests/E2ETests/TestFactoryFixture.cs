@@ -7,8 +7,8 @@ namespace PostApiService.Tests.E2ETests
 {
     public class TestFactoryFixture : IAsyncLifetime
     {
-        public WebApplicationFactory<Program> Factory { get; private set; }
-        public HttpClient Client => Factory.CreateClient();
+        public WebApplicationFactory<Program>? Factory { get; private set; }
+        public HttpClient Client => Factory!.CreateClient();
 
         public async Task InitializeAsync()
         {
@@ -31,16 +31,13 @@ namespace PostApiService.Tests.E2ETests
                 });
             });
 
-            using var scope = Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await context.Database.EnsureCreatedAsync();
+            await Task.CompletedTask;
         }
 
         public async Task DisposeAsync()
-        {
-            using var scope = Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await context.Database.EnsureDeletedAsync();
+        {           
+            Factory!.Dispose();
+            await Task.CompletedTask;
         }
     }
 }

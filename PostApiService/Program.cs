@@ -16,7 +16,7 @@ if (builder.Environment.IsDevelopment())
 else if (builder.Environment.IsEnvironment("Test"))
 {
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseInMemoryDatabase(Guid.NewGuid().ToString()));    
+    options.UseInMemoryDatabase("TestDb"));    
 }
 
 else
@@ -24,7 +24,6 @@ else
     builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
-
 
 builder.Services.AddTransient<IPostService, PostService>();
 builder.Services.AddTransient<ICommentService, CommentService>();
@@ -46,7 +45,7 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Test")) // Skip seeding in Testing environment
+if (app.Environment.IsDevelopment()) // Skip seeding in Testing environment
 {
     using (var scope = app.Services.CreateScope())
     {

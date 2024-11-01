@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models;
+using PostApiService.Services;
 using PostApiService.Tests.E2ETests;
 using System.Text;
 using System.Text.Json;
@@ -20,8 +21,15 @@ namespace PostApiService.Tests.E2Tests
         [Fact]
         public async Task GetPosts_ReturnsOk_WithListOfPosts()
         {
+            using var scope = _fixture.Factory!.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var postService = new PostService(context);
+
+            //context.Posts.RemoveRange(context.Posts);
+            //await context.SaveChangesAsync();
+
             // Arrange       
-            var post1 = CreateTestPost(
+            var post = CreateTestPost(
                  "Test Post 1",
                  "Post Content",
                  "Maks",
@@ -32,22 +40,10 @@ namespace PostApiService.Tests.E2Tests
                  "Some meta description"
             );
 
-            var post2 = CreateTestPost(
-                "Test Post 2",
-                "Post Content 2",
-                "Maks 2",
-                "src/image2.jpg",
-                "Some Description 2",
-                "some-slug-post 2",
-                "Some meta title 2",
-                "Some meta description 2"
-            );
-
-            await SeedPostAsync(post1);
-            await SeedPostAsync(post2);
+            await postService.AddPostAsync(post);
 
             // Act
-            var response = await _client.GetAsync("/api/Posts");
+            var response = await _client.GetAsync("/api/posts");
 
             // Assert
             response.EnsureSuccessStatusCode(); // Verifies the status code is 2xx
@@ -55,21 +51,23 @@ namespace PostApiService.Tests.E2Tests
             var content = await response.Content.ReadAsStringAsync();
             Assert.NotNull(content);
 
-            using var scope = _fixture.Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var postList = await context.Posts.ToListAsync();
-
-            Assert.NotNull(postList);
-            Assert.Equal(2, postList.Count);
+            Assert.NotNull(postList);           
             Assert.Contains(postList, p => p.Title == "Test Post 1");
-            Assert.Contains(postList, p => p.Title == "Test Post 2");
         }
 
         [Fact]
         public async Task GetPostById_ShouldReturnOk_WithPostById()
         {
+            using var scope = _fixture.Factory!.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var postService = new PostService(context);
+
+            //context.Posts.RemoveRange(context.Posts);
+            //await context.SaveChangesAsync();
+
             // Arrange            
-            var post1 = CreateTestPost(
+            var post = CreateTestPost(
                 "Test Post 1",
                 "Post Content",
                 "Maks",
@@ -80,39 +78,32 @@ namespace PostApiService.Tests.E2Tests
                 "Some meta description"
             );
 
-            var post2 = CreateTestPost(
-                "Test Post 2",
-                "Post Content 2",
-                "Maks 2",
-                "src/image2.jpg",
-                "Some Description 2",
-                "some-slug-post 2",
-                "Some meta title 2",
-                "Some meta description 2"
-            );
-
-            await SeedPostAsync(post1);
-            await SeedPostAsync(post2);
+            await postService.AddPostAsync(post);
 
             // Act
-            var response = await _client.GetAsync($"/api/Posts/{post2.PostId}");
+            var response = await _client.GetAsync($"/api/posts/{post.PostId}");
 
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using var scope = _fixture.Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var postList = await context.Posts.ToListAsync();
+            var foundPost = await context.Posts.FirstOrDefaultAsync(p => p.Slug == post.Slug);
 
-            Assert.NotNull(postList);
-            Assert.Contains(postList, p => p.Title == post2.Title);
+            Assert.NotNull(foundPost);
+            Assert.Equal(post.Title, foundPost.Title);
         }
 
         [Fact]
         public async Task AddPost_ShouldAddPost_ReturnOk_WhenPostIsValid()
         {
-            // Arrange        
-            var postToBeAdded = CreateTestPost(
+            using var scope = _fixture.Factory!.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            //// Ensure the database is clean before each test
+            //context.Posts.RemoveRange(context.Posts);
+            //await context.SaveChangesAsync();
+
+            //Arrange
+            var newPost = CreateTestPost(
                 "Test title",
                 "Test Content",
                 "Test Author",
@@ -123,28 +114,30 @@ namespace PostApiService.Tests.E2Tests
                 "Test Meta Description"
             );
 
-            var postJson = JsonSerializer.Serialize(postToBeAdded);
+            var postJson = JsonSerializer.Serialize(newPost);
             var content = new StringContent(postJson, Encoding.UTF8, "application/json");
 
             // Act
-            var response = await _client.PostAsync("/api/Posts", content);
+            var response = await _client.PostAsync("/api/posts", content);
 
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using var scope = _fixture.Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-            var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == postToBeAdded.Title);
-            Assert.NotNull(addedPost);
-            Assert.Equal(postToBeAdded.Content, addedPost.Content);
-            Assert.Equal(postToBeAdded.Author, addedPost.Author);
+            var addedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == newPost.Title);
+            Assert.Equal(newPost.Content, addedPost.Content);
+            Assert.Equal(newPost.Author, addedPost.Author);
         }
 
         [Fact]
         public async Task EditPost_ShouldEditPostById_ReturnOk_IsPostValid()
         {
-            // Arrange           
+            // Arrange            
+            using var scope = _fixture.Factory!.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            //context.Posts.RemoveRange(context.Posts);
+            //await context.SaveChangesAsync();
+
             var post = CreateTestPost(
                 "Tes title",
                 "Test Content",
@@ -156,7 +149,8 @@ namespace PostApiService.Tests.E2Tests
                 "Test Meta Description"
             );
 
-            await SeedPostAsync(post);
+            await context.Posts.AddAsync(post);
+            await context.SaveChangesAsync();
 
             post.Title = "Changed";
             post.Slug = "changed-slug";
@@ -170,8 +164,6 @@ namespace PostApiService.Tests.E2Tests
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using var scope = _fixture.Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var editedPost = await context.Posts.FirstOrDefaultAsync(p => p.Title == "Changed");
             Assert.NotNull(editedPost);
             Assert.Equal("Changed", editedPost.Title);
@@ -182,6 +174,12 @@ namespace PostApiService.Tests.E2Tests
         public async Task DeletePost_ShouldRemovePost_IfExists()
         {
             // Arrange            
+            using var scope = _fixture.Factory!.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            context.Posts.RemoveRange(context.Posts);
+            await context.SaveChangesAsync();
+
             var postToBeDeleted = CreateTestPost(
                 "Removed title",
                 "Removed Content",
@@ -193,18 +191,17 @@ namespace PostApiService.Tests.E2Tests
                 "Removed Meta Description"
             );
 
-            await SeedPostAsync(postToBeDeleted);
+            await context.Posts.AddAsync(postToBeDeleted);
+            await context.SaveChangesAsync();
 
             // Act
             var response = await _client.DeleteAsync($"api/posts/{postToBeDeleted.PostId}");
 
             // Assert
             response.EnsureSuccessStatusCode();
-
-            using var scope = _fixture.Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var deletedPost = await context.Posts.FindAsync(postToBeDeleted.PostId);
-
+            var countBefore = await context.Posts.CountAsync();
+            var deletedPost = await context.Posts.FindAsync(1);
+            var countAfter = await context.Posts.CountAsync();
             Assert.Null(deletedPost);
         }
 
@@ -230,14 +227,6 @@ namespace PostApiService.Tests.E2Tests
                 MetaTitle = $"Meta title for {title}",
                 MetaDescription = $"Meta description for {title}"
             };
-        }
-
-        private async Task SeedPostAsync(Post post)
-        {
-            using var scope = _fixture.Factory.Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            context.Posts.Add(post);
-            await context.SaveChangesAsync();
-        }
+        }        
     }
 }

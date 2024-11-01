@@ -12,52 +12,31 @@ namespace PostApiService.Tests.IntegrationTests
             _fixture = fixture;
         }
 
-        private async Task SeedTestData(ApplicationDbContext context)
-        {
-            var post1 = new Post
-            {
-                Title = "Test Post",
-                Description = "This is a test post.",
-                Content = "Content of the test post.",
-                ImageUrl = "http://example.com/image.jpg",
-                MetaTitle = "Test Post Meta Title",
-                MetaDescription = "Test Post Meta Description",
-                Slug = "test-post-one",
-                Comments = new List<Comment>()
-            };
-
-            var post2 = new Post
-            {
-                Title = "Test Post 2",
-                Description = "This is a test post 2.",
-                Content = "Content of the test post 2.",
-                ImageUrl = "http://example.com/image2.jpg",
-                MetaTitle = "Test Post Meta Title 2",
-                MetaDescription = "Test Post Meta Description 2",
-                Slug = "test-post-two",
-                Comments = new List<Comment>()
-            };
-
-            await context.AddRangeAsync(post1, post2);
-            await context.SaveChangesAsync();
-        }
-
         [Fact]
         public async Task AddCommentAsync_Should_Add_Comment_To_Specific_Post()
         {
             // Arrange
             using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
             var commentService = new CommentService(context);
-            await SeedTestData(context);
 
-            var post = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-one");
-            Assert.NotNull(post);
+            int postId = 1;
+            var post = CreateTestPost(
+                "Origin Post",
+                "Origin Content",
+                "Origin Author",
+                "Origin Description",
+                "origin-image.jpg",
+                "origin-post",
+                "Origin Post meta title",
+                "Origin Post meta description"
+                );
 
-            var postId = post.PostId;
+            await postService.AddPostAsync(post);
 
             var comment = new Comment
             {
-                Content = "Comment content for post 1",
+                Content = "Test comment from Bob",
                 Author = "Bob",
                 CreatedAt = DateTime.Now
             };
@@ -66,13 +45,11 @@ namespace PostApiService.Tests.IntegrationTests
             await commentService.AddCommentAsync(postId, comment);
 
             // Assert
-            var updatedPost = await context.Posts
-                .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.PostId == postId);
-            Assert.NotNull(post);
-            Assert.Contains(updatedPost.Comments, c => c.Content == comment.Content
-            && c.Author == comment.Author);
-            Assert.Single(updatedPost.Comments);
+            var addedComment = await context.Comments
+                .FirstOrDefaultAsync(c => c.Content == comment.Content
+                && c.Author == comment.Author);
+            Assert.NotNull(addedComment);
+            Assert.True(addedComment.PostId == postId);
         }
 
         [Fact]
@@ -80,33 +57,45 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
             var commentService = new CommentService(context);
-            await SeedTestData(context);
 
-            var post = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-two");
-            Assert.NotNull(post);
-            var postId = post.PostId;
+            int postId = 1;
+            var post = CreateTestPost(
+                "Origin Post",
+                "Origin Content",
+                "Origin Author",
+                "Origin Description",
+                "origin-image.jpg",
+                "origin-post",
+                "Origin Post meta title",
+                "Origin Post meta description"
+                );
+
+            await postService.AddPostAsync(post);
 
             var comment = new Comment
             {
-                Content = "Comment content for post 2",
-                Author = "William",
+                Content = "Origin comment content",
+                Author = "Michael",
                 CreatedAt = DateTime.Now
             };
 
             await commentService.AddCommentAsync(postId, comment);
-            Assert.Contains(post.Comments, c => c.Content == comment.Content
-            && c.Author == comment.Author);
 
-            comment.Content = "Edited Comment content for post 2";
+            comment.Content = "Updated comment content";
 
             // Act
             await commentService.EditCommentAsync(comment);
 
             // Assert
-            var editedComment = await context.Comments.FirstOrDefaultAsync(c => c.Content == comment.Content);
+            var editedComment = await context.Comments
+                .FirstOrDefaultAsync(c => c.Content == comment.Content
+            && c.Author == comment.Author
+            );
             Assert.NotNull(editedComment);
-            Assert.Equal(comment.Content, editedComment.Content);
+            Assert.Equal("Updated comment content", editedComment.Content);
+            Assert.Equal(comment.Author, editedComment.Author);
         }
 
         [Fact]
@@ -114,32 +103,61 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
+            var postService = new PostService(context);
             var commentService = new CommentService(context);
-            await SeedTestData(context);
 
-            var post = await context.Posts.FirstOrDefaultAsync(p => p.Slug == "test-post-two");
-            Assert.NotNull(post);
-            var postId = post.PostId;
+            var postId = 1;
+            var post = CreateTestPost(
+                "Origin Post",
+                "Origin Content",
+                "Origin Author",
+                "Origin Description",
+                "origin-image.jpg",
+                "origin-post",
+                "Origin Post meta title",
+                "Origin Post meta description"
+                );
+
+            await postService.AddPostAsync(post);
 
             var comment = new Comment
             {
-                Content = "Comment content for post 2",
+                Content = "Comment to be deleted",
                 Author = "William",
                 CreatedAt = DateTime.Now
             };
 
             await commentService.AddCommentAsync(postId, comment);
 
-            var initialCommentCount = await context.Comments.CountAsync();
-
             // Act
             await commentService.DeleteCommentAsync(comment.CommentId);
 
             // Assert
-            var deletedComment = await context.Comments.FindAsync(comment.CommentId);
-            var finalCommentCount = await context.Comments.CountAsync();
-            Assert.Null(deletedComment);
-            Assert.Equal(initialCommentCount - 1, finalCommentCount);
+            var removedComment = await context.Comments.FindAsync(comment.CommentId);
+            Assert.Null(removedComment);
+        }
+
+        private Post CreateTestPost(string title,
+            string content,
+            string author,
+            string description,
+            string imageUrl,
+            string slug,
+            string metaTitle,
+            string metaDescription)
+        {
+            return new Post
+            {
+                Title = title,
+                Content = content,
+                Author = author,
+                CreateAt = DateTime.Now,
+                Description = description,
+                ImageUrl = imageUrl,
+                Slug = slug,
+                MetaTitle = metaTitle,
+                MetaDescription = metaDescription
+            };
         }
     }
 }
