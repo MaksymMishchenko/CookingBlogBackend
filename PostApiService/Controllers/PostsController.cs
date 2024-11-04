@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -8,12 +9,13 @@ namespace PostApiService.Controllers
     [Route("api/[controller]")]
     public class PostsController : Controller
     {
-        private readonly IPostService _postsService;        
+        private readonly IPostService _postsService;
 
         public PostsController(IPostService postsService)
         {
-            _postsService = postsService;           
+            _postsService = postsService;
         }
+
         [HttpGet]
         public async Task<IActionResult> GetAllPosts()
         {
@@ -24,10 +26,11 @@ namespace PostApiService.Controllers
         [HttpGet("{postId}")]
         public async Task<IActionResult> GetPostById(int postId)
         {
-            var post = await _postsService.GetPostByIdAsync(postId);            
+            var post = await _postsService.GetPostByIdAsync(postId);
             return Ok(post);
         }
 
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> AddPost([FromBody] Post post)
         {
@@ -35,6 +38,7 @@ namespace PostApiService.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> EditPost(int id, [FromBody] Post post)
         {
@@ -47,11 +51,12 @@ namespace PostApiService.Controllers
             return Ok();
         }
 
+        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePost(int id)
         {
             await _postsService.DeletePostAsync(id);
             return Ok();
-        }        
+        }
     }
 }
