@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using PostApiService;
 using PostApiService.Interfaces;
+using PostApiService.Models;
 using PostApiService.Services;
 using System.Text;
 
@@ -31,6 +34,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddTransient<DataSeeder>();
+
+var connectionStringIdentity = builder.Configuration["ApiPostIdentity:ConnectionString"];
+// конфігуруємо SqlServer та передаємо стрічку
+builder.Services.AddDbContext<AppIdentityDbContext>(options => options.UseSqlServer(connectionStringIdentity));
+// додаємо Identity з ролями
+builder.Services.AddIdentity<IdentityUser, IdentityRole>()
+    .AddEntityFrameworkStores<AppIdentityDbContext>()
+    .AddDefaultTokenProviders();
 
 builder.Services.AddTransient<IPostService, PostService>();
 builder.Services.AddTransient<ICommentService, CommentService>();
@@ -69,6 +80,8 @@ if (app.Environment.IsDevelopment()) // Skip seeding in Testing environment
             Console.WriteLine($"An error occurred during seeding: {ex.Message}");
         }
     }
+
+    await IdentitySeedData.EnsurePopulatedAsync(app.Services);
 }
 
 app.UseCors("AllowAllOrigins");
