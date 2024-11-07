@@ -45,6 +45,7 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
 
 builder.Services.AddTransient<IPostService, PostService>();
 builder.Services.AddTransient<ICommentService, CommentService>();
+builder.Services.AddTransient<IAuthService, AuthService>();
 
 builder.Services.AddCors(options =>
 {
