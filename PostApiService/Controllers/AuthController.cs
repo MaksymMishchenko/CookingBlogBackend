@@ -7,10 +7,10 @@ namespace PostApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class AuthController : Controller
+    public class AuthService : Controller
     {
         private readonly IAuthService _authService;
-        public AuthController(IAuthService authService)
+        public AuthService(IAuthService authService)
         {
             _authService = authService;
         }
