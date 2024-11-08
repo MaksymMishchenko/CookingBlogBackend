@@ -38,12 +38,15 @@ namespace PostApiService.Tests.UnitTests
             var loginModel = new LoginModel { Username = "validuser", Password = "correctpassword" };
             var user = new IdentityUser { UserName = "validuser" };
 
-            _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username)).ReturnsAsync(user);
-            _mockSignInManager.Setup(x => x.PasswordSignInAsync(user, loginModel.Password, false, true)).ReturnsAsync(SignInResult.Success);
+            _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username))
+                .ReturnsAsync(user);
+            _mockSignInManager.Setup(x => x.PasswordSignInAsync(user, loginModel.Password, false, true))
+                .ReturnsAsync(SignInResult.Success);
 
             var expectedToken = "mocked-token";
             var expectedExpiration = DateTime.Now.AddHours(1);
-            _mockTokenService.Setup(x => x.GenerateJwtToken(It.IsAny<IdentityUser>())).Returns((expectedToken, expectedExpiration));
+            _mockTokenService.Setup(x => x.GenerateJwtToken(It.IsAny<IdentityUser>()))
+                .Returns((expectedToken, expectedExpiration));
 
             // Act
             var result = await _authService.LoginAsync(loginModel);
@@ -59,7 +62,29 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             var loginModel = new LoginModel { Username = "invaliduser", Password = "correctpassword" };
-            _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username)).ReturnsAsync((IdentityUser?)null);
+            _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username))
+                .ReturnsAsync((IdentityUser?)null);
+
+            // Act
+            var result = await _authService.LoginAsync(loginModel);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Null(result.Token);
+            Assert.Equal(DateTime.MinValue, result.Expiration);
+        }
+
+        [Fact]
+        public async Task LoginAsync_IncorrectPassword_ReturnsFailure()
+        {
+            // Arrange
+            var loginModel = new LoginModel { Username = "validuser", Password = "wrongpassword" };
+            var user = new IdentityUser(loginModel.Username);
+
+            _mockUserManager.Setup(х => х.FindByNameAsync(loginModel.Username))
+                .ReturnsAsync(user);
+            _mockSignInManager.Setup(x => x.PasswordSignInAsync(user, loginModel.Password, false, true))
+                .ReturnsAsync(SignInResult.Failed);
 
             // Act
             var result = await _authService.LoginAsync(loginModel);
