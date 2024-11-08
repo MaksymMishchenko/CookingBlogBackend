@@ -34,6 +34,7 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task LoginAsync_SuccessfulLogin_ReturnsToken()
         {
+            // Arrange
             var loginModel = new LoginModel { Username = "validuser", Password = "correctpassword" };
             var user = new IdentityUser { UserName = "validuser" };
 
@@ -44,11 +45,29 @@ namespace PostApiService.Tests.UnitTests
             var expectedExpiration = DateTime.Now.AddHours(1);
             _mockTokenService.Setup(x => x.GenerateJwtToken(It.IsAny<IdentityUser>())).Returns((expectedToken, expectedExpiration));
 
+            // Act
             var result = await _authService.LoginAsync(loginModel);
 
+            // Assert
             Assert.True(result.Success);
             Assert.Equal(expectedToken, result.Token);
             Assert.Equal(expectedExpiration, result.Expiration);
+        }
+
+        [Fact]
+        public async Task LoginAsync_UserDoesNotExist_ReturnsFailure()
+        {
+            // Arrange
+            var loginModel = new LoginModel { Username = "invaliduser", Password = "correctpassword" };
+            _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username)).ReturnsAsync((IdentityUser?)null);
+
+            // Act
+            var result = await _authService.LoginAsync(loginModel);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Null(result.Token);
+            Assert.Equal(DateTime.MinValue, result.Expiration);
         }
     }
 }
