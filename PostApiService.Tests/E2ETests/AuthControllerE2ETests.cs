@@ -56,5 +56,19 @@ namespace PostApiService.Tests.E2ETests
             // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         }
+
+        [Fact]
+        public async Task Login_MissingUsername_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RestRequest("/api/auth/login", Method.Post);
+            request.AddJsonBody(new { Username = "", Password = "~Rtyuehe8" });
+
+            // Act
+            var response = await _client.ExecuteAsync(request);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
     }
 }
