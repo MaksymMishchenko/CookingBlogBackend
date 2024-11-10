@@ -44,7 +44,7 @@ namespace PostApiService.Services
             if (!signInResult.Succeeded)
             {
                 _logger.LogWarning("Login failed: Invalid credentials.");
-                return (false, null, DateTime.MinValue);
+                return (false, null!, DateTime.MinValue);
             }
 
             var token = _tokenService.GenerateJwtToken(user);

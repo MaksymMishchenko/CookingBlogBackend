@@ -8,6 +8,6 @@ namespace PostApiService
     {
         public AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options) : base(options)
         {
-        }
+        }        
     }
 }
