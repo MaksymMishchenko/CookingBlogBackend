@@ -42,5 +42,19 @@ namespace PostApiService.Tests.E2ETests
             // Assert
             Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);           
         }
+
+        [Fact]
+        public async Task Login_InvalidPass_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RestRequest("/api/auth/login", Method.Post);
+            request.AddJsonBody(new { Username = "admin", Password = "wrongpass" });
+
+            // Act
+            var response = await _client.ExecuteAsync(request);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
     }
 }
