@@ -28,5 +28,19 @@ namespace PostApiService.Tests.E2ETests
             var result = JsonConvert.DeserializeObject<Dictionary<string, string>>(response.Content);
             Assert.Contains("token", result);
         }
+
+        [Fact]
+        public async Task Login_InvalidCredentials_ShouldReturnFailure()
+        {
+            // Arrange
+            var request = new RestRequest("/api/auth/login", Method.Post);
+            request.AddJsonBody(new { Username = "test", Password = "~Rtyuehe8" });
+
+            // Act
+            var response = await _client.ExecuteAsync(request);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);           
+        }
     }
 }
