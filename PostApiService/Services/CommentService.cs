@@ -1,4 +1,5 @@
-﻿using PostApiService.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using PostApiService.Interfaces;
 using PostApiService.Models;
 
 namespace PostApiService.Services
@@ -6,18 +7,65 @@ namespace PostApiService.Services
     public class CommentService : ICommentService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<CommentService> _logger;
 
-        public CommentService(ApplicationDbContext context)
+        public CommentService(ApplicationDbContext context, ILogger<CommentService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
-        public async Task AddCommentAsync(int postId, Comment comment)
+        /// <summary>
+        /// Adds a comment to a specific post.
+        /// </summary>
+        /// <param name="postId">The ID of the post to which the comment will be added.</param>
+        /// <param name="comment">The comment to be added.</param>
+        /// <returns>True if the comment was successfully added, otherwise false.</returns>
+        /// <exception cref="ArgumentException">Thrown if the <paramref name="postId"/> is less than or equal to zero.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if the <paramref name="comment"/> is null.</exception>
+        /// <exception cref="KeyNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
+        public async Task<bool> AddCommentAsync(int postId, Comment comment)
         {
-            comment.PostId = postId;
-            comment.CreatedAt = DateTime.Now;
-            _context.Comments.Add(comment);
-            await _context.SaveChangesAsync();
+            if (postId <= 0)
+            {
+                _logger.LogError($"Invalid post ID: {postId}");
+                throw new ArgumentException("Post ID must be greater than zero.", nameof(postId));
+            }
+
+            if (comment == null)
+            {
+                _logger.LogError("Attempted to add a null comment to post ID: {PostId}", postId);
+                throw new ArgumentNullException(nameof(comment), "Comment cannot be null.");
+            }
+
+            try
+            {
+                var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId);
+                if (!postExists)
+                {
+                    _logger.LogWarning($"Post with ID {postId} does not exist. Cannot add comment");
+                    throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
+                }
+
+                comment.PostId = postId;
+                comment.CreatedAt = DateTime.UtcNow;
+                _context.Comments.Add(comment);
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation($"Comment was added succesfully to post id: {postId}");
+                    return true;
+                }
+
+                _logger.LogWarning($"Failed to add comment to post id: {postId}");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while adding a comment to post ID: {PostId}", postId);
+                throw;
+            }
         }
 
         public async Task DeleteCommentAsync(int commentId)
@@ -35,8 +83,8 @@ namespace PostApiService.Services
             var existingComment = await _context.Comments.FindAsync(comment.CommentId);
             if (existingComment != null)
             {
-                existingComment.Content = comment.Content; 
-                existingComment.PostId = comment.PostId; 
+                existingComment.Content = comment.Content;
+                existingComment.PostId = comment.PostId;
                 await _context.SaveChangesAsync();
             }
         }

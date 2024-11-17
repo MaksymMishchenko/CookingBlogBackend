@@ -17,8 +17,27 @@ namespace PostApiService.Controllers
         [HttpPost("posts/{postId}")]
         public async Task<IActionResult> AddComment(int postId, [FromBody] Comment comment)
         {
-            await _commentService.AddCommentAsync(postId, comment);
-            return Ok();
+            if (postId <= 0)
+            {
+                return BadRequest("Post ID must be greater than zero.");
+            }
+
+            if (comment == null)
+            {
+                return BadRequest("Comment cannot be null.");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage);
+
+                return BadRequest(new { Errors = errors });
+            }
+
+            var result = await _commentService.AddCommentAsync(postId, comment);
+            return Ok(result);
         }
 
         [HttpPut("{commentId}")]
