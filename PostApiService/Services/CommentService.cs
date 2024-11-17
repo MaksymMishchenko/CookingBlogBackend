@@ -4,11 +4,19 @@ using PostApiService.Models;
 
 namespace PostApiService.Services
 {
+    /// <summary>
+    /// Service class for managing comments on posts. This class provides methods to add, edit, and delete comments.
+    /// </summary>
     public class CommentService : ICommentService
     {
         private readonly ApplicationDbContext _context;
         private readonly ILogger<CommentService> _logger;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CommentService"/> class.
+        /// </summary>
+        /// <param name="context">The <see cref="ApplicationDbContext"/> used for data access.</param>
+        /// <param name="logger">The logger used for logging information, warnings, and errors.</param>
         public CommentService(ApplicationDbContext context, ILogger<CommentService> logger)
         {
             _context = context;
@@ -68,13 +76,44 @@ namespace PostApiService.Services
             }
         }
 
-        public async Task DeleteCommentAsync(int commentId)
+        /// <summary>
+        /// Deletes a comment by its ID.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment to be deleted.</param>
+        /// <returns>True if the comment was successfully deleted, otherwise false.</returns>
+        /// <exception cref="ArgumentException">Thrown if the <paramref name="commentId"/> is less than or equal to zero.</exception>
+        public async Task<bool> DeleteCommentAsync(int commentId)
         {
-            var comment = await _context.Comments.FindAsync(commentId);
-            if (comment != null)
+            if (commentId <= 0)
             {
-                _context.Comments.Remove(comment);
-                await _context.SaveChangesAsync();
+                _logger.LogError($"Invalid comment ID: {commentId}");
+                throw new ArgumentException($"Post ID must be greater than zero.", nameof(commentId));
+            }
+            try
+            {                
+                var commentExist = await _context.Comments.FindAsync(commentId);
+                if (commentExist == null)
+                {
+                    _logger.LogWarning($"Comment with id: {commentId} does not exist", commentId);
+                    return false;
+                }                
+                
+                _context.Comments.Remove(commentExist);
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Comment with ID {CommentId} was successfully deleted.", commentId);
+                    return true;
+                }
+
+                _logger.LogWarning("No rows were affected when attempting to delete comment with ID {CommentId}.", commentId);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An error occured while removing comment with ID {commentId}", commentId);
+                throw;
             }
         }
 

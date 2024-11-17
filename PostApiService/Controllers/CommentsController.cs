@@ -55,8 +55,12 @@ namespace PostApiService.Controllers
         [HttpDelete("{commentId}")]
         public async Task<IActionResult> DeleteComment(int commentId)
         {
-            await _commentService.DeleteCommentAsync(commentId);
-            return Ok();
+            if (commentId <= 0)
+            {
+                return BadRequest("Post ID must be greater than zero.");
+            }
+            var result = await _commentService.DeleteCommentAsync(commentId);
+            return Ok(result);
         }
     }
 }
