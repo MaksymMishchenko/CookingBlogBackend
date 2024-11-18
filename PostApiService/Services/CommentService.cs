@@ -90,14 +90,14 @@ namespace PostApiService.Services
                 throw new ArgumentException($"Post ID must be greater than zero.", nameof(commentId));
             }
             try
-            {                
+            {
                 var commentExist = await _context.Comments.FindAsync(commentId);
                 if (commentExist == null)
                 {
                     _logger.LogWarning($"Comment with id: {commentId} does not exist", commentId);
                     return false;
-                }                
-                
+                }
+
                 _context.Comments.Remove(commentExist);
                 var result = await _context.SaveChangesAsync();
 
@@ -117,14 +117,63 @@ namespace PostApiService.Services
             }
         }
 
-        public async Task EditCommentAsync(Comment comment)
+        /// <summary>
+        /// Edits an existing comment.
+        /// </summary>
+        /// <param name="comment">The comment object containing the updated content.</param>
+        /// <returns>True if the comment was successfully updated, otherwise false.</returns>
+        /// <exception cref="ArgumentNullException">Thrown if the <paramref name="comment"/> is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if the <paramref name="comment.Content"/> is null or empty, or if the <paramref name="comment.CommentId"/> is invalid.</exception>
+        /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict occurs during the update.</exception>
+        public async Task<bool> EditCommentAsync(Comment comment)
         {
-            var existingComment = await _context.Comments.FindAsync(comment.CommentId);
-            if (existingComment != null)
+            if (comment == null)
             {
-                existingComment.Content = comment.Content;
-                existingComment.PostId = comment.PostId;
-                await _context.SaveChangesAsync();
+                _logger.LogError($"Attempted to edit a null comment");
+                throw new ArgumentNullException(nameof(comment), $"Comment cannot be null");
+            }
+
+            if (string.IsNullOrWhiteSpace(comment.Content))
+            {
+                _logger.LogError("Comment content cannot be null or empty.");
+                throw new ArgumentException("Comment content cannot be null or empty.", nameof(comment.Content));
+            }
+
+            if (comment.CommentId <= 0)
+            {
+                _logger.LogError("Invalid comment ID: {CommentId}", comment.CommentId);
+                throw new ArgumentException("Invalid comment ID.", nameof(comment.CommentId));
+            }
+
+            try
+            {
+                var commentExists = await _context.Comments
+                    .AsNoTracking()
+                    .AnyAsync(c => c.CommentId == comment.CommentId);
+                if (!commentExists)
+                {
+                    _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot edit.", comment.CommentId);
+                    return false;
+                }                
+                _context.Comments.Attach(comment);
+                _context.Entry(comment).Property(c => c.Content).IsModified = true;
+                _context.Entry(comment).Property(c => c.PostId).IsModified = true;
+               
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Comment with ID {CommentId} was successfully updated.", comment.CommentId);
+                    return true;
+                }
+
+                _logger.LogWarning("No rows were affected while updating comment with ID {CommentId}.", comment.CommentId);
+                return false;
+            }            
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occured while editing comment with ID {CommentId}", comment.CommentId);
+                throw;
             }
         }
     }

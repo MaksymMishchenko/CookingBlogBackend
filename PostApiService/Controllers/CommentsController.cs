@@ -15,7 +15,7 @@ namespace PostApiService.Controllers
         }
 
         [HttpPost("posts/{postId}")]
-        public async Task<IActionResult> AddComment(int postId, [FromBody] Comment comment)
+        public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
             if (postId <= 0)
             {
@@ -41,7 +41,7 @@ namespace PostApiService.Controllers
         }
 
         [HttpPut("{commentId}")]
-        public async Task<IActionResult> EditComment(int commentId, [FromBody] Comment comment)
+        public async Task<IActionResult> EditCommentAsync(int commentId, [FromBody] Comment comment)
         {
             if (commentId != comment.CommentId)
             {
@@ -53,7 +53,7 @@ namespace PostApiService.Controllers
         }
 
         [HttpDelete("{commentId}")]
-        public async Task<IActionResult> DeleteComment(int commentId)
+        public async Task<IActionResult> DeleteCommentAsync(int commentId)
         {
             if (commentId <= 0)
             {

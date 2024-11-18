@@ -86,13 +86,89 @@ namespace PostApiService.Tests.UnitTests
         public async Task DeleteCommentAsync_ShouldReturnFalse_IfCommentDoesNotExist()
         {
             // Arrange            
-            var nonExistentCommentId = 999;            
+            var nonExistentCommentId = 999;
 
             // Act
             var result = await _commentService.DeleteCommentAsync(nonExistentCommentId);
 
             // Assert
             Assert.False(result);
-        }        
+        }
+
+        [Fact]
+        public async Task EditCommentAsync_ShouldReturnTrue_IfCommentEdited()
+        {
+            // Arrange
+            var commentId = 1;
+
+            var newComment = new Comment { Content = "Original comment", Author = "Test author" };
+            _dbContext.Comments.Add(newComment);
+            await _dbContext.SaveChangesAsync();
+
+            newComment.Content = "Edited comment";
+
+            // Act
+            var result = await _commentService.EditCommentAsync(newComment);
+
+            // Assert
+
+            Assert.True(result);
+            var editedComment = await _dbContext.Comments
+                .FirstOrDefaultAsync(c => c.CommentId == commentId && c.Content == "Edited comment");
+            Assert.Equal(newComment.Content, editedComment.Content);
+        }
+
+        [Fact]
+        public async Task EditCommentAsync_ShouldReturnFalse_WhenCommentDoesNotExist()
+        {
+            // Arrange
+            var nonExistentCommentId = 999;
+            var nonExistentComment = new Comment
+            {
+                CommentId = nonExistentCommentId,
+                Content = "Test comment",
+                Author = "Test author"
+            };
+
+            // Act
+            var result = await _commentService.EditCommentAsync(nonExistentComment);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public async Task EditCommentAsync_ShouldThrowArgumentNullException_WhenCommentIsNull()
+        {
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => _commentService.EditCommentAsync(null));
+            Assert.Equal("Comment cannot be null (Parameter 'comment')", exception.Message);
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(" ")]
+        public async Task EditCommentAsync_ShouldThrowArgumentException_WhenCommentContentIsNull(string content)
+        {
+            // Arrange
+            var newComment = new Comment { Content = content, Author = "Test author" };
+
+            // Act & Assert
+
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() => _commentService.EditCommentAsync(newComment));
+            Assert.Equal("Comment content cannot be null or empty. (Parameter 'Content')", exception.Message);
+        }
+
+        [Fact]
+        public async Task EditCommentAsync_ShouldThrowArgumentException_WhenCommentIdIsInvalid()
+        {
+            // Arrange
+            var invalidCommentid = -1;
+            var newComment = new Comment { CommentId = invalidCommentid, Content = "Test comment", Author = "Test author" };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() => _commentService.EditCommentAsync(newComment));
+            Assert.Equal("Invalid comment ID. (Parameter 'CommentId')", exception.Message);
+        }
     }
 }
