@@ -6,30 +6,43 @@ namespace PostApiService.Tests.UnitTests
 {
     public class PostServiceTests : IClassFixture<InMemoryDatabaseFixture>
     {
-        private ApplicationDbContext _dbContext;
-        private PostService _postService;
-        private ILogger<PostService> _logger;
+        private InMemoryDatabaseFixture _fixture;
 
         public PostServiceTests(InMemoryDatabaseFixture fixture)
         {
-            _dbContext = fixture.GetContext;
-            _logger = new LoggerFactory().CreateLogger<PostService>();
-            _postService = new PostService(_dbContext, _logger);
+            _fixture = fixture;
         }
 
         [Fact]
-        public async Task AddPostAsync_ShoudReturnTrueWithPostId_IdPostAdded()
+        public async Task AddPostAsync_ShouldReturnTrueWithPostId_IfPostAdded()
         {
-            // Arrange            
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
             var newPost = GetPost();
 
             // Act
-            var result = await _postService.AddPostAsync(newPost);
+            var result = await postService.AddPostAsync(newPost);
 
             // Assert
             Assert.True(result.Success);
             Assert.Equal(newPost.PostId, result.PostId);
             Assert.Empty(newPost.Comments.ToList()); // comments list
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowArgumentNullException_IfPostIsNull()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => postService.AddPostAsync(null));
+            Assert.Equal("Post cannot be null. (Parameter 'post')", exception.Message);
         }
 
         private Post GetPost()

@@ -4,25 +4,24 @@ namespace PostApiService.Tests.Fixtures
 {
     public class InMemoryDatabaseFixture : IAsyncLifetime
     {
-        public ApplicationDbContext GetContext { get; private set; }        
+        public ApplicationDbContext GetContext { get; private set; }
+
+        private DbContextOptions<ApplicationDbContext> _options;
 
         public InMemoryDatabaseFixture()
         {
-            var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+            _options = new DbContextOptionsBuilder<ApplicationDbContext>()
                 .UseInMemoryDatabase(Guid.NewGuid().ToString())
                 .Options;
-
-            GetContext = new ApplicationDbContext(options);
         }
 
-        public async Task DisposeAsync()
+        public ApplicationDbContext CreateContext()
         {
-            await GetContext.Database.EnsureDeletedAsync();
+            return new ApplicationDbContext(_options);
         }
 
-        public async Task InitializeAsync()
-        {
-            await GetContext.Database.EnsureCreatedAsync();            
-        }
+        public Task DisposeAsync() => Task.CompletedTask;
+
+        public Task InitializeAsync() => Task.CompletedTask;
     }
 }

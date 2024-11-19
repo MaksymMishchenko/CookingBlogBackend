@@ -124,13 +124,7 @@ namespace PostApiService.Services
             {
                 _logger.LogError($"Attempted to add a null post: {post}");
                 throw new ArgumentNullException(nameof(post), "Post cannot be null.");
-            }
-
-            if (string.IsNullOrWhiteSpace(post.Title))
-            {
-                _logger.LogError("Post title cannot be null or empty.");
-                throw new ArgumentException("Post title cannot be null or empty.", nameof(post.Title));
-            }
+            }            
         }
     }
 }
