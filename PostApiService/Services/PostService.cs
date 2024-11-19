@@ -8,6 +8,8 @@ namespace PostApiService.Services
     public class PostService : IPostService
     {
         private readonly ApplicationDbContext _context;
+   
+        
 
         public PostService(ApplicationDbContext context)
         {
@@ -22,6 +24,7 @@ namespace PostApiService.Services
         /// This method sets the <see cref="Post.CreateAt"/> property to the current date and time 
         /// before adding the post to the database context and saving the changes.
         /// </remarks>
+
         public async Task AddPostAsync(Post post)
         {
             post.CreateAt = DateTime.Now;
@@ -78,7 +81,7 @@ namespace PostApiService.Services
             return await _context.Posts
             .Where(p => p.PostId == postId)
             .Include(p => p.Comments)
-            .FirstOrDefaultAsync();            
+            .FirstOrDefaultAsync();
         }
     }
 }

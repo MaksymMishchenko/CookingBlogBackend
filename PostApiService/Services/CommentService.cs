@@ -34,17 +34,7 @@ namespace PostApiService.Services
         /// <exception cref="KeyNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
         public async Task<bool> AddCommentAsync(int postId, Comment comment)
         {
-            if (postId <= 0)
-            {
-                _logger.LogError($"Invalid post ID: {postId}");
-                throw new ArgumentException("Post ID must be greater than zero.", nameof(postId));
-            }
-
-            if (comment == null)
-            {
-                _logger.LogError("Attempted to add a null comment to post ID: {PostId}", postId);
-                throw new ArgumentNullException(nameof(comment), "Comment cannot be null.");
-            }
+            ValidateComment(postId, comment);
 
             try
             {
@@ -84,11 +74,8 @@ namespace PostApiService.Services
         /// <exception cref="ArgumentException">Thrown if the <paramref name="commentId"/> is less than or equal to zero.</exception>
         public async Task<bool> DeleteCommentAsync(int commentId)
         {
-            if (commentId <= 0)
-            {
-                _logger.LogError($"Invalid comment ID: {commentId}");
-                throw new ArgumentException($"Post ID must be greater than zero.", nameof(commentId));
-            }
+            ValidateComment(commentId);
+
             try
             {
                 var commentExist = await _context.Comments.FindAsync(commentId);
@@ -127,11 +114,85 @@ namespace PostApiService.Services
         /// <exception cref="DbUpdateConcurrencyException">Thrown if a concurrency conflict occurs during the update.</exception>
         public async Task<bool> EditCommentAsync(Comment comment)
         {
-            if (comment == null)
+            ValidateComment(comment);
+
+            try
             {
-                _logger.LogError($"Attempted to edit a null comment");
-                throw new ArgumentNullException(nameof(comment), $"Comment cannot be null");
+                var commentExists = await _context.Comments
+                    .AsNoTracking()
+                    .AnyAsync(c => c.CommentId == comment.CommentId);
+                if (!commentExists)
+                {
+                    _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot edit.", comment.CommentId);
+                    return false;
+                }
+                _context.Comments.Attach(comment);
+                _context.Entry(comment).Property(c => c.Content).IsModified = true;
+                _context.Entry(comment).Property(c => c.PostId).IsModified = true;
+
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Comment with ID {CommentId} was successfully updated.", comment.CommentId);
+                    return true;
+                }
+
+                _logger.LogWarning("No rows were affected while updating comment with ID {CommentId}.", comment.CommentId);
+                return false;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occured while editing comment with ID {CommentId}", comment.CommentId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Validates the provided post ID and the associated comment.
+        /// Ensures the post ID is greater than zero and the comment is valid.
+        /// </summary>
+        /// <param name="postId">The ID of the post to validate.</param>
+        /// <param name="comment">The comment to validate.</param>
+        /// <exception cref="ArgumentException">Thrown if the post ID is less than or equal to zero.</exception>
+        /// <exception cref="ArgumentNullException">Thrown if the comment is null.</exception>
+        /// <exception cref="ArgumentException">Thrown if the comment fails validation (e.g., invalid content or ID).</exception>
+        private void ValidateComment(int postId, Comment comment)
+        {
+            if (postId <= 0)
+            {
+                _logger.LogError($"Invalid post ID: {postId}");
+                throw new ArgumentException("Post ID must be greater than zero.", nameof(postId));
+            }
+
+            ValidateCommentObject(comment);
+        }
+
+        /// <summary>
+        /// Validates the provided comment ID to ensure it is greater than zero.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment to validate.</param>
+        /// <exception cref="ArgumentException">Thrown if the comment ID is less than or equal to zero.</exception>
+        private void ValidateComment(int commentId)
+        {
+            if (commentId <= 0)
+            {
+                _logger.LogError($"Invalid comment ID: {commentId}");
+                throw new ArgumentException($"Post ID must be greater than zero.", nameof(commentId));
+            }
+        }
+
+        /// <summary>
+        /// Validates the provided <see cref="Comment"/> object to ensure it meets the required criteria.
+        /// </summary>
+        /// <param name="comment">The <see cref="Comment"/> object to validate.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the <paramref name="comment"/> is null.</exception>
+        /// <exception cref="ArgumentException">
+        /// Thrown if the <paramref name="comment.Content"/> is null, empty, or whitespace,
+        /// or if the <paramref name="comment.CommentId"/> is less than or equal to zero.
+        private void ValidateComment(Comment comment)
+        {
+            ValidateCommentObject(comment);
 
             if (string.IsNullOrWhiteSpace(comment.Content))
             {
@@ -144,36 +205,19 @@ namespace PostApiService.Services
                 _logger.LogError("Invalid comment ID: {CommentId}", comment.CommentId);
                 throw new ArgumentException("Invalid comment ID.", nameof(comment.CommentId));
             }
+        }
 
-            try
+        /// <summary>
+        /// Validates the provided <see cref="Comment"/> object to ensure it is not null.
+        /// </summary>
+        /// <param name="comment">The <see cref="Comment"/> object to validate.</param>
+        /// <exception cref="ArgumentNullException">Thrown if the <paramref name="comment"/> is null.</exception>
+        private void ValidateCommentObject(Comment comment)
+        {
+            if (comment == null)
             {
-                var commentExists = await _context.Comments
-                    .AsNoTracking()
-                    .AnyAsync(c => c.CommentId == comment.CommentId);
-                if (!commentExists)
-                {
-                    _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot edit.", comment.CommentId);
-                    return false;
-                }                
-                _context.Comments.Attach(comment);
-                _context.Entry(comment).Property(c => c.Content).IsModified = true;
-                _context.Entry(comment).Property(c => c.PostId).IsModified = true;
-               
-                var result = await _context.SaveChangesAsync();
-
-                if (result > 0)
-                {
-                    _logger.LogInformation("Comment with ID {CommentId} was successfully updated.", comment.CommentId);
-                    return true;
-                }
-
-                _logger.LogWarning("No rows were affected while updating comment with ID {CommentId}.", comment.CommentId);
-                return false;
-            }            
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occured while editing comment with ID {CommentId}", comment.CommentId);
-                throw;
+                _logger.LogError($"Attempted to edit a null comment");
+                throw new ArgumentNullException(nameof(comment), $"Comment cannot be null");
             }
         }
     }
