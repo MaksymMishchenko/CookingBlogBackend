@@ -2,7 +2,6 @@
 using Microsoft.Extensions.Logging;
 using PostApiService.Models;
 using PostApiService.Services;
-using PostApiService.Tests.Fixtures;
 
 namespace PostApiService.Tests.UnitTests
 {

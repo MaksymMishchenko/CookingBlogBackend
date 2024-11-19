@@ -4,7 +4,7 @@ namespace PostApiService.Tests.Fixtures
 {
     public class InMemoryDatabaseFixture : IAsyncLifetime
     {
-        public ApplicationDbContext GetContext { get; private set; }
+        public ApplicationDbContext GetContext { get; private set; }        
 
         public InMemoryDatabaseFixture()
         {
@@ -22,7 +22,7 @@ namespace PostApiService.Tests.Fixtures
 
         public async Task InitializeAsync()
         {
-            await GetContext.Database.EnsureCreatedAsync();
+            await GetContext.Database.EnsureCreatedAsync();            
         }
     }
 }

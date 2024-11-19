@@ -8,28 +8,62 @@ namespace PostApiService.Services
     public class PostService : IPostService
     {
         private readonly ApplicationDbContext _context;
-   
-        
+        private readonly ILogger<PostService> _logger;
 
-        public PostService(ApplicationDbContext context)
+        public PostService(ApplicationDbContext context, ILogger<PostService> logger)
         {
             _context = context;
+            _logger = logger;
         }
 
         /// <summary>
-        /// Asynchronously adds a new post to the database and sets its creation timestamp.
+        /// Adds a new post to the database asynchronously and returns the result status.
         /// </summary>
-        /// <param name="post">The post object to be added, which must include the required fields.</param>
+        /// <param name="post">The <see cref="Post"/> object to be added.</param>
+        /// <returns>
+        /// A tuple indicating the success of the operation and the ID of the added post:
+        /// - Success: A boolean indicating whether the operation was successful.
+        /// - PostId: The ID of the newly added post if successful, or 0 if the operation failed.
+        /// </returns>
+        /// <exception cref="DbUpdateException">
+        /// Thrown when a database-related error occurs during the save operation.
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown when an unexpected error occurs.
+        /// </exception>
         /// <remarks>
-        /// This method sets the <see cref="Post.CreateAt"/> property to the current date and time 
-        /// before adding the post to the database context and saving the changes.
+        /// This method validates the provided <see cref="Post"/> object before attempting to add it to the database.
+        /// It logs the outcome of the operation, including success, failure, or any errors encountered.
         /// </remarks>
-
-        public async Task AddPostAsync(Post post)
+        public async Task<(bool Success, int PostId)> AddPostAsync(Post post)
         {
-            post.CreateAt = DateTime.Now;
-            _context.Posts.Add(post);
-            await _context.SaveChangesAsync();
+            ValidatePost(post);
+
+            try
+            {
+                await _context.Posts.AddAsync(post);
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Post was added successfuly");
+                    return (true, post.PostId);
+                }
+                _logger.LogWarning($"Failed to add post with title: {post.Title}");
+                return (false, 0);
+            }
+
+            catch (DbUpdateException dbEx)
+            {
+                _logger.LogError(dbEx, "Database error occurred while adding post: {Post}.", post);
+                throw; 
+            }
+
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"An unexpected error occurred while adding a post: {post}");
+                throw;
+            }
         }
 
         public async Task DeletePostAsync(int postId)
@@ -82,6 +116,21 @@ namespace PostApiService.Services
             .Where(p => p.PostId == postId)
             .Include(p => p.Comments)
             .FirstOrDefaultAsync();
+        }
+
+        private void ValidatePost(Post post)
+        {
+            if (post == null)
+            {
+                _logger.LogError($"Attempted to add a null post: {post}");
+                throw new ArgumentNullException(nameof(post), "Post cannot be null.");
+            }
+
+            if (string.IsNullOrWhiteSpace(post.Title))
+            {
+                _logger.LogError("Post title cannot be null or empty.");
+                throw new ArgumentException("Post title cannot be null or empty.", nameof(post.Title));
+            }
         }
     }
 }

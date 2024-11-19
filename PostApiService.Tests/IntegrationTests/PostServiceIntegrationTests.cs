@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PostApiService.Models;
 using PostApiService.Services;
 
@@ -18,7 +19,8 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             var post = new Post
             {
@@ -46,7 +48,8 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             var post = CreateTestPost(
                 "Origin Post",
@@ -77,7 +80,8 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             int postId = 1;
 
@@ -107,7 +111,8 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             var post1 = CreateTestPost(
                 "Test Post 1",
@@ -149,7 +154,8 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             using var context = _fixture.CreateContext();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             int postId = 1;
 

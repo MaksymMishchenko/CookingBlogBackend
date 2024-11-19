@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using PostApiService.Models;
 using PostApiService.Services;
 using PostApiService.Tests.E2ETests;
@@ -23,7 +24,8 @@ namespace PostApiService.Tests.E2Tests
         {
             using var scope = _fixture.Factory!.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             //context.Posts.RemoveRange(context.Posts);
             //await context.SaveChangesAsync();
@@ -61,7 +63,8 @@ namespace PostApiService.Tests.E2Tests
         {
             using var scope = _fixture.Factory!.Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var postService = new PostService(context);
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
 
             //context.Posts.RemoveRange(context.Posts);
             //await context.SaveChangesAsync();
