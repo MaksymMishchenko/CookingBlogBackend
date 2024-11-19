@@ -28,7 +28,7 @@ namespace PostApiService.Tests.UnitTests
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(async () => await _commentService.AddCommentAsync(postId, comment));
+            await Assert.ThrowsAsync<ArgumentException>(() => _commentService.AddCommentAsync(postId, comment));
         }
 
         [Fact]
@@ -38,7 +38,7 @@ namespace PostApiService.Tests.UnitTests
             var postId = 1;
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _commentService.AddCommentAsync(postId, null));
+            await Assert.ThrowsAsync<ArgumentNullException>(() => _commentService.AddCommentAsync(postId, null));
         }
 
         [Fact]
@@ -87,6 +87,21 @@ namespace PostApiService.Tests.UnitTests
 
             // Act & Assert
             await Assert.ThrowsAsync<KeyNotFoundException>(() => _commentService.AddCommentAsync(postId, comment));
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task DeleteCommentAsync_ShouldThrowArgumentException_WhenCommentIdIsInvalid(int commentId)
+        {
+            // Arrange                       
+            var newComment = new Comment { Content = "Some test comment", Author = "Test author" };
+
+            _dbContext.Comments.Add(newComment);
+            await _dbContext.SaveChangesAsync();
+
+            // Act & Assert                      
+            await Assert.ThrowsAsync<ArgumentException>(() => _commentService.DeleteCommentAsync(commentId));
         }
 
         [Fact]
