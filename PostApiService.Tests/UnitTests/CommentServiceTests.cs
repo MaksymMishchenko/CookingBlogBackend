@@ -19,11 +19,35 @@ namespace PostApiService.Tests.UnitTests
             _commentService = new CommentService(_dbContext, _logger);
         }
 
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task AddCommentAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
+        {
+            // Arrange                                  
+            var comment = new Comment { Content = "Test comment", Author = "Test author" };
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentException>(async () => await _commentService.AddCommentAsync(postId, comment));
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_ShouldThrowNullArgumentException_IfCommentIsNull()
+        {
+            // Arrange
+            var postId = 1;
+
+            // Act & Assert
+            await Assert.ThrowsAsync<ArgumentNullException>(async () => await _commentService.AddCommentAsync(postId, null));
+        }
+
         [Fact]
         public async Task AddCommentAsync_ShouldReturnTrue_WhenPostExists()
         {
             // Arrange            
             var postId = 1;
+            _dbContext.Database.EnsureDeleted();
+            _dbContext.Database.EnsureCreated();
 
             _dbContext.Posts.Add(new Post
             {
