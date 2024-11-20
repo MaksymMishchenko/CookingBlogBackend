@@ -1,4 +1,3 @@
-using Castle.Core.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PostApiService.Models;
@@ -144,12 +143,63 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(context, logger);
 
             var post = GetPost();
-            context.Dispose(); 
+            context.Dispose();
 
             // Act & Assert
             await Assert.ThrowsAsync<ObjectDisposedException>(() => service.EditPostAsync(post));
         }
 
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldReturnTrue_IfPostDeleted()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var newPost = GetPost();
+
+            context.Posts.Add(newPost);
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await postService.DeletePostAsync(newPost.PostId);
+
+            // Assert
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldReturnFalse_WhenCommentDoesNotExist()
+        {
+            // Arrange
+            var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<CommentService>();
+            var postService = new CommentService(context, logger);
+
+            // Act
+            var result = await postService.DeleteCommentAsync(1);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task DeleteCommentAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() => postService.DeletePostAsync(postId));
+
+            Assert.Equal("Invalid post ID. (Parameter 'postId')", exception.Message);
+        }
 
         private Post GetPost()
         {

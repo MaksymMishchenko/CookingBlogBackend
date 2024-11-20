@@ -1,14 +1,13 @@
-﻿using PostApiService.Dto;
-using PostApiService.Models;
+﻿using PostApiService.Models;
 
 namespace PostApiService.Interfaces
 {
     public interface IPostService
     {
-        Task<List<PostDto>> GetAllPostsAsync();
+        Task<List<Post>> GetAllPostsAsync();
         Task<Post> GetPostByIdAsync(int postId);
         Task<(bool Success, int PostId)> AddPostAsync(Post post);
         Task<(bool Success, int PostId)> EditPostAsync(Post post);
-        Task DeletePostAsync(int postId);
+        Task<bool> DeletePostAsync(int postId);
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Dto;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -66,14 +65,61 @@ namespace PostApiService.Services
             }
         }
 
-        public async Task DeletePostAsync(int postId)
+        /// <summary>
+        /// Deletes a post from the database based on the specified post ID.
+        /// </summary>
+        /// <param name="postId">The unique identifier of the post to be deleted.</param>
+        /// <returns>
+        /// A boolean value indicating the success of the operation. 
+        /// Returns <c>true</c> if the post was successfully deleted; otherwise, <c>false</c>.
+        /// </returns>
+        /// <remarks>
+        /// This method performs the following steps:
+        /// 1. Validates the input post ID.
+        /// 2. Checks if the post exists in the database using <see cref="FindAsync"/>.
+        /// 3. If the post exists, it is removed from the context and changes are saved to the database.
+        /// 4. Logs appropriate messages based on the outcome of the operation.
+        /// 5. Handles database-specific errors using <see cref="DbUpdateException"/> and logs unexpected errors.
+        /// </remarks>
+        /// <exception cref="ArgumentException">Thrown if the provided post ID is invalid.</exception>
+        /// <exception cref="Exception">Rethrows unexpected exceptions after logging.</exception>
+        public async Task<bool> DeletePostAsync(int postId)
         {
-            var post = await _context.Posts.FindAsync(postId);
+            ValidatePost(postId);
 
-            if (post != null)
+            try
             {
-                _context.Posts.Remove(post);
-                await _context.SaveChangesAsync();
+                var postExist = await _context.Posts.FindAsync(postId);
+
+                if (postExist == null)
+                {
+                    _logger.LogWarning("Post with ID {PostId} does not exist. Deletion aborted.", postId);
+                    return false;
+                }
+
+                _context.Posts.Remove(postExist);
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Post with ID {PostId} was successfully deleted.", postId);
+                    return true;
+                }
+
+                _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.", postId);
+                return false;
+            }
+            catch (DbUpdateException dbEx)
+            {
+                // Логування помилок, пов’язаних із базою даних
+                _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                // Логування будь-яких інших помилок
+                _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
+                throw;
             }
         }
 
@@ -114,7 +160,7 @@ namespace PostApiService.Services
             ValidatePost(post);
 
             try
-            {               
+            {
                 var postExists = await _context.Posts.AsNoTracking()
                     .AnyAsync(p => p.PostId == post.PostId);
                 if (!postExists)
@@ -122,15 +168,15 @@ namespace PostApiService.Services
                     _logger.LogWarning("Post with ID {PostId} does not exist. Cannot edit.", post.PostId);
                     return (false, 0);
                 }
-                
+
                 _context.Posts.Attach(post);
                 var propertiesToUpdate = new[] { "Title", "Content", "Author", "Description", "MetaTitle", "MetaDescription", "ImageUrl" };
-                
+
                 foreach (var propertyName in propertiesToUpdate)
                 {
                     _context.Entry(post).Property(propertyName).IsModified = true;
                 }
-                
+
                 var result = await _context.SaveChangesAsync();
 
                 if (result > 0)
@@ -155,31 +201,10 @@ namespace PostApiService.Services
         }
 
 
-        public async Task<List<PostDto>> GetAllPostsAsync()
+        public async Task<List<Post>> GetAllPostsAsync()
         {
             return await _context.Posts
-                .Include(p => p.Comments)
-                .Select(p => new PostDto
-                {
-                    PostId = p.PostId,
-                    Title = p.Title,
-                    Description = p.Description,
-                    Content = p.Content,
-                    Author = p.Author,
-                    CreateAt = p.CreateAt,
-                    ImageUrl = p.ImageUrl,
-                    MetaTitle = p.Title,
-                    MetaDescription = p.MetaDescription,
-                    Slug = p.Slug,
-                    Comments = p.Comments.Select(c => new CommentDto
-                    {
-                        CommentId = c.CommentId,
-                        Author = c.Author,
-                        Content = c.Content,
-                        CreateAt = c.CreatedAt
-                    }).ToList()
-
-                }).ToListAsync();
+                .Include(p => p.Comments).ToListAsync();
         }
 
         public async Task<Post> GetPostByIdAsync(int postId)
@@ -196,6 +221,15 @@ namespace PostApiService.Services
             {
                 _logger.LogError($"Attempted to add a null post: {post}");
                 throw new ArgumentNullException(nameof(post), "Post cannot be null.");
+            }
+        }
+
+        private void ValidatePost(int postId)
+        {
+            if (postId <= 0)
+            {
+                _logger.LogError("Invalid post ID: {PostId}", postId);
+                throw new ArgumentException("Invalid post ID.", nameof(postId));
             }
         }
     }
