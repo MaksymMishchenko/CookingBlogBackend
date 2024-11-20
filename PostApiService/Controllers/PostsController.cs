@@ -16,10 +16,16 @@ namespace PostApiService.Controllers
             _postsService = postsService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAllPosts()
+        [HttpGet()]
+        public async Task<IActionResult> GetAllPosts(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] int commentPageNumber = 1,
+        [FromQuery] int commentsPerPage = 10,
+        [FromQuery] bool includeComments = true
+        )
         {
-            var posts = await _postsService.GetAllPostsAsync();
+            var posts = await _postsService.GetAllPostsAsync(pageNumber, pageSize, commentPageNumber, commentsPerPage, includeComments);
             return Ok(posts);
         }
 

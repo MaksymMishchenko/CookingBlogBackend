@@ -194,11 +194,167 @@ namespace PostApiService.Tests.UnitTests
             var logger = new LoggerFactory().CreateLogger<PostService>();
             var postService = new PostService(context, logger);
 
-
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(() => postService.DeletePostAsync(postId));
 
             Assert.Equal("Invalid post ID. (Parameter 'postId')", exception.Message);
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnPostsWithComments()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var pageNumber = 1;
+            var pageSize = 10;
+            var commentPageNumber = 1;
+            var commentsPerPage = 10;
+            var includeComments = true;
+          
+            for (int i = 0; i < 5; i++)
+            {
+                var post = GetPost(); 
+                for (int j = 0; j < 3; j++)
+                {
+                    post.Comments.Add(new Comment
+                    {
+                        Content = $"Comment {j} for Post {i}",
+                        Author = $"Author {j} for Post {i}",
+                        CreatedAt = DateTime.UtcNow.AddDays(-j)
+                    });
+                }
+                context.Posts.Add(post);
+            }
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await postService.GetAllPostsAsync(pageNumber,
+                pageSize,
+                commentPageNumber,
+                commentsPerPage,
+                includeComments);
+
+            // Assert
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(5, result.Count); 
+            Assert.All(result, post =>
+            {
+                Assert.NotNull(post.Comments); 
+                Assert.True(post.Comments.Count <= commentsPerPage); 
+            });
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnPostsWithoutComments()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var pageNumber = 1;
+            var pageSize = 10;
+            var commentPageNumber = 1;
+            var commentsPerPage = 10;
+            var includeComments = false;
+            
+            for (int i = 0; i < 5; i++)
+            {
+                var post = GetPost();                 
+                context.Posts.Add(post);
+            }
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await postService.GetAllPostsAsync(pageNumber,
+                pageSize,
+                commentPageNumber,
+                commentsPerPage,
+                includeComments);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(5, result.Count);
+            Assert.All(result, post =>
+            {
+                Assert.NotNull(post.Comments); 
+                Assert.Empty(post.Comments);               
+            });
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnEmptyPostList()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var pageNumber = 1;
+            var pageSize = 10;
+            var commentPageNumber = 1;
+            var commentsPerPage = 10;
+            var includeComments = false;
+
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
+            // Act
+            var result = await postService.GetAllPostsAsync(pageNumber,
+                pageSize,
+                commentPageNumber,
+                commentsPerPage,
+                includeComments);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Empty(result);  
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnTenPostsAndTenComments()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var pageNumber = 1;
+            var pageSize = 10;
+            var commentPageNumber = 1;
+            var commentsPerPage = 10;
+            var includeComments = true;
+           
+            for (int i = 0; i < 12; i++)
+            {
+                var post = GetPost(); 
+                for (int j = 0; j < 12; j++) 
+                {
+                    post.Comments.Add(new Comment
+                    {
+                        Content = $"Comment {j} for Post {i}",
+                        Author = $"Author {j} for Post {i}",
+                        CreatedAt = DateTime.UtcNow.AddDays(-j)
+                    });
+                }
+                context.Posts.Add(post);
+            }
+            await context.SaveChangesAsync();
+
+            // Act
+            var result = await postService.GetAllPostsAsync(pageNumber, pageSize, commentPageNumber, commentsPerPage, includeComments);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(10, result.Count);
+            Assert.All(result, post =>
+            {                
+                Assert.Equal(10, post.Comments.Count);
+            });
         }
 
         private Post GetPost()

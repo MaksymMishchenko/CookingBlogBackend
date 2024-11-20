@@ -140,7 +140,7 @@ namespace PostApiService.Tests.IntegrationTests
             await postService.AddPostAsync(post2);
 
             // Act
-            var posts = await postService.GetAllPostsAsync();
+            var posts = await postService.GetAllPostsAsync(0,0,0,0,true);
 
             // Assert
             Assert.NotNull(posts);

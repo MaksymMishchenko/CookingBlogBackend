@@ -22,7 +22,7 @@ namespace PostApiService.Models
         [StringLength(50, MinimumLength = 3, ErrorMessage = "Author must be between 3 and 50 characters.")]
         public string? Author { get; set; }
 
-        public DateTime CreateAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreateAt { get; set; } = DateTime.UtcNow.ToLocalTime();
 
         [Required(ErrorMessage = "Image URL is required.")]
         [Url(ErrorMessage = "Invalid URL format.")]

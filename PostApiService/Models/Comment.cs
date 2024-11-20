@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace PostApiService.Models
 {
@@ -14,11 +15,12 @@ namespace PostApiService.Models
         [StringLength(500, MinimumLength = 10, ErrorMessage = "Content must be between 10 and 500 characters.")]
         public string? Content { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow.ToLocalTime();
 
         [Required(ErrorMessage = "PostId is required.")]
         public int PostId { get; set; }
 
+        [JsonIgnore]
         public Post? Post { get; set; }
     }
 }
