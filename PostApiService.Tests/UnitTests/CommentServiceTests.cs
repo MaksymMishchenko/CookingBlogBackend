@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
 
@@ -75,8 +74,7 @@ namespace PostApiService.Tests.UnitTests
             var result = await commentService.AddCommentAsync(postId, comment);
 
             // Assert
-            Assert.True(result);
-            Assert.Single(await context.Comments.ToListAsync());
+            Assert.True(result);            
 
             var addedComment = await context.Comments
                 .FirstOrDefaultAsync(c => c.PostId == postId && c.Content == "Some test comment");

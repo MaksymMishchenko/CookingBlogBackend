@@ -126,6 +126,7 @@ namespace PostApiService.Services
                     _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot edit.", comment.CommentId);
                     return false;
                 }
+
                 _context.Comments.Attach(comment);
                 _context.Entry(comment).Property(c => c.Content).IsModified = true;
                 _context.Entry(comment).Property(c => c.PostId).IsModified = true;

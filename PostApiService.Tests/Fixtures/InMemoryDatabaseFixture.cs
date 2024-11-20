@@ -3,9 +3,7 @@
 namespace PostApiService.Tests.Fixtures
 {
     public class InMemoryDatabaseFixture : IAsyncLifetime
-    {
-        public ApplicationDbContext GetContext { get; private set; }
-
+    {       
         private DbContextOptions<ApplicationDbContext> _options;
 
         public InMemoryDatabaseFixture()

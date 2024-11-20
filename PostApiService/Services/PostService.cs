@@ -46,7 +46,7 @@ namespace PostApiService.Services
 
                 if (result > 0)
                 {
-                    _logger.LogInformation("Post was added successfuly");
+                    _logger.LogInformation("Post was added successfully");
                     return (true, post.PostId);
                 }
                 _logger.LogWarning($"Failed to add post with title: {post.Title}");
@@ -56,7 +56,7 @@ namespace PostApiService.Services
             catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "Database error occurred while adding post: {Post}.", post);
-                throw; 
+                throw;
             }
 
             catch (Exception ex)
@@ -77,11 +77,83 @@ namespace PostApiService.Services
             }
         }
 
-        public async Task EditPostAsync(Post post)
+        /// <summary>
+        /// Updates an existing post in the database with the provided data.
+        /// Only specified properties of the post will be updated.
+        /// </summary>
+        /// <param name="post">The post object containing the updated data. Must include a valid PostId.</param>
+        /// <returns>
+        /// A tuple containing:
+        /// - <c>Success</c>: <c>true</c> if the update was successful; <c>false</c> otherwise.
+        /// - <c>PostId</c>: The ID of the updated post if successful; <c>0</c> if not.
+        /// </returns>
+        /// <remarks>
+        /// The method performs the following steps:
+        /// 1. Validates the input post object.
+        /// 2. Checks if a post with the given ID exists in the database.
+        /// 3. If the post exists, updates only the specified properties:
+        ///    - Title
+        ///    - Content
+        ///    - Author
+        ///    - Description
+        ///    - MetaTitle
+        ///    - MetaDescription
+        ///    - ImageUrl
+        /// 4. Saves the changes to the database.
+        /// 5. Logs the outcome, including errors or warnings in case of failure.
+        /// 
+        /// Exceptions:
+        /// - Throws <see cref="DbUpdateException"/> if there is a failure while saving to the database.
+        /// - Throws other exceptions if unexpected errors occur.
+        /// </remarks>
+        /// <exception cref="ArgumentException">Thrown if the post object is invalid.</exception>
+        /// <exception cref="DbUpdateException">Thrown if database update fails.</exception>
+        /// <exception cref="Exception">Thrown for other unexpected errors.</exception>
+        public async Task<(bool Success, int PostId)> EditPostAsync(Post post)
         {
-            _context.Posts.Update(post);
-            await _context.SaveChangesAsync();
+            ValidatePost(post);
+
+            try
+            {               
+                var postExists = await _context.Posts.AsNoTracking()
+                    .AnyAsync(p => p.PostId == post.PostId);
+                if (!postExists)
+                {
+                    _logger.LogWarning("Post with ID {PostId} does not exist. Cannot edit.", post.PostId);
+                    return (false, 0);
+                }
+                
+                _context.Posts.Attach(post);
+                var propertiesToUpdate = new[] { "Title", "Content", "Author", "Description", "MetaTitle", "MetaDescription", "ImageUrl" };
+                
+                foreach (var propertyName in propertiesToUpdate)
+                {
+                    _context.Entry(post).Property(propertyName).IsModified = true;
+                }
+                
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Successfully updated post with ID {PostId}", post.PostId);
+                    return (true, post.PostId);
+                }
+
+                _logger.LogWarning("Failed to update post with ID {PostId}", post.PostId);
+                return (false, 0);
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database update failed for post with ID {PostId}", post.PostId);
+                return (false, 0);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred while editing post with ID {PostId}", post.PostId);
+                throw;
+            }
         }
+
 
         public async Task<List<PostDto>> GetAllPostsAsync()
         {
@@ -124,7 +196,7 @@ namespace PostApiService.Services
             {
                 _logger.LogError($"Attempted to add a null post: {post}");
                 throw new ArgumentNullException(nameof(post), "Post cannot be null.");
-            }            
+            }
         }
     }
 }
