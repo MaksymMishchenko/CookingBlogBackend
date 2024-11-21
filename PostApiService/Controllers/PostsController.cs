@@ -16,7 +16,7 @@ namespace PostApiService.Controllers
             _postsService = postsService;
         }
 
-        [HttpGet()]
+        [HttpGet("GetAllPosts")]
         public async Task<IActionResult> GetAllPosts(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -25,14 +25,18 @@ namespace PostApiService.Controllers
         [FromQuery] bool includeComments = true
         )
         {
-            var posts = await _postsService.GetAllPostsAsync(pageNumber, pageSize, commentPageNumber, commentsPerPage, includeComments);
+            var posts = await _postsService.GetAllPostsAsync(pageNumber,
+                pageSize,
+                commentPageNumber,
+                commentsPerPage,
+                includeComments);
             return Ok(posts);
         }
 
         [HttpGet("{postId}")]
-        public async Task<IActionResult> GetPostById(int postId)
+        public async Task<IActionResult> GetPostById(int postId, [FromQuery] bool includeComments)
         {
-            var post = await _postsService.GetPostByIdAsync(postId);
+            var post = await _postsService.GetPostByIdAsync(postId, includeComments);
             return Ok(post);
         }
 

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -261,31 +262,29 @@ namespace PostApiService.Services
                     query = query.Include(p => p.Comments);
                 }
 
-                var totalCount = await query.CountAsync();
-
                 var posts = await query
                     .OrderBy(p => p.PostId)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
                     .ToListAsync();
 
-                _logger.LogInformation("Fetched {Count} posts. Total posts: {TotalCount}.", posts.Count, totalCount);
+                _logger.LogInformation("Fetched {Count} posts. Total posts", posts.Count);
 
                 if (includeComments)
                 {
                     _logger.LogInformation("Fetching comments from the database. Page: {Page}, Size: {Size}.", pageNumber, pageSize);
 
                     foreach (var post in posts)
-                    {                        
+                    {
                         post.Comments = post.Comments
-                            .OrderBy(c => c.CreatedAt) 
-                            .Skip((commentPageNumber - 1) * commentsPerPage) 
+                            .OrderBy(c => c.CreatedAt)
+                            .Skip((commentPageNumber - 1) * commentsPerPage)
                             .Take(commentsPerPage)
                             .ToList();
                     }
                 }
                 else
-                {                   
+                {
                     foreach (var post in posts)
                     {
                         post.Comments = new List<Comment>();
@@ -302,14 +301,64 @@ namespace PostApiService.Services
             }
         }
 
-        public async Task<Post> GetPostByIdAsync(int postId)
+        /// <summary>
+        /// Retrieves a post by its unique identifier from the database. 
+        /// Optionally includes associated comments based on the <paramref name="includeComments"/> parameter.
+        /// </summary>
+        /// <param name="postId">The unique identifier of the post to retrieve. Must be greater than 0.</param>
+        /// <param name="includeComments">
+        /// A boolean flag indicating whether to include the post's associated comments in the result. 
+        /// Defaults to <c>true</c>.
+        /// </param>
+        /// <returns>
+        /// The <see cref="Post"/> object corresponding to the provided <paramref name="postId"/>.
+        /// </returns>
+        /// <exception cref="ArgumentException">Thrown if the provided <paramref name="postId"/> is invalid.</exception>
+        /// <exception cref="KeyNotFoundException">Thrown if no post with the specified <paramref name="postId"/> is found.</exception>
+        /// <exception cref="Exception">Thrown for any unexpected errors during database retrieval.</exception>
+        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
         {
-            return await _context.Posts
-            .Where(p => p.PostId == postId)
-            .Include(p => p.Comments)
-            .FirstOrDefaultAsync();
+            ValidatePost(postId);
+
+            try
+            {                
+                var query = _context.Posts.AsQueryable();
+              
+                if (includeComments)
+                {
+                    query = query.Include(p => p.Comments);
+                }
+                
+                var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
+               
+                if (post == null)
+                {
+                    _logger.LogWarning("Post with ID {postId} not found.", postId);
+                    throw new KeyNotFoundException($"Post with ID {postId} was not found.");
+                }
+
+                _logger.LogInformation("Successfully fetched post with ID {postId}.", postId);
+                
+                if (!includeComments)
+                {
+                    post.Comments = new List<Comment>();
+                }
+
+                return post;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching the post with ID {postId}.", postId);
+                throw;
+            }
         }
 
+        /// <summary>
+        /// Validates the specified post object to ensure it is not null.
+        /// Logs an error and throws an <see cref="ArgumentNullException"/> if the post is null.
+        /// </summary>
+        /// <param name="post">The post object to validate.</param>
+        /// <exception cref="ArgumentNullException">Thrown when the <paramref name="post"/> is null.</exception>
         private void ValidatePost(Post post)
         {
             if (post == null)
@@ -319,6 +368,12 @@ namespace PostApiService.Services
             }
         }
 
+        /// <summary>
+        /// Validates the specified post ID to ensure it is greater than zero.
+        /// Logs an error and throws an <see cref="ArgumentException"/> if the post ID is invalid.
+        /// </summary>
+        /// <param name="postId">The ID of the post to validate.</param>
+        /// <exception cref="ArgumentException">Thrown when the <paramref name="postId"/> is less than or equal to zero.</exception>
         private void ValidatePost(int postId)
         {
             if (postId <= 0)

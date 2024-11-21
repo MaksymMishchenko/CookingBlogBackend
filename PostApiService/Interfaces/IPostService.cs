@@ -9,7 +9,7 @@ namespace PostApiService.Interfaces
             int commentPageNumber = 1,
             int commentsPerPage = 10,
             bool includeComments = true);
-        Task<Post> GetPostByIdAsync(int postId);
+        Task<Post> GetPostByIdAsync(int postId, bool includeComments = true);
         Task<(bool Success, int PostId)> AddPostAsync(Post post);
         Task<(bool Success, int PostId)> EditPostAsync(Post post);
         Task<bool> DeletePostAsync(int postId);
