@@ -439,12 +439,28 @@ namespace PostApiService.Tests.UnitTests
             var logger = new LoggerFactory().CreateLogger<PostService>();
             var postService = new PostService(context, logger);
 
-            var postId = 999;
+            var nonExistentPost = 999;
 
             // Act & Assert   
             var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-             postService.GetPostByIdAsync(postId));
+             postService.GetPostByIdAsync(nonExistentPost));
             Assert.Equal("Post with ID 999 was not found.", exception.Message);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task GetPostByIdAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);           
+
+            // Act & Assert   
+            var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
+             postService.GetPostByIdAsync(postId));
+            Assert.Equal("Invalid post ID. (Parameter 'postId')", exception.Message);
         }
 
         private Post GetPost()

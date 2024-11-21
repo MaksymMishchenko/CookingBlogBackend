@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -321,16 +320,16 @@ namespace PostApiService.Services
             ValidatePost(postId);
 
             try
-            {                
+            {
                 var query = _context.Posts.AsQueryable();
-              
+
                 if (includeComments)
                 {
                     query = query.Include(p => p.Comments);
                 }
-                
+
                 var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
-               
+
                 if (post == null)
                 {
                     _logger.LogWarning("Post with ID {postId} not found.", postId);
@@ -338,7 +337,7 @@ namespace PostApiService.Services
                 }
 
                 _logger.LogInformation("Successfully fetched post with ID {postId}.", postId);
-                
+
                 if (!includeComments)
                 {
                     post.Comments = new List<Comment>();
