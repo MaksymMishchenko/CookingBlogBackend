@@ -401,6 +401,36 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(3, post.Comments.Count);
         }
 
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnPostByIdWithoutComments()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var postId = 1;
+            var includeComments = false;
+            var newPost = GetPost();
+
+            context.Posts.Add(newPost);
+
+            for (int i = 0; i < 3; i++)
+            {
+                newPost.Comments.Add(new Comment { Content = $"Test comment {i}", Author = "Comment author" });
+            }
+            await context.SaveChangesAsync();
+
+            // Act
+            var post = await postService.GetPostByIdAsync(postId, includeComments);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.Equal(postId, post.PostId);
+            Assert.NotNull(post.Comments);
+            Assert.Empty(post.Comments);           
+        }
+
         private Post GetPost()
         {
             return new Post
