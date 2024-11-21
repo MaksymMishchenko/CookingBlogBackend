@@ -8,6 +8,8 @@ namespace PostApiService.Tests.Fixtures
     public class WebApplicationFactoryFixture : IAsyncLifetime
     {
         public HttpClient HttpClient { get; private set; }
+        public int InitializePostData { get; set; } = 3;
+
         private WebApplicationFactory<Program> _factory;
         private const string _connectionString =
             @"Server=localhost\\SQLEXPRESS;Database=TestIntegration;Trusted_Connection=True;TrustServerCertificate=True";
@@ -35,6 +37,8 @@ namespace PostApiService.Tests.Fixtures
                 var scopedService = scope.ServiceProvider;
                 var cntx = scopedService.GetRequiredService<ApplicationDbContext>();
                 await cntx.Database.EnsureCreatedAsync();
+                await cntx.Posts.AddRangeAsync(DataFixture.GetPosts(InitializePostData));
+                await cntx.SaveChangesAsync();
             }
         }
 
