@@ -177,8 +177,9 @@ namespace PostApiService.Tests.UnitTests
             var logger = new LoggerFactory().CreateLogger<CommentService>();
             var postService = new CommentService(context, logger);
 
+            var nonExistentComment = 999;
             // Act
-            var result = await postService.DeleteCommentAsync(1);
+            var result = await postService.DeleteCommentAsync(nonExistentComment);
 
             // Assert
             Assert.False(result);
@@ -208,15 +209,18 @@ namespace PostApiService.Tests.UnitTests
             var logger = new LoggerFactory().CreateLogger<PostService>();
             var postService = new PostService(context, logger);
 
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
             var pageNumber = 1;
             var pageSize = 10;
             var commentPageNumber = 1;
             var commentsPerPage = 10;
             var includeComments = true;
-          
+
             for (int i = 0; i < 5; i++)
             {
-                var post = GetPost(); 
+                var post = GetPost();
                 for (int j = 0; j < 3; j++)
                 {
                     post.Comments.Add(new Comment
@@ -240,11 +244,11 @@ namespace PostApiService.Tests.UnitTests
             // Assert
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(5, result.Count); 
+            Assert.Equal(5, result.Count);
             Assert.All(result, post =>
             {
-                Assert.NotNull(post.Comments); 
-                Assert.True(post.Comments.Count <= commentsPerPage); 
+                Assert.NotNull(post.Comments);
+                Assert.True(post.Comments.Count <= commentsPerPage);
             });
         }
 
@@ -256,15 +260,18 @@ namespace PostApiService.Tests.UnitTests
             var logger = new LoggerFactory().CreateLogger<PostService>();
             var postService = new PostService(context, logger);
 
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
             var pageNumber = 1;
             var pageSize = 10;
             var commentPageNumber = 1;
             var commentsPerPage = 10;
             var includeComments = false;
-            
+
             for (int i = 0; i < 5; i++)
             {
-                var post = GetPost();                 
+                var post = GetPost();
                 context.Posts.Add(post);
             }
             await context.SaveChangesAsync();
@@ -281,8 +288,8 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(5, result.Count);
             Assert.All(result, post =>
             {
-                Assert.NotNull(post.Comments); 
-                Assert.Empty(post.Comments);               
+                Assert.NotNull(post.Comments);
+                Assert.Empty(post.Comments);
             });
         }
 
@@ -312,7 +319,7 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.NotNull(result);
-            Assert.Empty(result);  
+            Assert.Empty(result);
         }
 
         [Fact]
@@ -323,16 +330,19 @@ namespace PostApiService.Tests.UnitTests
             var logger = new LoggerFactory().CreateLogger<PostService>();
             var postService = new PostService(context, logger);
 
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
             var pageNumber = 1;
             var pageSize = 10;
             var commentPageNumber = 1;
             var commentsPerPage = 10;
             var includeComments = true;
-           
+
             for (int i = 0; i < 12; i++)
             {
-                var post = GetPost(); 
-                for (int j = 0; j < 12; j++) 
+                var post = GetPost();
+                for (int j = 0; j < 12; j++)
                 {
                     post.Comments.Add(new Comment
                     {
@@ -346,15 +356,49 @@ namespace PostApiService.Tests.UnitTests
             await context.SaveChangesAsync();
 
             // Act
-            var result = await postService.GetAllPostsAsync(pageNumber, pageSize, commentPageNumber, commentsPerPage, includeComments);
+            var result = await postService.GetAllPostsAsync(pageNumber,
+                pageSize,
+                commentPageNumber,
+                commentsPerPage,
+                includeComments);
 
             // Assert
             Assert.NotNull(result);
             Assert.Equal(10, result.Count);
             Assert.All(result, post =>
-            {                
+            {
                 Assert.Equal(10, post.Comments.Count);
             });
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnPostByIdWithComments()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var postId = 1;
+            var newPost = GetPost();
+
+            context.Posts.Add(newPost);
+
+            for (int i = 0; i < 3; i++)
+            {
+                newPost.Comments.Add(new Comment { Content = $"Test comment {i}", Author = "Comment author" });
+            }
+            await context.SaveChangesAsync();
+
+            // Act
+            var post = await postService.GetPostByIdAsync(postId);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.Equal(postId, post.PostId);
+            Assert.NotNull(post.Comments);
+            Assert.NotEmpty(post.Comments);
+            Assert.Equal(3, post.Comments.Count);
         }
 
         private Post GetPost()
