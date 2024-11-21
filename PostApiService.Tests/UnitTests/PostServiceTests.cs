@@ -428,7 +428,23 @@ namespace PostApiService.Tests.UnitTests
             Assert.NotNull(post);
             Assert.Equal(postId, post.PostId);
             Assert.NotNull(post.Comments);
-            Assert.Empty(post.Comments);           
+            Assert.Empty(post.Comments);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<PostService>();
+            var postService = new PostService(context, logger);
+
+            var postId = 999;
+
+            // Act & Assert   
+            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+             postService.GetPostByIdAsync(postId));
+            Assert.Equal("Post with ID 999 was not found.", exception.Message);
         }
 
         private Post GetPost()
