@@ -5,6 +5,7 @@ namespace PostApiService.Tests.Fixtures
 {
     internal class DataFixture
     {
+        private static int _commentIdCounter = 1;
         public static List<Post> GetPosts(int count, bool useNewSeed = false)
         {
             return GetPostFaker(useNewSeed).Generate(count);
@@ -24,19 +25,19 @@ namespace PostApiService.Tests.Fixtures
             }
             return new Faker<Post>()
                .RuleFor(p => p.PostId, f => 0)
-            .RuleFor(p => p.Title, f => f.Lorem.Sentence(5, 7))
+            .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
             .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
             .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
             .RuleFor(p => p.Author, f => f.Person.FullName)
             .RuleFor(p => p.CreateAt, f => f.Date.Past(1))
             .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
-            .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(3))
+            .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
             .RuleFor(p => p.MetaDescription, f => f.Lorem.Paragraph(1))
             .RuleFor(p => p.Slug, f => f.Lorem.Slug())
             .RuleFor(p => p.Comments, f => new Faker<Comment>()
-                .RuleFor(c => c.CommentId, fc => fc.IndexFaker + 1)
+                .RuleFor(c => c.CommentId, fc => 0)
                 .RuleFor(c => c.Author, fc => fc.Person.FullName)
-                .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(10))
+                .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
                 .RuleFor(c => c.CreatedAt, fc => fc.Date.Past(1))
                 .Generate(f.Random.Int(0, 5)))
                 .UseSeed(seed);

@@ -13,7 +13,7 @@ namespace PostApiService.Tests.Fixtures
         private WebApplicationFactory<Program> _factory;
         private const string _connectionString =
             @"Server=localhost\\SQLEXPRESS;Database=TestIntegration;Trusted_Connection=True;TrustServerCertificate=True";
-
+            //"Server=(localdb)\\ProjectModels;Database=TestIntegration;Trusted_Connection=true;MultipleActiveResultSets=true";
         public WebApplicationFactoryFixture()
         {
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>

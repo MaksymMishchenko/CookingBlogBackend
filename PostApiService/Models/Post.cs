@@ -7,7 +7,7 @@ namespace PostApiService.Models
         public int PostId { get; set; }
 
         [Required(ErrorMessage = "Title is required")]
-        [StringLength(50, MinimumLength = 10, ErrorMessage = "Title must be between 10 and 50 characters.")]
+        [StringLength(200, MinimumLength = 10, ErrorMessage = "Title must be between 10 and 200 characters.")]
         public string? Title { get; set; }
 
         [Required(ErrorMessage = "Description is required.")]
@@ -15,7 +15,7 @@ namespace PostApiService.Models
         public string? Description { get; set; }
 
         [Required(ErrorMessage = "Content is required.")]
-        [StringLength(500, MinimumLength = 20, ErrorMessage = "Content must be between 20 and 500 characters.")]
+        [StringLength(2500, MinimumLength = 20, ErrorMessage = "Content must be between 20 and 500 characters.")]
         public string? Content { get; set; }
 
         [Required(ErrorMessage = "Author is required.")]

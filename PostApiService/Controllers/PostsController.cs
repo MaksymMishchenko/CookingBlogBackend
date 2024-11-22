@@ -19,15 +19,14 @@ namespace PostApiService.Controllers
         }
 
         [HttpGet("GetAllPosts")]
-        public async Task<IActionResult> GetAllPosts(
+        public async Task<IActionResult> GetAllPostsAsync(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] int commentPageNumber = 1,
         [FromQuery] int commentsPerPage = 10,
         [FromQuery] bool includeComments = true
         )
-        {
-            // Перевірка параметрів
+        {            
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
             {
                 return BadRequest("Parameters must be greater than 0.");
@@ -58,7 +57,7 @@ namespace PostApiService.Controllers
         }
 
         [HttpGet("{postId}")]
-        public async Task<IActionResult> GetPostById(int postId, [FromQuery] bool includeComments)
+        public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments)
         {
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
             return Ok(post);
@@ -66,7 +65,7 @@ namespace PostApiService.Controllers
 
         [Authorize]
         [HttpPost]
-        public async Task<IActionResult> AddPost([FromBody] Post post)
+        public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             await _postsService.AddPostAsync(post);
             return Ok();
@@ -74,7 +73,7 @@ namespace PostApiService.Controllers
 
         [Authorize]
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditPost(int id, [FromBody] Post post)
+        public async Task<IActionResult> EditPostAsync(int id, [FromBody] Post post)
         {
             if (id != post.PostId)
             {
@@ -87,7 +86,7 @@ namespace PostApiService.Controllers
 
         [Authorize]
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePost(int id)
+        public async Task<IActionResult> DeletePostAsync(int id)
         {
             await _postsService.DeletePostAsync(id);
             return Ok();
