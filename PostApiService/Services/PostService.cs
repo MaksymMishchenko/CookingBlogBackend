@@ -252,7 +252,7 @@ namespace PostApiService.Services
                 }
 
                 _logger.LogInformation("Fetching posts from the database. Page: {Page}, Size: {Size}.",
-            pageNumber, pageSize);
+                    pageNumber, pageSize);
 
                 var query = _context.Posts.AsQueryable();
 

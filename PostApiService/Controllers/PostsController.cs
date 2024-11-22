@@ -10,10 +10,12 @@ namespace PostApiService.Controllers
     public class PostsController : Controller
     {
         private readonly IPostService _postsService;
+        private readonly ILogger<PostsController> _logger;
 
-        public PostsController(IPostService postsService)
+        public PostsController(IPostService postsService, ILogger<PostsController> logger)
         {
             _postsService = postsService;
+            _logger = logger;
         }
 
         [HttpGet("GetAllPosts")]
@@ -25,12 +27,34 @@ namespace PostApiService.Controllers
         [FromQuery] bool includeComments = true
         )
         {
-            var posts = await _postsService.GetAllPostsAsync(pageNumber,
-                pageSize,
-                commentPageNumber,
-                commentsPerPage,
-                includeComments);
-            return Ok(posts);
+            // Перевірка параметрів
+            if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
+            {
+                return BadRequest("Parameters must be greater than 0.");
+            }
+
+            try
+            {
+                var posts = await _postsService.GetAllPostsAsync(
+                    pageNumber,
+                    pageSize,
+                    commentPageNumber,
+                    commentsPerPage,
+                    includeComments);
+
+                return Ok(posts);
+            }
+
+            catch (ArgumentException ex)
+            {
+                _logger.LogWarning(ex, "Invalid parameters provided.");
+                return BadRequest(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while fetching posts.");
+                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+            }
         }
 
         [HttpGet("{postId}")]
