@@ -110,14 +110,12 @@ namespace PostApiService.Services
                 return false;
             }
             catch (DbUpdateException dbEx)
-            {
-                // Логування помилок, пов’язаних із базою даних
+            {                
                 _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
                 return false;
             }
             catch (Exception ex)
-            {
-                // Логування будь-яких інших помилок
+            {                
                 _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
                 throw;
             }
