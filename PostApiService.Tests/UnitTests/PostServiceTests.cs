@@ -1,4 +1,3 @@
-using Castle.Core.Logging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PostApiService.Interfaces;
@@ -11,21 +10,28 @@ namespace PostApiService.Tests.UnitTests
     {
         private InMemoryDatabaseFixture _fixture;
         private ILogger<PostService> _logger;
-        private IPostService _postService;
-
 
         public PostServiceTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
-            _logger = new LoggerFactory().CreateLogger<PostService>();            
+            _logger = new LoggerFactory().CreateLogger<PostService>();
+        }
+
+        private IPostService CreatePostService()
+        {
+            var context = _fixture.CreateContext();
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
+            return new PostService(context, _logger);
+
         }
 
         [Fact]
         public async Task AddPostAsync_ShouldReturnTrueWithPostId_IfPostAdded()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             var newPost = GetPost();
 
@@ -35,15 +41,14 @@ namespace PostApiService.Tests.UnitTests
             // Assert
             Assert.True(result.Success);
             Assert.Equal(newPost.PostId, result.PostId);
-            Assert.Empty(newPost.Comments.ToList()); // comments list
+            Assert.Empty(newPost.Comments.ToList());
         }
 
         [Fact]
         public async Task AddPostAsync_ShouldThrowArgumentNullException_IfPostIsNull()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => postService.AddPostAsync(null));
@@ -54,8 +59,11 @@ namespace PostApiService.Tests.UnitTests
         public async Task EditPostAsync_ShouldReturnTrueWithPostId_IfPostEdited()
         {
             // Arrange
-            using var context = _fixture.CreateContext();           
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
+
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
 
             var newPost = GetPost();
             context.Posts.Add(newPost);
@@ -79,8 +87,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task EditCommentAsync_ShouldReturnFalseWithZero_IfPostDoesNotEdit()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             var nonExistentPost = new Post
             {
@@ -106,8 +113,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task EditPostAsync_ShouldThrowArgumentNullException_IfPostIsNull()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => postService.EditPostAsync(null));
@@ -118,7 +124,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task EditPostAsync_ShouldReturnFalseAndZero_WhenDbUpdateExceptionOccurs()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
+            using var context = _fixture.CreateContext();
             var service = new PostService(context, _logger);
 
             var post = GetPost();
@@ -138,7 +144,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task EditPostAsync_ShouldThrowException_WhenUnexpectedErrorOccurs()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
+            using var context = _fixture.CreateContext();
             var service = new PostService(context, _logger);
 
             var post = GetPost();
@@ -152,7 +158,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task DeletePostAsync_ShouldReturnTrue_IfPostDeleted()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             var newPost = GetPost();
@@ -171,9 +177,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task DeletePostAsync_ShouldReturnFalse_WhenCommentDoesNotExist()
         {
             // Arrange
-            var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             var nonExistentComment = 999;
             // Act
@@ -189,8 +193,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task DeletePostAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
         {
             // Arrange
-            using var context = _fixture.CreateContext();           
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<ArgumentException>(() => postService.DeletePostAsync(postId));
@@ -202,7 +205,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetAllPostsAsync_ShouldReturnPostsWithComments()
         {
             // Arrange
-            using var context = _fixture.CreateContext();           
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             context.Database.EnsureDeleted();
@@ -238,21 +241,29 @@ namespace PostApiService.Tests.UnitTests
                 includeComments);
 
             // Assert
-            // Assert
             Assert.NotNull(result);
             Assert.Equal(5, result.Count);
-            Assert.All(result, post =>
+
+            foreach (var post in result)
             {
                 Assert.NotNull(post.Comments);
+
                 Assert.True(post.Comments.Count <= commentsPerPage);
-            });
+
+                foreach (var comment in post.Comments)
+                {
+                    Assert.StartsWith("Comment", comment.Content);
+                    Assert.StartsWith("Author", comment.Author);
+                    Assert.NotNull(comment.CreatedAt);
+                }
+            }
         }
 
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnPostsWithoutComments()
         {
             // Arrange
-            using var context = _fixture.CreateContext();           
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             context.Database.EnsureDeleted();
@@ -292,7 +303,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetAllPostsAsync_ShouldReturnEmptyPostList()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             var pageNumber = 1;
@@ -320,7 +331,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetAllPostsAsync_ShouldReturnTenPostsAndTenComments()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             context.Database.EnsureDeleted();
@@ -368,7 +379,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetPostByIdAsync_ShouldReturnPostByIdWithComments()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             var postId = 1;
@@ -397,7 +408,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetPostByIdAsync_ShouldReturnPostByIdWithoutComments()
         {
             // Arrange
-            using var context = _fixture.CreateContext();          
+            using var context = _fixture.CreateContext();
             var postService = new PostService(context, _logger);
 
             var postId = 1;
@@ -426,8 +437,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
-            var postService = new PostService(context, _logger);
+            var postService = CreatePostService();
 
             var nonExistentPost = 999;
 
@@ -443,8 +453,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetPostByIdAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
         {
             // Arrange
-            using var context = _fixture.CreateContext();            
-            var postService = new PostService(context, _logger);           
+            var postService = CreatePostService();
 
             // Act & Assert   
             var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
