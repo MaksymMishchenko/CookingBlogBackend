@@ -25,6 +25,6 @@ namespace PostApiService.Tests.IntegrationTests
             response.EnsureSuccessStatusCode();
             Assert.NotNull(result);
             Assert.Equal(_factory.InitializePostData, result.Count);
-        }
+        }        
     }
 }

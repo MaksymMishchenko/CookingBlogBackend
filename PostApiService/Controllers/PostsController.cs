@@ -89,7 +89,7 @@ namespace PostApiService.Controllers
         /// A task that represents the asynchronous operation. The task result contains an IActionResult,
         /// which can be a success (201 Created) or an error response (400, 500, or 409 depending on the error).
         /// </returns>
-        [Authorize]
+        //[Authorize]
         [HttpPost("AddNewPost")]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
