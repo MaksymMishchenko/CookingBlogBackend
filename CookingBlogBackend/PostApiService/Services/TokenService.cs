@@ -34,10 +34,10 @@ namespace PostApiService.Services
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
         };
 
-            var secretKey = _configuration["JwtSettings:SecretKey"];
-            var issuer = _configuration["JwtSettings:Issuer"];
-            var audience = _configuration["JwtSettings:Audience"];
-            var tokenExpiration = _configuration.GetValue<int>("JwtSettings:TokenExpirationMinutes", 30);
+            var secretKey = _configuration["Jwt:SecretKey"];
+            var issuer = _configuration["Jwt:Issuer"];
+            var audience = _configuration["Jwt:Audience"];
+            var tokenExpiration = _configuration.GetValue<int>("Jwt:TokenExpirationMinutes", 30);
 
             if (string.IsNullOrWhiteSpace(secretKey) ||
                 string.IsNullOrWhiteSpace(issuer) ||

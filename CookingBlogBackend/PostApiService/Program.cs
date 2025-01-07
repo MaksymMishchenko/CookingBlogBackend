@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Contexts;
 using PostApiService.Infrastructure;
-using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
 using System.Text;
@@ -25,7 +24,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(connectionString);
 
-var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var jwtSettings = builder.Configuration.GetSection("Jwt");
 var secretKey = jwtSettings["SecretKey"];
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -45,18 +44,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddTransient<DataSeeder>();
 
-var connectionStringIdentity = builder.Configuration["ApiPostIdentity:ConnectionString"];
-// конфігуруємо SqlServer та передаємо стрічку
-builder.Services.AddDbContext<AppIdentityDbContext>(options => options.UseSqlServer(connectionStringIdentity));
+// Get an identity connection string from appsettings.json and check for null
+var identityConnectionString = builder.Configuration.GetValue<string>("ApiPostIdentity:ConnectionString");
+
+if (string.IsNullOrWhiteSpace(identityConnectionString))
+{
+    throw new InvalidOperationException("Connection string 'ApiPostIdentity' is not configured.");
+}
+
+// Register AddIdentityDbContext service to the IServiceCollection
+builder.Services.AddAppIdentityService(identityConnectionString);
+
 // додаємо Identity з ролями
 builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AppIdentityDbContext>()
     .AddDefaultTokenProviders();
-
-//builder.Services.AddTransient<IPostService, PostService>();
-//builder.Services.AddTransient<ICommentService, CommentService>();
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.AddCors(options =>
 {
