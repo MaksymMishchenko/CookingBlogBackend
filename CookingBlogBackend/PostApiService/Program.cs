@@ -2,7 +2,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using PostApiService;
+using PostApiService.Contexts;
+using PostApiService.Infrastructure;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
@@ -11,6 +12,18 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+
+// Get a connection string from appsettings.json and check for null
+var connectionString = builder.Configuration.GetConnectionString
+    ("DefaultConnection");
+
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+}
+
+// Register AddDbContext service to the IServiceCollection
+builder.Services.AddApplicationService(connectionString);
 
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = jwtSettings["SecretKey"];
@@ -30,8 +43,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.AddTransient<DataSeeder>();
 
 var connectionStringIdentity = builder.Configuration["ApiPostIdentity:ConnectionString"];
@@ -42,8 +53,8 @@ builder.Services.AddIdentity<IdentityUser, IdentityRole>()
     .AddEntityFrameworkStores<AppIdentityDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.AddTransient<IPostService, PostService>();
-builder.Services.AddTransient<ICommentService, CommentService>();
+//builder.Services.AddTransient<IPostService, PostService>();
+//builder.Services.AddTransient<ICommentService, CommentService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
