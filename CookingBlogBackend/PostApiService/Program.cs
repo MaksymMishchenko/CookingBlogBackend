@@ -1,12 +1,9 @@
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
 using PostApiService.Contexts;
 using PostApiService.Infrastructure;
 using PostApiService.Models;
 using PostApiService.Services;
-using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,43 +11,24 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
-    ("DefaultConnection");
-
-if (string.IsNullOrWhiteSpace(connectionString))
-{
-    throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
-}
+    ("DefaultConnection") ??
+    throw new InvalidOperationException
+        ("Connection string 'DefaultConnection' is not configured.");
 
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(connectionString);
 
-var jwtSettings = builder.Configuration.GetSection("Jwt");
-var secretKey = jwtSettings["SecretKey"];
+var jwtConfiguration = builder.Configuration.GetSection("Jwt").Get<JwtConfiguration>() ??
+     throw new InvalidOperationException("Jwt configuration is missing in the appsettings.json file.");
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidateAudience = true,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            ValidIssuer = jwtSettings["Issuer"],
-            ValidAudience = jwtSettings["Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey))
-        };
-    });
-
-builder.Services.AddTransient<DataSeeder>();
+// Register Application Jwt Bearer Authentication 
+builder.Services.AddAppJwtAuthentication(jwtConfiguration);
 
 // Get an identity connection string from appsettings.json and check for null
-var identityConnectionString = builder.Configuration.GetValue<string>("ApiPostIdentity:ConnectionString");
-
-if (string.IsNullOrWhiteSpace(identityConnectionString))
-{
-    throw new InvalidOperationException("Connection string 'ApiPostIdentity' is not configured.");
-}
+var identityConnectionString = builder.Configuration.GetValue<string>
+    ("ApiPostIdentity:ConnectionString") ??
+    throw new InvalidOperationException
+    ("Connection string 'ApiPostIdentity' is not configured.");
 
 // Register AddIdentityDbContext service to the IServiceCollection
 builder.Services.AddAppIdentityService(identityConnectionString);
