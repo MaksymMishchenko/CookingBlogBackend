@@ -1,6 +1,4 @@
-using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using PostApiService.Contexts;
 using PostApiService.Infrastructure;
 using PostApiService.Models;
 using PostApiService.Services;
@@ -33,20 +31,8 @@ var identityConnectionString = builder.Configuration.GetValue<string>
 // Register AddIdentityDbContext service to the IServiceCollection
 builder.Services.AddAppIdentityService(identityConnectionString);
 
-// додаємо Identity з ролями
-builder.Services.AddIdentity<IdentityUser, IdentityRole>()
-    .AddEntityFrameworkStores<AppIdentityDbContext>()
-    .AddDefaultTokenProviders();
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAllOrigins", builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
-});
+// Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
+builder.Services.AddAppCors();
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -76,7 +62,7 @@ if (app.Environment.IsDevelopment()) // Skip seeding in Testing environment
     await IdentitySeedData.EnsurePopulatedAsync(app.Services);
 }
 
-app.UseCors("AllowAllOrigins");
+app.UseCors("AllowLocalhost");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -94,4 +80,5 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
 public partial class Program;
