@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PostApiService.Infrastructure;
 using PostApiService.Models;
-using PostApiService.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,20 +43,7 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment()) // Skip seeding in Testing environment
 {
-    using (var scope = app.Services.CreateScope())
-    {
-        var services = scope.ServiceProvider;
-        try
-        {
-            var context = services.GetRequiredService<ApplicationDbContext>();
-            var seeder = services.GetRequiredService<DataSeeder>();
-            await seeder.SeedDataAsync(); // Seed the data when the app starts
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"An error occurred during seeding: {ex.Message}");
-        }
-    }
+    await ServiceRegistration.SeedDataAsync(app);
 
     await IdentitySeedData.EnsurePopulatedAsync(app.Services);
 }

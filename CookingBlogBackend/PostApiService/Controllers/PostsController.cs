@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
@@ -88,9 +87,8 @@ namespace PostApiService.Controllers
         /// <returns>
         /// A task that represents the asynchronous operation. The task result contains an IActionResult,
         /// which can be a success (201 Created) or an error response (400, 500, or 409 depending on the error).
-        /// </returns> 
-        [Authorize]
-        [HttpPost("AddNewPost")]        
+        /// </returns>         
+        [HttpPost("AddNewPost")]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             if (post == null)
@@ -156,7 +154,6 @@ namespace PostApiService.Controllers
             }
         }
 
-        [Authorize]
         [HttpPut("{id}")]
         public async Task<IActionResult> EditPostAsync(int id, [FromBody] Post post)
         {
@@ -169,7 +166,6 @@ namespace PostApiService.Controllers
             return Ok();
         }
 
-        [Authorize]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePostAsync(int id)
         {
