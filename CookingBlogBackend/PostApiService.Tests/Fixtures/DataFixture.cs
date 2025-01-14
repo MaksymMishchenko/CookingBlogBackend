@@ -50,7 +50,12 @@ namespace PostApiService.Tests.Fixtures
 
         public static List<Post> GetTestEmptyPostsList()
         {
-            return new List<Post> ();
+            return new List<Post>();
+        }
+
+        public static List<Comment> GetTestListCommentsWithPosts()
+        {
+            return new List<Comment> { new Comment { CommentId = 1 } };
         }
 
         public static List<Comment> GetTestListComments()

@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
@@ -98,6 +97,24 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal("An unexpected error occurred. Please try again later.", exception.Message);
         }
 
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldThrowInvalidOperationException_IfCommentDoesNotExist()
+        {
+            // Arrange
+            var commentId = 1;
+            var saveChangedResult = 1;
+
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestEmptyPostsList());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListCommentsWithPosts());
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
+
+            var comment = new EditCommentModel { Content = "Updated comment" };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _commentService.UpdateCommentAsync(commentId, comment));
+            Assert.Equal($"Comment with ID {commentId} does not exist", exception.Message);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
@@ -153,101 +170,6 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.False(result);
-        }
-
-        [Fact]
-        public async Task EditCommentAsync_ShouldReturnTrue_IfCommentEdited()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var commentId = 1;
-            var newComment = new Comment { Content = "Original comment", Author = "Test author" };
-            context.Comments.Add(newComment);
-            await context.SaveChangesAsync();
-
-            newComment.Content = "Edited comment";
-
-            // Act
-            var result = await commentService.EditCommentAsync(newComment);
-
-            // Assert
-            Assert.True(result);
-            var editedComment = await context.Comments
-                .FirstOrDefaultAsync(c => c.CommentId == commentId && c.Content == "Edited comment");
-            Assert.Equal(newComment.Content, editedComment.Content);
-        }
-
-        [Fact]
-        public async Task EditCommentAsync_ShouldReturnFalse_WhenCommentDoesNotExist()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var nonExistentCommentId = 999;
-            var nonExistentComment = new Comment
-            {
-                CommentId = nonExistentCommentId,
-                Content = "Test comment",
-                Author = "Test author"
-            };
-
-            // Act
-            var result = await commentService.EditCommentAsync(nonExistentComment);
-
-            // Assert
-            Assert.False(result);
-        }
-
-        [Fact]
-        public async Task EditCommentAsync_ShouldThrowArgumentNullException_WhenCommentIsNull()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => commentService.EditCommentAsync(null));
-            Assert.Equal("Comment cannot be null (Parameter 'comment')", exception.Message);
-        }
-
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        public async Task EditCommentAsync_ShouldThrowArgumentException_WhenCommentContentIsNull(string content)
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var newComment = new Comment { Content = content, Author = "Test author" };
-
-            // Act & Assert
-
-            var exception = await Assert.ThrowsAsync<ArgumentException>(() => commentService.EditCommentAsync(newComment));
-            Assert.Equal("Comment content cannot be null or empty. (Parameter 'Content')", exception.Message);
-        }
-
-        [Fact]
-        public async Task EditCommentAsync_ShouldThrowArgumentException_WhenCommentIdIsInvalid()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var invalidCommentid = -1;
-            var newComment = new Comment { CommentId = invalidCommentid, Content = "Test comment", Author = "Test author" };
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<ArgumentException>(() => commentService.EditCommentAsync(newComment));
-            Assert.Equal("Invalid comment ID. (Parameter 'CommentId')", exception.Message);
         }
     }
 }

@@ -41,14 +41,9 @@ namespace PostApiService.Controllers
         }
 
         [HttpPut("{commentId}")]
-        public async Task<IActionResult> EditCommentAsync(int commentId, [FromBody] Comment comment)
+        public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
-            if (commentId != comment.CommentId)
-            {
-                return BadRequest();
-            }
-
-            await _commentService.EditCommentAsync(comment);
+            await _commentService.UpdateCommentAsync(commentId, comment);
             return Ok();
         }
 
