@@ -16,7 +16,7 @@ var connectionString = builder.Configuration.GetConnectionString
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(connectionString);
 
-var jwtConfiguration = builder.Configuration.GetSection("Jwt").Get<JwtConfiguration>() ??
+var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<JwtConfiguration>() ??
      throw new InvalidOperationException("Jwt configuration is missing in the appsettings.json file.");
 
 // Register Application Jwt Bearer Authentication 

@@ -12,8 +12,8 @@ using PostApiService.Contexts;
 namespace PostApiService.Migrations.AppIdentityDb
 {
     [DbContext(typeof(AppIdentityDbContext))]
-    [Migration("20241105123213_Initial")]
-    partial class Initial
+    [Migration("20250114073455_Identity")]
+    partial class Identity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

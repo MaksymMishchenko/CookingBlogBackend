@@ -85,7 +85,7 @@ namespace PostApiService.Infrastructure
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = config.Issuer,
                         ValidAudience = config.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.Key))
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SecretKey))
                     };
                 });
 
