@@ -5,7 +5,6 @@ using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
-using System;
 
 namespace PostApiService.Tests.UnitTests
 {
@@ -30,7 +29,7 @@ namespace PostApiService.Tests.UnitTests
             // Arrange
             var postId = 1;
             var saveChangedResult = 1;
-                      
+
             _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestEmptyPostsList());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
@@ -79,6 +78,24 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.False(result);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var postId = 1;
+
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestListPosts());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListComments());
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("Unexpected error")); ;
+
+            var comment = new Comment { Content = "Test comment", Author = "Test author" };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _commentService.AddCommentAsync(postId, comment));
+            Assert.Equal("An unexpected error occurred. Please try again later.", exception.Message);
         }
 
         [Theory]
