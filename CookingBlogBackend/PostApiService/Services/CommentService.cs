@@ -9,7 +9,7 @@ namespace PostApiService.Services
     /// </summary>
     public class CommentService : ICommentService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
         private readonly ILogger<CommentService> _logger;
 
         /// <summary>
@@ -17,7 +17,7 @@ namespace PostApiService.Services
         /// </summary>
         /// <param name="context">The database context used to interact with the database tables related to comments.</param>
         /// <param name="logger">The logger used to log operations and events related to comments.</param>
-        public CommentService(ApplicationDbContext context, ILogger<CommentService> logger)
+        public CommentService(IApplicationDbContext context, ILogger<CommentService> logger)
         {
             _context = context;
             _logger = logger;

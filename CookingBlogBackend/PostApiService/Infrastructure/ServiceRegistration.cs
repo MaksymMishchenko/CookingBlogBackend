@@ -25,6 +25,8 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(connectionString);
             });
 
+            services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+
             services.AddTransient<IPostService, PostService>();
             services.AddTransient<ICommentService, CommentService>();
 
