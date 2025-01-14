@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
+using Moq.EntityFrameworkCore;
+using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
 
@@ -14,20 +17,24 @@ namespace PostApiService.Tests.UnitTests
             _fixture = fixture;
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public async Task AddCommentAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
+        [Fact]
+        public async Task AddCommentAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
         {
             // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
+            var mockContext = new Mock<IApplicationDbContext>();
 
+            mockContext.Setup(c => c.Posts).ReturnsDbSet(new List<Post>());
+
+            mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
+
+            var mockLogger = new Mock<ILogger<CommentService>>();
+            var commentService = new CommentService(mockContext.Object, mockLogger.Object);
+
+            var postId = 1;
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => commentService.AddCommentAsync(postId, comment));
+            await Assert.ThrowsAsync<KeyNotFoundException>(() => commentService.AddCommentAsync(postId, comment));
         }
 
         [Fact]
