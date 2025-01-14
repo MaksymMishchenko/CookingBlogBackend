@@ -42,5 +42,20 @@ namespace PostApiService.Tests.Fixtures
                 .Generate(f.Random.Int(0, 5)))
                 .UseSeed(seed);
         }
+
+        public static List<Post> GetTestListPosts()
+        {
+            return new List<Post> { new Post { PostId = 1 } };
+        }
+
+        public static List<Post> GetTestEmptyPostsList()
+        {
+            return new List<Post> ();
+        }
+
+        public static List<Comment> GetTestListComments()
+        {
+            return new List<Comment>();
+        }
     }
 }

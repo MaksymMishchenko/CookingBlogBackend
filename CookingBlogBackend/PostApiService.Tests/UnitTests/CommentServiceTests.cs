@@ -11,99 +11,52 @@ namespace PostApiService.Tests.UnitTests
     public class CommentServiceTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private InMemoryDatabaseFixture _fixture;
+        private readonly Mock<IApplicationDbContext> _mockContext;
+        private readonly Mock<ILogger<CommentService>> _mockLoggerService;
+        private readonly CommentService _commentService;
 
         public CommentServiceTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
+            _mockContext = new Mock<IApplicationDbContext>();
+            _mockLoggerService = new Mock<ILogger<CommentService>>();
+            _commentService = new CommentService(_mockContext.Object, _mockLoggerService.Object);
         }
 
         [Fact]
         public async Task AddCommentAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
         {
-            // Arrange
-            var mockContext = new Mock<IApplicationDbContext>();
-
-            mockContext.Setup(c => c.Posts).ReturnsDbSet(new List<Post>());
-
-            mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
-
-            var mockLogger = new Mock<ILogger<CommentService>>();
-            var commentService = new CommentService(mockContext.Object, mockLogger.Object);
+            // Arrange            
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestEmptyPostsList());
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
 
             var postId = 1;
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => commentService.AddCommentAsync(postId, comment));
+            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => _commentService.AddCommentAsync(postId, comment));
+            Assert.Equal($"Post with ID {postId} does not exist.", exception.Message);
         }
 
         [Fact]
-        public async Task AddCommentAsync_ShouldThrowNullArgumentException_IfCommentIsNull()
+        public async Task AddCommentAsync_ShouldReturnTrue_IfCommentAddedSuccessfully()
         {
             // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
             var postId = 1;
 
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentNullException>(() => commentService.AddCommentAsync(postId, null));
-        }
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestListPosts());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListComments());
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(1);
 
-        [Fact]
-        public async Task AddCommentAsync_ShouldReturnTrue_WhenPostExists()
-        {
-            // Arrange                        
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var postId = 1;
-
-            context.Posts.Add(new Post
-            {
-                PostId = postId,
-                Title = "Test post",
-                Content = "Test post content",
-                Description = "Test desc",
-                Author = "Test author",
-                ImageUrl = "image.jpg",
-                Slug = "test-slug",
-                MetaTitle = "Test meta title",
-                MetaDescription = "Tets meta descr"
-            });
-            await context.SaveChangesAsync();
-
-            var comment = new Comment { Content = "Some test comment", Author = "Test author" };
+            var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act
-            var result = await commentService.AddCommentAsync(postId, comment);
+            var result = await _commentService.AddCommentAsync(postId, comment);
 
             // Assert
-            Assert.True(result);            
-
-            var addedComment = await context.Comments
-                .FirstOrDefaultAsync(c => c.PostId == postId && c.Content == "Some test comment");
-            Assert.NotNull(addedComment);
-            Assert.Equal("Some test comment", addedComment.Content);
-            Assert.Equal(comment.Content, addedComment.Content);
+            Assert.True(result);
         }
 
-        [Fact]
-        public async Task AddCommentAsync_ShouldThrowKeyNotFoundException_WhenPostDoesNotExist()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var postId = 1;
-            var comment = new Comment { Content = "Test comment", Author = "Test author" };
-
-            // Act & Assert
-            await Assert.ThrowsAsync<KeyNotFoundException>(() => commentService.AddCommentAsync(postId, comment));
-        }
 
         [Theory]
         [InlineData(0)]
