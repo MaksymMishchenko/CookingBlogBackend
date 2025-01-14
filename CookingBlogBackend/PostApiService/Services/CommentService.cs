@@ -13,10 +13,10 @@ namespace PostApiService.Services
         private readonly ILogger<CommentService> _logger;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="CommentService"/> class.
+        /// Initializes a new instance of the <see cref="CommentService"/> class with the specified database context and logger.
         /// </summary>
-        /// <param name="context">The <see cref="ApplicationDbContext"/> used for data access.</param>
-        /// <param name="logger">The logger used for logging information, warnings, and errors.</param>
+        /// <param name="context">The database context used to interact with the database tables related to comments.</param>
+        /// <param name="logger">The logger used to log operations and events related to comments.</param>
         public CommentService(ApplicationDbContext context, ILogger<CommentService> logger)
         {
             _context = context;
@@ -24,45 +24,55 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Adds a comment to a specific post.
+        /// Adds a new comment to a specified post.
         /// </summary>
         /// <param name="postId">The ID of the post to which the comment will be added.</param>
-        /// <param name="comment">The comment to be added.</param>
-        /// <returns>True if the comment was successfully added, otherwise false.</returns>
-        /// <exception cref="ArgumentException">Thrown if the <paramref name="postId"/> is less than or equal to zero.</exception>
-        /// <exception cref="ArgumentNullException">Thrown if the <paramref name="comment"/> is null.</exception>
-        /// <exception cref="KeyNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
+        /// <param name="comment">The comment object to be added.</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation. 
+        /// The task result contains a boolean indicating whether the comment was added successfully.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">
+        /// Thrown when the specified post does not exist in the database.
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown when an unexpected error occurs during the database save operation.
+        /// </exception>
         public async Task<bool> AddCommentAsync(int postId, Comment comment)
         {
-            ValidateComment(postId, comment);
+            var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId);
+            if (!postExists)
+            {
+                _logger.LogWarning($"Post with ID {postId} does not exist. Cannot add comment");
+
+                throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
+            }
+
+            comment.PostId = postId;
+            comment.CreatedAt = DateTime.UtcNow;
+            _context.Comments.Add(comment);
 
             try
             {
-                var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId);
-                if (!postExists)
-                {
-                    _logger.LogWarning($"Post with ID {postId} does not exist. Cannot add comment");
-                    throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
-                }
-
-                comment.PostId = postId;
-                comment.CreatedAt = DateTime.UtcNow;
-                _context.Comments.Add(comment);
                 var result = await _context.SaveChangesAsync();
 
                 if (result > 0)
                 {
-                    _logger.LogInformation($"Comment was added succesfully to post id: {postId}");
+                    _logger.LogInformation($"Comment was added successfully to post id: {postId}");
+
                     return true;
                 }
 
                 _logger.LogWarning($"Failed to add comment to post id: {postId}");
+
                 return false;
+
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unexpected error occurred while adding a comment to post ID: {PostId}", postId);
-                throw;
+                _logger.LogError(ex.Message, "An unexpected error occurred while saving comment to post ID: {postId}", postId);
+
+                throw new Exception("An unexpected error occurred. Please try again later.");
             }
         }
 
@@ -128,8 +138,8 @@ namespace PostApiService.Services
                 }
 
                 _context.Comments.Attach(comment);
-                _context.Entry(comment).Property(c => c.Content).IsModified = true;
-                _context.Entry(comment).Property(c => c.PostId).IsModified = true;
+                //_context.Entry(comment).Property(c => c.Content).IsModified = true;
+                //_context.Entry(comment).Property(c => c.PostId).IsModified = true;
 
                 var result = await _context.SaveChangesAsync();
 
