@@ -43,22 +43,22 @@ namespace PostApiService.Tests.Fixtures
                 .UseSeed(seed);
         }
 
-        public static List<Post> GetTestListPosts()
+        public static List<Post> GetListWithPost()
         {
             return new List<Post> { new Post { PostId = 1 } };
         }
 
-        public static List<Post> GetTestEmptyPostsList()
+        public static List<Post> GetEmptyPostList()
         {
             return new List<Post>();
         }
 
-        public static List<Comment> GetTestListCommentsWithPosts()
+        public static List<Comment> GetListWithComment()
         {
-            return new List<Comment> { new Comment { CommentId = 1 } };
+            return new List<Comment> { new Comment { CommentId = 1, Content = "This is the test content." } };
         }
 
-        public static List<Comment> GetTestListComments()
+        public static List<Comment> GetEmptyCommentList()
         {
             return new List<Comment>();
         }

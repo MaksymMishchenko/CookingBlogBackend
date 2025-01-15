@@ -29,7 +29,7 @@ namespace PostApiService.Tests.UnitTests
             var postId = 1;
             var saveChangedResult = 1;
 
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestEmptyPostsList());
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetEmptyPostList());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
@@ -46,8 +46,8 @@ namespace PostApiService.Tests.UnitTests
             var postId = 1;
             var saveChangedResult = 1;
 
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestListPosts());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListComments());
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetListWithPost());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetEmptyCommentList());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
@@ -66,8 +66,8 @@ namespace PostApiService.Tests.UnitTests
             var postId = 1;
             var saveChangedResult = 0;
 
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestListPosts());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListComments());
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetListWithPost());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetEmptyCommentList());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
@@ -85,10 +85,10 @@ namespace PostApiService.Tests.UnitTests
             // Arrange
             var postId = 1;
 
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestListPosts());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListComments());
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetListWithPost());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetEmptyCommentList());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("Unexpected error")); ;
+                .ThrowsAsync(new Exception()); ;
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
@@ -104,8 +104,7 @@ namespace PostApiService.Tests.UnitTests
             var commentId = 1;
             var saveChangedResult = 1;
 
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetTestEmptyPostsList());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetTestListCommentsWithPosts());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetListWithComment());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
             var comment = new EditCommentModel { Content = "Updated comment" };
@@ -113,6 +112,29 @@ namespace PostApiService.Tests.UnitTests
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _commentService.UpdateCommentAsync(commentId, comment));
             Assert.Equal($"Comment with ID {commentId} does not exist", exception.Message);
+        }
+
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldReturnTrue_IfCommentAddedSuccessfully()
+        {
+            // Arrange
+            var commentId = 1;
+            var saveChangedResult = 1;
+
+            _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
+                .ReturnsAsync(DataFixture.GetListWithComment()
+                .FirstOrDefault(c => c.CommentId == commentId));
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(saveChangedResult);
+
+            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
+
+            // Act
+            var result = await _commentService.UpdateCommentAsync(commentId, updatedComment);
+
+            // Assert            
+            Assert.True(result);
         }
 
         [Theory]
