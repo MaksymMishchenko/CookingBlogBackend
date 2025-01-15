@@ -137,6 +137,29 @@ namespace PostApiService.Tests.UnitTests
             Assert.True(result);
         }
 
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldReturnFalse_WhenSaveChangesFails()
+        {
+            // Arrange
+            var commentId = 1;
+            var saveChangedResult = 0;
+
+            _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
+                .ReturnsAsync(DataFixture.GetListWithComment()
+                .FirstOrDefault(c => c.CommentId == commentId));
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(saveChangedResult);
+
+            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
+
+            // Act
+            var result = await _commentService.UpdateCommentAsync(commentId, updatedComment);
+
+            // Assert            
+            Assert.False(result);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
