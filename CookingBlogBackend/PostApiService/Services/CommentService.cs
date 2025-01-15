@@ -166,7 +166,7 @@ namespace PostApiService.Services
 
             try
             {
-                await _context.SaveChangesAsync();
+                var result = await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Comment with ID {CommentId} removed successfully.", commentId);
 
