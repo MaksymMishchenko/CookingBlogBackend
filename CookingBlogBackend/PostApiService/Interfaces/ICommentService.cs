@@ -6,6 +6,6 @@ namespace PostApiService.Interfaces
     {        
         Task<bool> AddCommentAsync(int postId, Comment comment);
         Task<bool> UpdateCommentAsync(int commentId, EditCommentModel comment);
-        Task<bool> DeleteCommentAsync(int commentId);
+        Task DeleteCommentAsync(int commentId);
     }
 }

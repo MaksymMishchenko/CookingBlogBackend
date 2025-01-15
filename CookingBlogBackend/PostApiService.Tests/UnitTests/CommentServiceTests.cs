@@ -31,7 +31,6 @@ namespace PostApiService.Tests.UnitTests
             var saveChangedResult = 1;
 
             _mockContext.Setup(c => c.Posts).ReturnsDbSet(DataFixture.GetEmptyPostList());
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
@@ -106,12 +105,12 @@ namespace PostApiService.Tests.UnitTests
             var saveChangedResult = 1;
 
             _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetListWithComment());
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
             var comment = new EditCommentModel { Content = "Updated comment" };
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => _commentService.UpdateCommentAsync(commentId, comment));
+
             Assert.Equal($"Comment with ID {commentId} does not exist", exception.Message);
         }
 
@@ -179,6 +178,7 @@ namespace PostApiService.Tests.UnitTests
             // Act & Assert            
             var concurrencyException = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _commentService
             .UpdateCommentAsync(commentId, updatedComment));
+
             Assert.Equal($"Concurrency issue while updating comment ID {commentId}.", concurrencyException.Message);
         }
 
@@ -200,7 +200,24 @@ namespace PostApiService.Tests.UnitTests
             // Act & Assert            
             var concurrencyException = await Assert.ThrowsAsync<Exception>(() => _commentService
             .UpdateCommentAsync(commentId, updatedComment));
+
             Assert.Equal("An unexpected error occurred. Please try again later.", concurrencyException.Message);
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        {
+            // Arrange
+            var commentId = 1;
+            var saveChangedResult = 1;
+
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetEmptyCommentList());
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _commentService.DeleteCommentAsync(commentId));
+
+            Assert.Equal($"Comment with ID {commentId} does not exist", exception.Message);
         }
     }
 }

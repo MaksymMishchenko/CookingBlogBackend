@@ -54,8 +54,8 @@ namespace PostApiService.Controllers
             {
                 return BadRequest("Post ID must be greater than zero.");
             }
-            var result = await _commentService.DeleteCommentAsync(commentId);
-            return Ok(result);
+            await _commentService.DeleteCommentAsync(commentId);
+            return Ok("Comment removed successfully");
         }
     }
 }
