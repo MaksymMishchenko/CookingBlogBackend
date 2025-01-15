@@ -136,55 +136,53 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Deletes a comment by its ID.
+        /// Deletes a comment by its ID from the database.
         /// </summary>
         /// <param name="commentId">The ID of the comment to be deleted.</param>
-        /// <returns>True if the comment was successfully deleted, otherwise false.</returns>
-        /// <exception cref="ArgumentException">Thrown if the <paramref name="commentId"/> is less than or equal to zero.</exception>
-        public async Task<bool> DeleteCommentAsync(int commentId)
+        /// <returns>
+        /// A task representing the asynchronous operation.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">
+        /// Thrown when the specified comment does not exist in the database.
+        /// </exception>
+        /// <exception cref="DbUpdateConcurrencyException">
+        /// Thrown when a concurrency issue occurs while deleting the comment.
+        /// </exception>
+        /// <exception cref="Exception">
+        /// Thrown when an unexpected error occurs during the delete operation.
+        /// </exception>
+        public async Task DeleteCommentAsync(int commentId)
         {
-            ValidateComment(commentId);
+            var existingComment = await _context.Comments.FindAsync(commentId);
+
+            if (existingComment == null)
+            {
+                _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot delete.", commentId);
+
+                throw new KeyNotFoundException($"Comment with ID {commentId} does not exist");
+            }
+
+            _context.Comments.Remove(existingComment);
 
             try
             {
-                var commentExist = await _context.Comments.FindAsync(commentId);
-                if (commentExist == null)
-                {
-                    _logger.LogWarning($"Comment with id: {commentId} does not exist", commentId);
-                    return false;
-                }
+                await _context.SaveChangesAsync();
 
-                _context.Comments.Remove(commentExist);
-                var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("Comment with ID {CommentId} removed successfully.", commentId);
 
-                if (result > 0)
-                {
-                    _logger.LogInformation("Comment with ID {CommentId} was successfully deleted.", commentId);
-                    return true;
-                }
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Concurrency issue while removing comment ID {CommentId}.", commentId);
 
-                _logger.LogWarning("No rows were affected when attempting to delete comment with ID {CommentId}.", commentId);
-                return false;
+                throw new DbUpdateConcurrencyException($"Concurrency issue while removing comment ID {commentId}.");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"An error occured while removing comment with ID {commentId}", commentId);
-                throw;
-            }
-        }                
+                _logger.LogError(ex, "Unexpected error while removing comment ID {CommentId}.", commentId);
 
-        /// <summary>
-        /// Validates the provided comment ID to ensure it is greater than zero.
-        /// </summary>
-        /// <param name="commentId">The ID of the comment to validate.</param>
-        /// <exception cref="ArgumentException">Thrown if the comment ID is less than or equal to zero.</exception>
-        private void ValidateComment(int commentId)
-        {
-            if (commentId <= 0)
-            {
-                _logger.LogError($"Invalid comment ID: {commentId}");
-                throw new ArgumentException($"Post ID must be greater than zero.", nameof(commentId));
+                throw new Exception("An unexpected error occurred. Please try again later.");
             }
-        }                
+        }
     }
 }

@@ -165,7 +165,7 @@ namespace PostApiService.Tests.UnitTests
         public async Task UpdateCommentAsync_ShouldThrowDbUpdateConcurrencyException_WhenDbSaveFailsDueToConcurrency()
         {
             // Arrange
-            var commentId = 1;            
+            var commentId = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
                 .ReturnsAsync(DataFixture.GetListWithComment()
@@ -201,63 +201,6 @@ namespace PostApiService.Tests.UnitTests
             var concurrencyException = await Assert.ThrowsAsync<Exception>(() => _commentService
             .UpdateCommentAsync(commentId, updatedComment));
             Assert.Equal("An unexpected error occurred. Please try again later.", concurrencyException.Message);
-        }
-
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public async Task DeleteCommentAsync_ShouldThrowArgumentException_WhenCommentIdIsInvalid(int commentId)
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var newComment = new Comment { Content = "Some test comment", Author = "Test author" };
-
-            context.Comments.Add(newComment);
-            await context.SaveChangesAsync();
-
-            // Act & Assert
-            await Assert.ThrowsAsync<ArgumentException>(() => commentService.DeleteCommentAsync(commentId));
-        }
-
-        [Fact]
-        public async Task DeleteCommentAsync_ShouldReturnTrue_WhenCommentRemoved()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var commentId = 1;
-            var newComment = new Comment { Content = "Some test comment", Author = "Test author" };
-
-            context.Comments.Add(newComment);
-            await context.SaveChangesAsync();
-
-            // Act
-            var result = await commentService.DeleteCommentAsync(commentId);
-
-            // Assert
-            Assert.True(result);
-        }
-
-        [Fact]
-        public async Task DeleteCommentAsync_ShouldReturnFalse_IfCommentDoesNotExist()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            var commentService = new CommentService(context, logger);
-
-            var nonExistentCommentId = 999;
-
-            // Act
-            var result = await commentService.DeleteCommentAsync(nonExistentCommentId);
-
-            // Assert
-            Assert.False(result);
         }
     }
 }
