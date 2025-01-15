@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
@@ -158,6 +159,48 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert            
             Assert.False(result);
+        }
+
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldThrowDbUpdateConcurrencyException_WhenDbSaveFailsDueToConcurrency()
+        {
+            // Arrange
+            var commentId = 1;            
+
+            _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
+                .ReturnsAsync(DataFixture.GetListWithComment()
+                .FirstOrDefault(c => c.CommentId == commentId));
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DbUpdateConcurrencyException());
+
+            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
+
+            // Act & Assert            
+            var concurrencyException = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _commentService
+            .UpdateCommentAsync(commentId, updatedComment));
+            Assert.Equal($"Concurrency issue while updating comment ID {commentId}.", concurrencyException.Message);
+        }
+
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var commentId = 1;
+
+            _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
+                .ReturnsAsync(DataFixture.GetListWithComment()
+                .FirstOrDefault(c => c.CommentId == commentId));
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception());
+
+            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
+
+            // Act & Assert            
+            var concurrencyException = await Assert.ThrowsAsync<Exception>(() => _commentService
+            .UpdateCommentAsync(commentId, updatedComment));
+            Assert.Equal("An unexpected error occurred. Please try again later.", concurrencyException.Message);
         }
 
         [Theory]
