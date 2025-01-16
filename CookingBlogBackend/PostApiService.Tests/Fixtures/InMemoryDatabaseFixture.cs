@@ -3,7 +3,7 @@
 namespace PostApiService.Tests.Fixtures
 {
     public class InMemoryDatabaseFixture : IAsyncLifetime
-    {       
+    {
         private DbContextOptions<ApplicationDbContext> _options;
 
         public InMemoryDatabaseFixture()
@@ -18,8 +18,19 @@ namespace PostApiService.Tests.Fixtures
             return new ApplicationDbContext(_options);
         }
 
-        public Task DisposeAsync() => Task.CompletedTask;
+        public async Task InitializeAsync()
+        {
+            using var context = CreateContext();
+            
+            context.Posts.Add(DataFixture.GetSinglePost());
+            context.Comments.AddRange(DataFixture.GetListWithComments());
+            await context.SaveChangesAsync();
+        }
 
-        public Task InitializeAsync() => Task.CompletedTask;
+        public async Task DisposeAsync()
+        {
+            using var context = CreateContext();
+            await context.Database.EnsureDeletedAsync();
+        }
     }
 }

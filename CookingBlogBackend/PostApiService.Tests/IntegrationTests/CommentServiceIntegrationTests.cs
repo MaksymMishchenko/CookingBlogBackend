@@ -1,167 +1,115 @@
-﻿//using Castle.Core.Logging;
-//using Microsoft.EntityFrameworkCore;
-//using Microsoft.Extensions.Logging;
-//using PostApiService.Models;
-//using PostApiService.Services;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using PostApiService.Models;
+using PostApiService.Services;
 
-//namespace PostApiService.Tests.IntegrationTests
-//{
-//    public class CommentServiceIntegrationTests : IClassFixture<IntegrationTestFixture>
-//    {
-//        private readonly IntegrationTestFixture _fixture;
-//        public CommentServiceIntegrationTests(IntegrationTestFixture fixture)
-//        {
-//            _fixture = fixture;
-//        }
+namespace PostApiService.Tests.IntegrationTests
+{
+    public class CommentServiceTests : IClassFixture<InMemoryDatabaseFixture>
+    {
+        private readonly InMemoryDatabaseFixture _fixture;        
+        public CommentServiceTests(InMemoryDatabaseFixture fixture)
+        {
+            _fixture = fixture;
+        }
 
-//        [Fact]
-//        public async Task AddCommentAsync_Should_Add_Comment_To_Specific_Post()
-//        {
-//            // Arrange
-//            using var context = _fixture.CreateContext();
-//            var postService = new PostService(context);
-//            //var logger = new LoggerFactory().CreateLogger<CommentService>();
-//            var commentService = new CommentService(context, null);
+        private CommentService CreateCommentService()
+        {
+            var context = _fixture.CreateContext();
+            var logger = new LoggerFactory().CreateLogger<CommentService>();
+            return new CommentService(context, logger);
+        }
 
-//            int postId = 1;
-//            var post = CreateTestPost(
-//                "Origin Post",
-//                "Origin Content",
-//                "Origin Author",
-//                "Origin Description",
-//                "origin-image.jpg",
-//                "origin-post",
-//                "Origin Post meta title",
-//                "Origin Post meta description"
-//                );
+        [Fact]
+        public async Task AddCommentAsync_ShouldAddNewCommentToPostSuccessfully()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var commentService = CreateCommentService();
 
-//            await postService.AddPostAsync(post);
+            int postId = 1;
+            var comment = new Comment
+            {
+                PostId = postId,
+                Content = "Test comment from Bob",
+                Author = "Bob"
+            };
 
-//            var comment = new Comment
-//            {
-//                Content = "Test comment from Bob",
-//                Author = "Bob",
-//                CreatedAt = DateTime.Now
-//            };
+            // Act
+            await commentService.AddCommentAsync(postId, comment);
 
-//            // Act
-//            await commentService.AddCommentAsync(postId, comment);
+            // Assert
+            var addedComment = await context.Comments
+                .FirstOrDefaultAsync(c => c.Content == comment.Content
+                && c.Author == comment.Author);
+            Assert.NotNull(addedComment);
+            Assert.Equal(postId, addedComment.PostId);
+            var commentCount = await context.Comments.CountAsync(c => c.PostId == postId);
+            Assert.Equal(4, commentCount);
+        }
 
-//            // Assert
-//            var addedComment = await context.Comments
-//                .FirstOrDefaultAsync(c => c.Content == comment.Content
-//                && c.Author == comment.Author);
-//            Assert.NotNull(addedComment);
-//            Assert.True(addedComment.PostId == postId);
-//        }
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldUpdateContentOfExistingComment()
+        {
+            // Arrange            
+            using var context = _fixture.CreateContext();
+            var commentService = CreateCommentService();
 
-//        [Fact]
-//        public async Task EditCommentAsync_Should_Edit_Comment_If_Exist()
-//        {
-//            // Arrange
-//            using var context = _fixture.CreateContext();
-//            var postService = new PostService(context);
-//            var commentService = new CommentService(context);
+            int commentId = 2;
+            var comment = new EditCommentModel
+            {
+                Content = "Edited comment content"
+            };
 
-//            int postId = 1;
-//            var post = CreateTestPost(
-//                "Origin Post",
-//                "Origin Content",
-//                "Origin Author",
-//                "Origin Description",
-//                "origin-image.jpg",
-//                "origin-post",
-//                "Origin Post meta title",
-//                "Origin Post meta description"
-//                );
+            // Act
+            await commentService.UpdateCommentAsync(commentId, comment);
 
-//            await postService.AddPostAsync(post);
+            // Assert
+            var editedComment = await context.Comments
+                .FirstOrDefaultAsync(c => c.CommentId == commentId);
 
-//            var comment = new Comment
-//            {
-//                Content = "Origin comment content",
-//                Author = "Michael",
-//                CreatedAt = DateTime.Now
-//            };
+            Assert.NotNull(editedComment);
+            Assert.Equal(comment.Content, editedComment.Content);
+        }
 
-//            await commentService.AddCommentAsync(postId, comment);
+        //[Fact]
+        //public async Task DeleteCommentAsync_Should_Remove_Comment_If_Exists()
+        //{
+        //    // Arrange
+        //    using var context = _fixture.CreateContext();
+        //    var postService = new PostService(context);
+        //    var commentService = new CommentService(context);
 
-//            comment.Content = "Updated comment content";
+        //    var postId = 1;
+        //    var post = CreateTestPost(
+        //        "Origin Post",
+        //        "Origin Content",
+        //        "Origin Author",
+        //        "Origin Description",
+        //        "origin-image.jpg",
+        //        "origin-post",
+        //        "Origin Post meta title",
+        //        "Origin Post meta description"
+        //        );
 
-//            // Act
-//            await commentService.EditCommentAsync(comment);
+        //    await postService.AddPostAsync(post);
 
-//            // Assert
-//            var editedComment = await context.Comments
-//                .FirstOrDefaultAsync(c => c.Content == comment.Content
-//            && c.Author == comment.Author
-//            );
-//            Assert.NotNull(editedComment);
-//            Assert.Equal("Updated comment content", editedComment.Content);
-//            Assert.Equal(comment.Author, editedComment.Author);
-//        }
+        //    var comment = new Comment
+        //    {
+        //        Content = "Comment to be deleted",
+        //        Author = "William",
+        //        CreatedAt = DateTime.Now
+        //    };
 
-//        [Fact]
-//        public async Task DeleteCommentAsync_Should_Remove_Comment_If_Exists()
-//        {
-//            // Arrange
-//            using var context = _fixture.CreateContext();
-//            var postService = new PostService(context);
-//            var commentService = new CommentService(context);
+        //    await commentService.AddCommentAsync(postId, comment);
 
-//            var postId = 1;
-//            var post = CreateTestPost(
-//                "Origin Post",
-//                "Origin Content",
-//                "Origin Author",
-//                "Origin Description",
-//                "origin-image.jpg",
-//                "origin-post",
-//                "Origin Post meta title",
-//                "Origin Post meta description"
-//                );
+        //    // Act
+        //    await commentService.DeleteCommentAsync(comment.CommentId);
 
-//            await postService.AddPostAsync(post);
-
-//            var comment = new Comment
-//            {
-//                Content = "Comment to be deleted",
-//                Author = "William",
-//                CreatedAt = DateTime.Now
-//            };
-
-//            await commentService.AddCommentAsync(postId, comment);
-
-//            // Act
-//            await commentService.DeleteCommentAsync(comment.CommentId);
-
-//            // Assert
-//            var removedComment = await context.Comments.FindAsync(comment.CommentId);
-//            Assert.Null(removedComment);
-//        }
-
-//        private Post CreateTestPost(string title,
-//            string content,
-//            string author,
-//            string description,
-//            string imageUrl,
-//            string slug,
-//            string metaTitle,
-//            string metaDescription)
-//        {
-//            return new Post
-//            {
-//                Title = title,
-//                Content = content,
-//                Author = author,
-//                CreateAt = DateTime.Now,
-//                Description = description,
-//                ImageUrl = imageUrl,
-//                Slug = slug,
-//                MetaTitle = metaTitle,
-//                MetaDescription = metaDescription
-//            };
-//        }
-//    }
-//}
+        //    // Assert
+        //    var removedComment = await context.Comments.FindAsync(comment.CommentId);
+        //    Assert.Null(removedComment);
+        //}        
+    }
+}
 
