@@ -349,5 +349,29 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Assert.Equal($"Failed to update comment ID {commentId}.", returnValue.Message);
             }
         }
+
+        [Fact]
+        public async Task OnUpdateCommentAsync_CommentNotFound_ReturnsNotFound()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var commentId = 999;
+
+            commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
+                .ThrowsAsync(new InvalidOperationException($"Comment with ID {commentId} does not exist"));
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.UpdateCommentAsync(commentId, new EditCommentModel() { Content = "Lorem ipsum dolor sit." });
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<CommentResponse>(notFoundResult.Value);
+
+            Assert.Equal($"Comment with ID {commentId} does not exist", response.Message);
+        }
     }
 }
