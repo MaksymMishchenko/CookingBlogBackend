@@ -1,0 +1,426 @@
+{
+	"info": {
+		"_postman_id": "48effb5a-d266-4c6d-a701-daf7e3d0eeac",
+		"name": "CookingBlogBackend",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "40053538"
+	},
+	"item": [
+		{
+			"name": "PostsController",
+			"item": [
+				{
+					"name": "GetAllPosts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:7030/api/Posts/GetAllPosts?pageNumber=1&pageSize=10&commentPageNumber=1&commentsPerPage=10&includeComments=true",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Posts",
+								"GetAllPosts"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								},
+								{
+									"key": "commentPageNumber",
+									"value": "1"
+								},
+								{
+									"key": "commentsPerPage",
+									"value": "10"
+								},
+								{
+									"key": "includeComments",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetPost",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:7030/api/Posts/GetPost/1?includeComments=true",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Posts",
+								"GetPost",
+								"1"
+							],
+							"query": [
+								{
+									"key": "includeComments",
+									"value": "true"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "AddNewPost",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"Sample Post Title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:7030/api/Posts/AddNewPost",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Posts",
+								"AddNewPost"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdatePost",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"postId\": 3,\r\n    \"title\": \"Changed changed Post Title\",\r\n    \"description\": \"This is a Changed sample description for the post.\",\r\n    \"content\": \"This is the Changed detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Changed Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:7030/api/Posts/3",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Posts",
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "RemovePost",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:7030/api/Posts/4",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Posts",
+								"4"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "1",
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JwtToken}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "CommentsController",
+			"item": [
+				{
+					"name": "AddComment",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \r\n  \"author\": \"Bob\",\r\n  \"content\": \"Content must be at least 10 symbols\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:7030/api/Comments/posts/1",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Comments",
+								"posts",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateComment",
+					"request": {
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \r\n  \"content\": \"This is a sample comment with enough length Really?.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:7030/api/Comments/1",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Comments",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "RemoveComment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:7030/api/Comments/0",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Comments",
+								"0"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{JwtToken}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"packages": {},
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		},
+		{
+			"name": "AuthController",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {\r",
+									"    var jsonResponse = pm.response.json();\r",
+									"    // Зберігаємо токен в змінну середовища\r",
+									"    pm.environment.set(\"JwtToken\", jsonResponse.token);\r",
+									"} else {\r",
+									"    console.error(\"Error fetching token: \", pm.response.status);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"string\",\r\n  \"email\": \"test@example.com\",\r\n  \"password\": \"stringstr\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:7030/api/Auth/register",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {\r",
+									"    var jsonResponse = pm.response.json();\r",
+									"    // Зберігаємо токен в змінну середовища\r",
+									"    pm.environment.set(\"JwtToken\", jsonResponse.token);\r",
+									"} else {\r",
+									"    console.error(\"Error fetching token: \", pm.response.status);\r",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"admin\",\r\n  \"password\": \"~Rtyuehe1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "https://localhost:7030/api/Auth/login",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
