@@ -34,10 +34,6 @@
 
 	<ItemGroup>
 		<Using Include="Xunit" />
-	</ItemGroup>	
-
-	<ItemGroup>
-	  <Folder Include="UnitTests\Controllers\" />
 	</ItemGroup>
 
 </Project>
