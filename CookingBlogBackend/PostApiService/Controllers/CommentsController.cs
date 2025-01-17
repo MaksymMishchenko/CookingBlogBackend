@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -97,11 +98,99 @@ namespace PostApiService.Controllers
             }
         }
 
+        /// <summary>
+        /// Updates an existing comment with the specified comment ID and new content.
+        /// Performs validation on the comment ID, content, and model state.
+        /// If the comment is found and successfully updated, returns a success response with the updated content.
+        /// In case of validation failure, a missing comment, or concurrency issues, returns an appropriate error response.
+        /// Handles exceptions for not found comments, concurrency issues, and other unexpected errors.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment to be updated.</param>
+        /// <param name="comment">The updated comment data, including the new content.</param>
+        /// <returns>An IActionResult indicating the result of the operation. Returns a success response if the comment is updated, or an error response if validation fails, the comment is not found, or there is a concurrency issue.</returns>
+        /// <response code="200">Successfully updated the comment.</response>
+        /// <response code="400">Invalid comment ID, null comment, missing content, or validation failure.</response>
+        /// <response code="404">Comment not found.</response>
+        /// <response code="409">Concurrency issue occurred while updating the comment.</response>
+        /// <response code="500">Unexpected error during the comment update process.</response>
         [HttpPut("{commentId}")]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
-            await _commentService.UpdateCommentAsync(commentId, comment);
-            return Ok();
+            if (commentId <= 0)
+            {
+                _logger.LogWarning("Comment ID must be greater than zero. Received value: {PostId}", commentId);
+
+                return BadRequest(CommentResponse.CreateErrorResponse
+                    ("Comment ID must be greater than zero."));
+            }
+
+            if (comment == null)
+            {
+                _logger.LogWarning("Received null comment for comment ID {PostId}.", commentId);
+
+                return BadRequest(CommentResponse.CreateErrorResponse
+                    ("Comment cannot be null."));
+            }
+
+            if (string.IsNullOrEmpty(comment.Content))
+            {
+                _logger.LogWarning("Content is required for editing comment ID {CommentId}.", commentId);
+
+                return BadRequest(CommentResponse.CreateErrorResponse
+                    ("Content is required."));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+
+                _logger.LogWarning("Validation failed for comment ID {CommentId}. Errors: {Errors}.", commentId, string.Join(", ", errors));
+
+                return BadRequest(CommentResponse.CreateErrorResponse
+                    ("Validation failed.", errors));
+            }
+
+            try
+            {
+                var success = await _commentService.UpdateCommentAsync(commentId, comment);
+
+                if (success)
+                {
+                    return Ok(CommentResponse.CreateSuccessResponse
+                        ("Comment updated successfully."));
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to update comment ID {commentId}.", commentId);
+
+                    return BadRequest(CommentResponse.CreateErrorResponse
+                        ($"Failed to update comment ID {commentId}."));
+                }
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Comment with ID {CommentId} not found.", commentId);
+
+                return NotFound(CommentResponse.CreateErrorResponse
+                    (ex.Message));
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Concurrency issue occurred while updating comment ID {commentId}.", commentId);
+
+                return StatusCode(409, CommentResponse.CreateErrorResponse
+                    (ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while updating comment ID: {PostId}", commentId);
+
+                return StatusCode(500, CommentResponse.CreateErrorResponse
+                    (ex.Message));
+            }
         }
 
         [HttpDelete("{commentId}")]
