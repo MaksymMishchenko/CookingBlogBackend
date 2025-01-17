@@ -174,5 +174,30 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal($"Post with ID {invalidPostId} does not exist.", response.Message);
         }
+
+        [Fact]
+        public async Task OnAddCommentAsync_UnhandledException_ReturnsServerError()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            commentServiceMock.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
+                .ThrowsAsync(new Exception("An unexpected error occurred. Please try again later."));
+
+            var validPostId = 1;
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.AddCommentAsync(validPostId, new Comment());
+
+            // Assert
+            var serverErrorResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, serverErrorResult.StatusCode);
+
+            var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
+            Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
+        }
     }
 }
