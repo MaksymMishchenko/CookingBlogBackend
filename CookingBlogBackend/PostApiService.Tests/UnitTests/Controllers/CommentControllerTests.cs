@@ -459,5 +459,29 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Assert.Equal("Comment ID must be greater than zero.", returnValue.Message);
             }
         }
+
+        [Fact]
+        public async Task OnDeleteCommentAsync_CommentNotFound_ReturnsNotFound()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var commentNotFoundId = 999;
+
+            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()))
+                .ThrowsAsync(new KeyNotFoundException($"Comment with ID {commentNotFoundId} does not exist"));
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.DeleteCommentAsync(commentNotFoundId);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<CommentResponse>(notFoundResult.Value);
+
+            Assert.Equal($"Comment with ID {commentNotFoundId} does not exist", response.Message);
+        }
     }
 }
