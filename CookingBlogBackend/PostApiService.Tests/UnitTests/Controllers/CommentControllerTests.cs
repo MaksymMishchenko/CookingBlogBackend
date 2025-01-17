@@ -109,5 +109,46 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OnAddCommentAsync_ShouldHandleSuccessAndFailureCorrectly(bool isSuccess)
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            commentServiceMock.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
+                .ReturnsAsync(isSuccess);
+
+            var postId = 1;
+            var newComment = new Comment
+            {
+                Author = "Brian",
+                Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+            };
+
+            // Act
+            var result = await controller.AddCommentAsync(postId, newComment);
+
+            // Assert            
+            if (isSuccess)
+            {
+                var okResult = Assert.IsType<OkObjectResult>(result);
+                Assert.NotNull(okResult);
+                Assert.Equal("Comment added successfully.", ((CommentResponse)okResult.Value).Message);
+            }
+            else
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                var returnValue = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+                Assert.False(returnValue.Success);
+                Assert.Equal($"Failed to add comment for post ID {postId}.", returnValue.Message);
+            }
+        }
     }
 }
