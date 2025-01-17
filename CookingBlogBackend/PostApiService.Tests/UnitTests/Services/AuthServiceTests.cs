@@ -6,7 +6,7 @@ using PostApiService.Interfaces;
 using PostApiService.Models;
 using AuthService = PostApiService.Services.AuthService;
 
-namespace PostApiService.Tests.UnitTests
+namespace PostApiService.Tests.UnitTests.Services
 {
     public class AuthServiceTests
     {

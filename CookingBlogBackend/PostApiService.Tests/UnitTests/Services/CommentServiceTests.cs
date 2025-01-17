@@ -6,7 +6,7 @@ using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
 
-namespace PostApiService.Tests.UnitTests
+namespace PostApiService.Tests.UnitTests.Services
 {
     public class CommentServiceTests
     {
@@ -102,7 +102,7 @@ namespace PostApiService.Tests.UnitTests
             var commentId = 1;
             var saveChangedResult = 1;
 
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetListWithComment());
+            _mockContext.Setup(c => c.Comments).ReturnsDbSet(DataFixture.GetListWithComments());
 
             var comment = new EditCommentModel { Content = "Updated comment" };
 
@@ -120,7 +120,7 @@ namespace PostApiService.Tests.UnitTests
             var saveChangedResult = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -143,7 +143,7 @@ namespace PostApiService.Tests.UnitTests
             var saveChangedResult = 0;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -165,7 +165,7 @@ namespace PostApiService.Tests.UnitTests
             var commentId = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -187,7 +187,7 @@ namespace PostApiService.Tests.UnitTests
             var commentId = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -225,7 +225,7 @@ namespace PostApiService.Tests.UnitTests
             var saveChangedResult = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
@@ -245,7 +245,7 @@ namespace PostApiService.Tests.UnitTests
             var commentId = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
@@ -265,7 +265,7 @@ namespace PostApiService.Tests.UnitTests
             var commentId = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(DataFixture.GetListWithComment()
+                .ReturnsAsync(DataFixture.GetListWithComments()
                 .FirstOrDefault(c => c.CommentId == commentId));
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))

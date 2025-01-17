@@ -3,11 +3,11 @@ using Microsoft.Extensions.Logging;
 using PostApiService.Models;
 using PostApiService.Services;
 
-namespace PostApiService.Tests.IntegrationTests
+namespace PostApiService.Tests.IntegrationTests.Services
 {
     public class CommentServiceTests : IClassFixture<InMemoryDatabaseFixture>
     {
-        private readonly InMemoryDatabaseFixture _fixture;        
+        private readonly InMemoryDatabaseFixture _fixture;
         public CommentServiceTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
@@ -24,7 +24,6 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task AddCommentAsync_ShouldAddNewCommentToPostSuccessfully()
         {
             // Arrange
-            using var context = _fixture.CreateContext();
             var commentService = CreateCommentService();
 
             int postId = 1;
@@ -35,17 +34,20 @@ namespace PostApiService.Tests.IntegrationTests
                 Author = "Bob"
             };
 
+            using var context = _fixture.CreateContext();
+            var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
+
             // Act
             await commentService.AddCommentAsync(postId, comment);
 
             // Assert
             var addedComment = await context.Comments
-                .FirstOrDefaultAsync(c => c.Content == comment.Content
-                && c.Author == comment.Author);
+                .FirstOrDefaultAsync(c => c.Content == comment.Content && c.Author == comment.Author);
+
             Assert.NotNull(addedComment);
             Assert.Equal(postId, addedComment.PostId);
             var commentCount = await context.Comments.CountAsync(c => c.PostId == postId);
-            Assert.Equal(4, commentCount);
+            Assert.Equal(initialCount + 1, commentCount);
         }
 
         [Fact]
@@ -79,7 +81,7 @@ namespace PostApiService.Tests.IntegrationTests
             using var context = _fixture.CreateContext();
             var commentService = CreateCommentService();
 
-            var commentIdToRemove = 1; // Один із коментарів, засіяних у фікстурі
+            var commentIdToRemove = 1;
             var initialCount = await context.Comments.CountAsync();
 
             // Act
