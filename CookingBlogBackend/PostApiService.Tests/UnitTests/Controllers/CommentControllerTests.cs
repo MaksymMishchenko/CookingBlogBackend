@@ -4,6 +4,7 @@ using Moq;
 using PostApiService.Controllers;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Tests.Helper;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -57,6 +58,56 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal("Comment cannot be null.", response.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(ModelValidationHelper.GetCommentTestDataWithAuthor), MemberType = typeof(ModelValidationHelper))]
+        public async Task AddCommentAsync_ShouldReturnBadRequest_WhenModelIsInvalid(
+            string author,
+            string content,
+            bool expectedIsValid)
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            commentServiceMock
+                 .Setup(service => service.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
+                 .ReturnsAsync(true);
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            var comment = new Comment
+            {
+                Author = author,
+                Content = content,
+                PostId = 1
+            };
+
+            ModelValidationHelper.ValidateModel(comment, controller);
+
+            // Act
+            var result = await controller.AddCommentAsync(1, comment);
+
+            // Assert
+            if (expectedIsValid)
+            {
+                var okResult = Assert.IsType<OkObjectResult>(result);
+                Assert.NotNull(okResult);
+                Assert.Equal("Comment added successfully.", ((CommentResponse)okResult.Value).Message);
+            }
+            else
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+                Assert.Equal("Validation failed.", response.Message);
+
+                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Assert.Contains(response.Errors, error => error == validationResult.ErrorMessage);
+                }
+            }
         }
     }
 }

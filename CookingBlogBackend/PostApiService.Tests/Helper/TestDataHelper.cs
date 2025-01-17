@@ -1,9 +1,9 @@
 ﻿using Bogus;
 using PostApiService.Models;
 
-namespace PostApiService.Tests.Fixtures
+namespace PostApiService.Tests.Helper
 {
-    internal class DataFixture
+    internal class TestDataHelper
     {
         public static List<Post> GetPosts(int count, bool useNewSeed = false)
         {

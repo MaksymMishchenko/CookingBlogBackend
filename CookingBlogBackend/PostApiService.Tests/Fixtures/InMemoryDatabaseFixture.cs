@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PostApiService.Tests.Helper;
 
 namespace PostApiService.Tests.Fixtures
 {
@@ -27,8 +28,8 @@ namespace PostApiService.Tests.Fixtures
             await context.Database.EnsureDeletedAsync();
             await context.Database.EnsureCreatedAsync();
             
-            context.Posts.Add(DataFixture.GetSinglePost());
-            context.Comments.AddRange(DataFixture.GetListWithComments());
+            context.Posts.Add(TestDataHelper.GetSinglePost());
+            context.Comments.AddRange(TestDataHelper.GetListWithComments());
             await context.SaveChangesAsync();
         }
 
