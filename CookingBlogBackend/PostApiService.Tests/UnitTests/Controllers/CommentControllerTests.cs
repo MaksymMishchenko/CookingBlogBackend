@@ -199,5 +199,27 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
             Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
         }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        public async Task OnUpdateCommentAsync_CommentIdLessThanOrEqualZero_ReturnsBadRequest(int invalidCommentId)
+        {
+            // Arrange            
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.UpdateCommentAsync(invalidCommentId, new EditCommentModel());
+
+            //Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal("Comment ID must be greater than zero.", response.Message);
+        }
     }
 }
