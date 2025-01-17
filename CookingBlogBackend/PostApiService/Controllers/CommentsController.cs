@@ -193,15 +193,58 @@ namespace PostApiService.Controllers
             }
         }
 
+        /// <summary>
+        /// Deletes a comment with the specified comment ID.
+        /// Validates the comment ID and performs deletion using the comment service.
+        /// If the comment is found and successfully deleted, returns a success response.
+        /// In case of validation failure, missing comment, or concurrency issues, returns an appropriate error response.
+        /// Handles exceptions for not found comments, concurrency issues, and other unexpected errors.
+        /// </summary>
+        /// <param name="commentId">The ID of the comment to be deleted.</param>
+        /// <returns>An IActionResult indicating the result of the operation. Returns a success response if the comment is deleted, or an error response if validation fails, the comment is not found, or there is a concurrency issue.</returns>
+        /// <response code="200">Successfully deleted the comment.</response>
+        /// <response code="400">Invalid comment ID.</response>
+        /// <response code="404">Comment not found.</response>
+        /// <response code="409">Concurrency issue occurred while deleting the comment.</response>
+        /// <response code="500">Unexpected error during the comment deletion process.</response>
         [HttpDelete("{commentId}")]
         public async Task<IActionResult> DeleteCommentAsync(int commentId)
         {
             if (commentId <= 0)
             {
-                return BadRequest("Post ID must be greater than zero.");
+                _logger.LogWarning("Comment ID must be greater than zero. Received value: {CommentId}", commentId);
+
+                return BadRequest(CommentResponse.CreateErrorResponse
+                    ("Comment ID must be greater than zero."));
             }
-            await _commentService.DeleteCommentAsync(commentId);
-            return Ok("Comment removed successfully");
+
+            try
+            {
+                await _commentService.DeleteCommentAsync(commentId);
+
+                return Ok(CommentResponse.CreateSuccessResponse("Comment deleted successfully"));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex, "Comment with ID {CommentId} not found.", commentId);
+
+                return NotFound(CommentResponse.CreateErrorResponse
+                    (ex.Message));
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Concurrency issue occurred while deleting comment ID {CommentId}.", commentId);
+
+                return StatusCode(409, CommentResponse.CreateErrorResponse
+                    (ex.Message));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while removing comment ID: {CommentId}", commentId);
+
+                return StatusCode(500, CommentResponse.CreateErrorResponse
+                    (ex.Message));
+            }
         }
     }
 }
