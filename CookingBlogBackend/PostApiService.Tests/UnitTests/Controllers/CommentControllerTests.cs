@@ -400,5 +400,30 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<CommentResponse>(conflictResult.Value);
             Assert.Equal($"Concurrency issue while updating comment ID {commentId}.", response.Message);
         }
+
+        [Fact]
+        public async Task OnUpdateCommentAsync_UnhandledException_ReturnsServerError()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
+                .ThrowsAsync(new Exception("An unexpected error occurred. Please try again later."));
+
+            var validPostId = 1;
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.UpdateCommentAsync(validPostId, new EditCommentModel { Content = "Lorem ipsum dolor sit amet" });
+
+            // Assert
+            var serverErrorResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, serverErrorResult.StatusCode);
+
+            var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
+            Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
+        }
     }
 }
