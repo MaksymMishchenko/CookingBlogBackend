@@ -313,5 +313,41 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task OnUpdateCommentAsync_ShouldHandleSuccessAndFailureCorrectly(bool isSuccess)
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>())).ReturnsAsync(isSuccess);
+
+            int commentId = 1;
+            var updatedComment = new EditCommentModel { Content = "It is a long established fact that a reader will be distracted." };
+
+            // Act
+            var result = await controller.UpdateCommentAsync(commentId, updatedComment);
+
+            // Assert
+            if (isSuccess)
+            {
+                var okResult = Assert.IsType<OkObjectResult>(result);
+                Assert.NotNull(okResult);
+                Assert.Equal("Comment updated successfully.", ((CommentResponse)okResult.Value).Message);
+            }
+            else
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                var returnValue = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+                Assert.False(returnValue.Success);
+                Assert.Equal($"Failed to update comment ID {commentId}.", returnValue.Message);
+            }
+        }
     }
 }
