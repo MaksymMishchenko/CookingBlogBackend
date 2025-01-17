@@ -150,5 +150,29 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Assert.Equal($"Failed to add comment for post ID {postId}.", returnValue.Message);
             }
         }
+
+        [Fact]
+        public async Task OnAddCommentAsync_PostNotFound_ReturnsNotFound()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var invalidPostId = 999;
+
+            commentServiceMock.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
+                .ThrowsAsync(new KeyNotFoundException($"Post with ID {invalidPostId} does not exist."));
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.AddCommentAsync(invalidPostId, new Comment());
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<CommentResponse>(notFoundResult.Value);
+
+            Assert.Equal($"Post with ID {invalidPostId} does not exist.", response.Message);
+        }
     }
 }
