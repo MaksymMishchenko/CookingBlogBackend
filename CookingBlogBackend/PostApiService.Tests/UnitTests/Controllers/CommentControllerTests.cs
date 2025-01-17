@@ -425,5 +425,39 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
             Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
         }
+
+        [Theory]
+        [InlineData(-1, false)]
+        [InlineData(0, false)]
+        [InlineData(1, true)]
+        public async Task OnDeleteCommentAsync_ShouldHandleSuccessAndFailureCorrectly(int commentId, bool isSuccess)
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()));
+
+            // Act
+            var result = await controller.DeleteCommentAsync(commentId);
+
+            // Assert
+            if (isSuccess)
+            {
+                var okResult = Assert.IsType<OkObjectResult>(result);
+                Assert.NotNull(okResult);
+                Assert.Equal("Comment deleted successfully", ((CommentResponse)okResult.Value).Message);
+            }
+            else
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                var returnValue = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+                Assert.False(returnValue.Success);
+                Assert.Equal("Comment ID must be greater than zero.", returnValue.Message);
+            }
+        }
     }
 }
