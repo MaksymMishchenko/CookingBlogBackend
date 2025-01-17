@@ -85,18 +85,34 @@ json
 **Request body:**
 ```
 json
-{
-  "commentId": 0,
-  "author": "string",
-  "content": "stringstri",
-  "createdAt": "2025-01-06T19:57:05.423Z",
-  "postId": 0
+{  
+  "author": "Bob",
+  "content": "Lorem ipsum dolor sit amet"
 }
 ```
 
 **Response body:**
+```
+json
+{
+    "success": true,
+    "message": "Comment added successfully.",
+    "errors": []
+}
+```
+**Validation errors**
 
-`true`
+json
+```
+{
+  "success": false,
+  "message": "Validation errors occurred.",
+  "errors": [
+    { "field": "author", "message": "Author name exceeds maximum length of 50 characters." },
+    { "field": "content", "message": "Content is required." }
+  ]
+}
+```
 
 **Endpoint: PUT /api/Comments/{commentId}**
 
@@ -107,18 +123,31 @@ json
 **Request body:**
 ```
 json
-{
-  "commentId": 1,
-  "author": "Bob",
-  "content": "updated comment",
-  "createdAt": "2025-01-06T20:00:02.719Z",
-  "postId": 1
+{  
+  "content": "This is a sample comment with enough length."
 }
 ```
 
 **Response body:**
+```
+{
+    "success": true,
+    "message": "Comment updated successfully.",
+    "errors": []
+}
+```
+**Validation errors**
 
-`Updated successfully`
+json
+```
+{
+    "success": false,
+    "message": "Validation failed.",
+    "errors": [
+        "Content must be between 10 and 500 characters."
+    ]
+}
+```
 
 **Endpoint: DELETE /api/Comments/{commentId}**
 
@@ -129,8 +158,18 @@ json
 **Request body:**
 `json
 {
-  "id": 1
+  "commentId": 1
 }`
+
+**Response body:**
+json
+```
+{
+    "success": true,
+    "message": "Comment deleted successfully",
+    "errors": []
+}
+```
 
 ### 3. Posts
 
@@ -292,23 +331,102 @@ json
 
 ```
 Solution PostApiService/
-  ├── PostApiService/         // ASP.NET Core project
-  ├── Controllers/        // API controllers
-  ├── Images/             // Posts images
-  ├── Interfaces/         // Interfaces
-  ├── Migrations/         // API controllers
-  ├── Models/             // Data models
-  ├── Services/           // Business logic (services)
-  ├── Middleware/         // Middleware components
-  ├── appsettings.json    // Application configuration
-  ├── Program.cs          // Application entry point
+│
+├── Solution Items/                      
+│   ├── CookingBlogBackend.postman_collection.json  // Postman Collection
+│
+├── PostApiService/                      
+│   ├── Properties/                      
+│   ├── Contexts/                       
+│   ├── Controllers/                     
+│   ├── Helper/                          
+│   ├── Images/                          
+│   ├── Infrastructure/                  
+│   ├── Interfaces/                      
+│   ├── Migrations/                     
+│   ├── Models/                          
+│   ├── Services/                       
+│   ├── appsettings.json                    
+│   ├── Program.cs                                            
+
 ```
 
-## Testing
+# Testing
+
+## Project Structure
+
+```
+Solution PostApiService/
+│
+├── PostApiService.Tests/                     // Testing project
+│   ├── coverage-report/                      // Test coverage reports                               
+│   ├── Fixtures/                             // Test fixtures
+│   ├── Helper/                               // Test utilities
+│   ├── IntegrationTests/                     // Integration tests
+│   │   ├── Controllers/                      // Integration tests for API controllers
+│   │   ├── Services/                         // Integration tests for services
+│   ├── UnitTests/                            // Unit tests
+│   │   ├── Controllers/                      // Unit tests for API controllers
+│   │   ├── Services/                         // Unit tests for services
+│   ├── Usings.cs                             // Global using directives for tests
+                         
+```
+
 **Run Tests**
 To run unit tests, use the following command:
 
 `dotnet test`
+
+**Tests Covarage Tools**
+**Test Coverage and Report Generation for Visual Studio Community**
+
+The Analyze Code Coverage for All Tests feature is unavailable in Visual Studio Community Edition. Follow these steps to generate code coverage reports for free:
+
+**Step 1: Add Coverlet Dependency**
+Add the Coverlet collector to your test project:
+
+`dotnet add package coverlet.collector`
+
+**Step 2: Run Tests and Collect Coverage**
+Run the following command to execute tests and generate coverage data:
+
+`dotnet test --collect:"XPlat Code Coverage"`
+
+Coverage data will be saved in the TestResults folder as coverage.cobertura.xml.
+
+**Step 3: Generate an HTML Report**
+Use the reportgenerator tool to convert coverage data into an HTML report:
+
+Install the tool (if not already installed):
+
+`dotnet tool install --global dotnet-reportgenerator-globaltool`
+
+Generate the report:
+
+`reportgenerator -reports:"<path-to-coverage-file>" -targetdir:"coverage-report" -reporttypes:Html`
+
+Replace <path-to-coverage-file> with the path to coverage.cobertura.xml.
+
+Open the HTML file in the coverage-report folder to view the results.
+
+**Key Metrics**
+
+Focus on:
+
+Line Coverage: Percentage of lines executed by tests.
+Branch Coverage: Percentage of conditional branches tested.
+This method ensures comprehensive test coverage without needing Visual Studio Enterprise.
+
+**Postman Collection for Testing**
+A Postman collection named CookingBlogBackend.postman_collection is included in the Solution Items folder. You can use this collection to test the API endpoints directly, in addition to testing through Swagger or using the test coverage tools mentioned above.
+
+To use the collection:
+
+- Import the file into Postman.
+- Adjust environment variables as needed.
+- Run the collection to interact with the API endpoints.
+
+This provides an alternative testing method for verifying API functionality.
 
 ## To-Do
 - **Registration**
