@@ -36,5 +36,27 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.False(response.Success);
             Assert.Equal("Post ID must be greater than zero.", response.Message);
         }
+
+        [Fact]
+        public async Task OnAddCommentAsync_CommentIsNull_ReturnsBadRequest()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var validPostId = 1;
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.AddCommentAsync(validPostId, null);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal("Comment cannot be null.", response.Message);
+        }
     }
 }
