@@ -265,5 +265,53 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.False(response.Success);
             Assert.Equal("Content is required.", response.Message);
         }
+
+        [Theory]
+        [MemberData(nameof(ModelValidationHelper.GetCommentTestData), MemberType = typeof(ModelValidationHelper))]
+        public async Task UpdateCommentAsync_ShouldReturnBadRequest_WhenModelIsInvalid(
+            string content,
+            bool expectedIsValid)
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            commentServiceMock
+                 .Setup(service => service.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
+                 .ReturnsAsync(true);
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            var validCommentId = 1;
+            var comment = new EditCommentModel
+            {
+                Content = content,
+            };
+
+            ModelValidationHelper.ValidateModel(comment, controller);
+
+            // Act
+            var result = await controller.UpdateCommentAsync(validCommentId, comment);
+
+            // Assert
+            if (expectedIsValid)
+            {
+                var okResult = Assert.IsType<OkObjectResult>(result);
+                Assert.NotNull(okResult);
+                Assert.Equal("Comment updated successfully.", ((CommentResponse)okResult.Value).Message);
+            }
+            else
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+
+                Assert.Equal("Validation failed.", response.Message);
+
+                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Assert.Contains(response.Errors, error => error == validationResult.ErrorMessage);
+                }
+            }
+        }
     }
 }
