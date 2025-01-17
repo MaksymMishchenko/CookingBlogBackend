@@ -72,44 +72,25 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(comment.Content, editedComment.Content);
         }
 
-        //[Fact]
-        //public async Task DeleteCommentAsync_Should_Remove_Comment_If_Exists()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var postService = new PostService(context);
-        //    var commentService = new CommentService(context);
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
+        {
+            // Arrange
+            using var context = _fixture.CreateContext();
+            var commentService = CreateCommentService();
 
-        //    var postId = 1;
-        //    var post = CreateTestPost(
-        //        "Origin Post",
-        //        "Origin Content",
-        //        "Origin Author",
-        //        "Origin Description",
-        //        "origin-image.jpg",
-        //        "origin-post",
-        //        "Origin Post meta title",
-        //        "Origin Post meta description"
-        //        );
+            var commentIdToRemove = 1; // Один із коментарів, засіяних у фікстурі
+            var initialCount = await context.Comments.CountAsync();
 
-        //    await postService.AddPostAsync(post);
+            // Act
+            await commentService.DeleteCommentAsync(commentIdToRemove);
+            var finalCount = await context.Comments.CountAsync();
 
-        //    var comment = new Comment
-        //    {
-        //        Content = "Comment to be deleted",
-        //        Author = "William",
-        //        CreatedAt = DateTime.Now
-        //    };
-
-        //    await commentService.AddCommentAsync(postId, comment);
-
-        //    // Act
-        //    await commentService.DeleteCommentAsync(comment.CommentId);
-
-        //    // Assert
-        //    var removedComment = await context.Comments.FindAsync(comment.CommentId);
-        //    Assert.Null(removedComment);
-        //}        
+            // Assert
+            var removedComment = await context.Comments.FindAsync(commentIdToRemove);
+            Assert.Null(removedComment);
+            Assert.Equal(initialCount - 1, finalCount);
+        }
     }
 }
 
