@@ -483,5 +483,30 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal($"Comment with ID {commentNotFoundId} does not exist", response.Message);
         }
+
+        [Fact]
+        public async Task OnDeleteCommentAsync_ShouldReturnConcurrencyIssue_WithStatusCode409()
+        {
+            // Arrange
+            var commentServiceMock = new Mock<ICommentService>();
+            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+
+            var commentId = 1;
+
+            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()))
+                .ThrowsAsync(new DbUpdateConcurrencyException($"Concurrency issue while removing comment ID {commentId}."));
+
+            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+
+            // Act
+            var result = await controller.DeleteCommentAsync(commentId);
+
+            // Assert            
+            var conflictResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(409, conflictResult.StatusCode);
+
+            var response = Assert.IsType<CommentResponse>(conflictResult.Value);
+            Assert.Equal($"Concurrency issue while removing comment ID {commentId}.", response.Message);
+        }
     }
 }
