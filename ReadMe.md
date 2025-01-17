@@ -332,22 +332,23 @@ json
 ```
 Solution PostApiService/
 │
-├── Solution Items/                      
-│   ├── CookingBlogBackend.postman_collection.json  // Postman Collection
+├── Solution Items/                    
+│   ├── CookingBlogBackend.postman_collection.json  // Postman collection file for API testing, providing an alternative to Swagger for testing endpoints.
 │
-├── PostApiService/                      
-│   ├── Properties/                      
-│   ├── Contexts/                       
-│   ├── Controllers/                     
-│   ├── Helper/                          
-│   ├── Images/                          
-│   ├── Infrastructure/                  
-│   ├── Interfaces/                      
-│   ├── Migrations/                     
-│   ├── Models/                          
-│   ├── Services/                       
-│   ├── appsettings.json                    
-│   ├── Program.cs                                            
+├── PostApiService/                    // Main project containing the API implementation
+│   ├── Properties/                    // Auto-generated properties folder (e.g., launch settings)
+│   ├── Contexts/                      // Contains Entity Framework database context for managing database interactions
+│   ├── Controllers/                   // API controllers handling HTTP requests and routing
+│   ├── Helper/                        // Utility classes or methods to support business logic
+│   ├── Images/                        // Directory for storing images related to posts or other resources
+│   ├── Infrastructure/                // Core infrastructure-related code (e.g., dependency injection setup, configurations)
+│   ├── Interfaces/                    // Interface definitions for services and repositories, ensuring abstraction and testability
+│   ├── Migrations/                    // Database migrations created via Entity Framework for schema evolution
+│   ├── Models/                        // Data models representing entities and request/response DTOs
+│   ├── Services/                      // Business logic implementation for handling operations
+│   ├── appsettings.json               // Configuration file for app settings, including connection strings and other configurations
+│   ├── Program.cs                     // Entry point for the application, setting up middleware, services, and configurations
+                                           
 
 ```
 
