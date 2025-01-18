@@ -46,6 +46,35 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 Assert.Equal(newComment.Author, addedComment.Author);
                 Assert.Equal(newComment.PostId, addedComment.PostId);
             }
-        }        
+        }
+
+        [Fact]
+        public async Task OnUpdateCommentAsync_ShouldUpdateCommentInDatabaseAndReturn200OkResult()
+        {
+            // Arrange
+            var commentToBeEdited = new EditCommentModel
+            {
+                Content = "Updated comment content."
+            };
+
+            var content = HttpHelper.GetJsonHttpContent(commentToBeEdited);
+
+            // Act
+            var response = await _factory.Client.PutAsync(HttpHelper.Urls.UpdateComment, content);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var editedComment = await dbContext.Comments
+                    .FirstOrDefaultAsync(c => c.Content == commentToBeEdited.Content);
+
+                Assert.NotNull(editedComment);
+                Assert.Equal(commentToBeEdited.Content, editedComment.Content);
+            }
+        }
     }
 }
