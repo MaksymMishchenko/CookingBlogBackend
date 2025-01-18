@@ -1,47 +1,58 @@
-﻿using Bogus;
-using PostApiService.Models;
+﻿using PostApiService.Models;
 
 namespace PostApiService.Tests.Helper
 {
     internal class TestDataHelper
     {
-        public static List<Post> GetPosts(int count, bool useNewSeed = false)
+        public static List<Post> GetPostsWithComments(int count,
+            bool useNewSeed = false,
+            bool generateComments = true,
+            int commentCount = 1)
         {
-            return GetPostFaker(useNewSeed).Generate(count);
+            return GetPostFaker(useNewSeed, generateComments, commentCount).Generate(count);
         }
 
-        public static Post GetPost(bool useNewSeed = false)
+        public static Post GetPostWithComments(bool useNewSeed = false,
+            bool generateComments = true,
+            int commentCount = 1)
         {
-            return GetPosts(1, useNewSeed)[0];
+            return GetPostsWithComments(1, useNewSeed, generateComments, commentCount)[0];
         }
 
-        private static Faker<Post> GetPostFaker(bool useNewSeed)
+        private static Faker<Post> GetPostFaker(bool useNewSeed,
+            bool generateComments,
+            int commentCount)
         {
             var seed = 0;
             if (useNewSeed)
             {
                 seed = Random.Shared.Next(10, int.MaxValue);
             }
+
             return new Faker<Post>()
-               .RuleFor(p => p.PostId, f => 0)
-            .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
-            .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
-            .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
-            .RuleFor(p => p.Author, f => f.Person.FullName)
-            .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
-            .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
-            .RuleFor(p => p.MetaDescription, f => f.Lorem.Paragraph(1))
-            .RuleFor(p => p.Slug, f => f.Lorem.Slug())
-            .RuleFor(p => p.Comments, (f, post) =>
-            {
-                return new Faker<Comment>()
-                    .RuleFor(c => c.CommentId, _ => 0)
-                    .RuleFor(c => c.Author, fc => fc.Person.FullName)
-                    .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
-                    .RuleFor(c => c.PostId, _ => post.PostId)
-                    .Generate(f.Random.Int(0, 5));
-            })
-            .UseSeed(seed);
+                .RuleFor(p => p.PostId, f => 0)
+                .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
+                .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
+                .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
+                .RuleFor(p => p.Author, f => f.Person.FullName)
+                .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
+                .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
+                .RuleFor(p => p.MetaDescription, f => f.Lorem.Paragraph(1))
+                .RuleFor(p => p.Slug, f => f.Lorem.Slug())
+                .RuleFor(p => p.Comments, (f, post) =>
+                {
+                    if (generateComments)
+                    {
+                        return new Faker<Comment>()
+                            .RuleFor(c => c.CommentId, _ => 0)
+                            .RuleFor(c => c.Author, fc => fc.Person.FullName)
+                            .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
+                            .RuleFor(c => c.PostId, _ => post.PostId)
+                            .Generate(commentCount);
+                    }
+                    return new List<Comment>();
+                })
+                .UseSeed(seed);
         }
 
         public static Post GetSinglePost()

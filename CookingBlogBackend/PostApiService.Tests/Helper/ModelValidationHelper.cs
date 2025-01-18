@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System.ComponentModel.DataAnnotations;
+using DataAnnotationsValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace PostApiService.Tests.Helper
 {
@@ -7,7 +8,7 @@ namespace PostApiService.Tests.Helper
     {
         public static void ValidateModel(object comment, ControllerBase controller)
         {
-            var validationResults = new List<ValidationResult>();
+            var validationResults = new List<DataAnnotationsValidationResult>();
             var validationContext = new ValidationContext(comment);
             var isValid = Validator.TryValidateObject(comment, validationContext, validationResults, true);
 

@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Tests.Helper;
 
 namespace PostApiService.Tests.Fixtures
 {
@@ -17,24 +16,24 @@ namespace PostApiService.Tests.Fixtures
         }
 
         public ApplicationDbContext CreateContext()
-        {            
+        {
             return new ApplicationDbContext(_options);
         }
 
         public async Task InitializeAsync()
         {
             using var context = CreateContext();
-            
+
             await context.Database.EnsureDeletedAsync();
             await context.Database.EnsureCreatedAsync();
-            
+
             context.Posts.Add(TestDataHelper.GetSinglePost());
             context.Comments.AddRange(TestDataHelper.GetListWithComments());
             await context.SaveChangesAsync();
         }
 
         public async Task DisposeAsync()
-        {           
+        {
             using var context = CreateContext();
             await context.Database.EnsureDeletedAsync();
         }

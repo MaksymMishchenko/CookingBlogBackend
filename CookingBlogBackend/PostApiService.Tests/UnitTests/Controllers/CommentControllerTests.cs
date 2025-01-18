@@ -5,7 +5,6 @@ using Moq;
 using PostApiService.Controllers;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Tests.Helper;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {

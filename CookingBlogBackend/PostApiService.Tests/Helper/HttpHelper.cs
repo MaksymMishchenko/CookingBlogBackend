@@ -5,8 +5,7 @@ namespace PostApiService.Tests.Helper
     internal class HttpHelper
     {
         public static StringContent GetJsonHttpContent(object item)
-        {
-            //return new StringContent(JsonSerializer.Serialize(item), Encoding.UTF8, "application/json");
+        {           
             return new StringContent(System.Text.Json.JsonSerializer.Serialize(item), Encoding.UTF8, "application/json");
         }
 
@@ -17,6 +16,10 @@ namespace PostApiService.Tests.Helper
             public readonly static string AddPost = "/api/Posts/AddNewPost";
             public readonly static string EditPost = "/api/Posts/EditPostAsync";
             public readonly static string DeletePost = "/api/Posts/DeletePostAsync";
+
+            public readonly static string AddComment = "/api/Comments/posts/1";
+            public readonly static string UpdateComment = "api/Comments/2";
+            public readonly static string DeleteComment = "api/Comments/3";
         }
     }
 }

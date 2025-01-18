@@ -5,7 +5,6 @@ using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
-using PostApiService.Tests.Helper;
 
 namespace PostApiService.Tests.UnitTests.Services
 {
