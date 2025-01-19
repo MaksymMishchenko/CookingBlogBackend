@@ -4,14 +4,18 @@ using PostApiService.Models;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
-    public class CommentControllerIntegrationTests : IClassFixture<WebApplicationFactoryFixture>
+    public class CommentControllerIntegrationTests : IClassFixture<WebApplicationFactoryFixture>, IAsyncLifetime
     {
-        private WebApplicationFactoryFixture _factory;
+        private readonly WebApplicationFactoryFixture _factory;
 
         public CommentControllerIntegrationTests(WebApplicationFactoryFixture factory)
         {
             _factory = factory;
         }
+
+        public Task InitializeAsync() => _factory.InitializeAsync();
+
+        public Task DisposeAsync() => Task.CompletedTask;
 
         [Fact]
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
@@ -35,7 +39,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             using (var scope = _factory.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
                 var addedComment = await dbContext.Comments
                     .FirstOrDefaultAsync(c => c.Content == newComment.Content &&
                                               c.Author == newComment.Author &&
@@ -76,5 +79,29 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 Assert.Equal(commentToBeEdited.Content, editedComment.Content);
             }
         }
+
+        [Fact]
+        public async Task OnDeleteCommentAsync_ShouldRemoveCommentInDatabaseAndReturn200OkResult()
+        {
+            // Act
+            var response = await _factory.Client.DeleteAsync(HttpHelper.Urls.DeleteComment);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var removedComment = await dbContext.Comments
+                    .FirstOrDefaultAsync(c => c.CommentId == 3);
+
+                var commentCount = await dbContext.Comments.CountAsync();
+
+                Assert.Null(removedComment);
+                Assert.Equal(2, commentCount);
+            }
+        }
     }
+
 }
