@@ -6,7 +6,7 @@ namespace PostApiService.Services
 {
     public class PostService : IPostService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;
         private readonly ILogger<PostService> _logger;
 
         public PostService(ApplicationDbContext context, ILogger<PostService> logger)
@@ -172,7 +172,7 @@ namespace PostApiService.Services
 
                 foreach (var propertyName in propertiesToUpdate)
                 {
-                    _context.Entry(post).Property(propertyName).IsModified = true;
+                    //_context.Entry(post).Property(propertyName).IsModified = true;
                 }
 
                 var result = await _context.SaveChangesAsync();

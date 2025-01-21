@@ -38,6 +38,6 @@ namespace PostApiService.Models
         [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$", ErrorMessage = "Slug must only contain lowercase letters, numbers, and hyphens.")]
         public string Slug { get; set; }
 
-        public List<Comment> Comments { get; set; } = new List<Comment>();
+        public IList<Comment> Comments { get; set; } = new List<Comment>();
     }
 }
