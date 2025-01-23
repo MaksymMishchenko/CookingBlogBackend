@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Moq;
+using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Services;
 
@@ -116,6 +118,29 @@ namespace PostApiService.Tests.UnitTests
                 Assert.NotNull(post);
                 Assert.Empty(post.Comments);
             });
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var mockContext = new Mock<IApplicationDbContext>();
+            var mockLoggerService = new Mock<ILogger<PostService>>();
+            var postService = new PostService(mockContext.Object, mockLoggerService.Object);
+
+            mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetListWithPost());
+            mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetEmptyCommentList());
+            mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception());
+
+            var pageNumber = 2;
+            var pageSize = 10;
+            var includeComments = false;
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() =>
+            postService.GetAllPostsAsync(pageNumber, pageSize, includeComments: false));
+            Assert.Equal($"An unexpected error occurred while fetching posts from the database. PageNumber: {pageNumber}, PageSize: {pageSize}, IncludeComments: {includeComments}.", exception.Message);
         }
 
         //[Fact]
