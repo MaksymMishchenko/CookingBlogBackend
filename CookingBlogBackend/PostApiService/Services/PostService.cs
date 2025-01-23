@@ -16,6 +16,82 @@ namespace PostApiService.Services
         }
 
         /// <summary>
+        /// Retrieves a paginated list of posts from the database, with optional inclusion of comments.
+        /// </summary>
+        /// <param name="pageNumber">The number of the page to retrieve, starting from 1.</param>
+        /// <param name="pageSize">The number of posts per page.</param>
+        /// <param name="commentPageNumber">The page number for comments pagination (default is 1).</param>
+        /// <param name="commentsPerPage">The number of comments to retrieve per post (default is 10).</param>
+        /// <param name="includeComments">Indicates whether to include comments for each post (default is true).</param>
+        /// <returns>A list of posts, optionally with paginated comments.</returns>
+        /// <exception cref="Exception">
+        /// Thrown when an unexpected error occurs while fetching posts from the database.
+        /// The exception message contains details about the request parameters for debugging.
+        /// </exception>
+        /// <remarks>
+        /// If comments are included, they are paginated for each post according to the provided
+        /// <paramref name="commentPageNumber"/> and <paramref name="commentsPerPage"/> parameters.
+        /// </remarks>
+        public async Task<List<Post>> GetAllPostsAsync(int pageNumber,
+            int pageSize,
+            int commentPageNumber = 1,
+            int commentsPerPage = 10,
+            bool includeComments = true)
+        {
+            var query = _context.Posts.AsQueryable();
+
+            if (includeComments)
+            {
+                query = query.Include(p => p.Comments);
+            }
+
+            try
+            {
+                var posts = await query
+                    .OrderBy(p => p.PostId)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                _logger.LogInformation("Fetched {Count} posts. Total posts", posts.Count);
+
+                ProcessComments(posts, includeComments, commentPageNumber, commentsPerPage);
+
+                return posts;
+            }
+            catch (Exception ex)
+            {
+                var detailedMessage = $"An unexpected error occurred while fetching posts from the database. PageNumber: {pageNumber}, PageSize: {pageSize}, IncludeComments: {includeComments}.";
+                _logger.LogError(ex, detailedMessage);
+                throw new Exception(detailedMessage, ex);
+            }
+
+            void ProcessComments(List<Post> posts, bool includeComments, int commentPageNumber, int commentsPerPage)
+            {
+                if (includeComments)
+                {
+                    _logger.LogInformation("Fetching comments from the database. Page: {Page}, Size: {Size}.", commentPageNumber, commentsPerPage);
+
+                    foreach (var post in posts)
+                    {
+                        post.Comments = post.Comments
+                            .OrderBy(c => c.CreatedAt)
+                            .Skip((commentPageNumber - 1) * commentsPerPage)
+                            .Take(commentsPerPage)
+                            .ToList();
+                    }
+                }
+                else
+                {
+                    foreach (var post in posts)
+                    {
+                        post.Comments = new List<Comment>();
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Adds a new post to the database asynchronously and returns the result status.
         /// </summary>
         /// <param name="post">The <see cref="Post"/> object to be added.</param>
@@ -110,12 +186,12 @@ namespace PostApiService.Services
                 return false;
             }
             catch (DbUpdateException dbEx)
-            {                
+            {
                 _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
                 return false;
             }
             catch (Exception ex)
-            {                
+            {
                 _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
                 throw;
             }
@@ -195,106 +271,6 @@ namespace PostApiService.Services
             {
                 _logger.LogError(ex, "Unexpected error occurred while editing post with ID {PostId}", post.PostId);
                 throw;
-            }
-        }
-
-        /// <summary>
-        /// Retrieves a paginated list of posts, with optional pagination for comments.
-        /// Logs warnings for invalid parameters and includes comments if specified.
-        /// Defaults to empty lists for comments when not included or when an error occurs.
-        /// </summary>
-        /// <param name="pageNumber">The page number for the posts. Defaults to 1 if less than 1.</param>
-        /// <param name="pageSize">The number of posts per page. Defaults to 10 if less than 1.</param>
-        /// <param name="commentPageNumber">The page number for comments within each post. Defaults to 1 if less than 1.</param>
-        /// <param name="commentsPerPage">The number of comments per page for each post. Defaults to 10 if less than 1.</param>
-        /// <param name="includeComments">Determines whether to include comments in the result. Defaults to true.</param>
-        /// <returns>
-        /// A list of posts, each optionally including a paginated subset of their comments.
-        /// Returns an empty list if an error occurs or if no posts match the criteria.
-        /// </returns>
-        /// <remarks>
-        /// - Logs information about the pagination parameters and database operations.
-        /// - Ensures predictable results by sorting posts and comments by their IDs or creation dates.
-        /// - Logs any exceptions encountered during execution.
-        /// </remarks>
-        public async Task<List<Post>> GetAllPostsAsync(int pageNumber,
-            int pageSize,
-            int commentPageNumber = 1,
-            int commentsPerPage = 10,
-            bool includeComments = true)
-        {
-            try
-            {
-                if (pageNumber < 1)
-                {
-                    pageNumber = 1;
-                    _logger.LogWarning("Invalid page number. Defaulting to 1.");
-                }
-
-                if (pageSize < 1)
-                {
-                    pageSize = 10;
-                    _logger.LogWarning("Invalid page size. Defaulting to 10.");
-                }
-
-                if (commentPageNumber < 1)
-                {
-                    commentPageNumber = 1;
-                    _logger.LogWarning("Invalid comment page number. Defaulting to 1.");
-                }
-
-                if (commentsPerPage < 1)
-                {
-                    commentsPerPage = 10;
-                    _logger.LogWarning("Invalid number of comments per page. Defaulting to 10.");
-                }
-
-                _logger.LogInformation("Fetching posts from the database. Page: {Page}, Size: {Size}.",
-                    pageNumber, pageSize);
-
-                var query = _context.Posts.AsQueryable();
-
-                if (includeComments)
-                {
-                    query = query.Include(p => p.Comments);
-                }
-
-                var posts = await query
-                    .OrderBy(p => p.PostId)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync();
-
-                _logger.LogInformation("Fetched {Count} posts. Total posts", posts.Count);
-
-                if (includeComments)
-                {
-                    _logger.LogInformation("Fetching comments from the database. Page: {Page}, Size: {Size}.", pageNumber, pageSize);
-
-                    foreach (var post in posts)
-                    {
-                        post.Comments = post.Comments
-                            .OrderBy(c => c.CreatedAt)
-                            .Skip((commentPageNumber - 1) * commentsPerPage)
-                            .Take(commentsPerPage)
-                            .ToList();
-                    }
-                }
-                else
-                {
-                    foreach (var post in posts)
-                    {
-                        post.Comments = new List<Comment>();
-                    }
-                }
-                return posts;
-
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while fetching posts.");
-
-                return new List<Post>();
             }
         }
 
