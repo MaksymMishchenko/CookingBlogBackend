@@ -143,6 +143,77 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal($"An unexpected error occurred while fetching posts from the database. PageNumber: {pageNumber}, PageSize: {pageSize}, IncludeComments: {includeComments}.", exception.Message);
         }
 
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            var posts = TestDataHelper.GetEmptyPostList();
+
+            using var context = _fixture.CreateContext();
+            await context.AddRangeAsync(posts);
+            await context.SaveChangesAsync();
+
+            var invalidPostId = 999;
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            postService.GetPostByIdAsync(invalidPostId));
+            Assert.NotNull(exception);            
+            Assert.Equal($"Post with ID {invalidPostId} was not found.", exception.Message);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnPost_WithComments()
+        {
+            // Arrange
+            var postService = CreatePostService();
+
+            var posts = TestDataHelper.GetPostsWithComments(count: 3, commentCount: 3);
+
+            using var context = _fixture.CreateContext();
+            await context.AddRangeAsync(posts);
+            await context.SaveChangesAsync();
+
+            var postId = 2;
+            var commentsCount = 3;
+
+            // Act
+            var post = await postService.GetPostByIdAsync(postId, includeComments: true);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.Equal(postId, post.PostId);
+            Assert.NotNull(post.Comments);
+            Assert.Equal(commentsCount, post.Comments.Count());
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnPost_WithoutComments()
+        {
+            // Arrange
+            var postService = CreatePostService();
+
+            var posts = TestDataHelper.GetPostsWithComments(count: 3, commentCount: 3);
+
+            using var context = _fixture.CreateContext();
+            await context.AddRangeAsync(posts);
+            await context.SaveChangesAsync();
+
+            var postId = 2;
+            var commentsCount = 0;
+
+            // Act
+            var post = await postService.GetPostByIdAsync(postId, includeComments: false);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.Equal(postId, post.PostId);
+            Assert.NotNull(post.Comments);
+            Assert.Empty(post.Comments);
+            Assert.Equal(commentsCount, post.Comments.Count());
+        }
+
         //[Fact]
         //public async Task AddPostAsync_ShouldReturnTrueWithPostId_IfPostAdded()
         //{
@@ -315,107 +386,6 @@ namespace PostApiService.Tests.UnitTests
         //    var exception = await Assert.ThrowsAsync<ArgumentException>(() => postService.DeletePostAsync(postId));
 
         //    Assert.Equal("Invalid post ID. (Parameter 'postId')", exception.Message);
-        //}
-
-        //[Fact]
-        //public async Task GetPostByIdAsync_ShouldReturnPostByIdWithComments()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var postService = new PostService(context, _logger);
-
-        //    var postId = 1;
-        //    var newPost = GetPost();
-
-        //    context.Posts.Add(newPost);
-
-        //    for (int i = 0; i < 3; i++)
-        //    {
-        //        newPost.Comments.Add(new Comment { Content = $"Test comment {i}", Author = "Comment author" });
-        //    }
-        //    await context.SaveChangesAsync();
-
-        //    // Act
-        //    var post = await postService.GetPostByIdAsync(postId);
-
-        //    // Assert
-        //    Assert.NotNull(post);
-        //    Assert.Equal(postId, post.PostId);
-        //    Assert.NotNull(post.Comments);
-        //    Assert.NotEmpty(post.Comments);
-        //    Assert.Equal(3, post.Comments.Count);
-        //}
-
-        //[Fact]
-        //public async Task GetPostByIdAsync_ShouldReturnPostByIdWithoutComments()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var postService = new PostService(context, _logger);
-
-        //    var postId = 1;
-        //    var includeComments = false;
-        //    var newPost = GetPost();
-
-        //    context.Posts.Add(newPost);
-
-        //    for (int i = 0; i < 3; i++)
-        //    {
-        //        newPost.Comments.Add(new Comment { Content = $"Test comment {i}", Author = "Comment author" });
-        //    }
-        //    await context.SaveChangesAsync();
-
-        //    // Act
-        //    var post = await postService.GetPostByIdAsync(postId, includeComments);
-
-        //    // Assert
-        //    Assert.NotNull(post);
-        //    Assert.Equal(postId, post.PostId);
-        //    Assert.NotNull(post.Comments);
-        //    Assert.Empty(post.Comments);
-        //}
-
-        //[Fact]
-        //public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
-
-        //    var nonExistentPost = 999;
-
-        //    // Act & Assert   
-        //    var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-        //     postService.GetPostByIdAsync(nonExistentPost));
-        //    Assert.Equal("Post with ID 999 was not found.", exception.Message);
-        //}
-
-        //[Theory]
-        //[InlineData(0)]
-        //[InlineData(-1)]
-        //public async Task GetPostByIdAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
-
-        //    // Act & Assert   
-        //    var exception = await Assert.ThrowsAsync<ArgumentException>(() =>
-        //     postService.GetPostByIdAsync(postId));
-        //    Assert.Equal("Invalid post ID. (Parameter 'postId')", exception.Message);
-        //}
-
-        //private Post GetPost()
-        //{
-        //    return new Post
-        //    {
-        //        Title = "Test title",
-        //        Content = "Test content",
-        //        Description = "Test desc",
-        //        Author = "Test author",
-        //        Slug = "test-slug",
-        //        ImageUrl = "testIamge.jpg",
-        //        MetaTitle = "Test meta title",
-        //        MetaDescription = "Test meta description"
-        //    };
-        //}
+        //}        
     }
 }

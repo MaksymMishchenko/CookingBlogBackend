@@ -92,6 +92,42 @@ namespace PostApiService.Services
         }
 
         /// <summary>
+        /// Retrieves a post by its ID from the database. Optionally includes comments associated with the post.
+        /// </summary>
+        /// <param name="postId">The ID of the post to retrieve.</param>
+        /// <param name="includeComments">Indicates whether to include the comments related to the post. Default is true.</param>
+        /// <returns>
+        /// The post with the specified ID, including its comments if <paramref name="includeComments"/> is true.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">
+        /// Thrown when a post with the specified ID does not exist in the database.
+        /// </exception>
+        /// <remarks>
+        /// Logs a warning if the post is not found and an informational message if the post is successfully retrieved.
+        /// </remarks>
+        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
+        {
+            var query = _context.Posts.AsQueryable();
+
+            if (includeComments)
+            {
+                query = query.Include(p => p.Comments);
+            }
+
+            var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
+
+            if (post == null)
+            {
+                _logger.LogWarning("Post with ID {postId} not found.", postId);
+                throw new KeyNotFoundException($"Post with ID {postId} was not found.");
+            }
+
+            _logger.LogInformation("Successfully fetched post with ID {postId}.", postId);
+
+            return post;
+        }
+
+        /// <summary>
         /// Adds a new post to the database asynchronously and returns the result status.
         /// </summary>
         /// <param name="post">The <see cref="Post"/> object to be added.</param>
@@ -270,58 +306,6 @@ namespace PostApiService.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error occurred while editing post with ID {PostId}", post.PostId);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Retrieves a post by its unique identifier from the database. 
-        /// Optionally includes associated comments based on the <paramref name="includeComments"/> parameter.
-        /// </summary>
-        /// <param name="postId">The unique identifier of the post to retrieve. Must be greater than 0.</param>
-        /// <param name="includeComments">
-        /// A boolean flag indicating whether to include the post's associated comments in the result. 
-        /// Defaults to <c>true</c>.
-        /// </param>
-        /// <returns>
-        /// The <see cref="Post"/> object corresponding to the provided <paramref name="postId"/>.
-        /// </returns>
-        /// <exception cref="ArgumentException">Thrown if the provided <paramref name="postId"/> is invalid.</exception>
-        /// <exception cref="KeyNotFoundException">Thrown if no post with the specified <paramref name="postId"/> is found.</exception>
-        /// <exception cref="Exception">Thrown for any unexpected errors during database retrieval.</exception>
-        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
-        {
-            ValidatePost(postId);
-
-            try
-            {
-                var query = _context.Posts.AsQueryable();
-
-                if (includeComments)
-                {
-                    query = query.Include(p => p.Comments);
-                }
-
-                var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
-
-                if (post == null)
-                {
-                    _logger.LogWarning("Post with ID {postId} not found.", postId);
-                    throw new KeyNotFoundException($"Post with ID {postId} was not found.");
-                }
-
-                _logger.LogInformation("Successfully fetched post with ID {postId}.", postId);
-
-                if (!includeComments)
-                {
-                    post.Comments = new List<Comment>();
-                }
-
-                return post;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while fetching the post with ID {postId}.", postId);
                 throw;
             }
         }
