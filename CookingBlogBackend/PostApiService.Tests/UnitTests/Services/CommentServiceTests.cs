@@ -25,8 +25,7 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task AddCommentAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
         {
             // Arrange
-            var postId = 1;
-            var saveChangedResult = 1;
+            var postId = 1;            
 
             _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetEmptyPostList());
 
@@ -86,7 +85,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetListWithPost());
             _mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetEmptyCommentList());
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception()); ;
+                .ThrowsAsync(new Exception());
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
@@ -99,8 +98,7 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task UpdateCommentAsync_ShouldThrowInvalidOperationException_IfCommentDoesNotExist()
         {
             // Arrange
-            var commentId = 1;
-            var saveChangedResult = 1;
+            var commentId = 1;           
 
             _mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetListWithComments());
 
