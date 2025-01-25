@@ -326,6 +326,24 @@ namespace PostApiService.Tests.UnitTests
                     " This may be caused by conflicting changes in the database.", exception.Message);
         }
 
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowDbUpdateException_WhenDatabaseUpdateFails()
+        {
+            _mockContext.Setup(c => c.Posts)
+                .ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1));
+
+            var updatedPost = new Post { Content = "Updated content" };
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DbUpdateException($"Database update failed for post with ID {updatedPost.PostId}."));
+
+            // Act & Assert            
+            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService
+            .UpdatePostAsync(updatedPost));
+
+            Assert.Equal($"Database update failed for post with ID {updatedPost.PostId}.", exception.Message);
+        }
+
         //[Fact]
         //public async Task EditPostAsync_ShouldThrowException_WhenUnexpectedErrorOccurs()
         //{
