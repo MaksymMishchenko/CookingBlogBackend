@@ -5,6 +5,7 @@ using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
+using System.Data;
 
 namespace PostApiService.Tests.UnitTests
 {
@@ -303,27 +304,27 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.Equal(expectedResult, result);
-        }                
+        }
 
-        //[Fact]
-        //public async Task EditPostAsync_ShouldReturnFalseAndZero_WhenDbUpdateExceptionOccurs()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var service = new PostService(context, _logger);
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowDbUpdateConcurrencyException_WhenDbSaveFailsDueToConcurrency()
+        {
+            _mockContext.Setup(c => c.Posts)
+                .ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1));
 
-        //    var post = GetPost();
-        //    context.Add(post);
-        //    await context.SaveChangesAsync();
-        //    context.Database.EnsureDeleted();
+            var updatedPost = new Post { Content = "Updated content" };
 
-        //    // Act
-        //    var result = await service.EditPostAsync(post);
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DbUpdateConcurrencyException($"Database concurrency error occurred while updating the post with ID {updatedPost.PostId}." +
+                    " This may be caused by conflicting changes in the database."));
 
-        //    // Assert
-        //    Assert.False(result.Success);
-        //    Assert.Equal(0, result.PostId);
-        //}
+            // Act & Assert            
+            var exception = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _postService
+            .UpdatePostAsync(updatedPost));
+
+            Assert.Equal($"Database concurrency error occurred while updating the post with ID {updatedPost.PostId}." +
+                    " This may be caused by conflicting changes in the database.", exception.Message);
+        }
 
         //[Fact]
         //public async Task EditPostAsync_ShouldThrowException_WhenUnexpectedErrorOccurs()

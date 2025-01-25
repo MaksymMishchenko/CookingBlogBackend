@@ -215,11 +215,11 @@ namespace PostApiService.Services
                 _logger.LogWarning("No changes were made to post with ID {PostId}.", post.PostId);
                 return false;
             }
-            catch (DBConcurrencyException ex)
+            catch (DbUpdateConcurrencyException ex)
             {
                 _logger.LogError(ex, "Database concurrency error occurred while updating the post with ID {PostId}." +
                     " This may be caused by conflicting changes in the database.", post.PostId);
-                throw new DBConcurrencyException($"Database concurrency error occurred while updating the post with ID {post.PostId}." +
+                throw new DbUpdateConcurrencyException($"Database concurrency error occurred while updating the post with ID {post.PostId}." +
                     " This may be caused by conflicting changes in the database.");
             }
             catch (DbUpdateException ex)
