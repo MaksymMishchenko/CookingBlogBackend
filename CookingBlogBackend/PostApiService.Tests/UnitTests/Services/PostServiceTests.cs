@@ -252,7 +252,24 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.Equal(expectedResult, result);
-        }       
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange            
+            var post = TestDataHelper.GetPostsWithComments(count: 1, generateComments: false);
+
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(post);
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception("An unexpected error occurred while adding post to database.."));
+
+            var newPost = new Post { Title = "Test title" };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _postService.AddPostAsync(newPost));
+            Assert.Contains("An unexpected error occurred while adding post to database.", exception.Message);
+        }
 
         //[Fact]
         //public async Task EditPostAsync_ShouldReturnTrueWithPostId_IfPostEdited()
