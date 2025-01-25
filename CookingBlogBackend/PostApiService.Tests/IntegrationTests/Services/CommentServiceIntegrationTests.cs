@@ -5,10 +5,10 @@ using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class CommentServiceTests : IClassFixture<InMemoryDatabaseFixture>
+    public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
-        public CommentServiceTests(InMemoryDatabaseFixture fixture)
+        public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
         }
