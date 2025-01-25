@@ -344,19 +344,24 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal($"Database update failed for post with ID {updatedPost.PostId}.", exception.Message);
         }
 
-        //[Fact]
-        //public async Task EditPostAsync_ShouldThrowException_WhenUnexpectedErrorOccurs()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var service = new PostService(context, _logger);
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            _mockContext.Setup(c => c.Posts)
+                .ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1));
 
-        //    var post = GetPost();
-        //    context.Dispose();
+            var updatedPost = new Post { Content = "Updated content" };
 
-        //    // Act & Assert
-        //    await Assert.ThrowsAsync<ObjectDisposedException>(() => service.EditPostAsync(post));
-        //}
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception($"Unexpected error occurred while updating post with ID {updatedPost.PostId}."));
+
+            // Act & Assert            
+            var exception = await Assert.ThrowsAsync<Exception>(() => _postService
+            .UpdatePostAsync(updatedPost));
+
+            Assert.Equal($"Unexpected error occurred while updating post with ID {updatedPost.PostId}.", exception.Message);
+        }
 
         //[Fact]
         //public async Task DeletePostAsync_ShouldReturnTrue_IfPostDeleted()
