@@ -159,7 +159,7 @@ namespace PostApiService.Services
 
                 if (result > 0)
                 {
-                    _logger.LogInformation("Post was added successfully");
+                    _logger.LogInformation("Post was added successfully.");
                     return true;
                 }
                 _logger.LogWarning($"Failed to add post with title: {post.Title}");
@@ -169,7 +169,7 @@ namespace PostApiService.Services
             {
                 _logger.LogError(ex.Message, "An unexpected error occurred while adding post to database");
 
-                throw new Exception("An unexpected error occurred while adding post to database");
+                throw new Exception("An unexpected error occurred while adding post to database.");
             }
         }
 
