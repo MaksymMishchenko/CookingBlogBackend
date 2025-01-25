@@ -435,5 +435,23 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.Equal($"Database delete failed for post with ID {postId}.", exception.Message);
         }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var postId = 1;
+
+            _mockContext.Setup(m => m.Posts.FindAsync(postId))
+                .ReturnsAsync(TestDataHelper.GetSinglePost());
+
+            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new Exception($"Unexpected error occurred while deleting post with ID {postId}."));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _postService.DeletePostAsync(postId));
+
+            Assert.Equal($"Unexpected error occurred while deleting post with ID {postId}.", exception.Message);
+        }
     }
 }
