@@ -417,5 +417,23 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal($"Database concurrency error occurred while deleting the post with ID {postId}." +
                          " This may be caused by conflicting changes in the database.", exception.Message);
         }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldThrowDbUpdateException_WhenDatabaseUpdateFails()
+        {
+            // Arrange
+            var postId = 1;
+
+            _mockContext.Setup(m => m.Posts.FindAsync(postId))
+                .ReturnsAsync(TestDataHelper.GetSinglePost());
+
+            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DbUpdateException($"Database delete failed for post with ID {postId}."));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService.DeletePostAsync(postId));
+
+            Assert.Equal($"Database delete failed for post with ID {postId}.", exception.Message);
+        }
     }
 }
