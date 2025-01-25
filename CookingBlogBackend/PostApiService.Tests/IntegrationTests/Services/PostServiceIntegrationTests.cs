@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
+    public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>, IAsyncLifetime
     {
         private readonly InMemoryDatabaseFixture _fixture;
 
@@ -50,9 +51,42 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             // Assert
             Assert.NotNull(post);
-            Assert.Equal(postId, post.PostId);            
+            Assert.Equal(postId, post.PostId);
             Assert.NotNull(post.Comments);
             Assert.Empty(post.Comments);
         }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldAddNewPostSuccessfully()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            using var context = _fixture.CreateContext();
+
+            var newPost = TestDataHelper.GetPostWithComments(generateComments: false);
+            var initialCount = await context.Posts.CountAsync();
+
+            // Act
+            var result = await postService.AddPostAsync(newPost);
+
+            // Assert
+            var addedPost = await context.Posts
+                .FirstOrDefaultAsync(p => p.Title == newPost.Title && p.Author == newPost.Author);
+            Assert.NotNull(addedPost);
+            Assert.Equal(newPost.Title, addedPost.Title);
+            Assert.Equal(newPost.Author, addedPost.Author);
+            Assert.Equal(newPost.Content, addedPost.Content);
+            Assert.NotEqual(DateTime.MinValue, addedPost.CreateAt);
+            Assert.True(addedPost.CreateAt <= DateTime.UtcNow.ToLocalTime());
+
+            var postCount = await context.Posts.CountAsync();
+            Assert.Equal(initialCount + 1, postCount);
+            Assert.NotNull(addedPost.Comments);
+            Assert.Empty(addedPost.Comments);
+        }
+
+        public Task InitializeAsync() => _fixture.InitializeAsync();
+
+        public Task DisposeAsync() => _fixture.DisposeAsync();
     }
 }
