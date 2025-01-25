@@ -128,52 +128,48 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Adds a new post to the database asynchronously and returns the result status.
+        /// Asynchronously adds a new post to the database if the post title does not already exist.
+        /// If a post with the same title exists, a <see cref="DbUpdateException"/> is thrown.
+        /// Logs success or failure depending on whether the post was added successfully.
         /// </summary>
-        /// <param name="post">The <see cref="Post"/> object to be added.</param>
+        /// <param name="post">The post object to be added to the database.</param>
         /// <returns>
-        /// A tuple indicating the success of the operation and the ID of the added post:
-        /// - Success: A boolean indicating whether the operation was successful.
-        /// - PostId: The ID of the newly added post if successful, or 0 if the operation failed.
+        /// Returns <c>true</c> if the post was added successfully, otherwise <c>false</c> if the post was not added.
+        /// Throws a <see cref="DbUpdateException"/> if the post title already exists in the database.
         /// </returns>
-        /// <exception cref="DbUpdateException">
-        /// Thrown when a database-related error occurs during the save operation.
-        /// </exception>
-        /// <exception cref="Exception">
-        /// Thrown when an unexpected error occurs.
-        /// </exception>
-        /// <remarks>
-        /// This method validates the provided <see cref="Post"/> object before attempting to add it to the database.
-        /// It logs the outcome of the operation, including success, failure, or any errors encountered.
-        /// </remarks>
-        public async Task<(bool Success, int PostId)> AddPostAsync(Post post)
+        /// <exception cref="DbUpdateException">Thrown when a post with the same title already exists.</exception>
+        /// <exception cref="Exception">Thrown for any unexpected errors during the database operation.</exception>
+        public async Task<bool> AddPostAsync(Post post)
         {
-            ValidatePost(post);
+            var existingPost = await _context.Posts
+            .AnyAsync(p => p.Title == post.Title);
+
+            if (existingPost)
+            {
+                _logger.LogWarning("A post with the title '{Title}' already exists.", post.Title);
+
+                throw new DbUpdateException("A post with this title already exists.");
+            }
+
+            await _context.Posts.AddAsync(post);
 
             try
             {
-                await _context.Posts.AddAsync(post);
                 var result = await _context.SaveChangesAsync();
 
                 if (result > 0)
                 {
                     _logger.LogInformation("Post was added successfully");
-                    return (true, post.PostId);
+                    return true;
                 }
                 _logger.LogWarning($"Failed to add post with title: {post.Title}");
-                return (false, 0);
+                return false;
             }
-
-            catch (DbUpdateException dbEx)
-            {
-                _logger.LogError(dbEx, "Database error occurred while adding post: {Post}.", post);
-                throw;
-            }
-
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"An unexpected error occurred while adding a post: {post}");
-                throw;
+                _logger.LogError(ex.Message, "An unexpected error occurred while adding post to database");
+
+                throw new Exception("An unexpected error occurred while adding post to database");
             }
         }
 

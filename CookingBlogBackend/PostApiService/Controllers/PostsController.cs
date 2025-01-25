@@ -117,12 +117,11 @@ namespace PostApiService.Controllers
             {
                 var result = await _postsService.AddPostAsync(post);
 
-                if (result.Success)
+                if (result)
                 {
-                    return CreatedAtAction("GetPostById", new { postId = result.PostId }, new
+                    return CreatedAtAction("GetPostById", new
                     {
-                        Success = true,
-                        postId = result.PostId,
+                        Success = true,                        
                         Message = "Post added successfully."
                     });
                 }

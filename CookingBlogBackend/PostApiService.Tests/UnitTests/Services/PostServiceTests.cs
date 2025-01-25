@@ -3,14 +3,15 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
 using PostApiService.Interfaces;
+using PostApiService.Models;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.UnitTests
 {
     public class PostServiceTests : IClassFixture<InMemoryDatabaseFixture>
     {
-        private InMemoryDatabaseFixture _fixture;
-        private ILogger<PostService> _logger;
+        private readonly InMemoryDatabaseFixture _fixture;
+        private readonly ILogger<PostService> _logger;
 
         public PostServiceTests(InMemoryDatabaseFixture fixture)
         {
@@ -159,7 +160,7 @@ namespace PostApiService.Tests.UnitTests
             // Act & Assert
             var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             postService.GetPostByIdAsync(invalidPostId));
-            Assert.NotNull(exception);            
+            Assert.NotNull(exception);
             Assert.Equal($"Post with ID {invalidPostId} was not found.", exception.Message);
         }
 
@@ -214,22 +215,26 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(commentsCount, post.Comments.Count());
         }
 
-        //[Fact]
-        //public async Task AddPostAsync_ShouldReturnTrueWithPostId_IfPostAdded()
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowDbUpdateException_IfPostHasTheSameTitle()
+        {
+            // Arrange
+            var mockContext = new Mock<IApplicationDbContext>();
+            var mockLoggerService = new Mock<ILogger<PostService>>();
+            var postService = new PostService(mockContext.Object, mockLoggerService.Object);
 
-        //    var newPost = GetPost();
+            var post = TestDataHelper.GetPostsWithComments(count: 1, generateComments: false);
 
-        //    // Act
-        //    var result = await postService.AddPostAsync(newPost);
+            mockContext.Setup(c => c.Posts).ReturnsDbSet(post);
+            mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DbUpdateException("A post with this title already exists."));
 
-        //    // Assert
-        //    Assert.True(result.Success);
-        //    Assert.Equal(newPost.PostId, result.PostId);
-        //    Assert.Empty(newPost.Comments.ToList());
-        //}
+            var newPost = new Post { Title = post[0].Title };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => postService.AddPostAsync(newPost));
+            Assert.Contains("A post with this title already exists.", exception.Message);
+        }
 
         //[Fact]
         //public async Task AddPostAsync_ShouldThrowArgumentNullException_IfPostIsNull()
