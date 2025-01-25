@@ -235,38 +235,32 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Deletes a post from the database based on the specified post ID.
+        /// Deletes a post with the given postId from the database.
+        /// If the post does not exist, a KeyNotFoundException is thrown.
+        /// If the deletion fails due to concurrency issues, a DbUpdateConcurrencyException is thrown.
+        /// If a database-related error occurs during deletion, a DbUpdateException is thrown.
+        /// If any unexpected error occurs, a generic Exception is thrown.
         /// </summary>
-        /// <param name="postId">The unique identifier of the post to be deleted.</param>
-        /// <returns>
-        /// A boolean value indicating the success of the operation. 
-        /// Returns <c>true</c> if the post was successfully deleted; otherwise, <c>false</c>.
-        /// </returns>
-        /// <remarks>
-        /// This method performs the following steps:
-        /// 1. Validates the input post ID.
-        /// 2. Checks if the post exists in the database using <see cref="FindAsync"/>.
-        /// 3. If the post exists, it is removed from the context and changes are saved to the database.
-        /// 4. Logs appropriate messages based on the outcome of the operation.
-        /// 5. Handles database-specific errors using <see cref="DbUpdateException"/> and logs unexpected errors.
-        /// </remarks>
-        /// <exception cref="ArgumentException">Thrown if the provided post ID is invalid.</exception>
-        /// <exception cref="Exception">Rethrows unexpected exceptions after logging.</exception>
+        /// <param name="postId">The ID of the post to be deleted.</param>
+        /// <returns>True if the post was successfully deleted, false if no rows were affected.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown when the post with the specified ID does not exist.</exception>
+        /// <exception cref="DbUpdateConcurrencyException">Thrown when a concurrency issue occurs while deleting the post.</exception>
+        /// <exception cref="DbUpdateException">Thrown when a database error occurs during the deletion process.</exception>
+        /// <exception cref="Exception">Thrown for any other unexpected errors during deletion.</exception>
         public async Task<bool> DeletePostAsync(int postId)
         {
-            ValidatePost(postId);
+            var existingPost = await _context.Posts.FindAsync(postId);
+
+            if (existingPost == null)
+            {
+                _logger.LogWarning("Post with ID {PostId} does not exist. Deletion aborted.", postId);
+                throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
+            }
+
+            _context.Posts.Remove(existingPost);
 
             try
             {
-                var postExist = await _context.Posts.FindAsync(postId);
-
-                if (postExist == null)
-                {
-                    _logger.LogWarning("Post with ID {PostId} does not exist. Deletion aborted.", postId);
-                    return false;
-                }
-
-                _context.Posts.Remove(postExist);
                 var result = await _context.SaveChangesAsync();
 
                 if (result > 0)
@@ -278,30 +272,21 @@ namespace PostApiService.Services
                 _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.", postId);
                 return false;
             }
+            catch (DbUpdateConcurrencyException dbEx)
+            {
+                _logger.LogError(dbEx, "Concurrency issue occurred while deleting post with ID {PostId}.", postId);
+                throw new DbUpdateConcurrencyException($"Database concurrency error occurred while deleting the post with ID {postId}." +
+                    " This may be caused by conflicting changes in the database.");
+            }
             catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
-                return false;
+                throw new DbUpdateException($"Database delete failed for post with ID {postId}.");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Validates the specified post ID to ensure it is greater than zero.
-        /// Logs an error and throws an <see cref="ArgumentException"/> if the post ID is invalid.
-        /// </summary>
-        /// <param name="postId">The ID of the post to validate.</param>
-        /// <exception cref="ArgumentException">Thrown when the <paramref name="postId"/> is less than or equal to zero.</exception>
-        private void ValidatePost(int postId)
-        {
-            if (postId <= 0)
-            {
-                _logger.LogError("Invalid post ID: {PostId}", postId);
-                throw new ArgumentException("Invalid post ID.", nameof(postId));
+                throw new Exception($"Unexpected error occurred while deleting post with ID {postId}.");
             }
         }
     }

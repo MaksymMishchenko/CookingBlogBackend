@@ -363,38 +363,40 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal($"Unexpected error occurred while updating post with ID {updatedPost.PostId}.", exception.Message);
         }
 
-        //[Fact]
-        //public async Task DeletePostAsync_ShouldReturnTrue_IfPostDeleted()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var postService = new PostService(context, _logger);
+        [Fact]
+        public async Task DeletePostAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        {
+            // Arrange
+            var postId = 1;
+            _mockContext.Setup(p => p.Posts.FindAsync(postId)).ReturnsAsync((Post)null);
 
-        //    var newPost = GetPost();
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            _postService.DeletePostAsync(postId));
 
-        //    context.Posts.Add(newPost);
-        //    await context.SaveChangesAsync();
+            Assert.Equal($"Post with ID {postId} does not exist.", exception.Message);
+        }
 
-        //    // Act
-        //    var result = await postService.DeletePostAsync(newPost.PostId);
+        [Theory]
+        [InlineData(1, true)]
+        [InlineData(0, false)]
+        public async Task DeletePostAsync_ShouldReturnCorrectResult_AccordingToSaveChangesResult(int saveChangedResult, bool expectedResult)
+        {
+            // Arrange
+            var postId = 1;
 
-        //    // Assert
-        //    Assert.True(result);
-        //}
+            _mockContext.Setup(m => m.Posts.FindAsync(postId))
+                .ReturnsAsync(TestDataHelper.GetSinglePost());
 
-        //[Fact]
-        //public async Task DeletePostAsync_ShouldReturnFalse_WhenCommentDoesNotExist()
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
+            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(saveChangedResult);
 
-        //    var nonExistentComment = 999;
-        //    // Act
-        //    var result = await postService.DeletePostAsync(nonExistentComment);
+            // Act
+            var result = await _postService.DeletePostAsync(postId);
 
-        //    // Assert
-        //    Assert.False(result);
-        //}
+            // Assert
+            Assert.Equal(expectedResult, result);
+        }
 
         //[Theory]
         //[InlineData(0)]
