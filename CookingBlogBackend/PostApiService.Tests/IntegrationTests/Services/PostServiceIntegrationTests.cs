@@ -35,5 +35,24 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(1, listOfPosts[0].PostId);
             Assert.All(listOfPosts, post => Assert.Empty(post.Comments));
         }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnSpecificPost()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            using var context = _fixture.CreateContext();
+
+            var postId = 1;
+
+            // Act
+            var post = await postService.GetPostByIdAsync(postId, includeComments: false);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.Equal(postId, post.PostId);            
+            Assert.NotNull(post.Comments);
+            Assert.Empty(post.Comments);
+        }
     }
 }
