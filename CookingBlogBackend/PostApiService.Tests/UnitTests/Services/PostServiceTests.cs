@@ -287,59 +287,23 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal($"Post with ID {updatedPost.PostId} does not exist.", exception.Message);
         }
 
-        //[Fact]
-        //public async Task EditPostAsync_ShouldReturnTrueWithPostId_IfPostEdited()
-        //{
-        //    // Arrange
-        //    using var context = _fixture.CreateContext();
-        //    var postService = new PostService(context, _logger);
+        [Theory]
+        [InlineData(0, false)]
+        [InlineData(1, true)]
+        public async Task UpdatePostAsync_ShouldReturnCorrectResult_AccordingToSaveChangesResult(int saveChangedResult, bool expectedResult)
+        {
+            // Arrange            
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1, generateComments: false));
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
 
-        //    context.Database.EnsureDeleted();
-        //    context.Database.EnsureCreated();
+            var updatedPost = new Post { Content = "Updated content" };
 
-        //    var newPost = GetPost();
-        //    context.Posts.Add(newPost);
-        //    await context.SaveChangesAsync();
+            // Act
+            var result = await _postService.UpdatePostAsync(updatedPost);
 
-        //    newPost.Title = "Edited title";
-        //    newPost.Content = "Edited content";
-
-        //    // Act
-        //    var result = await postService.EditPostAsync(newPost);
-
-        //    // Assert
-        //    Assert.True(result.Success);
-        //    Assert.Equal(1, result.PostId);
-        //    var editedPost = await context.Posts.FirstOrDefaultAsync(p => p.PostId == newPost.PostId);
-        //    Assert.Equal(newPost.Title, editedPost.Title);
-        //    Assert.Equal(newPost.Content, editedPost.Content);
-        //}
-
-        //[Fact]
-        //public async Task EditCommentAsync_ShouldReturnFalseWithZero_IfPostDoesNotEdit()
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
-
-        //    var nonExistentPost = new Post
-        //    {
-        //        PostId = 999,
-        //        Title = "Non existent title",
-        //        Content = "Non existent content",
-        //        Description = "Non existent description",
-        //        Slug = "non-existent-slug",
-        //        ImageUrl = "non_existent_image",
-        //        MetaTitle = "Non existent title",
-        //        MetaDescription = "Non existent description"
-        //    };
-
-        //    // Act
-        //    var result = await postService.EditPostAsync(nonExistentPost);
-
-        //    // Assert
-        //    Assert.False(result.Success);
-        //    Assert.Equal(0, result.PostId);
-        //}        
+            // Assert
+            Assert.Equal(expectedResult, result);
+        }                
 
         //[Fact]
         //public async Task EditPostAsync_ShouldReturnFalseAndZero_WhenDbUpdateExceptionOccurs()
