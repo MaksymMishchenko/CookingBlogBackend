@@ -398,18 +398,24 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(expectedResult, result);
         }
 
-        //[Theory]
-        //[InlineData(0)]
-        //[InlineData(-1)]
-        //public async Task DeletePostAsync_ShouldThrowArgumentException_IfPostIdIsInvalid(int postId)
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
+        [Fact]
+        public async Task DeletePostAsync_ShouldThrowDbUpdateConcurrencyException_WhenDatabaseUpdateFails()
+        {
+            // Arrange
+            var postId = 1;
 
-        //    // Act & Assert
-        //    var exception = await Assert.ThrowsAsync<ArgumentException>(() => postService.DeletePostAsync(postId));
+            _mockContext.Setup(m => m.Posts.FindAsync(postId))
+                .ReturnsAsync(TestDataHelper.GetSinglePost());
 
-        //    Assert.Equal("Invalid post ID. (Parameter 'postId')", exception.Message);
-        //}        
+            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DbUpdateConcurrencyException($"Database concurrency error occurred while deleting the post with ID {postId}." +
+                    " This may be caused by conflicting changes in the database."));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _postService.DeletePostAsync(postId));
+
+            Assert.Equal($"Database concurrency error occurred while deleting the post with ID {postId}." +
+                         " This may be caused by conflicting changes in the database.", exception.Message);
+        }
     }
 }
