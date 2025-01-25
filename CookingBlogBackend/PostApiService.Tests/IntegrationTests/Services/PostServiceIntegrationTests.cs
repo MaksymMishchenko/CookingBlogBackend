@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using PostApiService.Models;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
@@ -83,6 +84,35 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(initialCount + 1, postCount);
             Assert.NotNull(addedPost.Comments);
             Assert.Empty(addedPost.Comments);
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldUpdatedExistingPostSuccessfully()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            using var context = _fixture.CreateContext();
+
+            var postToBeUpdated = new Post
+            {
+                PostId = 1,
+                Title = "Updated title",
+                Content = "Updated content",
+                MetaTitle = "Updated meta title"
+            };
+
+            // Act
+            await postService.UpdatePostAsync(postToBeUpdated);
+
+            // Assert
+            var updatedPost = await context.Posts
+                .FirstOrDefaultAsync(p => p.Title == postToBeUpdated.Title &&
+                p.Author == postToBeUpdated.Author);
+            Assert.NotNull(updatedPost);
+            Assert.Equal(postToBeUpdated.Title, updatedPost.Title);
+            Assert.Equal(postToBeUpdated.Content, updatedPost.Content);
+            Assert.NotEqual(DateTime.MinValue, updatedPost.CreateAt);
+            Assert.True(updatedPost.CreateAt <= DateTime.UtcNow.ToLocalTime());
         }
 
         public Task InitializeAsync() => _fixture.InitializeAsync();
