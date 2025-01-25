@@ -68,7 +68,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var initialCount = await context.Posts.CountAsync();
 
             // Act
-            var result = await postService.AddPostAsync(newPost);
+            await postService.AddPostAsync(newPost);
 
             // Assert
             var addedPost = await context.Posts
@@ -113,6 +113,25 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(postToBeUpdated.Content, updatedPost.Content);
             Assert.NotEqual(DateTime.MinValue, updatedPost.CreateAt);
             Assert.True(updatedPost.CreateAt <= DateTime.UtcNow.ToLocalTime());
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldRemovePostSuccessfully()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            using var context = _fixture.CreateContext();
+
+            var initialCount = await context.Posts.CountAsync();
+            var postId = 1;
+
+            // Act
+            await postService.DeletePostAsync(postId);
+
+            // Assert
+            var removedPost = await context.Posts
+                .AnyAsync(p => p.PostId == postId);
+            Assert.False(removedPost);
         }
 
         public Task InitializeAsync() => _fixture.InitializeAsync();
