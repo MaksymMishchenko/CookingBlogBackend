@@ -234,7 +234,7 @@ namespace PostApiService.Tests.UnitTests
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService.AddPostAsync(newPost));
-            Assert.Contains("A post with this title already exists.", exception.Message);
+            Assert.Equal("A post with this title already exists.", exception.Message);
         }
 
         [Theory]
@@ -269,7 +269,7 @@ namespace PostApiService.Tests.UnitTests
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<Exception>(() => _postService.AddPostAsync(newPost));
-            Assert.Contains("An unexpected error occurred while adding post to database.", exception.Message);
+            Assert.Equal("An unexpected error occurred while adding post to database.", exception.Message);
         }
 
         [Fact]
@@ -309,6 +309,7 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task UpdatePostAsync_ShouldThrowDbUpdateConcurrencyException_WhenDbSaveFailsDueToConcurrency()
         {
+            // Arrange
             _mockContext.Setup(c => c.Posts)
                 .ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1));
 
@@ -329,6 +330,7 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task UpdatePostAsync_ShouldThrowDbUpdateException_WhenDatabaseUpdateFails()
         {
+            // Arrange
             _mockContext.Setup(c => c.Posts)
                 .ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1));
 

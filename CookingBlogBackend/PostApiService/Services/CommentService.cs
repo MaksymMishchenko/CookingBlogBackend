@@ -48,9 +48,8 @@ namespace PostApiService.Services
                 throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
             }
 
-            comment.PostId = postId;
-            comment.CreatedAt = DateTime.UtcNow;
-            _context.Comments.Add(comment);
+            comment.PostId = postId;            
+            await _context.Comments.AddAsync(comment);
 
             try
             {
