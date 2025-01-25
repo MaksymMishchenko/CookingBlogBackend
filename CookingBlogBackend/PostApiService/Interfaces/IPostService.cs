@@ -11,7 +11,7 @@ namespace PostApiService.Interfaces
             bool includeComments = true);
         Task<Post> GetPostByIdAsync(int postId, bool includeComments = true);
         Task<bool> AddPostAsync(Post post);
-        Task<(bool Success, int PostId)> EditPostAsync(Post post);
+        Task<bool> UpdatePostAsync(Post post);
         Task<bool> DeletePostAsync(int postId);
     }
 }

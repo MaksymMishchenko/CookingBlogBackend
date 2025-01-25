@@ -154,14 +154,14 @@ namespace PostApiService.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditPostAsync(int id, [FromBody] Post post)
+        public async Task<IActionResult> UpdatePostAsync(int id, [FromBody] Post post)
         {
             if (id != post.PostId)
             {
                 return BadRequest();
             }
 
-            await _postsService.EditPostAsync(post);
+            await _postsService.UpdatePostAsync(post);
             return Ok();
         }
 

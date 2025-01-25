@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using System.Data;
 
 namespace PostApiService.Services
 {
@@ -174,6 +175,66 @@ namespace PostApiService.Services
         }
 
         /// <summary>
+        /// Updates an existing post in the database. If the post with the given ID does not exist,
+        /// a <see cref="KeyNotFoundException"/> is thrown. If the post is successfully updated, 
+        /// the method returns <c>true</c>. If no changes are made, it returns <c>false</c>. 
+        /// The method also handles database concurrency and update exceptions, logging them appropriately.
+        /// </summary>
+        /// <param name="post">The post object containing updated data to be saved in the database.</param>
+        /// <returns>
+        /// <c>true</c> if the post was successfully updated, otherwise <c>false</c> if no changes were made.
+        /// </returns>
+        /// <exception cref="KeyNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
+        /// <exception cref="DBConcurrencyException">Thrown if a concurrency issue occurs while updating the post.</exception>
+        /// <exception cref="DbUpdateException">Thrown if the database update fails.</exception>
+        /// <exception cref="Exception">Thrown if any unexpected error occurs during the update process.</exception>
+        public async Task<bool> UpdatePostAsync(Post post)
+        {
+            var postExists = await _context.Posts
+                .AsNoTracking()
+                .AnyAsync(p => p.PostId == post.PostId);
+
+            if (!postExists)
+            {
+                _logger.LogWarning("Post with ID {PostId} does not exist. Cannot edit.", post.PostId);
+                throw new KeyNotFoundException("Post with ID {PostId} does not exist.");
+            }
+
+            _context.Posts.Update(post);
+
+            try
+            {
+                var result = await _context.SaveChangesAsync();
+
+                if (result > 0)
+                {
+                    _logger.LogInformation("Successfully updated post with ID {PostId}.", post.PostId);
+                    return true;
+                }
+
+                _logger.LogWarning("No changes were made to post with ID {PostId}.", post.PostId);
+                return false;
+            }
+            catch (DBConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Database concurrency error occurred while updating the post with ID {PostId}." +
+                    " This may be caused by conflicting changes in the database.", post.PostId);
+                throw new DBConcurrencyException($"Database concurrency error occurred while updating the post with ID {post.PostId}." +
+                    " This may be caused by conflicting changes in the database.");
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database update failed for post with ID {PostId}.", post.PostId);
+                throw new DbUpdateException($"Database update failed for post with ID {post.PostId}.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred while updating post with ID {PostId}.", post.PostId);
+                throw new Exception($"Unexpected error occurred while updating post with ID {post.PostId}.");
+            }
+        }
+
+        /// <summary>
         /// Deletes a post from the database based on the specified post ID.
         /// </summary>
         /// <param name="postId">The unique identifier of the post to be deleted.</param>
@@ -226,98 +287,6 @@ namespace PostApiService.Services
             {
                 _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
                 throw;
-            }
-        }
-
-        /// <summary>
-        /// Updates an existing post in the database with the provided data.
-        /// Only specified properties of the post will be updated.
-        /// </summary>
-        /// <param name="post">The post object containing the updated data. Must include a valid PostId.</param>
-        /// <returns>
-        /// A tuple containing:
-        /// - <c>Success</c>: <c>true</c> if the update was successful; <c>false</c> otherwise.
-        /// - <c>PostId</c>: The ID of the updated post if successful; <c>0</c> if not.
-        /// </returns>
-        /// <remarks>
-        /// The method performs the following steps:
-        /// 1. Validates the input post object.
-        /// 2. Checks if a post with the given ID exists in the database.
-        /// 3. If the post exists, updates only the specified properties:
-        ///    - Title
-        ///    - Content
-        ///    - Author
-        ///    - Description
-        ///    - MetaTitle
-        ///    - MetaDescription
-        ///    - ImageUrl
-        /// 4. Saves the changes to the database.
-        /// 5. Logs the outcome, including errors or warnings in case of failure.
-        /// 
-        /// Exceptions:
-        /// - Throws <see cref="DbUpdateException"/> if there is a failure while saving to the database.
-        /// - Throws other exceptions if unexpected errors occur.
-        /// </remarks>
-        /// <exception cref="ArgumentException">Thrown if the post object is invalid.</exception>
-        /// <exception cref="DbUpdateException">Thrown if database update fails.</exception>
-        /// <exception cref="Exception">Thrown for other unexpected errors.</exception>
-        public async Task<(bool Success, int PostId)> EditPostAsync(Post post)
-        {
-            ValidatePost(post);
-
-            try
-            {
-                var postExists = await _context.Posts.AsNoTracking()
-                    .AnyAsync(p => p.PostId == post.PostId);
-                if (!postExists)
-                {
-                    _logger.LogWarning("Post with ID {PostId} does not exist. Cannot edit.", post.PostId);
-                    return (false, 0);
-                }
-
-                _context.Posts.Attach(post);
-                var propertiesToUpdate = new[] { "Title", "Content", "Author", "Description", "MetaTitle", "MetaDescription", "ImageUrl" };
-
-                foreach (var propertyName in propertiesToUpdate)
-                {
-                    //_context.Entry(post).Property(propertyName).IsModified = true;
-                }
-
-                var result = await _context.SaveChangesAsync();
-
-                if (result > 0)
-                {
-                    _logger.LogInformation("Successfully updated post with ID {PostId}", post.PostId);
-                    return (true, post.PostId);
-                }
-
-                _logger.LogWarning("Failed to update post with ID {PostId}", post.PostId);
-                return (false, 0);
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database update failed for post with ID {PostId}", post.PostId);
-                return (false, 0);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error occurred while editing post with ID {PostId}", post.PostId);
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Validates the specified post object to ensure it is not null.
-        /// Logs an error and throws an <see cref="ArgumentNullException"/> if the post is null.
-        /// </summary>
-        /// <param name="post">The post object to validate.</param>
-        /// <exception cref="ArgumentNullException">Thrown when the <paramref name="post"/> is null.</exception>
-        private void ValidatePost(Post post)
-        {
-            if (post == null)
-            {
-                _logger.LogError($"Attempted to add a null post: {post}");
-                throw new ArgumentNullException(nameof(post), "Post cannot be null.");
             }
         }
 
