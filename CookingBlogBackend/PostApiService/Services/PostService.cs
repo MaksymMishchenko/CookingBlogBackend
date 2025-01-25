@@ -197,7 +197,7 @@ namespace PostApiService.Services
             if (!postExists)
             {
                 _logger.LogWarning("Post with ID {PostId} does not exist. Cannot edit.", post.PostId);
-                throw new KeyNotFoundException("Post with ID {PostId} does not exist.");
+                throw new KeyNotFoundException($"Post with ID {post.PostId} does not exist.");
             }
 
             _context.Posts.Update(post);

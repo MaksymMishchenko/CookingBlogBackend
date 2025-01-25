@@ -10,7 +10,7 @@ namespace PostApiService.Tests.UnitTests
 {
     public class PostServiceTests : IClassFixture<InMemoryDatabaseFixture>
     {
-        private readonly InMemoryDatabaseFixture _fixture;        
+        private readonly InMemoryDatabaseFixture _fixture;
         private readonly Mock<IApplicationDbContext> _mockContext;
         private readonly Mock<ILogger<PostService>> _mockLoggerService;
         private readonly PostService _postService;
@@ -20,7 +20,7 @@ namespace PostApiService.Tests.UnitTests
             _fixture = fixture;
             _mockContext = new Mock<IApplicationDbContext>();
             _mockLoggerService = new Mock<ILogger<PostService>>();
-            _postService = new PostService(_mockContext.Object, _mockLoggerService.Object);            
+            _postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
         }
 
         private IPostService CreatePostService()
@@ -271,6 +271,22 @@ namespace PostApiService.Tests.UnitTests
             Assert.Contains("An unexpected error occurred while adding post to database.", exception.Message);
         }
 
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowKeyNotFoundException_IdPostDoesNotExist()
+        {
+            // Arrange            
+            var post = TestDataHelper.GetPostsWithComments(count: 1, generateComments: false);
+            _mockContext.Setup(c => c.Posts).ReturnsDbSet(post);
+
+            var updatedPost = new Post { PostId = 999, Content = "Updated content" };
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+                _postService.UpdatePostAsync(updatedPost));
+
+            Assert.Equal($"Post with ID {updatedPost.PostId} does not exist.", exception.Message);
+        }
+
         //[Fact]
         //public async Task EditPostAsync_ShouldReturnTrueWithPostId_IfPostEdited()
         //{
@@ -323,18 +339,7 @@ namespace PostApiService.Tests.UnitTests
         //    // Assert
         //    Assert.False(result.Success);
         //    Assert.Equal(0, result.PostId);
-        //}
-
-        //[Fact]
-        //public async Task EditPostAsync_ShouldThrowArgumentNullException_IfPostIsNull()
-        //{
-        //    // Arrange
-        //    var postService = CreatePostService();
-
-        //    // Act & Assert
-        //    var exception = await Assert.ThrowsAsync<ArgumentNullException>(() => postService.EditPostAsync(null));
-        //    Assert.Equal("Post cannot be null. (Parameter 'post')", exception.Message);
-        //}
+        //}        
 
         //[Fact]
         //public async Task EditPostAsync_ShouldReturnFalseAndZero_WhenDbUpdateExceptionOccurs()
