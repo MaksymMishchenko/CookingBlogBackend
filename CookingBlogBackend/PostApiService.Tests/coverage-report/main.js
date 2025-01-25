@@ -222,27 +222,27 @@ var assemblies = [
     "name": "PostApiService",
     "classes": [
       { "name": "ApplicationDbContext", "rp": "PostApiService_ApplicationDbContext.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Contexts.AppIdentityDbContext", "rp": "PostApiService_AppIdentityDbContext.html", "cl": 0, "ucl": 1, "cal": 1, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Contexts.AppIdentityDbContext", "rp": "PostApiService_AppIdentityDbContext.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Controllers.AuthController", "rp": "PostApiService_AuthController.html", "cl": 0, "ucl": 15, "cal": 15, "tl": 43, "cb": 0, "tb": 2, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Controllers.CommentsController", "rp": "PostApiService_CommentsController.html", "cl": 124, "ucl": 0, "cal": 124, "tl": 250, "cb": 20, "tb": 20, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Controllers.PostsController", "rp": "PostApiService_PostsController.html", "cl": 0, "ucl": 92, "cal": 92, "tl": 176, "cb": 0, "tb": 16, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Infrastructure.ServiceRegistration", "rp": "PostApiService_ServiceRegistration.html", "cl": 0, "ucl": 123, "cal": 123, "tl": 195, "cb": 0, "tb": 2, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Controllers.PostsController", "rp": "PostApiService_PostsController.html", "cl": 0, "ucl": 91, "cal": 91, "tl": 175, "cb": 0, "tb": 16, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Infrastructure.ServiceRegistration", "rp": "PostApiService_ServiceRegistration.html", "cl": 109, "ucl": 14, "cal": 123, "tl": 195, "cb": 2, "tb": 2, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.AppIdentityDb.AppIdentityDbContextModelSnapshot", "rp": "PostApiService_AppIdentityDbContextModelSnapshot.html", "cl": 0, "ucl": 243, "cal": 243, "tl": 276, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.AppIdentityDb.Identity", "rp": "PostApiService_Identity.html", "cl": 0, "ucl": 431, "cal": 431, "tl": 503, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.ApplicationDbContextModelSnapshot", "rp": "PostApiService_ApplicationDbContextModelSnapshot.html", "cl": 0, "ucl": 100, "cal": 100, "tl": 124, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.Initial", "rp": "PostApiService_Initial.html", "cl": 0, "ucl": 153, "cal": 153, "tl": 200, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Models.Comment", "rp": "PostApiService_Comment.html", "cl": 5, "ucl": 1, "cal": 6, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Models.Comment", "rp": "PostApiService_Comment.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 24, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Models.CommentResponse", "rp": "PostApiService_CommentResponse.html", "cl": 18, "ucl": 0, "cal": 18, "tl": 29, "cb": 2, "tb": 2, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Models.EditCommentModel", "rp": "PostApiService_EditCommentModel.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Models.IdentitySeedData", "rp": "PostApiService_IdentitySeedData.html", "cl": 0, "ucl": 34, "cal": 34, "tl": 53, "cb": 0, "tb": 8, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Models.JwtConfiguration", "rp": "PostApiService_JwtConfiguration.html", "cl": 0, "ucl": 4, "cal": 4, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Models.IdentitySeedData", "rp": "PostApiService_IdentitySeedData.html", "cl": 13, "ucl": 21, "cal": 34, "tl": 53, "cb": 3, "tb": 8, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Models.JwtConfiguration", "rp": "PostApiService_JwtConfiguration.html", "cl": 4, "ucl": 0, "cal": 4, "tl": 10, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Models.LoginModel", "rp": "PostApiService_LoginModel.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Models.Post", "rp": "PostApiService_Post.html", "cl": 11, "ucl": 0, "cal": 11, "tl": 43, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Services.AuthService", "rp": "PostApiService_AuthService.html", "cl": 26, "ucl": 0, "cal": 26, "tl": 55, "cb": 4, "tb": 4, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Services.CommentService", "rp": "PostApiService_CommentService.html", "cl": 71, "ucl": 0, "cal": 71, "tl": 188, "cb": 10, "tb": 10, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Services.PostService", "rp": "PostApiService_PostService.html", "cl": 0, "ucl": 176, "cal": 176, "tl": 383, "cb": 0, "tb": 38, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Services.CommentService", "rp": "PostApiService_CommentService.html", "cl": 70, "ucl": 0, "cal": 70, "tl": 187, "cb": 10, "tb": 10, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Services.PostService", "rp": "PostApiService_PostService.html", "cl": 142, "ucl": 0, "cal": 142, "tl": 293, "cb": 24, "tb": 24, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Services.TokenService", "rp": "PostApiService_TokenService.html", "cl": 0, "ucl": 32, "cal": 32, "tl": 64, "cb": 0, "tb": 6, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "Program", "rp": "PostApiService_Program.html", "cl": 0, "ucl": 36, "cal": 36, "tl": 70, "cb": 0, "tb": 10, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "Program", "rp": "PostApiService_Program.html", "cl": 36, "ucl": 0, "cal": 36, "tl": 70, "cb": 7, "tb": 10, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
@@ -257,24 +257,6 @@ var riskHotspotMetrics = [
 
 var riskHotspots = [
   {
-    "assembly": "PostApiService", "class": "PostApiService.Services.PostService", "reportPath": "PostApiService_PostService.html", "methodName": "GetAllPostsAsync()", "methodShortName": "GetAllPostsAsync()", "fileIndex": 0, "line": 225,
-    "metrics": [
-      { "value": 272, "exceeded": true },
-      { "value": 16, "exceeded": true },
-    ]},
-  {
-    "assembly": "PostApiService", "class": "PostApiService.Models.IdentitySeedData", "reportPath": "PostApiService_IdentitySeedData.html", "methodName": "EnsurePopulatedAsync()", "methodShortName": "EnsurePopulatedAsync()", "fileIndex": 0, "line": 12,
-    "metrics": [
-      { "value": 110, "exceeded": true },
-      { "value": 10, "exceeded": false },
-    ]},
-  {
-    "assembly": "PostApiService", "class": "Program", "reportPath": "PostApiService_Program.html", "methodName": "<Main>$()", "methodShortName": "<Main>$()", "fileIndex": 0, "line": 5,
-    "metrics": [
-      { "value": 110, "exceeded": true },
-      { "value": 10, "exceeded": false },
-    ]},
-  {
     "assembly": "PostApiService", "class": "PostApiService.Controllers.PostsController", "reportPath": "PostApiService_PostsController.html", "methodName": "GetAllPostsAsync()", "methodShortName": "GetAllPostsAsync()", "fileIndex": 0, "line": 42,
     "metrics": [
       { "value": 72, "exceeded": true },
@@ -287,22 +269,16 @@ var riskHotspots = [
       { "value": 6, "exceeded": false },
     ]},
   {
-    "assembly": "PostApiService", "class": "PostApiService.Services.PostService", "reportPath": "PostApiService_PostService.html", "methodName": "EditPostAsync()", "methodShortName": "EditPostAsync()", "fileIndex": 0, "line": 157,
-    "metrics": [
-      { "value": 42, "exceeded": true },
-      { "value": 6, "exceeded": false },
-    ]},
-  {
-    "assembly": "PostApiService", "class": "PostApiService.Services.PostService", "reportPath": "PostApiService_PostService.html", "methodName": "GetPostByIdAsync()", "methodShortName": "GetPostByIdAsync()", "fileIndex": 0, "line": 317,
-    "metrics": [
-      { "value": 42, "exceeded": true },
-      { "value": 6, "exceeded": false },
-    ]},
-  {
     "assembly": "PostApiService", "class": "PostApiService.Services.TokenService", "reportPath": "PostApiService_TokenService.html", "methodName": "GenerateJwtToken(Microsoft.AspNetCore.Identity.IdentityUser)", "methodShortName": "GenerateJwtToken(...)", "fileIndex": 0, "line": 30,
     "metrics": [
       { "value": 42, "exceeded": true },
       { "value": 6, "exceeded": false },
+    ]},
+  {
+    "assembly": "PostApiService", "class": "PostApiService.Models.IdentitySeedData", "reportPath": "PostApiService_IdentitySeedData.html", "methodName": "EnsurePopulatedAsync()", "methodShortName": "EnsurePopulatedAsync()", "fileIndex": 0, "line": 12,
+    "metrics": [
+      { "value": 38, "exceeded": true },
+      { "value": 10, "exceeded": false },
     ]},
 ];
 
