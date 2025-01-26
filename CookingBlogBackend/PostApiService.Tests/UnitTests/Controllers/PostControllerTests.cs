@@ -58,6 +58,22 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
             var response = Assert.IsType<PostResponse>(notFoundResult.Value);
             Assert.Equal("No posts found for the requested page.", response.Message);
-        }        
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnOk_WhenPostsAreFound()
+        {
+            // Arrange            
+            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>()))
+                .ReturnsAsync(TestDataHelper.GetPostsWithComments(count: 10, generateComments: false));
+
+            // Act
+            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var returnValue = Assert.IsType<List<Post>>(okResult.Value);
+            Assert.Equal(10, returnValue.Count);
+        }
     }
 }
