@@ -43,5 +43,21 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
             Assert.Equal("Page size or comments per page exceeds the allowed maximum.", response.Message);
         }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenNoPostsFound()
+        {
+            // Arrange
+            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>()))
+                .ReturnsAsync(TestDataHelper.GetEmptyPostList());
+
+            // Act
+            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
+            Assert.Equal("No posts found for the requested page.", response.Message);
+        }        
     }
 }
