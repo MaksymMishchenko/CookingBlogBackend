@@ -31,5 +31,17 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
             Assert.Equal("Parameters must be greater than 0.", response.Message);
         }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
+        {
+            // Act
+            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 11);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            Assert.Equal("Page size or comments per page exceeds the allowed maximum.", response.Message);
+        }
     }
 }
