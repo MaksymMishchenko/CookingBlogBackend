@@ -19,18 +19,20 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts, optionally including paginated comments for each post.
+        /// Retrieves a paginated list of posts from the database with optional comments.
+        /// Supports pagination for both posts and comments. Returns an error response 
+        /// if parameters are invalid or if no posts are found for the requested page.
         /// </summary>
-        /// <param name="pageNumber">The page number for the list of posts (default is 1).</param>
-        /// <param name="pageSize">The number of posts per page (default is 10).</param>
-        /// <param name="commentPageNumber">The page number for comments within each post (default is 1).</param>
-        /// <param name="commentsPerPage">The number of comments per page for each post (default is 10).</param>
-        /// <param name="includeComments">Specifies whether to include comments with the posts (default is true).</param>
-        /// <returns>
-        /// An HTTP 200 response with a paginated list of posts and optionally their comments if successful.
-        /// An HTTP 400 response if any of the parameters are invalid (less than 1).
-        /// An HTTP 500 response if an unexpected error occurs.
-        /// </returns>
+        /// <param name="pageNumber">The page number for posts. Defaults to 1.</param>
+        /// <param name="pageSize">The number of posts per page. Defaults to 10.</param>
+        /// <param name="commentPageNumber">The page number for comments. Defaults to 1.</param>
+        /// <param name="commentsPerPage">The number of comments per page. Defaults to 10.</param>
+        /// <param name="includeComments">Indicates whether to include comments in the response. Defaults to true.</param>
+        /// <returns>A list of posts with optional comments, or an error response.</returns>
+        /// <response code="200">Returns a list of posts with comments if the request is successful.</response>
+        /// <response code="400">If any of the parameters are invalid (less than 1 or exceed the allowed maximum).</response>
+        /// <response code="404">If no posts are found for the requested page.</response>
+        /// <response code="500">If an unexpected error occurs while processing the request.</response>
         [HttpGet("GetAllPosts")]
         public async Task<IActionResult> GetAllPostsAsync(
         [FromQuery] int pageNumber = 1,
@@ -42,7 +44,14 @@ namespace PostApiService.Controllers
         {
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
             {
-                return BadRequest("Parameters must be greater than 0.");
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Parameters must be greater than 0."));
+            }
+
+            if (pageSize > 10 || commentsPerPage > 10)
+            {
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Page size or comments per page exceeds the allowed maximum."));
             }
 
             try
@@ -54,18 +63,19 @@ namespace PostApiService.Controllers
                     commentsPerPage,
                     includeComments);
 
-                return Ok(posts);
-            }
+                if (!posts.Any())
+                {
+                    return NotFound(PostResponse.CreateErrorResponse
+                        ("No posts found for the requested page."));
+                }
 
-            catch (ArgumentException ex)
-            {
-                _logger.LogWarning(ex, "Invalid parameters provided.");
-                return BadRequest(ex.Message);
+                return Ok(posts);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while fetching posts.");
-                return StatusCode(StatusCodes.Status500InternalServerError, "An error occurred while processing your request.");
+                return StatusCode(StatusCodes.Status500InternalServerError, PostResponse.CreateErrorResponse
+                    ("An error occurred while processing your request."));
             }
         }
 
@@ -121,7 +131,7 @@ namespace PostApiService.Controllers
                 {
                     return CreatedAtAction("GetPostById", new
                     {
-                        Success = true,                        
+                        Success = true,
                         Message = "Post added successfully."
                     });
                 }
