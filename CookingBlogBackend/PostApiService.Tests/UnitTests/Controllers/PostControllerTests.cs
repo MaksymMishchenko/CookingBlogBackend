@@ -75,5 +75,23 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var returnValue = Assert.IsType<List<Post>>(okResult.Value);
             Assert.Equal(10, returnValue.Count);
         }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnInternalServerError_WhenExceptionIsThrown()
+        {
+            // Arrange
+            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>()))
+                .ThrowsAsync(new Exception("An error occurred while processing your request."));
+
+            // Act
+            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
+
+            // Assert
+            var statusCodeResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal(500, statusCodeResult.StatusCode);
+
+            var response = Assert.IsType<PostResponse>(statusCodeResult.Value);
+            Assert.Equal("An error occurred while processing your request.", response.Message);
+        }
     }
 }
