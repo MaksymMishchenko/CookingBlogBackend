@@ -121,11 +121,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.GetPostByIdAsync(postId, true);
 
             // Assert
-            var notFoundRequestResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundRequestResult.Value);
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
 
-            Assert.Equal(404, notFoundRequestResult.StatusCode);
+            Assert.Equal(404, notFoundResult.StatusCode);
             Assert.Equal($"Post with id {postId} not found.", response.Message);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()
+        {
+            // Arrange
+            var expectedPost = TestDataHelper.GetSinglePost();
+            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+                .ReturnsAsync(expectedPost);
+
+            // Act
+            var result = await _postsController.GetPostByIdAsync(1, true);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(200, okResult.StatusCode);
+            Assert.Equal(expectedPost, okResult.Value);
         }
     }
 }
