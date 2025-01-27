@@ -79,11 +79,56 @@ namespace PostApiService.Controllers
             }
         }
 
+        /// <summary>
+        /// Retrieves a post by its ID from the database, with an option to include comments.
+        /// </summary>
+        /// <param name="postId">The unique identifier of the post to retrieve. Must be greater than 0.</param>
+        /// <param name="includeComments">
+        /// A boolean flag indicating whether to include comments in the response. 
+        /// Defaults to <c>true</c>.
+        /// </param>
+        /// <returns>
+        /// An <see cref="IActionResult"/> containing:
+        /// <list type="bullet">
+        /// <item><c>200 OK</c> with the post data if found.</item>
+        /// <item><c>400 Bad Request</c> if the <paramref name="postId"/> is invalid (less than 1).</item>
+        /// <item><c>404 Not Found</c> if no post with the specified <paramref name="postId"/> exists.</item>
+        /// <item><c>500 Internal Server Error</c> if an unexpected error occurs.</item>
+        /// </list>
+        /// </returns>
+        /// <remarks>
+        /// Logs warnings for invalid input or if the post is not found. Logs an error for unexpected exceptions.
+        /// </remarks>
         [HttpGet("GetPost/{postId}", Name = "GetPostById")]
         public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
         {
-            var post = await _postsService.GetPostByIdAsync(postId, includeComments);
-            return Ok(post);
+            if (postId < 1)
+            {
+                _logger.LogWarning("Invalid postId: {PostId}. Parameters must be greater than 0.", postId);
+                return BadRequest(PostResponse.CreateErrorResponse("Parameters must be greater than 0."));
+            }
+
+            try
+            {
+                var post = await _postsService.GetPostByIdAsync(postId, includeComments);
+                if (post == null)
+                {
+                    _logger.LogWarning("Post with id {PostId} not found.", postId);
+                    return NotFound(PostResponse.CreateErrorResponse($"Post with id {postId} not found."));
+                }
+
+                return Ok(post);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogWarning(ex, "Post with id {PostId} not found.", postId);
+                return NotFound(PostResponse.CreateErrorResponse($"Post with id {postId} not found."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while processing request to get post by id {PostId}.", postId);
+                return StatusCode(500, PostResponse.CreateErrorResponse("An internal error occurred."));
+            }
         }
 
         /// <summary>

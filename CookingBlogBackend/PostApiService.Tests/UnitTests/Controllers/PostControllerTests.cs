@@ -93,5 +93,18 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(statusCodeResult.Value);
             Assert.Equal("An error occurred while processing your request.", response.Message);
         }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnBadRequest_IfParameterIsInvalid()
+        {
+            // Act
+            var result = await _postsController.GetPostByIdAsync(-1, true);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+
+            Assert.Equal("Parameters must be greater than 0.", response.Message);
+        }
     }
 }

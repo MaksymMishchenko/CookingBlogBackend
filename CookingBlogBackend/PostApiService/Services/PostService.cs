@@ -108,7 +108,7 @@ namespace PostApiService.Services
         /// </remarks>
         public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
         {
-            var query = _context.Posts.AsQueryable();
+            var query = _context.Posts.AsNoTracking();
 
             if (includeComments)
             {
