@@ -104,7 +104,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
+            Assert.Equal(400, badRequestResult.StatusCode);
             Assert.Equal("Parameters must be greater than 0.", response.Message);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnNotFound_IfPostDoesNotExist()
+        {
+            // Arrange
+            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+                .ReturnsAsync((Post)null);
+
+            var postId = 999;
+
+            // Act
+            var result = await _postsController.GetPostByIdAsync(postId, true);
+
+            // Assert
+            var notFoundRequestResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundRequestResult.Value);
+
+            Assert.Equal(404, notFoundRequestResult.StatusCode);
+            Assert.Equal($"Post with id {postId} not found.", response.Message);
         }
     }
 }
