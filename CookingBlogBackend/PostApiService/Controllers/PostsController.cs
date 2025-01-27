@@ -111,11 +111,6 @@ namespace PostApiService.Controllers
             try
             {
                 var post = await _postsService.GetPostByIdAsync(postId, includeComments);
-                if (post == null)
-                {
-                    _logger.LogWarning("Post with id {PostId} not found.", postId);
-                    return NotFound(PostResponse.CreateErrorResponse($"Post with id {postId} not found."));
-                }
 
                 return Ok(post);
             }
@@ -127,7 +122,7 @@ namespace PostApiService.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An error occurred while processing request to get post by id {PostId}.", postId);
-                return StatusCode(500, PostResponse.CreateErrorResponse("An internal error occurred."));
+                return StatusCode(500, PostResponse.CreateErrorResponse($"An error occurred while processing request to get post by id {postId}."));
             }
         }
 

@@ -109,26 +109,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnNotFound_IfPostDoesNotExist()
-        {
-            // Arrange
-            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
-                .ReturnsAsync((Post)null);
-
-            var postId = 999;
-
-            // Act
-            var result = await _postsController.GetPostByIdAsync(postId, true);
-
-            // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
-
-            Assert.Equal(404, notFoundResult.StatusCode);
-            Assert.Equal($"Post with id {postId} not found.", response.Message);
-        }
-
-        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()
         {
             // Arrange
@@ -143,6 +123,46 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
             Assert.Equal(expectedPost, okResult.Value);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnNotFound_IfPostDoesNotExist()
+        {
+            // Arrange
+            var postId = 999;
+
+            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+                .ThrowsAsync(new KeyNotFoundException($"Post with id {postId} not found."));
+
+            // Act
+            var result = await _postsController.GetPostByIdAsync(postId, true);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
+
+            Assert.Equal(404, notFoundResult.StatusCode);
+            Assert.Equal($"Post with id {postId} not found.", response.Message);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnInternalServerError_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var postId = 999;
+
+            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+                .ThrowsAsync(new Exception($"An error occurred while processing request to get post by id {postId}."));
+
+            // Act
+            var result = await _postsController.GetPostByIdAsync(postId, true);
+
+            // Assert
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(objectResult.Value);
+
+            Assert.Equal(500, objectResult.StatusCode);
+            Assert.Equal($"An error occurred while processing request to get post by id {postId}.", response.Message);
         }
     }
 }
