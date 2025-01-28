@@ -164,5 +164,19 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(500, objectResult.StatusCode);
             Assert.Equal($"An error occurred while processing request to get post by id {postId}.", response.Message);
         }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnBadRequest_IfPostIsNull()
+        {
+            // Act
+            var result = await _postsController.AddPostAsync(null);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+
+            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.Equal("Post cannot be null.", response.Message);
+        }
     }
 }
