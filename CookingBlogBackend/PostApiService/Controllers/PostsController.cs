@@ -180,7 +180,7 @@ namespace PostApiService.Controllers
             {
                 _logger.LogError(ex, "An unexpected error occurred while adding post with title: {Title}.", post.Title);
                 return StatusCode(StatusCodes.Status500InternalServerError, PostResponse.CreateErrorResponse
-                    ($"An unexpected error occurred while adding post"));
+                    ("An unexpected error occurred while adding post"));
             }
         }
 

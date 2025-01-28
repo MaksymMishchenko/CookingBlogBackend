@@ -240,5 +240,25 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Assert.Equal(expectedMessage, response.Message);
             }
         }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowAnException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var exceptionMsg = "An unexpected error occurred while adding post";
+
+            _mockPostService.Setup(s => s.AddPostAsync(It.IsAny<Post>()))
+                .ThrowsAsync(new Exception(exceptionMsg));
+
+            // Act
+            var result = await _postsController.AddPostAsync(new Post());
+
+            // Assert
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(objectResult.Value);
+
+            Assert.Equal(500, objectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+        }
     }
 }
