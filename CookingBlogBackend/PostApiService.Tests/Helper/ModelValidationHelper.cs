@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PostApiService.Models;
 using System.ComponentModel.DataAnnotations;
 using DataAnnotationsValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
@@ -35,6 +36,79 @@ namespace PostApiService.Tests.Helper
             yield return new object[] { "Valid Author", "Short", false };
             yield return new object[] { "", new string('a', 501), false };
             yield return new object[] { "Valid Author", new string('a', 501), false };
+        }
+
+        public static IEnumerable<object[]> GetPostTestData()
+        {
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = "valid-slug"
+            }, true };
+
+            yield return new object[] { new Post
+            {
+                Title = "",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "",
+                Author = "Valid Author",
+                ImageUrl = "InvalidUrl",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "",
+                ImageUrl = "InvalidUrl",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = ""
+            }, false };
         }
     }
 }

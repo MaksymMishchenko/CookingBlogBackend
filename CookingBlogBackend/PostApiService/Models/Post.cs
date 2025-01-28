@@ -6,7 +6,7 @@ namespace PostApiService.Models
     {
         public int PostId { get; set; }
 
-        [Required(ErrorMessage = "Title is required")]
+        [Required(ErrorMessage = "Title is required.")]
         [StringLength(200, MinimumLength = 10, ErrorMessage = "Title must be between 10 and 200 characters.")]
         public string? Title { get; set; }
 
