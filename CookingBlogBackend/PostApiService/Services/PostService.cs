@@ -140,7 +140,7 @@ namespace PostApiService.Services
         /// </returns>
         /// <exception cref="DbUpdateException">Thrown when a post with the same title already exists.</exception>
         /// <exception cref="Exception">Thrown for any unexpected errors during the database operation.</exception>
-        public async Task<bool> AddPostAsync(Post post)
+        public async Task<Post> AddPostAsync(Post post)
         {
             var existingPost = await _context.Posts
             .AnyAsync(p => p.Title == post.Title);
@@ -148,8 +148,7 @@ namespace PostApiService.Services
             if (existingPost)
             {
                 _logger.LogWarning("A post with the title '{Title}' already exists.", post.Title);
-
-                throw new DbUpdateException("A post with this title already exists.");
+                return null;
             }
 
             await _context.Posts.AddAsync(post);
@@ -161,10 +160,10 @@ namespace PostApiService.Services
                 if (result > 0)
                 {
                     _logger.LogInformation("Post was added successfully.");
-                    return true;
+                    return post;
                 }
                 _logger.LogWarning($"Failed to add post with title: {post.Title}");
-                return false;
+                return null;
             }
             catch (Exception ex)
             {

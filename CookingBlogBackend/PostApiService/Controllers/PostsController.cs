@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -127,23 +126,26 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Adds a new post to the system. This action is restricted to authorized users only.
-        /// It validates the post data, attempts to add it to the database, and returns a response
-        /// indicating the result of the operation. If successful, it returns a 201 Created response
-        /// with the URL of the newly created post. If validation fails or an error occurs during
-        /// the addition process, it returns an appropriate error response.
+        /// Adds a new post to the database.
         /// </summary>
-        /// <param name="post">The post data to be added to the system. Must be a valid Post object.</param>
+        /// <param name="post">The post object containing the details to be added.</param>
         /// <returns>
-        /// A task that represents the asynchronous operation. The task result contains an IActionResult,
-        /// which can be a success (201 Created) or an error response (400, 500, or 409 depending on the error).
-        /// </returns>         
+        /// - **201 Created**: If the post was successfully added, returns the created post's ID in the response.
+        /// - **400 Bad Request**: If the provided post object is null or fails validation, includes detailed error information.
+        /// - **409 Conflict**: If a post with the same title already exists in the database.
+        /// - **500 Internal Server Error**: If an unexpected error occurs during the operation.
+        /// </returns>
+        /// <remarks>
+        /// This method validates the provided `Post` object before attempting to add it to the database. 
+        /// If the operation is successful, it returns a response with the location of the created post.
+        /// </remarks>        
         [HttpPost("AddNewPost")]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             if (post == null)
             {
-                return BadRequest(new { Message = "Post cannot be null." });
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Post cannot be null."));
             }
 
             if (!ModelState.IsValid)
@@ -155,51 +157,30 @@ namespace PostApiService.Controllers
                         ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                     );
 
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = "Validation failed.",
-                    Errors = errors
-                });
+                _logger.LogWarning("Validation failed. Errors: {Errors}", string.Join(", ", errors.SelectMany(e => e.Value)));
+
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Validation failed.", errors));
             }
 
             try
             {
-                var result = await _postsService.AddPostAsync(post);
+                var addedPost = await _postsService.AddPostAsync(post);
 
-                if (result)
+                if (addedPost != null)
                 {
-                    return CreatedAtAction("GetPostById", new
-                    {
-                        Success = true,
-                        Message = "Post added successfully."
-                    });
+                    return CreatedAtAction("GetPostById", new { postId = addedPost.PostId }, PostResponse.CreateSuccessResponse
+                        ("Post added successfully.", addedPost.PostId));
                 }
 
-                _logger.LogWarning("Failed to add post with title: {Title}.", post.Title);
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    Success = false,
-                    Message = "Failed to add the post."
-                });
-            }
-            catch (DbUpdateException dbEx)
-            {
-                _logger.LogError(dbEx, "Database error occurred while adding post with title: {Title}.", post.Title);
-                return Conflict(new
-                {
-                    Success = false,
-                    Message = "A database error occurred. Please try again later."
-                });
+                return Conflict(PostResponse.CreateErrorResponse
+                    ("A post with this title already exists."));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred while adding post with title: {Title}.", post.Title);
-                return StatusCode(StatusCodes.Status500InternalServerError, new
-                {
-                    Success = false,
-                    Message = "An unexpected error occurred while processing your request."
-                });
+                return StatusCode(StatusCodes.Status500InternalServerError, PostResponse.CreateErrorResponse
+                    ($"An unexpected error occurred while adding post"));
             }
         }
 

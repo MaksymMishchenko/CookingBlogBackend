@@ -221,38 +221,71 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldThrowDbUpdateException_IfPostHasTheSameTitle()
+        public async Task AddPostAsync_ShouldAddPostSuccessfully_WhenPostIsValid()
         {
-            // Arrange            
-            var post = TestDataHelper.GetPostsWithComments(count: 1, generateComments: false);
+            // Arrange
+            var newPost = TestDataHelper.GetSinglePost();
 
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(post);
+            _mockContext.Setup(c => c.Posts)
+                .ReturnsDbSet(TestDataHelper.GetEmptyPostList());
+
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateException("A post with this title already exists."));
+                .ReturnsAsync(1);
 
-            var newPost = new Post { Title = post[0].Title };
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService.AddPostAsync(newPost));
-            Assert.Equal("A post with this title already exists.", exception.Message);
-        }
-
-        [Theory]
-        [InlineData(0, false)]
-        [InlineData(1, true)]
-        public async Task AddPostAsync_ShouldReturnCorrectResult_AccordingToSaveChangesResult(int saveChangedResult, bool expectedResult)
-        {
-            // Arrange            
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetPostsWithComments(count: 1, generateComments: false));
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
-
-            var newPost = new Post { Title = "Unique Title", Content = "Sample content" };
+            var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
 
             // Act
-            var result = await _postService.AddPostAsync(newPost);
+            var result = await postService.AddPostAsync(newPost);
 
             // Assert
-            Assert.Equal(expectedResult, result);
+            Assert.NotNull(result);
+            Assert.Equal(newPost.Title, result.Title);
+            Assert.Equal(newPost.Content, result.Content);
+
+            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title && p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Information,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Post was added successfully.")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnNull_WhenSaveChangesFails()
+        {
+            // Arrange
+            var newPost = new Post
+            {
+                Title = "Unique Title",
+                Content = "Sample content"
+            };
+
+            _mockContext.Setup(c => c.Posts)
+                .ReturnsDbSet(new List<Post>());
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(0);
+
+            var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
+
+            // Act
+            var result = await postService.AddPostAsync(newPost);
+
+            // Assert
+            Assert.Null(result);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to add post")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
