@@ -205,5 +205,40 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true, 201, "Post added successfully.")]
+        [InlineData(false, 409, "A post with this title already exists.")]
+        public async Task AddPostAsync_ShouldReturnExpectedResult_BasedOnPostAddition(bool isPostAdded,
+            int expectedStatusCode,
+            string expectedMessage)
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+
+            _mockPostService.Setup(s => s.AddPostAsync(It.IsAny<Post>()))
+                .ReturnsAsync(isPostAdded ? post : null);
+
+            // Act
+            var result = await _postsController.AddPostAsync(post);
+
+            // Assert
+            if (isPostAdded)
+            {
+                var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
+                var response = Assert.IsType<PostResponse>(createdAtActionResult.Value);
+
+                Assert.Equal(expectedStatusCode, createdAtActionResult.StatusCode);
+                Assert.Equal(expectedMessage, response.Message);
+            }
+            else
+            {
+                var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
+                var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
+
+                Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
+                Assert.Equal(expectedMessage, response.Message);
+            }
+        }
     }
 }
