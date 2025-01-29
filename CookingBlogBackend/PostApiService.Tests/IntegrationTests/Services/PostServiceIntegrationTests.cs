@@ -1,6 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using PostApiService.Models;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
@@ -93,24 +92,22 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var postService = CreatePostService();
             using var context = _fixture.CreateContext();
 
-            var postToBeUpdated = new Post
-            {
-                PostId = 1,
-                Title = "Updated title",
-                Content = "Updated content",
-                MetaTitle = "Updated meta title"
-            };
+            var postId = 1;
+            var existingPost = await context.Posts.FindAsync(postId);
+            Assert.NotNull(existingPost);
+
+            existingPost.Title = "Updated title";
+            existingPost.Content = "Updated content";
+            existingPost.MetaTitle = "Updated meta title";
 
             // Act
-            await postService.UpdatePostAsync(postToBeUpdated);
+            await postService.UpdatePostAsync(existingPost);
 
             // Assert
-            var updatedPost = await context.Posts
-                .FirstOrDefaultAsync(p => p.Title == postToBeUpdated.Title &&
-                p.Author == postToBeUpdated.Author);
+            var updatedPost = await context.Posts.FindAsync(postId);
             Assert.NotNull(updatedPost);
-            Assert.Equal(postToBeUpdated.Title, updatedPost.Title);
-            Assert.Equal(postToBeUpdated.Content, updatedPost.Content);
+            Assert.Equal(existingPost.Title, updatedPost.Title);
+            Assert.Equal(existingPost.Content, updatedPost.Content);
             Assert.NotEqual(DateTime.MinValue, updatedPost.CreateAt);
             Assert.True(updatedPost.CreateAt <= DateTime.UtcNow.ToLocalTime());
         }
