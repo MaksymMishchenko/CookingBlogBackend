@@ -341,5 +341,26 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
             }
         }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowKeyNotFoundException_IfPostNotFound()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = $"Post with ID {post.PostId} not found. Please check the Post ID.";
+
+            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
+                .ThrowsAsync(new KeyNotFoundException(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+
+            //Assert
+            var conflictObjectResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
+
+            Assert.Equal(404, conflictObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+        }
     }
 }
