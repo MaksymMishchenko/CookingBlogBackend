@@ -343,7 +343,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldThrowKeyNotFoundException_IfPostNotFound()
+        public async Task UpdatePostAsync_ShouldReturnNotFound_IfPostNotFound()
         {
             // Arrange
             var post = TestDataHelper.GetSinglePost();
@@ -356,10 +356,31 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.UpdatePostAsync(post.PostId, post);
 
             //Assert
-            var conflictObjectResult = Assert.IsType<NotFoundObjectResult>(result);
+            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
+
+            Assert.Equal(404, notFoundObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnConflict_WhenPostNotUpdated()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = $"No changes were made to post with ID {post.PostId}.";
+
+            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
+                .ThrowsAsync(new InvalidOperationException(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+
+            //Assert
+            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
             var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
 
-            Assert.Equal(404, conflictObjectResult.StatusCode);
+            Assert.Equal(409, conflictObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
         }
     }
