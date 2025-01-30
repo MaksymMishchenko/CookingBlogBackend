@@ -426,5 +426,26 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(500, internalObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
         }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnInternalServerError_WhenUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = "An unexpected error occurred. Please try again later.";
+
+            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
+                .ThrowsAsync(new Exception(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+
+            // Assert
+            var internalObjectResult = Assert.IsType<ObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(internalObjectResult.Value);
+
+            Assert.Equal(500, internalObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+        }
     }
 }
