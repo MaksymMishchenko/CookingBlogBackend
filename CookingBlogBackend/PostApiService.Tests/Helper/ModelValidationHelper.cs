@@ -110,5 +110,78 @@ namespace PostApiService.Tests.Helper
                 Slug = ""
             }, false };
         }
+
+        public static IEnumerable<object[]> UpdatePostTestData()
+        {
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = "valid-slug"
+            }, true };
+
+            yield return new object[] { new Post
+            {
+                Title = "",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "",
+                Author = "Valid Author",
+                ImageUrl = "InvalidUrl",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "",
+                ImageUrl = "InvalidUrl",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "",
+                Slug = "valid-slug"
+            }, false };
+
+            yield return new object[] { new Post
+            {
+                Title = "Valid Title",
+                Description = "Valid description lorem ipsum dolor",
+                Content = "Valid content lorem ipsum dolor",
+                Author = "Valid Author",
+                ImageUrl = "http://validimageurl.com",
+                Slug = ""
+            }, false };
+        }
     }
 }

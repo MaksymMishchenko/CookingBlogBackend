@@ -260,5 +260,27 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(500, objectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
         }
+
+        [Theory]
+        [InlineData(0, 0, "Post cannot be null, ID mismatch, or ID should be greater than 0.")]
+        [InlineData(1, 0, "Post cannot be null, ID mismatch, or ID should be greater than 0.")]
+        [InlineData(1, 2, "Post cannot be null, ID mismatch, or ID should be greater than 0.")]
+        public async Task UpdatePostAsync_ShouldReturnBadRequest_IfPostIsNullOrIdMismatch(int postId,
+            int routeId,
+            string expectedMessage)
+        {
+            // Arrange
+            Post post = postId > 0 ? new Post { PostId = postId } : null;
+
+            // Act
+            var result = await _postsController.UpdatePostAsync(routeId, post);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+
+            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.Equal(expectedMessage, response.Message);
+        }
     }
 }

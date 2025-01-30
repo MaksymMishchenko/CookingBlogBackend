@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -184,16 +185,75 @@ namespace PostApiService.Controllers
             }
         }
 
+        /// <summary>
+        /// Updates an existing post. Validates the input and handles various exceptions.
+        /// If the post is successfully updated, it returns a success response. 
+        /// If the post cannot be updated due to validation issues, ID mismatch, or database errors, 
+        /// appropriate error responses are returned.
+        /// </summary>
+        /// <param name="id">The ID of the post to be updated.</param>
+        /// <param name="post">The updated post data.</param>
+        /// <returns>An IActionResult representing the result of the operation.</returns>       
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePostAsync(int id, [FromBody] Post post)
         {
-            if (id != post.PostId)
+            if (post == null || post.PostId != id || id <= 0)
             {
-                return BadRequest();
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Post cannot be null, ID mismatch, or ID should be greater than 0."));
             }
 
-            await _postsService.UpdatePostAsync(post);
-            return Ok();
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(ms => ms.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        ms => ms.Key,
+                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+
+                _logger.LogWarning("Validation failed. Errors: {Errors}", string.Join(", ", errors.SelectMany(e => e.Value)));
+
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Validation failed.", errors));
+            }
+
+            try
+            {
+                var isUpdated = await _postsService.UpdatePostAsync(post);
+
+                if (isUpdated)
+                {
+                    return Ok(PostResponse.CreateSuccessResponse($"Post with Post Id {post.PostId} updated successfully.", id));
+                }
+
+                return Conflict(PostResponse.CreateErrorResponse($"No changes were made to post with ID {post.PostId}."));
+            }
+            catch (KeyNotFoundException ex)
+            {
+                _logger.LogError(ex, "Post with the specified ID not found.");
+                return NotFound(PostResponse.CreateErrorResponse($"Post with ID {post.PostId} not found. Please check the Post ID."));
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "No changes were made to post with ID {PostId}.");
+                return Conflict(PostResponse.CreateErrorResponse($"No changes were made to post with ID {post.PostId}."));
+            }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                _logger.LogError(ex, "Database concurrency error occurred while updating the post.");
+                return StatusCode(500, "A concurrency error occurred while updating the post. Please try again later.");
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database update failed for post.");
+                return StatusCode(500, "A database error occurred while updating the post. Please try again later.");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected error occurred while updating the post.");
+                return StatusCode(500, "An unexpected error occurred. Please try again later.");
+            }
         }
 
         [HttpDelete("{id}")]
