@@ -310,5 +310,36 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 }
             }
         }
+
+        [Theory]
+        [InlineData(true, 200)]
+        [InlineData(false, 409)]
+        public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated(bool isUpdated,
+            int expectedStatusCode)
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            _mockPostService.Setup(service => service.UpdatePostAsync(post))
+                .ReturnsAsync(isUpdated);
+
+            var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
+
+            // Act
+            var result = await controller.UpdatePostAsync(post.PostId, post);
+
+            // Assert            
+            if (isUpdated)
+            {
+                var okObjectResult = Assert.IsType<OkObjectResult>(result);
+
+                Assert.Equal(expectedStatusCode, okObjectResult.StatusCode);
+            }
+            else
+            {
+                var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
+
+                Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
+            }
+        }
     }
 }
