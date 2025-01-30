@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PostApiService.Controllers;
@@ -372,6 +373,27 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
                 .ThrowsAsync(new InvalidOperationException(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+
+            //Assert
+            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
+
+            Assert.Equal(409, conflictObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnConflict_WhenConcurrencyException()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = "A concurrency error occurred while updating the post. Please try again later.";
+
+            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
+                .ThrowsAsync(new DbUpdateConcurrencyException(exceptionMsg));
 
             // Act 
             var result = await _postsController.UpdatePostAsync(post.PostId, post);

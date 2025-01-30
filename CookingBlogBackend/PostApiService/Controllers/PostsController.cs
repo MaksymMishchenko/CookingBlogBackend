@@ -242,7 +242,7 @@ namespace PostApiService.Controllers
             catch (DbUpdateConcurrencyException ex)
             {
                 _logger.LogError(ex, "Database concurrency error occurred while updating the post.");
-                return StatusCode(500, "A concurrency error occurred while updating the post. Please try again later.");
+                return Conflict(PostResponse.CreateErrorResponse("A concurrency error occurred while updating the post. Please try again later."));
             }
             catch (DbUpdateException ex)
             {
