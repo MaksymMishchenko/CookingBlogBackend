@@ -224,35 +224,42 @@ namespace PostApiService.Controllers
 
                 if (isUpdated)
                 {
-                    return Ok(PostResponse.CreateSuccessResponse($"Post with Post Id {post.PostId} updated successfully.", id));
+                    return Ok(PostResponse.CreateSuccessResponse
+                        ($"Post with Post Id {post.PostId} updated successfully.", id));
                 }
 
-                return Conflict(PostResponse.CreateErrorResponse($"No changes were made to post with ID {post.PostId}."));
+                return Conflict(PostResponse.CreateErrorResponse
+                    ($"No changes were made to post with ID {post.PostId}."));
             }
             catch (KeyNotFoundException ex)
             {
                 _logger.LogError(ex, "Post with the specified ID not found.");
-                return NotFound(PostResponse.CreateErrorResponse($"Post with ID {post.PostId} not found. Please check the Post ID."));
+                return NotFound(PostResponse.CreateErrorResponse
+                    ($"Post with ID {post.PostId} not found. Please check the Post ID."));
             }
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, "No changes were made to post with ID {PostId}.");
-                return Conflict(PostResponse.CreateErrorResponse($"No changes were made to post with ID {post.PostId}."));
+                return Conflict(PostResponse.CreateErrorResponse
+                    ($"No changes were made to post with ID {post.PostId}."));
             }
             catch (DbUpdateConcurrencyException ex)
             {
                 _logger.LogError(ex, "Database concurrency error occurred while updating the post.");
-                return Conflict(PostResponse.CreateErrorResponse("A concurrency error occurred while updating the post. Please try again later."));
+                return Conflict(PostResponse.CreateErrorResponse
+                    ("A concurrency error occurred while updating the post. Please try again later."));
             }
             catch (DbUpdateException ex)
             {
                 _logger.LogError(ex, "Database update failed for post.");
-                return StatusCode(500, "A database error occurred while updating the post. Please try again later.");
+                return StatusCode(500, PostResponse.CreateErrorResponse
+                    ("A database error occurred while updating the post. Please try again later."));
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected error occurred while updating the post.");
-                return StatusCode(500, "An unexpected error occurred. Please try again later.");
+                return StatusCode(500, PostResponse.CreateErrorResponse
+                    ("An unexpected error occurred. Please try again later."));
             }
         }
 
