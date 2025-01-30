@@ -282,5 +282,33 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(400, badRequestResult.StatusCode);
             Assert.Equal(expectedMessage, response.Message);
         }
+
+        [Theory]
+        [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
+        public async Task UpdatePostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post,
+            bool expectedIsValid)
+        {
+            // Arrange
+            var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
+
+            ModelValidationHelper.ValidateModel(post, controller);
+
+            // Act
+            var result = await controller.UpdatePostAsync(post.PostId, post);
+
+            // Assert
+            if (!expectedIsValid)
+            {
+                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+                var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+
+                Assert.Equal("Validation failed.", response.Message);
+
+                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
+                }
+            }
+        }
     }
 }
