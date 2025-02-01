@@ -279,13 +279,15 @@ namespace PostApiService.Controllers
             if (postId <= 0)
             {
                 _logger.LogWarning("Invalid postId: {PostId}. Parameters must be greater than 0.", postId);
-                return BadRequest(PostResponse.CreateErrorResponse("Parameters must be greater than 0."));
+                return BadRequest(PostResponse.CreateErrorResponse
+                    ("Parameters must be greater than 0."));
             }
 
             try
             {
-                var ifRemoved = await _postsService.DeletePostAsync(postId);
-                return Ok(PostResponse.CreateSuccessResponse("Post was deleted successfully."));
+                await _postsService.DeletePostAsync(postId);
+                return Ok(PostResponse.CreateSuccessResponse
+                    ("Post was deleted successfully."));
             }
             catch (KeyNotFoundException ex)
             {
@@ -296,18 +298,21 @@ namespace PostApiService.Controllers
             catch (InvalidOperationException ex)
             {
                 _logger.LogError(ex, "Invalid operation occurred while deleting post with ID {PostId}.", postId);
-                return Conflict(PostResponse.CreateErrorResponse($"Failed to delete post with ID {postId}."));
+                return Conflict(PostResponse.CreateErrorResponse
+                    ($"Failed to delete post with ID {postId}."));
             }
             catch (DbUpdateException ex)
             {
                 _logger.LogError(ex, "Database error occurred while deleting post with ID {PostId}.", postId);
-                return StatusCode(500, PostResponse.CreateErrorResponse("A database error occurred while deleting the post. Please try again later."));
+                return StatusCode(500, PostResponse.CreateErrorResponse
+                    ("A database error occurred while deleting the post. Please try again later."));
             }
             catch (Exception ex)
             {
                 var requestId = Guid.NewGuid();
                 _logger.LogError(ex, "Unexpected error occurred while deleting the post. Request ID: {RequestId}", requestId);
-                return StatusCode(500, PostResponse.CreateErrorResponse($"An unexpected error occurred. Request ID: {requestId}. Please contact support."));
+                return StatusCode(500, PostResponse.CreateErrorResponse
+                    ($"An unexpected error occurred. Request ID: {requestId}. Please contact support."));
             }
         }
     }

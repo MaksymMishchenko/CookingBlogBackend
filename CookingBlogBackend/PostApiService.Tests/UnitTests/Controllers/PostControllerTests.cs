@@ -471,16 +471,40 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [InlineData(100)]
         public async Task DeletePostAsync_ShouldNotReturnBadRequest_IfParameterIsValid(int postId)
         {
-            // Arrange
+            //Arrange
             _mockPostService
                  .Setup(s => s.DeletePostAsync(postId))
-                 .ReturnsAsync(true);
+                 .Returns(Task.CompletedTask);
 
             // Act
             var result = await _postsController.DeletePostAsync(postId);
 
             // Assert
             Assert.IsNotType<BadRequestObjectResult>(result);
+
+            _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnOk_IfPostRemovedSuccessfully()
+        {
+            // Arrange
+            var postId = 1;
+            _mockPostService
+                 .Setup(s => s.DeletePostAsync(postId))
+                 .Returns(Task.CompletedTask);
+
+            // Act
+            var result = await _postsController.DeletePostAsync(postId);
+
+            // Assert
+            var okObjectResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(okObjectResult.Value);
+
+            Assert.Equal(200, okObjectResult.StatusCode);
+            Assert.Equal("Post was deleted successfully.", response.Message);
+
+            _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
         }
     }
 }
