@@ -529,5 +529,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
         }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnConflict_IfPostNotDeleted()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = $"Failed to delete post with ID {post.PostId}.";
+
+            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
+                .ThrowsAsync(new InvalidOperationException(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.DeletePostAsync(post.PostId);
+
+            //Assert
+            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
+
+            Assert.Equal(409, conflictObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+        }
     }
 }
