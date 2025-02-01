@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using System.Data;
@@ -246,7 +245,7 @@ namespace PostApiService.Services
         /// <exception cref="DbUpdateConcurrencyException">Thrown when a concurrency issue occurs while deleting the post.</exception>
         /// <exception cref="DbUpdateException">Thrown when a database error occurs during the deletion process.</exception>
         /// <exception cref="Exception">Thrown for any other unexpected errors during deletion.</exception>
-        public async Task<bool> DeletePostAsync(int postId)
+        public async Task DeletePostAsync(int postId)
         {
             var existingPost = await _context.Posts.FindAsync(postId);
 
@@ -262,15 +261,12 @@ namespace PostApiService.Services
             {
                 var result = await _context.SaveChangesAsync();
 
-                if (result > 0)
+                if (result <= 0)
                 {
-                    _logger.LogInformation("Post with ID {PostId} was successfully deleted.", postId);
-                    return true;
+                    _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.");
+                    throw new InvalidOperationException($"Failed to delete post with ID {postId}. No changes were made.");
                 }
-
-                _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.");
-                throw new InvalidOperationException($"Failed to delete post with ID {postId}. No changes were made.");
-            }            
+            }
             catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);

@@ -455,24 +455,30 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task DeletePostAsync_ShouldReturnTrue_WhenSaveChangesSucceeds()
+        public async Task DeletePostAsync_ShouldDeletePost_WhenSaveChangesSucceeds()
         {
             // Arrange
             var postId = 1;
+            var post = TestDataHelper.GetSinglePost();
             var saveChangedResult = 1;
 
             _mockContext.Setup(m => m.Posts.FindAsync(postId))
-                .ReturnsAsync(TestDataHelper.GetSinglePost());
+                .ReturnsAsync(post);
 
             _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(saveChangedResult);
 
-            // Act
-            var result = await _postService.DeletePostAsync(postId);
+            var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
 
-            // Assert
-            Assert.True(result);
+            // Act
+            await postService.DeletePostAsync(postId);
+
+            // Assert            
+            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
+            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
+            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
+
 
         [Fact]
         public async Task DeletePostAsync_ShouldThrowInvalidOperationException_IfNoChangesWereMade()
