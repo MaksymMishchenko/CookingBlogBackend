@@ -465,5 +465,22 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(400, badRequestResult.StatusCode);
             Assert.Equal(expectedMessage, response.Message);
         }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public async Task DeletePostAsync_ShouldNotReturnBadRequest_IfParameterIsValid(int postId)
+        {
+            // Arrange
+            _mockPostService
+                 .Setup(s => s.DeletePostAsync(postId))
+                 .ReturnsAsync(true);
+
+            // Act
+            var result = await _postsController.DeletePostAsync(postId);
+
+            // Assert
+            Assert.IsNotType<BadRequestObjectResult>(result);
+        }
     }
 }
