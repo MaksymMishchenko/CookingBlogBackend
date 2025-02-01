@@ -506,5 +506,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
         }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnNotFound_IfPostNotFound()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = $"Post with ID {post.PostId} not found. Please check the Post ID.";
+
+            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
+                .ThrowsAsync(new KeyNotFoundException(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.DeletePostAsync(post.PostId);
+
+            //Assert
+            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
+
+            Assert.Equal(404, notFoundObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+        }
     }
 }
