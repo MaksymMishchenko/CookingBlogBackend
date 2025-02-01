@@ -455,7 +455,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task DeletePostAsync_ShouldReturnCorrectResult_AccordingToSaveChangesResult()
+        public async Task DeletePostAsync_ShouldReturnTrue_WhenSaveChangesSucceeds()
         {
             // Arrange
             var postId = 1;
@@ -471,7 +471,21 @@ namespace PostApiService.Tests.UnitTests
             var result = await _postService.DeletePostAsync(postId);
 
             // Assert
-            Assert.Equal(true, result);
+            Assert.True(result);
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldThrowInvalidOperationException_IfNoChangesWereMade()
+        {
+            // Arrange            
+            var post = TestDataHelper.GetSinglePost();
+            _mockContext.Setup(p => p.Posts.FindAsync(post.PostId)).ReturnsAsync(post);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            _postService.DeletePostAsync(post.PostId));
+
+            Assert.Equal($"Failed to delete post with ID {post.PostId}. No changes were made.", exception.Message);
         }
 
         [Fact]
