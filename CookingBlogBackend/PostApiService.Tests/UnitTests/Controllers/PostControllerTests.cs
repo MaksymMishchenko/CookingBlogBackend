@@ -552,5 +552,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
         }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnInternalServerError_WhenDbUpdateExceptionIsThrown()
+        {
+            // Arrange
+            var post = TestDataHelper.GetSinglePost();
+            var exceptionMsg = "A database error occurred while deleting the post. Please try again later.";
+
+            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
+                .ThrowsAsync(new DbUpdateException(exceptionMsg));
+
+            // Act 
+            var result = await _postsController.DeletePostAsync(post.PostId);
+
+            //Assert
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(objectResult.Value);
+
+            Assert.Equal(500, objectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+        }
     }
 }
