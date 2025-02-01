@@ -447,5 +447,23 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(500, internalObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
         }
+
+        [Theory]
+        [InlineData(0, "Parameters must be greater than 0.")]
+        [InlineData(-1, "Parameters must be greater than 0.")]
+        public async Task DeletePostAsync_ShouldReturnBadRequest_IfParameterIsInvalid(
+            int postId,
+            string expectedMessage)
+        {
+            // Act
+            var result = await _postsController.DeletePostAsync(postId);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+
+            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.Equal(expectedMessage, response.Message);
+        }
     }
 }
