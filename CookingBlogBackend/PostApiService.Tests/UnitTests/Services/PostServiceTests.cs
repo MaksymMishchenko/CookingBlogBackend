@@ -454,13 +454,12 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal($"Post with ID {postId} does not exist.", exception.Message);
         }
 
-        [Theory]
-        [InlineData(1, true)]
-        [InlineData(0, false)]
-        public async Task DeletePostAsync_ShouldReturnCorrectResult_AccordingToSaveChangesResult(int saveChangedResult, bool expectedResult)
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnCorrectResult_AccordingToSaveChangesResult()
         {
             // Arrange
             var postId = 1;
+            var saveChangedResult = 1;
 
             _mockContext.Setup(m => m.Posts.FindAsync(postId))
                 .ReturnsAsync(TestDataHelper.GetSinglePost());
@@ -472,7 +471,7 @@ namespace PostApiService.Tests.UnitTests
             var result = await _postService.DeletePostAsync(postId);
 
             // Assert
-            Assert.Equal(expectedResult, result);
+            Assert.Equal(true, result);
         }
 
         [Fact]

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using System.Data;
@@ -196,7 +197,7 @@ namespace PostApiService.Services
 
             existingPost.Title = post.Title;
             existingPost.Description = post.Description;
-            existingPost.Content = post.Content;            
+            existingPost.Content = post.Content;
             existingPost.ImageUrl = post.ImageUrl;
             existingPost.MetaTitle = post.MetaTitle;
             existingPost.MetaDescription = post.MetaDescription;
@@ -267,24 +268,18 @@ namespace PostApiService.Services
                     return true;
                 }
 
-                _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.", postId);
-                return false;
-            }
-            catch (DbUpdateConcurrencyException dbEx)
-            {
-                _logger.LogError(dbEx, "Concurrency issue occurred while deleting post with ID {PostId}.", postId);
-                throw new DbUpdateConcurrencyException($"Database concurrency error occurred while deleting the post with ID {postId}." +
-                    " This may be caused by conflicting changes in the database.");
-            }
+                _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.");
+                throw new InvalidOperationException($"Failed to delete post with ID {postId}. No changes were made.");
+            }            
             catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
-                throw new DbUpdateException($"Database delete failed for post with ID {postId}.");
+                throw;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
-                throw new Exception($"Unexpected error occurred while deleting post with ID {postId}.");
+                throw;
             }
         }
     }
