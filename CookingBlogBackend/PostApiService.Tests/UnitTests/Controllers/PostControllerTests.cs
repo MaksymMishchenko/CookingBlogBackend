@@ -575,5 +575,29 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
         }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnInternalServerError_WhenUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var requestId = Guid.NewGuid();
+            var post = TestDataHelper.GetSinglePost();
+
+            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
+                .ThrowsAsync(new Exception("An unexpected error occurred"));
+
+            // Act 
+            var result = await _postsController.DeletePostAsync(post.PostId);
+
+            //Assert
+            var objectResult = Assert.IsType<ObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(objectResult.Value);
+
+            Assert.Equal(500, objectResult.StatusCode);
+            Assert.Contains("An unexpected error occurred", response.Message);
+            Assert.Contains("Request ID:", response.Message);
+
+            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+        }
     }
 }
