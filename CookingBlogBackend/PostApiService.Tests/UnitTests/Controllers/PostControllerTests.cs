@@ -115,6 +115,23 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal("Parameters must be greater than 0.", response.Message);
         }
 
+        [Theory]
+        [InlineData(1)]
+        [InlineData(100)]
+        public async Task GetPostByIdAsync_ShouldNotReturnBadRequest_IfParameterIsValid(int postId)
+        {
+            //Arrange
+            _mockPostService
+                 .Setup(s => s.GetPostByIdAsync(postId, true))
+                 .ReturnsAsync(TestDataHelper.GetSinglePost());
+
+            // Act
+            var result = await _postsController.GetPostByIdAsync(postId);
+
+            // Assert
+            Assert.IsNotType<BadRequestObjectResult>(result);
+        }
+
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()
         {

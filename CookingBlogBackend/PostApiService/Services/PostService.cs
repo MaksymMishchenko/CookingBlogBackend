@@ -18,22 +18,21 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts from the database, with optional inclusion of comments.
+        /// Asynchronously retrieves a paginated list of posts from the database, optionally including comments.
+        /// This method supports pagination for both posts and comments, and allows filtering of comments based on the provided parameters.
+        /// The method also handles logging for various operations and error scenarios.
         /// </summary>
-        /// <param name="pageNumber">The number of the page to retrieve, starting from 1.</param>
-        /// <param name="pageSize">The number of posts per page.</param>
-        /// <param name="commentPageNumber">The page number for comments pagination (default is 1).</param>
-        /// <param name="commentsPerPage">The number of comments to retrieve per post (default is 10).</param>
-        /// <param name="includeComments">Indicates whether to include comments for each post (default is true).</param>
-        /// <returns>A list of posts, optionally with paginated comments.</returns>
-        /// <exception cref="Exception">
-        /// Thrown when an unexpected error occurs while fetching posts from the database.
-        /// The exception message contains details about the request parameters for debugging.
-        /// </exception>
-        /// <remarks>
-        /// If comments are included, they are paginated for each post according to the provided
-        /// <paramref name="commentPageNumber"/> and <paramref name="commentsPerPage"/> parameters.
-        /// </remarks>
+        /// <param name="pageNumber">The page number for the posts to be retrieved. Defaults to 1.</param>
+        /// <param name="pageSize">The number of posts per page. Defaults to 10.</param>
+        /// <param name="commentPageNumber">The page number for the comments to be retrieved. Defaults to 1.</param>
+        /// <param name="commentsPerPage">The number of comments per page. Defaults to 10.</param>
+        /// <param name="includeComments">A flag to determine whether to include comments with the posts. Defaults to true.</param>
+        /// <param name="cancellationToken">A token to cancel the operation, if requested. Defaults to default.</param>
+        /// <returns>A list of posts with optional comments, based on the provided pagination and inclusion parameters.</returns>
+        /// <exception cref="OperationCanceledException">Thrown when the operation is cancelled.</exception>
+        /// <exception cref="TimeoutException">Thrown when the operation times out.</exception>
+        /// <exception cref="SqlException">Thrown when a database error occurs while fetching posts.</exception>
+        /// <exception cref="Exception">Thrown for any unexpected errors during the process.</exception>
         public async Task<List<Post>> GetAllPostsAsync(int pageNumber,
             int pageSize,
             int commentPageNumber = 1,
@@ -109,19 +108,19 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a post by its ID from the database. Optionally includes comments associated with the post.
+        /// Asynchronously retrieves a post by its ID from the database, optionally including its comments.
+        /// If the post is not found, a <see cref="KeyNotFoundException"/> is thrown.
+        /// The method handles different exceptions related to operation cancellation, timeouts, and database errors,
+        /// logging each occurrence appropriately.
         /// </summary>
-        /// <param name="postId">The ID of the post to retrieve.</param>
-        /// <param name="includeComments">Indicates whether to include the comments related to the post. Default is true.</param>
-        /// <returns>
-        /// The post with the specified ID, including its comments if <paramref name="includeComments"/> is true.
-        /// </returns>
-        /// <exception cref="KeyNotFoundException">
-        /// Thrown when a post with the specified ID does not exist in the database.
-        /// </exception>
-        /// <remarks>
-        /// Logs a warning if the post is not found and an informational message if the post is successfully retrieved.
-        /// </remarks>
+        /// <param name="postId">The ID of the post to be retrieved.</param>
+        /// <param name="includeComments">A flag to determine whether to include comments for the post. Defaults to true.</param>
+        /// <returns>The post with the specified ID, including comments if requested, or <c>null</c> if not found.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown when the post with the specified ID is not found.</exception>
+        /// <exception cref="OperationCanceledException">Thrown when the operation is cancelled.</exception>
+        /// <exception cref="TimeoutException">Thrown when the operation times out.</exception>
+        /// <exception cref="SqlException">Thrown when a database error occurs while fetching the post.</exception>
+        /// <exception cref="Exception">Thrown for any unexpected errors during the process.</exception>
         public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
         {
             var query = _context.Posts.AsNoTracking();
@@ -131,17 +130,38 @@ namespace PostApiService.Services
                 query = query.Include(p => p.Comments);
             }
 
-            var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
-
-            if (post == null)
+            try
             {
-                _logger.LogWarning("Post with ID {postId} not found.", postId);
-                throw new KeyNotFoundException($"Post with ID {postId} was not found.");
+                var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
+
+                if (post == null)
+                {
+                    _logger.LogWarning("Post with ID {postId} not found.", postId);
+                    throw new KeyNotFoundException($"Post with ID {postId} was not found.");
+                }
+
+                return post;
             }
-
-            _logger.LogInformation("Successfully fetched post with ID {postId}.", postId);
-
-            return post;
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogWarning(ex, "The request was cancelled.");
+                throw;
+            }
+            catch (TimeoutException ex)
+            {
+                _logger.LogWarning(ex, "The request timed out.");
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Database error while fetching post.");
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An unexpected error occurred while fetching post.");
+                throw;
+            }
         }
 
         /// <summary>

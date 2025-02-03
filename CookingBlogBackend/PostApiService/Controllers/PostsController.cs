@@ -28,6 +28,7 @@ namespace PostApiService.Controllers
         /// <param name="commentPageNumber">The page number for comments. Defaults to 1.</param>
         /// <param name="commentsPerPage">The number of comments per page. Defaults to 10.</param>
         /// <param name="includeComments">Indicates whether to include comments in the response. Defaults to true.</param>
+        /// <param name="cancellationToken">A token that can be used to cancel the request. Defaults to <c>default</c>.</param>
         /// <returns>A list of posts with optional comments, or an error response.</returns>
         /// <response code="200">Returns a list of posts with comments if the request is successful.</response>
         /// <response code="400">If any of the parameters are invalid (less than 1 or exceed the allowed maximum).</response>
@@ -40,8 +41,7 @@ namespace PostApiService.Controllers
         [FromQuery] int commentPageNumber = 1,
         [FromQuery] int commentsPerPage = 10,
         [FromQuery] bool includeComments = true,
-        CancellationToken cancellationToken = default
-        )
+        CancellationToken cancellationToken = default)
         {
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
             {
