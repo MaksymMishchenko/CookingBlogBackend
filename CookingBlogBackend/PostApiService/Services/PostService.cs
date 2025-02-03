@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using System.Data;
@@ -37,7 +38,8 @@ namespace PostApiService.Services
             int pageSize,
             int commentPageNumber = 1,
             int commentsPerPage = 10,
-            bool includeComments = true)
+            bool includeComments = true,
+            CancellationToken cancellationToken = default)
         {
             var query = _context.Posts.AsQueryable();
 
@@ -52,7 +54,7 @@ namespace PostApiService.Services
                     .OrderBy(p => p.PostId)
                     .Skip((pageNumber - 1) * pageSize)
                     .Take(pageSize)
-                    .ToListAsync();
+                    .ToListAsync(cancellationToken);
 
                 _logger.LogInformation("Fetched {Count} posts. Total posts", posts.Count);
 
@@ -60,11 +62,25 @@ namespace PostApiService.Services
 
                 return posts;
             }
+            catch (OperationCanceledException ex)
+            {
+                _logger.LogWarning(ex, "The request was cancelled.");
+                throw;
+            }
+            catch (TimeoutException ex)
+            {
+                _logger.LogWarning(ex, "The request timed out.");
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "Database error while fetching posts.");
+                throw;
+            }
             catch (Exception ex)
             {
-                var detailedMessage = $"An unexpected error occurred while fetching posts from the database. PageNumber: {pageNumber}, PageSize: {pageSize}, IncludeComments: {includeComments}.";
-                _logger.LogError(ex, detailedMessage);
-                throw new Exception(detailedMessage, ex);
+                _logger.LogError(ex, "An unexpected error occurred while fetching posts.");
+                throw;
             }
 
             void ProcessComments(List<Post> posts, bool includeComments, int commentPageNumber, int commentsPerPage)

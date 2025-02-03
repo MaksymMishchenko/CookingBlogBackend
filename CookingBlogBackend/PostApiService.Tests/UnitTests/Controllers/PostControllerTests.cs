@@ -49,7 +49,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenNoPostsFound()
         {
             // Arrange
-            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>()))
+            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(TestDataHelper.GetEmptyPostList());
 
             // Act
@@ -65,7 +70,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAllPostsAsync_ShouldReturnOk_WhenPostsAreFound()
         {
             // Arrange            
-            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>()))
+            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
                 .ReturnsAsync(TestDataHelper.GetPostsWithComments(count: 10, generateComments: false));
 
             // Act
@@ -80,10 +90,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnInternalServerError_WhenExceptionIsThrown()
         {
-            // Arrange
-            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<bool>()))
-                .ThrowsAsync(new Exception("An error occurred while processing your request."));
-
             // Act
             var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
 

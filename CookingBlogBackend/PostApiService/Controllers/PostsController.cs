@@ -39,7 +39,8 @@ namespace PostApiService.Controllers
         [FromQuery] int pageSize = 10,
         [FromQuery] int commentPageNumber = 1,
         [FromQuery] int commentsPerPage = 10,
-        [FromQuery] bool includeComments = true
+        [FromQuery] bool includeComments = true,
+        CancellationToken cancellationToken = default
         )
         {
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
@@ -61,7 +62,8 @@ namespace PostApiService.Controllers
                     pageSize,
                     commentPageNumber,
                     commentsPerPage,
-                    includeComments);
+                    includeComments,
+                    cancellationToken);
 
                 if (!posts.Any())
                 {

@@ -1,3 +1,4 @@
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -127,27 +128,31 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        public async Task GetAllPostsAsync_ShouldThrowOperationCanceledException_WhenCancelled()
         {
             // Arrange
-            var mockContext = new Mock<IApplicationDbContext>();
-            var mockLoggerService = new Mock<ILogger<PostService>>();
-            var postService = new PostService(mockContext.Object, mockLoggerService.Object);
+            using var context = _fixture.CreateContext();
+            var postService = CreatePostService();
 
-            mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetListWithPost());
-            mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetEmptyCommentList());
-            mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception());
+            context.Posts.Add(TestDataHelper.GetSinglePost());
+            await context.SaveChangesAsync();
 
-            var pageNumber = 2;
-            var pageSize = 10;
-            var includeComments = false;
+            var cts = new CancellationTokenSource();
+            cts.Cancel();
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(() =>
-            postService.GetAllPostsAsync(pageNumber, pageSize, includeComments: false));
-            Assert.Equal($"An unexpected error occurred while fetching posts from the database. PageNumber: {pageNumber}, PageSize: {pageSize}, IncludeComments: {includeComments}.", exception.Message);
-        }
+            var exception = await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+                await postService.GetAllPostsAsync(1, 10, 1, 10, true, cts.Token));
+
+            Assert.NotNull(exception);
+
+            _mockLoggerService.Verify(x => x.Log(LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
+        }               
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()

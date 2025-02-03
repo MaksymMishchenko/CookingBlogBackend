@@ -8,7 +8,8 @@ namespace PostApiService.Interfaces
             int pageSize,
             int commentPageNumber = 1,
             int commentsPerPage = 10,
-            bool includeComments = true);
+            bool includeComments = true,
+            CancellationToken cancellationToken = default);
         Task<Post> GetPostByIdAsync(int postId, bool includeComments = true);
         Task<Post> AddPostAsync(Post post);
         Task<bool> UpdatePostAsync(Post post);
