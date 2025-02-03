@@ -227,13 +227,13 @@ namespace PostApiService.Services
         /// <summary>
         /// Updates an existing post in the database.
         /// </summary>
-        /// <param name="post">The post entity with updated values.</param>
-        /// <returns>True if the update is successful; otherwise, an exception is thrown.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the post with the specified ID does not exist.</exception>
+        /// <param name="post">The post object containing updated data.</param>
+        /// <returns>Returns <c>true</c> if the post was successfully updated, otherwise throws an exception.</returns>
+        /// <exception cref="KeyNotFoundException">Thrown when the specified post ID does not exist.</exception>
         /// <exception cref="InvalidOperationException">Thrown when no changes were made to the post.</exception>
-        /// <exception cref="DbUpdateConcurrencyException">Thrown when a concurrency conflict occurs while saving changes.</exception>
-        /// <exception cref="DbUpdateException">Thrown when the database update fails due to an error.</exception>
-        /// <exception cref="Exception">Thrown for any unexpected errors.</exception>
+        /// <exception cref="DbUpdateException">Thrown when a database update error occurs.</exception>
+        /// <exception cref="SqlException">Thrown when an SQL-related error occurs during the update.</exception>
+        /// <exception cref="Exception">Thrown when an unexpected error occurs.</exception>
         public async Task<bool> UpdatePostAsync(Post post)
         {
             var existingPost = await _context.Posts
@@ -266,14 +266,14 @@ namespace PostApiService.Services
                 _logger.LogWarning("No changes were made to post with ID {PostId}.", post.PostId);
                 throw new InvalidOperationException($"No changes were made to post with ID {post.PostId}.");
             }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "Database concurrency error occurred while updating the post with ID {PostId}.", post.PostId);
-                throw;
-            }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Database update failed for post with ID {PostId}.", post.PostId);
+                _logger.LogError(ex, "Database error occurred while updating post.");
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL error occurred while updating post.");
                 throw;
             }
             catch (Exception ex)

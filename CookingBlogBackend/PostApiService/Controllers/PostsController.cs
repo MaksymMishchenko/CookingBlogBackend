@@ -193,14 +193,17 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Updates an existing post. Validates the input and handles various exceptions.
-        /// If the post is successfully updated, it returns a success response. 
-        /// If the post cannot be updated due to validation issues, ID mismatch, or database errors, 
-        /// appropriate error responses are returned.
+        /// Updates an existing post with the specified ID.
         /// </summary>
         /// <param name="id">The ID of the post to be updated.</param>
         /// <param name="post">The updated post data.</param>
-        /// <returns>An IActionResult representing the result of the operation.</returns>       
+        /// <returns>
+        /// Returns a 200 OK response if the post was successfully updated.
+        /// Returns a 400 Bad Request if the request is invalid (e.g., ID mismatch or invalid model state).
+        /// Returns a 404 Not Found if the post with the specified ID does not exist.
+        /// Returns a 409 Conflict if no changes were made to the post.
+        /// Returns a 500 Internal Server Error if an unexpected error occurs.
+        /// </returns>
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePostAsync(int id, [FromBody] Post post)
         {
@@ -249,18 +252,6 @@ namespace PostApiService.Controllers
                 _logger.LogError(ex, "No changes were made to post with ID {PostId}.");
                 return Conflict(PostResponse.CreateErrorResponse
                     ($"No changes were made to post with ID {post.PostId}."));
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "Database concurrency error occurred while updating the post.");
-                return Conflict(PostResponse.CreateErrorResponse
-                    ("A concurrency error occurred while updating the post. Please try again later."));
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database update failed for post.");
-                return StatusCode(500, PostResponse.CreateErrorResponse
-                    ("A database error occurred while updating the post. Please try again later."));
             }
             catch (Exception ex)
             {

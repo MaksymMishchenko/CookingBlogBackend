@@ -431,48 +431,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldReturnConflict_WhenConcurrencyException()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = "A concurrency error occurred while updating the post. Please try again later.";
-
-            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new DbUpdateConcurrencyException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.UpdatePostAsync(post.PostId, post);
-
-            //Assert
-            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
-
-            Assert.Equal(409, conflictObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldReturnInternalServerError_WhenPostIsNotSaved()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = "A database error occurred while updating the post. Please try again later.";
-
-            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new DbUpdateException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.UpdatePostAsync(post.PostId, post);
-
-            // Assert
-            var internalObjectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(internalObjectResult.Value);
-
-            Assert.Equal(500, internalObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-        }
-
-        [Fact]
         public async Task UpdatePostAsync_ShouldReturnInternalServerError_WhenUnexpectedErrorOccurs()
         {
             // Arrange

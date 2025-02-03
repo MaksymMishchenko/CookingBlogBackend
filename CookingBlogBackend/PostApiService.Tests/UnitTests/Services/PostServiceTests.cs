@@ -320,6 +320,8 @@ namespace PostApiService.Tests.UnitTests
                 _postService.UpdatePostAsync(existingPost));
 
             Assert.Equal($"Post with ID {existingPost.PostId} not found. Please check the Post ID.", exception.Message);
+
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
         }
 
         [Fact]
@@ -343,6 +345,16 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.True(result);
+
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Information,
+            It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Successfully updated post with ID {existingPost.PostId}.")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -366,28 +378,9 @@ namespace PostApiService.Tests.UnitTests
                 _postService.UpdatePostAsync(existingPost));
 
             Assert.Equal($"No changes were made to post with ID {existingPost.PostId}.", exception.Message);
-        }
 
-        [Fact]
-        public async Task UpdatePostAsync_ShouldThrowDbUpdateConcurrencyException_WhenDbSaveFailsDueToConcurrency()
-        {
-            // Arrange
-            var existingPost = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
-                .ReturnsAsync(existingPost);
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateConcurrencyException("Simulated concurrency issue"));
-
-            existingPost.Title = "Updated title";
-            existingPost.Description = "Updated description";
-
-            // Act & Assert            
-            var exception = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _postService
-            .UpdatePostAsync(existingPost));
-
-            Assert.Equal("Simulated concurrency issue", exception.Message);
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -410,6 +403,9 @@ namespace PostApiService.Tests.UnitTests
             .UpdatePostAsync(existingPost));
 
             Assert.Equal("Simulated DbUpdateException", exception.Message);
+
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -432,6 +428,9 @@ namespace PostApiService.Tests.UnitTests
             .UpdatePostAsync(existingPost));
 
             Assert.Equal("Simulated UnexpectedExceptionOccurs", exception.Message);
+
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
