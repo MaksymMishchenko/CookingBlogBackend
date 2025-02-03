@@ -266,6 +266,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
+        public async Task AddPostAsync_ShouldThrowAnInvalidOperationException_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var exceptionMsg = "Failed to add post.";
+
+            _mockPostService.Setup(s => s.AddPostAsync(It.IsAny<Post>()))
+                .ThrowsAsync(new InvalidOperationException(exceptionMsg));
+
+            // Act
+            var result = await _postsController.AddPostAsync(new Post());
+
+            // Assert
+            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
+
+            Assert.Equal(409, conflictObjectResult.StatusCode);
+            Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.AddPostAsync(It.IsAny<Post>()), Times.Once);
+        }
+
+        [Fact]
         public async Task AddPostAsync_ShouldThrowAnException_IfUnexpectedErrorOccurs()
         {
             // Arrange

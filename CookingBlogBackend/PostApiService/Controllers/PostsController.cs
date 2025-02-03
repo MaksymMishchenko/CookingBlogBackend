@@ -129,19 +129,18 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Adds a new post to the database.
+        /// Adds a new post to the system. Validates the post data, checks for duplicate titles, 
+        /// and attempts to save the post in the database. Returns appropriate HTTP status codes 
+        /// based on the result of the operation.
         /// </summary>
-        /// <param name="post">The post object containing the details to be added.</param>
+        /// <param name="post">The post object to be added. Must contain valid data.</param>
         /// <returns>
-        /// - **201 Created**: If the post was successfully added, returns the created post's ID in the response.
-        /// - **400 Bad Request**: If the provided post object is null or fails validation, includes detailed error information.
-        /// - **409 Conflict**: If a post with the same title already exists in the database.
-        /// - **500 Internal Server Error**: If an unexpected error occurs during the operation.
-        /// </returns>
-        /// <remarks>
-        /// This method validates the provided `Post` object before attempting to add it to the database. 
-        /// If the operation is successful, it returns a response with the location of the created post.
-        /// </remarks>        
+        /// A <see cref="IActionResult"/> indicating the outcome of the operation:
+        /// - 201 Created if the post was successfully added,
+        /// - 400 Bad Request if the post is invalid or null,
+        /// - 409 Conflict if a post with the same title already exists,
+        /// - 500 Internal Server Error if an unexpected error occurs during the operation.
+        /// </returns>      
         [HttpPost("AddNewPost")]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
@@ -178,6 +177,12 @@ namespace PostApiService.Controllers
 
                 return Conflict(PostResponse.CreateErrorResponse
                     ("A post with this title already exists."));
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Invalid operation occurred while adding post with ID {PostId}.", post.PostId);
+                return Conflict(PostResponse.CreateErrorResponse
+                    ($"Failed to add post."));
             }
             catch (Exception ex)
             {

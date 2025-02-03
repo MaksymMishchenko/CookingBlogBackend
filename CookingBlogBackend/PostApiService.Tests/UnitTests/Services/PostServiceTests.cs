@@ -228,13 +228,14 @@ namespace PostApiService.Tests.UnitTests
         public async Task AddPostAsync_ShouldAddPostSuccessfully_WhenPostIsValid()
         {
             // Arrange
+            var saveChangesResult = 1;
             var newPost = TestDataHelper.GetSinglePost();
 
             _mockContext.Setup(c => c.Posts)
                 .ReturnsDbSet(TestDataHelper.GetEmptyPostList());
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(1);
+                .ReturnsAsync(saveChangesResult);
 
             var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
 
@@ -249,39 +250,28 @@ namespace PostApiService.Tests.UnitTests
             _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title && p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
 
             _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Post was added successfully.")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldReturnNull_WhenSaveChangesFails()
+        public async Task AddPostAsync_ShouldThrowAnInvalidOperationException_WhenSaveChangesFails()
         {
             // Arrange
-            var newPost = new Post
-            {
-                Title = "Unique Title",
-                Content = "Sample content"
-            };
+            var saveChangesResult = 0;
+            var newPost = TestDataHelper.GetSinglePost();
 
             _mockContext.Setup(c => c.Posts)
-                .ReturnsDbSet(new List<Post>());
+                .ReturnsDbSet(TestDataHelper.GetEmptyPostList());
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(0);
+                .ReturnsAsync(saveChangesResult);
 
             var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
 
-            // Act
-            var result = await postService.AddPostAsync(newPost);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            postService.AddPostAsync(newPost));
 
-            // Assert
-            Assert.Null(result);
+            Assert.Equal("Failed to add the post to the database.", exception.Message);
 
             _mockLoggerService.Verify(l => l.Log(
                 LogLevel.Warning,
@@ -293,14 +283,14 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
+        public async Task AddPostAsync_ShouldThrowAnException_IfUnexpectedErrorOccurs()
         {
             // Arrange            
             var post = TestDataHelper.GetPostsWithComments(count: 1, generateComments: false);
 
             _mockContext.Setup(c => c.Posts).ReturnsDbSet(post);
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("An unexpected error occurred while adding post to database.."));
+                .ThrowsAsync(new Exception("An unexpected error occurred while adding post to database."));
 
             var newPost = new Post { Title = "Test title" };
 
