@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
@@ -247,8 +247,8 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(newPost.Title, result.Title);
             Assert.Equal(newPost.Content, result.Content);
 
-            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title && p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
-
+            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
+            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
             _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
@@ -272,6 +272,11 @@ namespace PostApiService.Tests.UnitTests
             postService.AddPostAsync(newPost));
 
             Assert.Equal("Failed to add the post to the database.", exception.Message);
+
+            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
+            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
 
             _mockLoggerService.Verify(l => l.Log(
                 LogLevel.Warning,
@@ -297,6 +302,19 @@ namespace PostApiService.Tests.UnitTests
             // Act & Assert
             var exception = await Assert.ThrowsAsync<Exception>(() => _postService.AddPostAsync(newPost));
             Assert.Equal("An unexpected error occurred while adding post to database.", exception.Message);
+
+            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
+            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("An unexpected error occurred while adding post to database.")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -309,9 +327,6 @@ namespace PostApiService.Tests.UnitTests
             _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
                 .ReturnsAsync((Post)null);
 
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(noChangesSaved);
-
             existingPost.Title = "Updated title";
             existingPost.Description = "Updated description";
 
@@ -321,7 +336,15 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.Equal($"Post with ID {existingPost.PostId} not found. Please check the Post ID.", exception.Message);
 
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Post with ID {existingPost.PostId} does not exist.")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -346,11 +369,13 @@ namespace PostApiService.Tests.UnitTests
             // Assert
             Assert.True(result);
 
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
+
             _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
             _mockLoggerService.Verify(l => l.Log(
                 LogLevel.Information,
-            It.IsAny<EventId>(),
+                It.IsAny<EventId>(),
                 It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Successfully updated post with ID {existingPost.PostId}.")),
                 null,
                 It.IsAny<Func<It.IsAnyType, Exception, string>>()),
@@ -379,8 +404,17 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.Equal($"No changes were made to post with ID {existingPost.PostId}.", exception.Message);
 
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
+
             _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("No changes were made to post")),
+                null,
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -404,8 +438,17 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.Equal("Simulated DbUpdateException", exception.Message);
 
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
+
             _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Database error occurred while updating post.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -429,8 +472,17 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.Equal("Simulated UnexpectedExceptionOccurs", exception.Message);
 
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<int>()), Times.Once);
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
+
             _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Unexpected error occurred while updating post with ID {existingPost.PostId}.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -445,6 +497,16 @@ namespace PostApiService.Tests.UnitTests
             _postService.DeletePostAsync(postId));
 
             Assert.Equal($"Post with ID {postId} does not exist.", exception.Message);
+
+            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Post with ID {postId} does not exist. Deletion aborted.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -457,6 +519,8 @@ namespace PostApiService.Tests.UnitTests
 
             _mockContext.Setup(m => m.Posts.FindAsync(postId))
                 .ReturnsAsync(post);
+
+            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
 
             _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(saveChangedResult);
@@ -476,35 +540,35 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task DeletePostAsync_ShouldThrowInvalidOperationException_IfNoChangesWereMade()
         {
-            // Arrange            
+            // Arrange
+            var postId = 1;
+            var saveChangedResult = 0;
             var post = TestDataHelper.GetSinglePost();
             _mockContext.Setup(p => p.Posts.FindAsync(post.PostId)).ReturnsAsync(post);
+
+            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
+
+            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(saveChangedResult);
 
             // Act & Assert
             var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
             _postService.DeletePostAsync(post.PostId));
 
             Assert.Equal($"Failed to delete post with ID {post.PostId}. No changes were made.", exception.Message);
-        }
 
-        [Fact]
-        public async Task DeletePostAsync_ShouldThrowDbUpdateConcurrencyException_WhenDatabaseUpdateFails()
-        {
-            // Arrange
-            var postId = 1;
+            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
+            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
+            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
 
-            _mockContext.Setup(m => m.Posts.FindAsync(postId))
-                .ReturnsAsync(TestDataHelper.GetSinglePost());
-
-            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateConcurrencyException($"Database concurrency error occurred while deleting the post with ID {postId}." +
-                    " This may be caused by conflicting changes in the database."));
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _postService.DeletePostAsync(postId));
-
-            Assert.Equal($"Database concurrency error occurred while deleting the post with ID {postId}." +
-                         " This may be caused by conflicting changes in the database.", exception.Message);
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()
+                .Contains($"No rows were affected when attempting to delete post with ID {post.PostId}.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -516,6 +580,8 @@ namespace PostApiService.Tests.UnitTests
             _mockContext.Setup(m => m.Posts.FindAsync(postId))
                 .ReturnsAsync(TestDataHelper.GetSinglePost());
 
+            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
+
             _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new DbUpdateException($"Database delete failed for post with ID {postId}."));
 
@@ -523,6 +589,19 @@ namespace PostApiService.Tests.UnitTests
             var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService.DeletePostAsync(postId));
 
             Assert.Equal($"Database delete failed for post with ID {postId}.", exception.Message);
+
+            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
+            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
+            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()
+                .Contains($"Database error occurred while deleting post with ID {postId}.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -534,6 +613,8 @@ namespace PostApiService.Tests.UnitTests
             _mockContext.Setup(m => m.Posts.FindAsync(postId))
                 .ReturnsAsync(TestDataHelper.GetSinglePost());
 
+            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
+
             _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ThrowsAsync(new Exception($"Unexpected error occurred while deleting post with ID {postId}."));
 
@@ -541,6 +622,19 @@ namespace PostApiService.Tests.UnitTests
             var exception = await Assert.ThrowsAsync<Exception>(() => _postService.DeletePostAsync(postId));
 
             Assert.Equal($"Unexpected error occurred while deleting post with ID {postId}.", exception.Message);
+
+            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
+            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
+            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.Is<It.IsAnyType>((v, t) => v.ToString()
+                .Contains($"An unexpected error occurred while deleting post with ID {postId}.")),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
     }
 }

@@ -314,13 +314,18 @@ namespace PostApiService.Services
 
                 if (result <= 0)
                 {
-                    _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.");
+                    _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.", postId);
                     throw new InvalidOperationException($"Failed to delete post with ID {postId}. No changes were made.");
                 }
             }
             catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL error occurred while deleting post.");
                 throw;
             }
             catch (Exception ex)
