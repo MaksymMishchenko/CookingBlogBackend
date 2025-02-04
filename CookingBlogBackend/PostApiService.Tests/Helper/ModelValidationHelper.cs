@@ -7,11 +7,11 @@ namespace PostApiService.Tests.Helper
 {
     public class ModelValidationHelper
     {
-        public static void ValidateModel(object comment, ControllerBase controller)
+        public static void ValidateModel(object model, ControllerBase controller)
         {
             var validationResults = new List<DataAnnotationsValidationResult>();
-            var validationContext = new ValidationContext(comment);
-            var isValid = Validator.TryValidateObject(comment, validationContext, validationResults, true);
+            var validationContext = new ValidationContext(model);
+            var isValid = Validator.TryValidateObject(model, validationContext, validationResults, true);
 
             if (!isValid)
             {

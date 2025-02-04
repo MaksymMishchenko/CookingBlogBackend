@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -106,7 +105,6 @@ namespace PostApiService.Controllers
         {
             if (postId < 1)
             {
-                _logger.LogWarning("Invalid postId: {PostId}. Parameters must be greater than 0.", postId);
                 return BadRequest(PostResponse.CreateErrorResponse("Parameters must be greater than 0."));
             }
 
@@ -159,8 +157,6 @@ namespace PostApiService.Controllers
                         ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                     );
 
-                _logger.LogWarning("Validation failed. Errors: {Errors}", string.Join(", ", errors.SelectMany(e => e.Value)));
-
                 return BadRequest(PostResponse.CreateErrorResponse
                     ("Validation failed.", errors));
             }
@@ -193,24 +189,23 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Updates an existing post with the specified ID.
+        /// Updates an existing post.
         /// </summary>
-        /// <param name="id">The ID of the post to be updated.</param>
-        /// <param name="post">The updated post data.</param>
+        /// <param name="post">The post object containing updated data.</param>
         /// <returns>
-        /// Returns a 200 OK response if the post was successfully updated.
-        /// Returns a 400 Bad Request if the request is invalid (e.g., ID mismatch or invalid model state).
-        /// Returns a 404 Not Found if the post with the specified ID does not exist.
-        /// Returns a 409 Conflict if no changes were made to the post.
-        /// Returns a 500 Internal Server Error if an unexpected error occurs.
-        /// </returns>
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdatePostAsync(int id, [FromBody] Post post)
+        /// Returns an HTTP response:
+        /// - 200 OK if the post was successfully updated.
+        /// - 400 Bad Request if the post is null, has an invalid ID, or fails validation.
+        /// - 404 Not Found if the post with the given ID does not exist.
+        /// - 409 Conflict if no changes were made to the post.
+        /// - 500 Internal Server Error if an unexpected error occurs.
+        [HttpPut]
+        public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
         {
-            if (post == null || post.PostId != id || id <= 0)
+            if (post == null || post.PostId <= 0)
             {
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Post cannot be null, ID mismatch, or ID should be greater than 0."));
+                    ("Post cannot be null, and ID should be greater than 0."));
             }
 
             if (!ModelState.IsValid)
@@ -221,8 +216,6 @@ namespace PostApiService.Controllers
                         ms => ms.Key,
                         ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                     );
-
-                _logger.LogWarning("Validation failed. Errors: {Errors}", string.Join(", ", errors.SelectMany(e => e.Value)));
 
                 return BadRequest(PostResponse.CreateErrorResponse
                     ("Validation failed.", errors));
@@ -235,7 +228,7 @@ namespace PostApiService.Controllers
                 if (isUpdated)
                 {
                     return Ok(PostResponse.CreateSuccessResponse
-                        ($"Post with Post Id {post.PostId} updated successfully.", id));
+                        ($"Post with Post Id {post.PostId} updated successfully.", post.PostId));
                 }
 
                 return Conflict(PostResponse.CreateErrorResponse
@@ -276,7 +269,6 @@ namespace PostApiService.Controllers
         {
             if (postId <= 0)
             {
-                _logger.LogWarning("Invalid postId: {PostId}. Parameters must be greater than 0.", postId);
                 return BadRequest(PostResponse.CreateErrorResponse
                     ("Parameters must be greater than 0."));
             }
@@ -298,12 +290,6 @@ namespace PostApiService.Controllers
                 _logger.LogError(ex, "Invalid operation occurred while deleting post with ID {PostId}.", postId);
                 return Conflict(PostResponse.CreateErrorResponse
                     ($"Failed to delete post with ID {postId}."));
-            }
-            catch (DbUpdateException ex)
-            {
-                _logger.LogError(ex, "Database error occurred while deleting post with ID {PostId}.", postId);
-                return StatusCode(500, PostResponse.CreateErrorResponse
-                    ("A database error occurred while deleting the post. Please try again later."));
             }
             catch (Exception ex)
             {

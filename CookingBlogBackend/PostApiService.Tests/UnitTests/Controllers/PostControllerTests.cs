@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PostApiService.Controllers;
@@ -64,6 +63,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
             var response = Assert.IsType<PostResponse>(notFoundResult.Value);
             Assert.Equal("No posts found for the requested page.", response.Message);
+
+            _mockPostService.Verify(s => s.GetAllPostsAsync(
+                1,
+                10,
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -85,6 +92,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             var returnValue = Assert.IsType<List<Post>>(okResult.Value);
             Assert.Equal(10, returnValue.Count);
+
+            _mockPostService.Verify(s => s.GetAllPostsAsync(
+                1,
+                10,
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -99,6 +114,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var response = Assert.IsType<PostResponse>(statusCodeResult.Value);
             Assert.Equal("An error occurred while processing your request.", response.Message);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -137,16 +160,21 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var expectedPost = TestDataHelper.GetSinglePost();
-            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+            _mockPostService.Setup(s => s.GetPostByIdAsync(expectedPost.PostId, true))
                 .ReturnsAsync(expectedPost);
 
             // Act
-            var result = await _postsController.GetPostByIdAsync(1, true);
+            var result = await _postsController.GetPostByIdAsync
+                (expectedPost.PostId, true);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.Equal(200, okResult.StatusCode);
             Assert.Equal(expectedPost, okResult.Value);
+
+            _mockPostService.Verify(s => s.GetPostByIdAsync(
+                expectedPost.PostId,
+                true), Times.Once);
         }
 
         [Fact]
@@ -155,7 +183,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var postId = 999;
 
-            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+            _mockPostService.Setup(s => s.GetPostByIdAsync(postId, It.IsAny<bool>()))
                 .ThrowsAsync(new KeyNotFoundException($"Post with id {postId} not found."));
 
             // Act
@@ -167,6 +195,42 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal(404, notFoundResult.StatusCode);
             Assert.Equal($"Post with id {postId} not found.", response.Message);
+
+            _mockPostService.Verify(s => s.GetPostByIdAsync(
+                postId,
+                true), Times.Once);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnNotFound_IfKeyNotFoundException()
+        {
+            // Arrange
+            var postId = 999;
+
+            _mockPostService.Setup(s => s.GetPostByIdAsync(postId, It.IsAny<bool>()))
+                .ThrowsAsync(new KeyNotFoundException($"Post with id {postId} not found."));
+
+            // Act
+            var result = await _postsController.GetPostByIdAsync(postId, true);
+
+            // Assert
+            var objectResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(objectResult.Value);
+
+            Assert.Equal(404, objectResult.StatusCode);
+            Assert.Equal($"Post with id {postId} not found.", response.Message);
+
+            _mockPostService.Verify(s => s.GetPostByIdAsync(
+                postId,
+                true), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -175,7 +239,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var postId = 999;
 
-            _mockPostService.Setup(s => s.GetPostByIdAsync(It.IsAny<int>(), It.IsAny<bool>()))
+            _mockPostService.Setup(s => s.GetPostByIdAsync(postId, It.IsAny<bool>()))
                 .ThrowsAsync(new Exception($"An error occurred while processing request to get post by id {postId}."));
 
             // Act
@@ -187,13 +251,25 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal(500, objectResult.StatusCode);
             Assert.Equal($"An error occurred while processing request to get post by id {postId}.", response.Message);
+
+            _mockPostService.Verify(s => s.GetPostByIdAsync(
+                postId,
+                true), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
         public async Task AddPostAsync_ShouldReturnBadRequest_IfPostIsNull()
         {
             // Act
-            var result = await _postsController.AddPostAsync(null);
+            var result = await _postsController.AddPostAsync((Post)null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -240,7 +316,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var post = TestDataHelper.GetSinglePost();
 
-            _mockPostService.Setup(s => s.AddPostAsync(It.IsAny<Post>()))
+            _mockPostService.Setup(s => s.AddPostAsync(post))
                 .ReturnsAsync(isPostAdded ? post : null);
 
             // Act
@@ -254,6 +330,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
                 Assert.Equal(expectedStatusCode, createdAtActionResult.StatusCode);
                 Assert.Equal(expectedMessage, response.Message);
+
+                _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
             }
             else
             {
@@ -262,11 +340,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
                 Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
                 Assert.Equal(expectedMessage, response.Message);
+
+                _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
             }
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldThrowAnInvalidOperationException_IfUnexpectedErrorOccurs()
+        public async Task AddPostAsync_ShouldReturnConflict_IfInvalidOperationException()
         {
             // Arrange
             var exceptionMsg = "Failed to add post.";
@@ -285,10 +365,18 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(exceptionMsg, response.Message);
 
             _mockPostService.Verify(s => s.AddPostAsync(It.IsAny<Post>()), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldThrowAnException_IfUnexpectedErrorOccurs()
+        public async Task AddPostAsync_ShouldReturnInternalServerError_IfAnUnexpectedErrorOccurs()
         {
             // Arrange
             var exceptionMsg = "An unexpected error occurred while adding post";
@@ -300,26 +388,34 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.AddPostAsync(new Post());
 
             // Assert
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(objectResult.Value);
+            var iseObjectResult = Assert.IsType<ObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(iseObjectResult.Value);
 
-            Assert.Equal(500, objectResult.StatusCode);
+            Assert.Equal(500, iseObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.AddPostAsync(It.IsAny<Post>()), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Theory]
-        [InlineData(0, 0, "Post cannot be null, ID mismatch, or ID should be greater than 0.")]
-        [InlineData(1, 0, "Post cannot be null, ID mismatch, or ID should be greater than 0.")]
-        [InlineData(1, 2, "Post cannot be null, ID mismatch, or ID should be greater than 0.")]
-        public async Task UpdatePostAsync_ShouldReturnBadRequest_IfPostIsNullOrIdMismatch(int postId,
-            int routeId,
+        [InlineData(-1, "Post cannot be null, and ID should be greater than 0.")]
+        [InlineData(0, "Post cannot be null, and ID should be greater than 0.")]
+        public async Task UpdatePostAsync_ShouldReturnBadRequest_IfPostIsNullOrIdLessOrEqualZero(int postId,
             string expectedMessage)
         {
             // Arrange
             Post post = postId > 0 ? new Post { PostId = postId } : null;
 
             // Act
-            var result = await _postsController.UpdatePostAsync(routeId, post);
+            var result = await _postsController.UpdatePostAsync(post);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -340,7 +436,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             ModelValidationHelper.ValidateModel(post, controller);
 
             // Act
-            var result = await controller.UpdatePostAsync(post.PostId, post);
+            var result = await controller.UpdatePostAsync(post);
 
             // Assert
             if (!expectedIsValid)
@@ -371,7 +467,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
 
             // Act
-            var result = await controller.UpdatePostAsync(post.PostId, post);
+            var result = await controller.UpdatePostAsync(post);
 
             // Assert            
             if (isUpdated)
@@ -379,12 +475,16 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 var okObjectResult = Assert.IsType<OkObjectResult>(result);
 
                 Assert.Equal(expectedStatusCode, okObjectResult.StatusCode);
+
+                _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
             }
             else
             {
                 var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
 
                 Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
+
+                _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
             }
         }
 
@@ -399,7 +499,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .ThrowsAsync(new KeyNotFoundException(exceptionMsg));
 
             // Act 
-            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+            var result = await _postsController.UpdatePostAsync(post);
 
             //Assert
             var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -407,6 +507,16 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal(404, notFoundObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -420,7 +530,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .ThrowsAsync(new InvalidOperationException(exceptionMsg));
 
             // Act 
-            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+            var result = await _postsController.UpdatePostAsync(post);
 
             //Assert
             var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
@@ -428,6 +538,16 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal(409, conflictObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -441,7 +561,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .ThrowsAsync(new Exception(exceptionMsg));
 
             // Act 
-            var result = await _postsController.UpdatePostAsync(post.PostId, post);
+            var result = await _postsController.UpdatePostAsync(post);
 
             // Assert
             var internalObjectResult = Assert.IsType<ObjectResult>(result);
@@ -449,6 +569,16 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal(500, internalObjectResult.StatusCode);
             Assert.Equal(exceptionMsg, response.Message);
+
+            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Theory]
@@ -531,6 +661,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(exceptionMsg, response.Message);
 
             _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -554,29 +692,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(exceptionMsg, response.Message);
 
             _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
-        }
 
-        [Fact]
-        public async Task DeletePostAsync_ShouldReturnInternalServerError_WhenDbUpdateExceptionIsThrown()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = "A database error occurred while deleting the post. Please try again later.";
-
-            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
-                .ThrowsAsync(new DbUpdateException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.DeletePostAsync(post.PostId);
-
-            //Assert
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(objectResult.Value);
-
-            Assert.Equal(500, objectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
@@ -601,6 +724,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Contains("Request ID:", response.Message);
 
             _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
+
+            _mockLogger.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
     }
 }
