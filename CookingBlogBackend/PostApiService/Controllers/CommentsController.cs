@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -38,16 +39,12 @@ namespace PostApiService.Controllers
         {
             if (postId <= 0)
             {
-                _logger.LogWarning("Post ID must be greater than zero. Received value: {PostId}", postId);
-
                 return BadRequest(CommentResponse.CreateErrorResponse
                     ("Post ID must be greater than zero."));
             }
 
             if (comment == null)
             {
-                _logger.LogWarning("Received null comment for post ID {PostId}.", postId);
-
                 return BadRequest(CommentResponse.CreateErrorResponse
                     ("Comment cannot be null."));
             }
@@ -59,28 +56,15 @@ namespace PostApiService.Controllers
                     .Select(e => e.ErrorMessage)
                     .ToList();
 
-                _logger.LogWarning
-                    ("Validation failed for post ID {PostId}. Errors: {Errors}.", postId, string.Join(", ", errors));
-
                 return BadRequest(CommentResponse.CreateErrorResponse
                     ("Validation failed.", errors));
             }
             try
             {
-                if (await _commentService.AddCommentAsync(postId, comment))
-                {
-                    _logger.LogInformation("Successfully added comment for post ID {PostId}. Comment ID: {CommentId}", postId, comment.CommentId);
+                await _commentService.AddCommentAsync(postId, comment);
 
-                    return Ok(CommentResponse.CreateSuccessResponse
-                        ("Comment added successfully."));
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to add comment for post ID {PostId}.", postId);
-
-                    return BadRequest(CommentResponse.CreateErrorResponse
-                        ($"Failed to add comment for post ID {postId}."));
-                }
+                return Ok(CommentResponse.CreateSuccessResponse
+                    ("Comment added successfully."));
             }
             catch (KeyNotFoundException ex)
             {
@@ -89,10 +73,15 @@ namespace PostApiService.Controllers
                 return NotFound(CommentResponse.CreateErrorResponse
                     (ex.Message));
             }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogError(ex, "Invalid operation occurred while adding comment to post with ID {PostId}.", postId);
+                return Conflict(CommentResponse.CreateErrorResponse
+                    ($"Failed to add comment to post with ID {postId}."));
+            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "An unexpected error occurred while adding comment to post ID: {PostId}", postId);
-
                 return StatusCode(500, CommentResponse.CreateErrorResponse
                     (ex.Message));
             }

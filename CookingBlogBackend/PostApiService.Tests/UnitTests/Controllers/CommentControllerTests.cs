@@ -10,17 +10,23 @@ namespace PostApiService.Tests.UnitTests.Controllers
 {
     public class CommentControllerTests
     {
+        private readonly Mock<ICommentService> _mockCommentService;
+        private readonly Mock<ILogger<CommentsController>> _mockLoggerService;
+        private readonly CommentsController _commentController;
+        public CommentControllerTests()
+        {
+            _mockCommentService = new Mock<ICommentService>();
+            _mockLoggerService = new Mock<ILogger<CommentsController>>();
+            _commentController = new CommentsController
+                 (_mockCommentService.Object, _mockLoggerService.Object);
+        }
+
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
-        public async Task OnAddCommentAsync_PostIdLessThanOrEqualZero_ReturnsBadRequest(int invalidPostId)
+        public async Task OnAddCommentAsync_ShouldReturnsBadRequest_IfPostIdLessThanOrEqualZero(int invalidPostId)
         {
-            // Arrange            
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
+            // Arrange                        
             var newComment = new Comment
             {
                 Author = "Bob",
@@ -28,7 +34,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             };
 
             // Act
-            var result = await controller.AddCommentAsync(invalidPostId, newComment);
+            var result = await _commentController.AddCommentAsync(invalidPostId, newComment);
 
             //Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -39,18 +45,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task OnAddCommentAsync_CommentIsNull_ReturnsBadRequest()
+        public async Task OnAddCommentAsync_ShouldReturnBadRequest_IfCommentIsNull()
         {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
+            // Arrange            
             var validPostId = 1;
 
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
             // Act
-            var result = await controller.AddCommentAsync(validPostId, null);
+            var result = await _commentController.AddCommentAsync(validPostId, null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -62,20 +63,15 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
         [Theory]
         [MemberData(nameof(ModelValidationHelper.GetCommentTestDataWithAuthor), MemberType = typeof(ModelValidationHelper))]
-        public async Task AddCommentAsync_ShouldReturnBadRequest_WhenModelIsInvalid(
+        public async Task OnAddCommentAsync_ShouldReturnBadRequest_WhenModelIsInvalid(
             string author,
             string content,
             bool expectedIsValid)
         {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            commentServiceMock
+            // Arrange            
+            _mockCommentService
                  .Setup(service => service.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
-                 .ReturnsAsync(true);
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+                 .Returns(Task.CompletedTask);
 
             var comment = new Comment
             {
@@ -84,10 +80,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 PostId = 1
             };
 
-            ModelValidationHelper.ValidateModel(comment, controller);
+            ModelValidationHelper.ValidateModel(comment, _commentController);
 
             // Act
-            var result = await controller.AddCommentAsync(1, comment);
+            var result = await _commentController.AddCommentAsync(1, comment);
 
             // Assert
             if (expectedIsValid)
@@ -103,27 +99,17 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
                 Assert.Equal("Validation failed.", response.Message);
 
-                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+                foreach (var validationResult in _commentController.ModelState.Values.SelectMany(v => v.Errors))
                 {
                     Assert.Contains(response.Errors, error => error == validationResult.ErrorMessage);
                 }
             }
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
-        public async Task OnAddCommentAsync_ShouldHandleSuccessAndFailureCorrectly(bool isSuccess)
+        [Fact]
+        public async Task OnAddCommentAsync_ShouldReturnSuccessResponse_WhenCommentIsAddedSuccessfully()
         {
             // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-            commentServiceMock.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
-                .ReturnsAsync(isSuccess);
-
             var postId = 1;
             var newComment = new Comment
             {
@@ -131,66 +117,98 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
             };
 
+            _mockCommentService.Setup(t => t.AddCommentAsync(postId, newComment))
+                .Returns(Task.CompletedTask);
+
             // Act
-            var result = await controller.AddCommentAsync(postId, newComment);
+            var result = await _commentController.AddCommentAsync(postId, newComment);
 
-            // Assert            
-            if (isSuccess)
-            {
-                var okResult = Assert.IsType<OkObjectResult>(result);
-                Assert.NotNull(okResult);
-                Assert.Equal("Comment added successfully.", ((CommentResponse)okResult.Value).Message);
-            }
-            else
-            {
-                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var returnValue = Assert.IsType<CommentResponse>(badRequestResult.Value);
+            // Assert                        
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult);
+            Assert.Equal("Comment added successfully.", ((CommentResponse)okResult.Value).Message);
 
-                Assert.False(returnValue.Success);
-                Assert.Equal($"Failed to add comment for post ID {postId}.", returnValue.Message);
-            }
+            _mockCommentService.Verify(s => s.AddCommentAsync(postId, newComment), Times.Once);
         }
 
         [Fact]
-        public async Task OnAddCommentAsync_PostNotFound_ReturnsNotFound()
+        public async Task OnAddCommentAsync_ShouldReturnNotFound_IfKeyNotFoundExceptionThrown()
         {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
+            // Arrange           
             var invalidPostId = 999;
 
-            commentServiceMock.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
+            _mockCommentService.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
                 .ThrowsAsync(new KeyNotFoundException($"Post with ID {invalidPostId} does not exist."));
 
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
             // Act
-            var result = await controller.AddCommentAsync(invalidPostId, new Comment());
+            var result = await _commentController.AddCommentAsync(invalidPostId, new Comment());
 
             // Assert
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
             var response = Assert.IsType<CommentResponse>(notFoundResult.Value);
 
             Assert.Equal($"Post with ID {invalidPostId} does not exist.", response.Message);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Fact]
-        public async Task OnAddCommentAsync_UnhandledException_ReturnsServerError()
+        public async Task OnAddCommentAsync_ShouldReturnConflict_IfInvalidOperationExceptionThrown()
         {
             // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+            var postId = 1;
+            var newComment = new Comment
+            {
+                Author = "Brian",
+                Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+            };
 
-            commentServiceMock.Setup(t => t.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
-                .ThrowsAsync(new Exception("An unexpected error occurred. Please try again later."));
-
-            var validPostId = 1;
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+            _mockCommentService.Setup(t => t.AddCommentAsync(postId, newComment))
+                .ThrowsAsync(new InvalidOperationException());
 
             // Act
-            var result = await controller.AddCommentAsync(validPostId, new Comment());
+            var result = await _commentController.AddCommentAsync(postId, newComment);
+
+            // Assert                                    
+            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
+            var returnValue = Assert.IsType<CommentResponse>(conflictObjectResult.Value);
+
+            Assert.False(returnValue.Success);
+            Assert.Equal($"Failed to add comment to post with ID {postId}.", returnValue.Message);
+
+            _mockCommentService.Verify(s => s.AddCommentAsync(postId, newComment), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
+        }
+
+        [Fact]
+        public async Task OnAddCommentAsync_ShouldReturnInternalServerError_IfUnexpectedErrorOccurs()
+        {
+            // Arrange
+            var validPostId = 1;
+            var newComment = new Comment
+            {
+                Author = "Brian",
+                Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
+            };
+
+            _mockCommentService.Setup(t => t.AddCommentAsync(validPostId, newComment))
+                .ThrowsAsync(new Exception("An unexpected error occurred. Please try again later."));
+
+            // Act
+            var result = await _commentController.AddCommentAsync(validPostId, newComment);
 
             // Assert
             var serverErrorResult = Assert.IsType<ObjectResult>(result);
@@ -198,6 +216,16 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
             Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
+
+            _mockCommentService.Verify(s => s.AddCommentAsync(validPostId, newComment), Times.Once);
+
+            _mockLoggerService.Verify(l => l.Log(
+                LogLevel.Error,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception>(),
+                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
+                Times.Once);
         }
 
         [Theory]
