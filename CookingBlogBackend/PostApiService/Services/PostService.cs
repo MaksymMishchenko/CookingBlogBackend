@@ -234,7 +234,7 @@ namespace PostApiService.Services
         /// <exception cref="DbUpdateException">Thrown when a database update error occurs.</exception>
         /// <exception cref="SqlException">Thrown when an SQL-related error occurs during the update.</exception>
         /// <exception cref="Exception">Thrown when an unexpected error occurs.</exception>
-        public async Task<bool> UpdatePostAsync(Post post)
+        public async Task UpdatePostAsync(Post post)
         {
             var existingPost = await _context.Posts
                 .FindAsync(post.PostId);
@@ -257,14 +257,11 @@ namespace PostApiService.Services
             {
                 var result = await _context.SaveChangesAsync();
 
-                if (result > 0)
+                if (result <= 0)
                 {
-                    _logger.LogInformation("Successfully updated post with ID {PostId}.", post.PostId);
-                    return true;
+                    _logger.LogWarning("No changes were made to post with ID {PostId}.", post.PostId);
+                    throw new InvalidOperationException($"No changes were made to post with ID {post.PostId}.");
                 }
-
-                _logger.LogWarning("No changes were made to post with ID {PostId}.", post.PostId);
-                throw new InvalidOperationException($"No changes were made to post with ID {post.PostId}.");
             }
             catch (DbUpdateException ex)
             {

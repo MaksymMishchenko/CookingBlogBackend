@@ -453,16 +453,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
             }
         }
 
-        [Theory]
-        [InlineData(true, 200)]
-        [InlineData(false, 409)]
-        public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated(bool isUpdated,
-            int expectedStatusCode)
+        [Fact]        
+        public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
         {
             // Arrange
             var post = TestDataHelper.GetSinglePost();
             _mockPostService.Setup(service => service.UpdatePostAsync(post))
-                .ReturnsAsync(isUpdated);
+                .Returns(Task.CompletedTask);
 
             var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
 
@@ -470,22 +467,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await controller.UpdatePostAsync(post);
 
             // Assert            
-            if (isUpdated)
-            {
-                var okObjectResult = Assert.IsType<OkObjectResult>(result);
+            var okObjectResult = Assert.IsType<OkObjectResult>(result);
+            Assert.Equal(200, okObjectResult.StatusCode);
 
-                Assert.Equal(expectedStatusCode, okObjectResult.StatusCode);
-
-                _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
-            }
-            else
-            {
-                var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
-
-                Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
-
-                _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
-            }
+            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
         }
 
         [Fact]

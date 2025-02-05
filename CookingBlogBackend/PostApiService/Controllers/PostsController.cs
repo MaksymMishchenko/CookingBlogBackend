@@ -223,16 +223,10 @@ namespace PostApiService.Controllers
 
             try
             {
-                var isUpdated = await _postsService.UpdatePostAsync(post);
+                await _postsService.UpdatePostAsync(post);
 
-                if (isUpdated)
-                {
-                    return Ok(PostResponse.CreateSuccessResponse
-                        ($"Post with Post Id {post.PostId} updated successfully.", post.PostId));
-                }
-
-                return Conflict(PostResponse.CreateErrorResponse
-                    ($"No changes were made to post with ID {post.PostId}."));
+                return Ok(PostResponse.CreateSuccessResponse
+                    ($"Post with Post Id {post.PostId} updated successfully.", post.PostId));
             }
             catch (KeyNotFoundException ex)
             {

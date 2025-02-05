@@ -348,7 +348,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldReturnTrue_WhenPostIsUpdatedSuccessfully()
+        public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
         {
             // Arrange
             var existingPost = TestDataHelper.GetSinglePost();
@@ -364,22 +364,12 @@ namespace PostApiService.Tests.UnitTests
             existingPost.Description = "Updated description";
 
             // Act
-            var result = await _postService.UpdatePostAsync(existingPost);
+            await _postService.UpdatePostAsync(existingPost);
 
-            // Assert
-            Assert.True(result);
-
+            // Assert            
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
 
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Information,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Successfully updated post with ID {existingPost.PostId}.")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);            
         }
 
         [Fact]
