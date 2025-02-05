@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -24,53 +25,54 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Adds a new comment to a specified post.
+        /// Adds a new comment to a post with the given post ID. If the post does not exist, an exception is thrown. 
+        /// The method also handles various exceptions that may occur during the database operation and logs them appropriately.
         /// </summary>
         /// <param name="postId">The ID of the post to which the comment will be added.</param>
-        /// <param name="comment">The comment object to be added.</param>
-        /// <returns>
-        /// A task that represents the asynchronous operation. 
-        /// The task result contains a boolean indicating whether the comment was added successfully.
-        /// </returns>
-        /// <exception cref="KeyNotFoundException">
-        /// Thrown when the specified post does not exist in the database.
-        /// </exception>
-        /// <exception cref="Exception">
-        /// Thrown when an unexpected error occurs during the database save operation.
-        /// </exception>
-        public async Task<bool> AddCommentAsync(int postId, Comment comment)
+        /// <param name="comment">The comment object containing the details of the comment to be added.</param>
+        /// <exception cref="KeyNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
+        /// <exception cref="InvalidOperationException">Thrown if the comment could not be added to the database.</exception>
+        /// <exception cref="DbUpdateException">Thrown if a database error occurs while adding the comment.</exception>
+        /// <exception cref="SqlException">Thrown if an SQL error occurs while adding the comment.</exception>
+        /// <exception cref="Exception">Thrown for any other unexpected errors during the comment saving process.</exception>
+        public async Task AddCommentAsync(int postId, Comment comment)
         {
             var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId);
             if (!postExists)
             {
-                _logger.LogWarning($"Post with ID {postId} does not exist. Cannot add comment");
+                _logger.LogWarning($"Post with ID {postId} does not exist. Cannot add comment.");
 
                 throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
             }
 
-            comment.PostId = postId;            
+            comment.PostId = postId;
             await _context.Comments.AddAsync(comment);
 
             try
             {
                 var result = await _context.SaveChangesAsync();
 
-                if (result > 0)
+                if (result <= 0)
                 {
-                    _logger.LogInformation($"Comment was added successfully to post id: {postId}");
+                    _logger.LogError("Failed to add comment.");
 
-                    return true;
+                    throw new InvalidOperationException($"Failed to add comment to post id: {postId}.");
                 }
-
-                _logger.LogWarning($"Failed to add comment to post id: {postId}");
-
-                return false;
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error occurred while adding comment to post.");
+                throw;
+            }
+            catch (SqlException ex)
+            {
+                _logger.LogError(ex, "SQL error occurred while adding comment to post.");
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex.Message, "An unexpected error occurred while saving comment to post ID: {postId}", postId);
-
-                throw new Exception("An unexpected error occurred. Please try again later.");
+                _logger.LogError(ex, "An unexpected error occurred while saving comment to post ID: {postId}", postId);
+                throw;
             }
         }
 
