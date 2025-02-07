@@ -233,7 +233,7 @@ namespace PostApiService.Tests.UnitTests
             _postService.AddPostAsync(newPost));
 
             Assert.Equal(string.Format
-                (ErrorMessages.PostNotAdded, newPost.Title), exception.Message);
+                (ErrorMessages.AddPostFailed, newPost.Title), exception.Message);
 
             _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
             p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
@@ -269,33 +269,21 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldThrowKeyNotFoundException_IdPostDoesNotExist()
+        public async Task UpdatePostAsync_ShouldThrowPostNotFoundException_IdPostDoesNotExist()
         {
             // Arrange           
-            var existingPost = TestDataHelper.GetSinglePost();
-            int noChangesSaved = 0;
+            var post = TestDataHelper.GetSinglePost();
 
-            _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
+            _mockContext.Setup(p => p.Posts.FindAsync(post.PostId))
                 .ReturnsAsync((Post)null);
 
-            existingPost.Title = "Updated title";
-            existingPost.Description = "Updated description";
-
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
-                _postService.UpdatePostAsync(existingPost));
+            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
+                _postService.UpdatePostAsync(post));
 
-            Assert.Equal($"Post with ID {existingPost.PostId} not found. Please check the Post ID.", exception.Message);
+            Assert.Equal(string.Format(ErrorMessages.PostNotFound, post.PostId), exception.Message);
 
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Post with ID {existingPost.PostId} does not exist.")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
 
         [Fact]
@@ -303,13 +291,13 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             var existingPost = TestDataHelper.GetSinglePost();
-            int changesSavedSuccessfully = 1;
+            int saveChangesResult = 1;
 
             _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
                 .ReturnsAsync(existingPost);
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(changesSavedSuccessfully);
+                .ReturnsAsync(saveChangesResult);
 
             existingPost.Title = "Updated title";
             existingPost.Description = "Updated description";
@@ -324,7 +312,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldThrowInvalidOperationException_IdPostDoesNotUpdate()
+        public async Task UpdatePostAsync_ShouldThrowUpdatePostFailedException_WhenPostNotUpdated()
         {
             // Arrange
             var existingPost = TestDataHelper.GetSinglePost();
@@ -340,90 +328,15 @@ namespace PostApiService.Tests.UnitTests
             existingPost.Description = "Updated description";
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var exception = await Assert.ThrowsAsync<UpdatePostFailedException>(() =>
                 _postService.UpdatePostAsync(existingPost));
 
-            Assert.Equal($"No changes were made to post with ID {existingPost.PostId}.", exception.Message);
+            Assert.Equal(string.Format
+                (ErrorMessages.UpdatePostFailed, existingPost.Title), exception.Message);
 
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
 
             _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("No changes were made to post")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldThrowDbUpdateException_WhenDatabaseUpdateFails()
-        {
-            // Arrange
-            var existingPost = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
-                .ReturnsAsync(existingPost);
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateException("Simulated DbUpdateException"));
-
-            existingPost.Title = "Updated title";
-            existingPost.Description = "Updated description";
-
-            // Act & Assert            
-            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService
-            .UpdatePostAsync(existingPost));
-
-            Assert.Equal("Simulated DbUpdateException", exception.Message);
-
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
-
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Database error occurred while updating post.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldThrowAnException_IfUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var existingPost = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
-                .ReturnsAsync(existingPost);
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("Simulated UnexpectedExceptionOccurs"));
-
-            existingPost.Title = "Updated title";
-            existingPost.Description = "Updated description";
-
-            // Act & Assert            
-            var exception = await Assert.ThrowsAsync<Exception>(() => _postService
-            .UpdatePostAsync(existingPost));
-
-            Assert.Equal("Simulated UnexpectedExceptionOccurs", exception.Message);
-
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
-
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Unexpected error occurred while updating post with ID {existingPost.PostId}.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
 
         [Fact]

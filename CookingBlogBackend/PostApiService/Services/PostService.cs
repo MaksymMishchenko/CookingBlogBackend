@@ -116,7 +116,7 @@ namespace PostApiService.Services
                 .AnyAsync(p => p.Title == post.Title);
 
             if (existingPost)
-            {                
+            {
                 throw new PostAlreadyExistException(post.Title);
             }
 
@@ -124,7 +124,7 @@ namespace PostApiService.Services
             var result = await _context.SaveChangesAsync();
 
             if (result <= 0)
-            {                
+            {
                 throw new AddPostFailedException(post.Title);
             }
 
@@ -132,15 +132,13 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Updates an existing post in the database.
+        /// Updates an existing post with the provided data.
+        /// Throws a <see cref="PostNotFoundException"/> if the post with the specified ID does not exist.
+        /// Throws an <see cref="UpdatePostFailedException"/> if the changes could not be saved to the database.
         /// </summary>
-        /// <param name="post">The post object containing updated data.</param>
-        /// <returns>Returns <c>true</c> if the post was successfully updated, otherwise throws an exception.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the specified post ID does not exist.</exception>
-        /// <exception cref="InvalidOperationException">Thrown when no changes were made to the post.</exception>
-        /// <exception cref="DbUpdateException">Thrown when a database update error occurs.</exception>
-        /// <exception cref="SqlException">Thrown when an SQL-related error occurs during the update.</exception>
-        /// <exception cref="Exception">Thrown when an unexpected error occurs.</exception>
+        /// <param name="post">The post object containing the updated data to be saved.</param>
+        /// <exception cref="PostNotFoundException">Thrown when no post with the specified ID is found in the database.</exception>
+        /// <exception cref="UpdatePostFailedException">Thrown when the update operation fails to save changes.</exception>
         public async Task UpdatePostAsync(Post post)
         {
             var existingPost = await _context.Posts
@@ -148,8 +146,7 @@ namespace PostApiService.Services
 
             if (existingPost == null)
             {
-                _logger.LogWarning("Post with ID {PostId} does not exist. Cannot edit.", post.PostId);
-                throw new KeyNotFoundException($"Post with ID {post.PostId} not found. Please check the Post ID.");
+                throw new PostNotFoundException(post.PostId);
             }
 
             existingPost.Title = post.Title;
@@ -160,30 +157,11 @@ namespace PostApiService.Services
             existingPost.MetaDescription = post.MetaDescription;
             existingPost.Slug = post.Slug;
 
-            try
-            {
-                var result = await _context.SaveChangesAsync();
+            var result = await _context.SaveChangesAsync();
 
-                if (result <= 0)
-                {
-                    _logger.LogWarning("No changes were made to post with ID {PostId}.", post.PostId);
-                    throw new InvalidOperationException($"No changes were made to post with ID {post.PostId}.");
-                }
-            }
-            catch (DbUpdateException ex)
+            if (result <= 0)
             {
-                _logger.LogError(ex, "Database error occurred while updating post.");
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "SQL error occurred while updating post.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error occurred while updating post with ID {PostId}.", post.PostId);
-                throw;
+                throw new UpdatePostFailedException(post.Title);
             }
         }
 

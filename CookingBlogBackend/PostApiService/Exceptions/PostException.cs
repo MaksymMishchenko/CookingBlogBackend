@@ -29,7 +29,17 @@
     {
         public string Title { get; }
         public AddPostFailedException(string postTitle)
-            : base(string.Format(ErrorMessages.PostNotAdded, postTitle))
+            : base(string.Format(ErrorMessages.AddPostFailed, postTitle))
+        {
+            Title = postTitle;
+        }
+    }
+
+    public class UpdatePostFailedException : InvalidOperationException
+    {
+        public string Title { get; }
+        public UpdatePostFailedException(string postTitle)
+            : base(string.Format(ErrorMessages.UpdatePostFailed, postTitle))
         {
             Title = postTitle;
         }
