@@ -216,7 +216,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldThrowPostNotSavedException_IfPostNotSaved()
+        public async Task AddPostAsync_ShouldThrowAddPostFailedException_IfPostNotAdded()
         {
             // Arrange
             var saveChangesResult = 0;
@@ -229,11 +229,11 @@ namespace PostApiService.Tests.UnitTests
                 .ReturnsAsync(saveChangesResult);
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<PostNotSavedException>(() =>
+            var exception = await Assert.ThrowsAsync<AddPostFailedException>(() =>
             _postService.AddPostAsync(newPost));
 
             Assert.Equal(string.Format
-                (ErrorMessages.PostNotSaved, newPost.Title), exception.Message);
+                (ErrorMessages.PostNotAdded, newPost.Title), exception.Message);
 
             _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
             p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);

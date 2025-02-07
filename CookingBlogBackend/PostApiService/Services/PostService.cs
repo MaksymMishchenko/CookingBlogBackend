@@ -125,7 +125,7 @@ namespace PostApiService.Services
 
             if (result <= 0)
             {                
-                throw new PostNotSavedException(post.Title);
+                throw new AddPostFailedException(post.Title);
             }
 
             return post;

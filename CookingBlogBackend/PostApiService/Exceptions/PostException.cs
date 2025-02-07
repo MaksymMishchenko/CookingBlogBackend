@@ -25,13 +25,13 @@
         }
     }
 
-    public class PostNotSavedException : InvalidOperationException
+    public class AddPostFailedException : InvalidOperationException
     {
-        public string PostTitle { get; }
-        public PostNotSavedException(string postTitle)
-            : base(string.Format(ErrorMessages.PostNotSaved, postTitle))
+        public string Title { get; }
+        public AddPostFailedException(string postTitle)
+            : base(string.Format(ErrorMessages.PostNotAdded, postTitle))
         {
-            PostTitle = postTitle;
+            Title = postTitle;
         }
     }
 }
