@@ -133,10 +133,10 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             var postService = CreatePostService();
-            var posts = TestDataHelper.GetEmptyPostList();
+            var post = TestDataHelper.GetSinglePost();
 
             using var context = _fixture.CreateContext();
-            await context.AddRangeAsync(posts);
+            await context.AddAsync(post);
             await context.SaveChangesAsync();
 
             var invalidPostId = 999;
@@ -161,7 +161,7 @@ namespace PostApiService.Tests.UnitTests
             await context.AddRangeAsync(posts);
             await context.SaveChangesAsync();
 
-            var postId = 2;            
+            var postId = 2;
 
             // Act
             var post = await postService.GetPostByIdAsync(postId, includeComments: true);
@@ -184,15 +184,61 @@ namespace PostApiService.Tests.UnitTests
             await context.AddRangeAsync(posts);
             await context.SaveChangesAsync();
 
-            var postId = 2;            
+            var postId = 2;
 
             // Act
             var post = await postService.GetPostByIdAsync(postId, includeComments: false);
 
             // Assert
-            Assert.NotNull(post);            
+            Assert.NotNull(post);
             Assert.NotNull(post.Comments);
-            Assert.Empty(post.Comments);            
+            Assert.Empty(post.Comments);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowPostAlreadyExistException_IfPostExists()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            var post = TestDataHelper.GetSinglePost();
+
+            using var context = _fixture.CreateContext();
+            await context.AddAsync(post);
+            await context.SaveChangesAsync();
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<PostAlreadyExistException>(() =>
+            postService.AddPostAsync(post));
+
+            Assert.NotNull(exception);
+            Assert.Equal(string.Format
+                (ErrorMessages.PostAlreadyExist, post.Title), exception.Message);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowPostNotSavedException_IfPostNotSaved()
+        {
+            // Arrange
+            var saveChangesResult = 0;
+            var newPost = TestDataHelper.GetSinglePost();
+
+            _mockContext.Setup(c => c.Posts)
+                .ReturnsDbSet(TestDataHelper.GetEmptyPostList());
+
+            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(saveChangesResult);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<PostNotSavedException>(() =>
+            _postService.AddPostAsync(newPost));
+
+            Assert.Equal(string.Format
+                (ErrorMessages.PostNotSaved, newPost.Title), exception.Message);
+
+            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
+            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
+
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -208,10 +254,8 @@ namespace PostApiService.Tests.UnitTests
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(saveChangesResult);
 
-            var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
-
             // Act
-            var result = await postService.AddPostAsync(newPost);
+            var result = await _postService.AddPostAsync(newPost);
 
             // Assert
             Assert.NotNull(result);
@@ -220,72 +264,8 @@ namespace PostApiService.Tests.UnitTests
 
             _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
             p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
+
             _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldThrowAnInvalidOperationException_WhenSaveChangesFails()
-        {
-            // Arrange
-            var saveChangesResult = 0;
-            var newPost = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(c => c.Posts)
-                .ReturnsDbSet(TestDataHelper.GetEmptyPostList());
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(saveChangesResult);
-
-            var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            postService.AddPostAsync(newPost));
-
-            Assert.Equal("Failed to add the post to the database.", exception.Message);
-
-            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
-            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to add post")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldThrowAnException_IfUnexpectedErrorOccurs()
-        {
-            // Arrange            
-            var post = TestDataHelper.GetPostsWithComments(count: 1, generateComments: false);
-
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(post);
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception("An unexpected error occurred while adding post to database."));
-
-            var newPost = new Post { Title = "Test title" };
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(() => _postService.AddPostAsync(newPost));
-            Assert.Equal("An unexpected error occurred while adding post to database.", exception.Message);
-
-            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
-            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("An unexpected error occurred while adding post to database.")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
 
         [Fact]
