@@ -18,21 +18,15 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Asynchronously retrieves a paginated list of posts from the database, optionally including comments.
-        /// This method supports pagination for both posts and comments, and allows filtering of comments based on the provided parameters.
-        /// The method also handles logging for various operations and error scenarios.
+        /// Retrieves a paginated list of posts from the database with optional comments pagination.
         /// </summary>
-        /// <param name="pageNumber">The page number for the posts to be retrieved. Defaults to 1.</param>
-        /// <param name="pageSize">The number of posts per page. Defaults to 10.</param>
-        /// <param name="commentPageNumber">The page number for the comments to be retrieved. Defaults to 1.</param>
-        /// <param name="commentsPerPage">The number of comments per page. Defaults to 10.</param>
-        /// <param name="includeComments">A flag to determine whether to include comments with the posts. Defaults to true.</param>
-        /// <param name="cancellationToken">A token to cancel the operation, if requested. Defaults to default.</param>
-        /// <returns>A list of posts with optional comments, based on the provided pagination and inclusion parameters.</returns>
-        /// <exception cref="OperationCanceledException">Thrown when the operation is cancelled.</exception>
-        /// <exception cref="TimeoutException">Thrown when the operation times out.</exception>
-        /// <exception cref="SqlException">Thrown when a database error occurs while fetching posts.</exception>
-        /// <exception cref="Exception">Thrown for any unexpected errors during the process.</exception>
+        /// <param name="pageNumber">The page number to retrieve (starting from 1).</param>
+        /// <param name="pageSize">The number of posts to retrieve per page.</param>
+        /// <param name="commentPageNumber">The page number to retrieve comments for each post (starting from 1).</param>
+        /// <param name="commentsPerPage">The number of comments to retrieve per page for each post.</param>
+        /// <param name="includeComments">Indicates whether to include comments in the response.</param>
+        /// <param name="cancellationToken">A cancellation token to cancel the operation.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a list of posts.</returns>        
         public async Task<List<Post>> GetAllPostsAsync(int pageNumber,
             int pageSize,
             int commentPageNumber = 1,
@@ -40,54 +34,27 @@ namespace PostApiService.Services
             bool includeComments = true,
             CancellationToken cancellationToken = default)
         {
-            var query = _context.Posts.AsQueryable();
+            var query = _context.Posts.AsNoTracking();
 
             if (includeComments)
             {
                 query = query.Include(p => p.Comments);
             }
 
-            try
-            {
-                var posts = await query
-                    .OrderBy(p => p.PostId)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
-                    .ToListAsync(cancellationToken);
+            var posts = await query
+                .OrderBy(p => p.PostId)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
 
-                _logger.LogInformation("Fetched {Count} posts. Total posts", posts.Count);
+            ProcessComments(posts, includeComments, commentPageNumber, commentsPerPage);
 
-                ProcessComments(posts, includeComments, commentPageNumber, commentsPerPage);
-
-                return posts;
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex, "The request was cancelled.");
-                throw;
-            }
-            catch (TimeoutException ex)
-            {
-                _logger.LogWarning(ex, "The request timed out.");
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "Database error while fetching posts.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while fetching posts.");
-                throw;
-            }
+            return posts;
 
             void ProcessComments(List<Post> posts, bool includeComments, int commentPageNumber, int commentsPerPage)
             {
                 if (includeComments)
                 {
-                    _logger.LogInformation("Fetching comments from the database. Page: {Page}, Size: {Size}.", commentPageNumber, commentsPerPage);
-
                     foreach (var post in posts)
                     {
                         post.Comments = post.Comments

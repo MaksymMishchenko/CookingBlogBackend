@@ -68,7 +68,7 @@ namespace PostApiService.Tests.UnitTests
             var actualPostIds = result.Select(p => p.PostId).ToList();
             Assert.Equal(expectedPostIds, actualPostIds);
 
-            foreach (var post in result)
+            Assert.All(result, post =>
             {
                 Assert.NotNull(post.Comments);
                 Assert.Equal(commentsPerPage, post.Comments.Count);
@@ -83,7 +83,7 @@ namespace PostApiService.Tests.UnitTests
 
                 var actualCommentIds = post.Comments.Select(c => c.CommentId).ToList();
                 Assert.Equal(expectedCommentIds, actualCommentIds);
-            }
+            });
         }
 
         [Fact]
@@ -124,34 +124,7 @@ namespace PostApiService.Tests.UnitTests
                 Assert.NotNull(post);
                 Assert.Empty(post.Comments);
             });
-        }
-
-        [Fact]
-        public async Task GetAllPostsAsync_ShouldThrowOperationCanceledException_WhenCancelled()
-        {
-            // Arrange
-            using var context = _fixture.CreateContext();
-            var postService = CreatePostService();
-
-            context.Posts.Add(TestDataHelper.GetSinglePost());
-            await context.SaveChangesAsync();
-
-            var cts = new CancellationTokenSource();
-            cts.Cancel();
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<OperationCanceledException>(async () =>
-                await postService.GetAllPostsAsync(1, 10, 1, 10, true, cts.Token));
-
-            Assert.NotNull(exception);
-
-            _mockLoggerService.Verify(x => x.Log(LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
+        }        
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
@@ -369,7 +342,7 @@ namespace PostApiService.Tests.UnitTests
             // Assert            
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
 
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);            
+            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
