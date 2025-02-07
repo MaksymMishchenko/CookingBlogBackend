@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using System.Data;
@@ -75,19 +76,12 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Asynchronously retrieves a post by its ID from the database, optionally including its comments.
-        /// If the post is not found, a <see cref="KeyNotFoundException"/> is thrown.
-        /// The method handles different exceptions related to operation cancellation, timeouts, and database errors,
-        /// logging each occurrence appropriately.
+        /// Retrieves a post by its ID from the database, with optional inclusion of comments.
         /// </summary>
-        /// <param name="postId">The ID of the post to be retrieved.</param>
-        /// <param name="includeComments">A flag to determine whether to include comments for the post. Defaults to true.</param>
-        /// <returns>The post with the specified ID, including comments if requested, or <c>null</c> if not found.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the post with the specified ID is not found.</exception>
-        /// <exception cref="OperationCanceledException">Thrown when the operation is cancelled.</exception>
-        /// <exception cref="TimeoutException">Thrown when the operation times out.</exception>
-        /// <exception cref="SqlException">Thrown when a database error occurs while fetching the post.</exception>
-        /// <exception cref="Exception">Thrown for any unexpected errors during the process.</exception>
+        /// <param name="postId">The ID of the post to retrieve.</param>
+        /// <param name="includeComments">A boolean flag indicating whether to include comments for the post. Default is <c>true</c>.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the post if found.</returns>
+        /// <exception cref="PostNotFoundException">Thrown when a post with the specified ID is not found in the database.</exception>
         public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
         {
             var query = _context.Posts.AsNoTracking();
@@ -97,38 +91,14 @@ namespace PostApiService.Services
                 query = query.Include(p => p.Comments);
             }
 
-            try
-            {
-                var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
+            var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
 
-                if (post == null)
-                {
-                    _logger.LogWarning("Post with ID {postId} not found.", postId);
-                    throw new KeyNotFoundException($"Post with ID {postId} was not found.");
-                }
+            if (post == null)
+            {
+                throw new PostNotFoundException(postId);
+            }
 
-                return post;
-            }
-            catch (OperationCanceledException ex)
-            {
-                _logger.LogWarning(ex, "The request was cancelled.");
-                throw;
-            }
-            catch (TimeoutException ex)
-            {
-                _logger.LogWarning(ex, "The request timed out.");
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "Database error while fetching post.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while fetching post.");
-                throw;
-            }
+            return post;
         }
 
         /// <summary>

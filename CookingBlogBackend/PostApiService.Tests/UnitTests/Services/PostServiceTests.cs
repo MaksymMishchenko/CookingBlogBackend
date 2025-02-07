@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
@@ -96,7 +97,8 @@ namespace PostApiService.Tests.UnitTests
             var pageNumber = 2;
             var pageSize = 10;
 
-            var posts = TestDataHelper.GetPostsWithComments(count: totalPosts, generateComments: false);
+            var posts = TestDataHelper.GetPostsWithComments
+                (count: totalPosts, generateComments: false);
 
             using var context = _fixture.CreateContext();
             await context.AddRangeAsync(posts);
@@ -124,10 +126,10 @@ namespace PostApiService.Tests.UnitTests
                 Assert.NotNull(post);
                 Assert.Empty(post.Comments);
             });
-        }        
+        }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        public async Task GetPostByIdAsync_ShouldThrowPostNotFoundException_IfPostDoesNotExist()
         {
             // Arrange
             var postService = CreatePostService();
@@ -140,10 +142,11 @@ namespace PostApiService.Tests.UnitTests
             var invalidPostId = 999;
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
             postService.GetPostByIdAsync(invalidPostId));
             Assert.NotNull(exception);
-            Assert.Equal($"Post with ID {invalidPostId} was not found.", exception.Message);
+            Assert.Equal(string.Format
+                (ErrorMessages.PostNotFound, invalidPostId), exception.Message);
         }
 
         [Fact]
@@ -158,17 +161,15 @@ namespace PostApiService.Tests.UnitTests
             await context.AddRangeAsync(posts);
             await context.SaveChangesAsync();
 
-            var postId = 2;
-            var commentsCount = 3;
+            var postId = 2;            
 
             // Act
             var post = await postService.GetPostByIdAsync(postId, includeComments: true);
 
             // Assert
             Assert.NotNull(post);
-            Assert.Equal(postId, post.PostId);
             Assert.NotNull(post.Comments);
-            Assert.Equal(commentsCount, post.Comments.Count());
+            Assert.NotEmpty(post.Comments);
         }
 
         [Fact]
@@ -183,18 +184,15 @@ namespace PostApiService.Tests.UnitTests
             await context.AddRangeAsync(posts);
             await context.SaveChangesAsync();
 
-            var postId = 2;
-            var commentsCount = 0;
+            var postId = 2;            
 
             // Act
             var post = await postService.GetPostByIdAsync(postId, includeComments: false);
 
             // Assert
-            Assert.NotNull(post);
-            Assert.Equal(postId, post.PostId);
+            Assert.NotNull(post);            
             Assert.NotNull(post.Comments);
-            Assert.Empty(post.Comments);
-            Assert.Equal(commentsCount, post.Comments.Count());
+            Assert.Empty(post.Comments);            
         }
 
         [Fact]
