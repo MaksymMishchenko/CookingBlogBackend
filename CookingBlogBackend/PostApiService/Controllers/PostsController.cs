@@ -69,49 +69,23 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a post by its ID from the database, with an option to include comments.
+        /// Retrieves a specific post by its ID. Optionally includes comments if specified.
         /// </summary>
-        /// <param name="postId">The unique identifier of the post to retrieve. Must be greater than 0.</param>
-        /// <param name="includeComments">
-        /// A boolean flag indicating whether to include comments in the response. 
-        /// Defaults to <c>true</c>.
-        /// </param>
-        /// <returns>
-        /// An <see cref="IActionResult"/> containing:
-        /// <list type="bullet">
-        /// <item><c>200 OK</c> with the post data if found.</item>
-        /// <item><c>400 Bad Request</c> if the <paramref name="postId"/> is invalid (less than 1).</item>
-        /// <item><c>404 Not Found</c> if no post with the specified <paramref name="postId"/> exists.</item>
-        /// <item><c>500 Internal Server Error</c> if an unexpected error occurs.</item>
-        /// </list>
-        /// </returns>
-        /// <remarks>
-        /// Logs warnings for invalid input or if the post is not found. Logs an error for unexpected exceptions.
-        /// </remarks>
+        /// <param name="postId">The ID of the post to retrieve.</param>
+        /// <param name="includeComments">A flag indicating whether to include comments in the response. Defaults to true.</param>
+        /// <returns>Returns an IActionResult with the post data if found, or a BadRequest if the postId is invalid.</returns>
         [HttpGet("GetPost/{postId}", Name = "GetPostById")]
         public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
         {
             if (postId < 1)
             {
-                return BadRequest(PostResponse.CreateErrorResponse("Parameters must be greater than 0."));
+                return BadRequest(PostResponse.CreateErrorResponse
+                    (ErrorMessages.InvalidPageParameters));
             }
 
-            try
-            {
-                var post = await _postsService.GetPostByIdAsync(postId, includeComments);
+            var post = await _postsService.GetPostByIdAsync(postId, includeComments);
 
-                return Ok(post);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogWarning(ex, "Post with id {PostId} not found.", postId);
-                return NotFound(PostResponse.CreateErrorResponse($"Post with id {postId} not found."));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while processing request to get post by id {PostId}.", postId);
-                return StatusCode(500, PostResponse.CreateErrorResponse($"An error occurred while processing request to get post by id {postId}."));
-            }
+            return Ok(post);
         }
 
         /// <summary>

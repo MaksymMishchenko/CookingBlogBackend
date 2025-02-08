@@ -75,35 +75,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenNoPostsFound()
-        {
-            // Arrange
-            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync(TestDataHelper.GetEmptyPostList());
-
-            // Act
-            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
-
-            // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
-            Assert.Equal(ErrorMessages.NoPostsFound, response.Message);
-
-            _mockPostService.Verify(s => s.GetAllPostsAsync(
-                1,
-                10,
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnBadRequest_IfParameterIsInvalid()
         {
             // Act
@@ -114,24 +85,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
             Assert.Equal(400, badRequestResult.StatusCode);
-            Assert.Equal("Parameters must be greater than 0.", response.Message);
-        }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(100)]
-        public async Task GetPostByIdAsync_ShouldNotReturnBadRequest_IfParameterIsValid(int postId)
-        {
-            //Arrange
-            _mockPostService
-                 .Setup(s => s.GetPostByIdAsync(postId, true))
-                 .ReturnsAsync(TestDataHelper.GetSinglePost());
-
-            // Act
-            var result = await _postsController.GetPostByIdAsync(postId);
-
-            // Assert
-            Assert.IsNotType<BadRequestObjectResult>(result);
+            Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
         }
 
         [Fact]
@@ -157,98 +111,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnNotFound_IfPostDoesNotExist()
-        {
-            // Arrange
-            var postId = 999;
-
-            _mockPostService.Setup(s => s.GetPostByIdAsync(postId, It.IsAny<bool>()))
-                .ThrowsAsync(new KeyNotFoundException($"Post with id {postId} not found."));
-
-            // Act
-            var result = await _postsController.GetPostByIdAsync(postId, true);
-
-            // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
-
-            Assert.Equal(404, notFoundResult.StatusCode);
-            Assert.Equal($"Post with id {postId} not found.", response.Message);
-
-            _mockPostService.Verify(s => s.GetPostByIdAsync(
-                postId,
-                true), Times.Once);
-        }
-
-        [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnNotFound_IfKeyNotFoundException()
-        {
-            // Arrange
-            var postId = 999;
-
-            _mockPostService.Setup(s => s.GetPostByIdAsync(postId, It.IsAny<bool>()))
-                .ThrowsAsync(new KeyNotFoundException($"Post with id {postId} not found."));
-
-            // Act
-            var result = await _postsController.GetPostByIdAsync(postId, true);
-
-            // Assert
-            var objectResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(objectResult.Value);
-
-            Assert.Equal(404, objectResult.StatusCode);
-            Assert.Equal($"Post with id {postId} not found.", response.Message);
-
-            _mockPostService.Verify(s => s.GetPostByIdAsync(
-                postId,
-                true), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnInternalServerError_IfUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var postId = 999;
-
-            _mockPostService.Setup(s => s.GetPostByIdAsync(postId, It.IsAny<bool>()))
-                .ThrowsAsync(new Exception($"An error occurred while processing request to get post by id {postId}."));
-
-            // Act
-            var result = await _postsController.GetPostByIdAsync(postId, true);
-
-            // Assert
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(objectResult.Value);
-
-            Assert.Equal(500, objectResult.StatusCode);
-            Assert.Equal($"An error occurred while processing request to get post by id {postId}.", response.Message);
-
-            _mockPostService.Verify(s => s.GetPostByIdAsync(
-                postId,
-                true), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
         public async Task AddPostAsync_ShouldReturnBadRequest_IfPostIsNull()
         {
             // Act
-            var result = await _postsController.AddPostAsync((Post)null);
+            var result = await _postsController.AddPostAsync(null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
