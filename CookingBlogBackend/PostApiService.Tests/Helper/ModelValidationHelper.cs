@@ -41,16 +41,6 @@ namespace PostApiService.Tests.Helper
         public static IEnumerable<object[]> GetPostTestData()
         {
             yield return new object[] { new Post
-            {   PostId = 1,
-                Title = "Valid Title",
-                Description = "Valid description lorem ipsum dolor",
-                Content = "Valid content lorem ipsum dolor",
-                Author = "Valid Author",
-                ImageUrl = "http://validimageurl.com",
-                Slug = "valid-slug"
-            }, true };
-
-            yield return new object[] { new Post
             {
                 PostId = 1,
                 Title = "",
@@ -59,7 +49,7 @@ namespace PostApiService.Tests.Helper
                 Author = "Valid Author",
                 ImageUrl = "http://validimageurl.com",
                 Slug = "valid-slug"
-            }, false };
+            }};
 
             yield return new object[] { new Post
             {   PostId = 1,
@@ -69,7 +59,7 @@ namespace PostApiService.Tests.Helper
                 Author = "Valid Author",
                 ImageUrl = "http://validimageurl.com",
                 Slug = "valid-slug"
-            }, false };
+            }};
 
             yield return new object[] { new Post
             {
@@ -80,7 +70,7 @@ namespace PostApiService.Tests.Helper
                 Author = "Valid Author",
                 ImageUrl = "InvalidUrl",
                 Slug = "valid-slug"
-            }, false };
+            }};
 
             yield return new object[] { new Post
             {
@@ -91,7 +81,7 @@ namespace PostApiService.Tests.Helper
                 Author = "",
                 ImageUrl = "InvalidUrl",
                 Slug = "valid-slug"
-            }, false };
+            }};
 
             yield return new object[] { new Post
             {
@@ -102,7 +92,7 @@ namespace PostApiService.Tests.Helper
                 Author = "Valid Author",
                 ImageUrl = "",
                 Slug = "valid-slug"
-            }, false };
+            }};
 
             yield return new object[] { new Post
             {
@@ -113,7 +103,7 @@ namespace PostApiService.Tests.Helper
                 Author = "Valid Author",
                 ImageUrl = "http://validimageurl.com",
                 Slug = ""
-            }, false };
+            }};
         }
     }
 }

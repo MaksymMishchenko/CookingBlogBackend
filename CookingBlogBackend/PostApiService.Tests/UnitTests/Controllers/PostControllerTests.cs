@@ -5,6 +5,7 @@ using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using System.Net;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -121,12 +122,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
             Assert.Equal(400, badRequestResult.StatusCode);
-            Assert.Equal("Post cannot be null.", response.Message);
+            Assert.Equal(ErrorMessages.PostCannotBeNull, response.Message);
         }
 
         [Theory]
         [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task AddPostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post, bool expectedIsValid)
+        public async Task AddPostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post)
         {
             // Arrange
             var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
@@ -136,118 +137,38 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Act
             var result = await controller.AddPostAsync(post);
 
-            // Assert
-            if (!expectedIsValid)
+            // Assert            
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+
+            Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
+
+            foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
             {
-                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var response = Assert.IsType<PostResponse>(badRequestResult.Value);
-
-                Assert.Equal("Validation failed.", response.Message);
-
-                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-                }
+                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
             }
         }
 
-        [Theory]
-        [InlineData(true, 201, "Post added successfully.")]
-        [InlineData(false, 409, "A post with this title already exists.")]
-        public async Task AddPostAsync_ShouldReturnExpectedResult_BasedOnPostAddition(bool isPostAdded,
-            int expectedStatusCode,
-            string expectedMessage)
+        [Fact]
+        public async Task AddPostAsync_ShouldReturn201AndSuccessMessage_WhenPostIsAddedSuccessfully()
         {
             // Arrange
             var post = TestDataHelper.GetSinglePost();
 
             _mockPostService.Setup(s => s.AddPostAsync(post))
-                .ReturnsAsync(isPostAdded ? post : null);
+                .ReturnsAsync(post);
 
             // Act
             var result = await _postsController.AddPostAsync(post);
 
-            // Assert
-            if (isPostAdded)
-            {
-                var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
-                var response = Assert.IsType<PostResponse>(createdAtActionResult.Value);
+            // Assert            
+            var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
+            var response = Assert.IsType<PostResponse>(createdAtActionResult.Value);
 
-                Assert.Equal(expectedStatusCode, createdAtActionResult.StatusCode);
-                Assert.Equal(expectedMessage, response.Message);
+            Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
+            Assert.Equal(SuccessMessages.PostAddedSuccessfully, response.Message);
 
-                _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
-            }
-            else
-            {
-                var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
-                var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
-
-                Assert.Equal(expectedStatusCode, conflictObjectResult.StatusCode);
-                Assert.Equal(expectedMessage, response.Message);
-
-                _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
-            }
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldReturnConflict_IfInvalidOperationException()
-        {
-            // Arrange
-            var exceptionMsg = "Failed to add post.";
-
-            _mockPostService.Setup(s => s.AddPostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new InvalidOperationException(exceptionMsg));
-
-            // Act
-            var result = await _postsController.AddPostAsync(new Post());
-
-            // Assert
-            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
-
-            Assert.Equal(409, conflictObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.AddPostAsync(It.IsAny<Post>()), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldReturnInternalServerError_IfAnUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var exceptionMsg = "An unexpected error occurred while adding post";
-
-            _mockPostService.Setup(s => s.AddPostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new Exception(exceptionMsg));
-
-            // Act
-            var result = await _postsController.AddPostAsync(new Post());
-
-            // Assert
-            var iseObjectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(iseObjectResult.Value);
-
-            Assert.Equal(500, iseObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.AddPostAsync(It.IsAny<Post>()), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
+            _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
         }
 
         [Theory]
@@ -272,8 +193,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
         [Theory]
         [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task UpdatePostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post,
-            bool expectedIsValid)
+        public async Task UpdatePostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post)
         {
             // Arrange
             var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
@@ -284,8 +204,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await controller.UpdatePostAsync(post);
 
             // Assert
-            if (!expectedIsValid)
-            {
+            //if (!expectedIsValid)
+            //{
                 var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
                 var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
@@ -295,7 +215,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 {
                     Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
                 }
-            }
+            //}
         }
 
         [Fact]

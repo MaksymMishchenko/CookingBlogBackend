@@ -89,25 +89,23 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Adds a new post to the system. Validates the post data, checks for duplicate titles, 
-        /// and attempts to save the post in the database. Returns appropriate HTTP status codes 
-        /// based on the result of the operation.
+        /// Adds a new post to the system.
         /// </summary>
-        /// <param name="post">The post object to be added. Must contain valid data.</param>
+        /// <param name="post">The post object to be added. It contains details such as title, content, etc.</param>
         /// <returns>
-        /// A <see cref="IActionResult"/> indicating the outcome of the operation:
-        /// - 201 Created if the post was successfully added,
-        /// - 400 Bad Request if the post is invalid or null,
-        /// - 409 Conflict if a post with the same title already exists,
-        /// - 500 Internal Server Error if an unexpected error occurs during the operation.
-        /// </returns>      
+        /// Returns a <see cref="CreatedAtActionResult"/> if the post is successfully added,
+        /// with a 201 status code and a success response message. If the post is null, it returns a 
+        /// BadRequest with an error message. If validation fails, it returns a BadRequest with validation errors.        
+        /// </returns>
+        /// <response code="201">Post successfully created.</response>
+        /// <response code="400">Bad request if the post is null or validation fails.</response>        
         [HttpPost("AddNewPost")]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             if (post == null)
             {
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Post cannot be null."));
+                    (ErrorMessages.PostCannotBeNull));
             }
 
             if (!ModelState.IsValid)
@@ -120,34 +118,14 @@ namespace PostApiService.Controllers
                     );
 
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Validation failed.", errors));
+                    (ErrorMessages.ValidationFailed, errors));
             }
 
-            try
-            {
-                var addedPost = await _postsService.AddPostAsync(post);
+            var addedPost = await _postsService.AddPostAsync(post);
 
-                if (addedPost != null)
-                {
-                    return CreatedAtAction("GetPostById", new { postId = addedPost.PostId }, PostResponse.CreateSuccessResponse
-                        ("Post added successfully.", addedPost.PostId));
-                }
-
-                return Conflict(PostResponse.CreateErrorResponse
-                    ("A post with this title already exists."));
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Invalid operation occurred while adding post with ID {PostId}.", post.PostId);
-                return Conflict(PostResponse.CreateErrorResponse
-                    ($"Failed to add post."));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while adding post with title: {Title}.", post.Title);
-                return StatusCode(StatusCodes.Status500InternalServerError, PostResponse.CreateErrorResponse
-                    ("An unexpected error occurred while adding post"));
-            }
+            return CreatedAtAction("GetPostById", new { postId = addedPost.PostId },
+                PostResponse.CreateSuccessResponse
+                (SuccessMessages.PostAddedSuccessfully, addedPost.PostId));
         }
 
         /// <summary>
