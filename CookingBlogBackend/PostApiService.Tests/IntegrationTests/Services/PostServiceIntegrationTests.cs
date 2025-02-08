@@ -21,7 +21,48 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnListOfPosts()
+        public async Task GetAllPostsAsync_ShouldReturnListOfPosts_WithComments()
+        {
+            // Arrange
+            var postService = CreatePostService();
+            using var context = _fixture.CreateContext();
+
+            // Act
+            var listOfPosts = await postService.GetAllPostsAsync(1, 10, 1, 10, includeComments: true);
+
+            // Assert            
+            Assert.NotEmpty(listOfPosts);
+            Assert.Single(listOfPosts);
+
+            var returnedPost = listOfPosts[0];
+            var post = await context.Posts
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.PostId == 1);
+            Assert.NotNull(post);
+
+            var comments = await context.Comments
+                .Where(c => c.PostId == post.PostId)
+                .ToListAsync();
+            Assert.NotNull(post);
+
+            Assert.Equal(post.PostId, returnedPost.PostId);
+            Assert.Equal(post.Title, returnedPost.Title);
+            Assert.Equal(post.Description, returnedPost.Description);
+
+            Assert.NotNull(returnedPost.Comments);
+            Assert.NotEmpty(returnedPost.Comments);
+            Assert.Equal(comments.Count, returnedPost.Comments.Count);
+
+            Assert.All(returnedPost.Comments, comment =>
+            {
+                Assert.Equal(post.PostId, comment.PostId);
+            });
+
+            Assert.Equal(comments[0].Content, returnedPost.Comments[0].Content);
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnListOfPosts_WithoutComments()
         {
             // Arrange
             var postService = CreatePostService();
@@ -32,8 +73,20 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             // Assert
             Assert.NotEmpty(listOfPosts);
+
+            var post = await context.Posts
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.PostId == 1);
+
+            Assert.NotNull(post);
+
+            var postList = listOfPosts[0];
+
             Assert.Single(listOfPosts);
-            Assert.Equal(1, listOfPosts[0].PostId);
+            Assert.Equal(post.PostId, postList.PostId);
+            Assert.Equal(post.Title, postList.Title);
+            Assert.Equal(post.Description, postList.Description);
+            Assert.All(listOfPosts, post => Assert.NotNull(post.Comments));
             Assert.All(listOfPosts, post => Assert.Empty(post.Comments));
         }
 
@@ -47,13 +100,21 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var postId = 1;
 
             // Act
-            var post = await postService.GetPostByIdAsync(postId, includeComments: false);
+            var existingPost = await postService.GetPostByIdAsync(postId, includeComments: false);
 
-            // Assert
+            // Assert            
+            Assert.NotNull(existingPost);
+
+            var post = await context.Posts
+                .Include(p => p.Comments)
+                .FirstOrDefaultAsync(p => p.PostId == 1);
             Assert.NotNull(post);
-            Assert.Equal(postId, post.PostId);
-            Assert.NotNull(post.Comments);
-            Assert.Empty(post.Comments);
+
+            Assert.Equal(post.PostId, existingPost.PostId);
+            Assert.Equal(post.Title, existingPost.Title);
+            Assert.Equal(post.Description, existingPost.Description);
+            Assert.NotNull(existingPost.Comments);
+            Assert.Empty(existingPost.Comments);
         }
 
         [Fact]

@@ -86,8 +86,7 @@ namespace PostApiService.Tests.Helper
             return new List<Comment> {
                 new Comment { PostId = 1, CommentId = 1, Content = "This is the test comment 1." },
                 new Comment { PostId = 1, CommentId = 2, Content = "This is the test comment 2." },
-                new Comment { PostId = 1, CommentId = 3, Content = "This is the test comment 3." },
-
+                new Comment { PostId = 1, CommentId = 3, Content = "This is the test comment 3." }
             };
         }
 
