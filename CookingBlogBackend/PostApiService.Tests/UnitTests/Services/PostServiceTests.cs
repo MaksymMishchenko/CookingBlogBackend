@@ -340,155 +340,76 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task DeletePostAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        public async Task DeletePostAsync_ShouldThrowPostNotFoundException_IfPostNotFound()
         {
             // Arrange
             var postId = 1;
-            _mockContext.Setup(p => p.Posts.FindAsync(postId)).ReturnsAsync((Post)null);
+            _mockContext.Setup(p => p.Posts.FindAsync(postId))
+                .ReturnsAsync((Post)null);
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() =>
+            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
             _postService.DeletePostAsync(postId));
 
-            Assert.Equal($"Post with ID {postId} does not exist.", exception.Message);
+            Assert.Equal(string.Format
+                (ErrorMessages.PostNotFound, postId), exception.Message);
 
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Post with ID {postId} does not exist. Deletion aborted.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
 
         [Fact]
         public async Task DeletePostAsync_ShouldDeletePost_WhenSaveChangesSucceeds()
         {
-            // Arrange
-            var postId = 1;
+            // Arrange            
             var post = TestDataHelper.GetSinglePost();
             var saveChangedResult = 1;
 
-            _mockContext.Setup(m => m.Posts.FindAsync(postId))
+            _mockContext.Setup(m => m.Posts.FindAsync(post.PostId))
                 .ReturnsAsync(post);
 
-            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
+            _mockContext.Setup(m => m.Posts.Remove(post));
 
             _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(saveChangedResult);
 
-            var postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
-
             // Act
-            await postService.DeletePostAsync(postId);
+            await _postService.DeletePostAsync(post.PostId);
 
             // Assert            
-            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
-            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
+            _mockContext.Verify(m => m.Posts.FindAsync(post.PostId), Times.Once);
+
+            _mockContext.Verify(m => m.Posts.Remove
+            (It.Is<Post>(p => p.PostId == post.PostId)), Times.Once);
+
             _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
-
         [Fact]
-        public async Task DeletePostAsync_ShouldThrowInvalidOperationException_IfNoChangesWereMade()
+        public async Task DeletePostAsync_ShouldThrowDeletePostFailedException_IfNoChangesWereMade()
         {
             // Arrange
             var postId = 1;
             var saveChangedResult = 0;
             var post = TestDataHelper.GetSinglePost();
+
             _mockContext.Setup(p => p.Posts.FindAsync(post.PostId)).ReturnsAsync(post);
 
-            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
+            _mockContext.Setup(m => m.Posts.Remove(post));
 
             _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(saveChangedResult);
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var exception = await Assert.ThrowsAsync<DeletePostFailedException>(() =>
             _postService.DeletePostAsync(post.PostId));
 
-            Assert.Equal($"Failed to delete post with ID {post.PostId}. No changes were made.", exception.Message);
+            Assert.Equal(string.Format(ErrorMessages.DeletePostFailed, post.Title), exception.Message);
 
             _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
+
             _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
+
             _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()
-                .Contains($"No rows were affected when attempting to delete post with ID {post.PostId}.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldThrowDbUpdateException_WhenDatabaseUpdateFails()
-        {
-            // Arrange
-            var postId = 1;
-
-            _mockContext.Setup(m => m.Posts.FindAsync(postId))
-                .ReturnsAsync(TestDataHelper.GetSinglePost());
-
-            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
-
-            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateException($"Database delete failed for post with ID {postId}."));
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _postService.DeletePostAsync(postId));
-
-            Assert.Equal($"Database delete failed for post with ID {postId}.", exception.Message);
-
-            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
-            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
-            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()
-                .Contains($"Database error occurred while deleting post with ID {postId}.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var postId = 1;
-
-            _mockContext.Setup(m => m.Posts.FindAsync(postId))
-                .ReturnsAsync(TestDataHelper.GetSinglePost());
-
-            _mockContext.Setup(m => m.Posts.Remove(It.IsAny<Post>()));
-
-            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception($"Unexpected error occurred while deleting post with ID {postId}."));
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(() => _postService.DeletePostAsync(postId));
-
-            Assert.Equal($"Unexpected error occurred while deleting post with ID {postId}.", exception.Message);
-
-            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
-            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
-            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString()
-                .Contains($"An unexpected error occurred while deleting post with ID {postId}.")),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
     }
 }

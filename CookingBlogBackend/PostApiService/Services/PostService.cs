@@ -1,5 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
@@ -166,54 +165,32 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Deletes a post with the given postId from the database.
-        /// If the post does not exist, a KeyNotFoundException is thrown.
-        /// If the deletion fails due to concurrency issues, a DbUpdateConcurrencyException is thrown.
-        /// If a database-related error occurs during deletion, a DbUpdateException is thrown.
-        /// If any unexpected error occurs, a generic Exception is thrown.
+        /// Deletes a post from the database by the specified post ID.
         /// </summary>
-        /// <param name="postId">The ID of the post to be deleted.</param>
-        /// <returns>True if the post was successfully deleted, false if no rows were affected.</returns>
-        /// <exception cref="KeyNotFoundException">Thrown when the post with the specified ID does not exist.</exception>
-        /// <exception cref="DbUpdateConcurrencyException">Thrown when a concurrency issue occurs while deleting the post.</exception>
-        /// <exception cref="DbUpdateException">Thrown when a database error occurs during the deletion process.</exception>
-        /// <exception cref="Exception">Thrown for any other unexpected errors during deletion.</exception>
+        /// <param name="postId">The ID of the post to delete.</param>
+        /// <exception cref="PostNotFoundException">
+        /// Thrown when the post with the specified ID is not found.
+        /// </exception>
+        /// <exception cref="DeletePostFailedException">
+        /// Thrown when the post deletion fails.
+        /// </exception>
+        /// <returns>An asynchronous task with no return value.</returns>
         public async Task DeletePostAsync(int postId)
         {
             var existingPost = await _context.Posts.FindAsync(postId);
 
             if (existingPost == null)
             {
-                _logger.LogWarning("Post with ID {PostId} does not exist. Deletion aborted.", postId);
-                throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
+                throw new PostNotFoundException(postId);
             }
 
             _context.Posts.Remove(existingPost);
 
-            try
-            {
-                var result = await _context.SaveChangesAsync();
+            var result = await _context.SaveChangesAsync();
 
-                if (result <= 0)
-                {
-                    _logger.LogWarning("No rows were affected when attempting to delete post with ID {PostId}.", postId);
-                    throw new InvalidOperationException($"Failed to delete post with ID {postId}. No changes were made.");
-                }
-            }
-            catch (DbUpdateException dbEx)
+            if (result <= 0)
             {
-                _logger.LogError(dbEx, "Database error occurred while deleting post with ID {PostId}.", postId);
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "SQL error occurred while deleting post.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while deleting post with ID {PostId}.", postId);
-                throw;
+                throw new DeletePostFailedException(existingPost.Title);
             }
         }
     }

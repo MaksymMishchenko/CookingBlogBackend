@@ -44,4 +44,14 @@
             Title = postTitle;
         }
     }
+
+    public class DeletePostFailedException : InvalidOperationException
+    {
+        public string Title { get; }
+        public DeletePostFailedException(string postTitle)
+            : base(string.Format(ErrorMessages.DeletePostFailed, postTitle))
+        {
+            Title = postTitle;
+        }
+    }
 }
