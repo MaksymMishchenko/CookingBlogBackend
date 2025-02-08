@@ -85,7 +85,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
             Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
         }
 
@@ -103,7 +103,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, okResult.StatusCode);
+            Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
             Assert.Equal(expectedPost, okResult.Value);
 
             _mockPostService.Verify(s => s.GetPostByIdAsync(
@@ -121,7 +121,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
             Assert.Equal(ErrorMessages.PostCannotBeNull, response.Message);
         }
 
@@ -206,15 +206,15 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert
             //if (!expectedIsValid)
             //{
-                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-                Assert.Equal("Validation failed.", response.Message);
+            Assert.Equal("Validation failed.", response.Message);
 
-                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-                }
+            foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
+            }
             //}
         }
 
