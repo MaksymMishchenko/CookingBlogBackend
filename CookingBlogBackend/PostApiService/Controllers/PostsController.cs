@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -28,11 +29,7 @@ namespace PostApiService.Controllers
         /// <param name="commentsPerPage">The number of comments per page. Defaults to 10.</param>
         /// <param name="includeComments">Indicates whether to include comments in the response. Defaults to true.</param>
         /// <param name="cancellationToken">A token that can be used to cancel the request. Defaults to <c>default</c>.</param>
-        /// <returns>A list of posts with optional comments, or an error response.</returns>
-        /// <response code="200">Returns a list of posts with comments if the request is successful.</response>
-        /// <response code="400">If any of the parameters are invalid (less than 1 or exceed the allowed maximum).</response>
-        /// <response code="404">If no posts are found for the requested page.</response>
-        /// <response code="500">If an unexpected error occurs while processing the request.</response>
+        /// <returns>A list of posts with optional comments, or an error response.</returns>        
         [HttpGet("GetAllPosts")]
         public async Task<IActionResult> GetAllPostsAsync(
         [FromQuery] int pageNumber = 1,
@@ -45,39 +42,30 @@ namespace PostApiService.Controllers
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
             {
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Parameters must be greater than 0."));
+                    (ErrorMessages.InvalidPageParameters));
             }
 
             if (pageSize > 10 || commentsPerPage > 10)
             {
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Page size or comments per page exceeds the allowed maximum."));
+                    (ErrorMessages.PageSizeExceeded));
             }
 
-            try
+            var posts = await _postsService.GetAllPostsAsync(
+                pageNumber,
+                pageSize,
+                commentPageNumber,
+                commentsPerPage,
+                includeComments,
+                cancellationToken);
+
+            if (!posts.Any())
             {
-                var posts = await _postsService.GetAllPostsAsync(
-                    pageNumber,
-                    pageSize,
-                    commentPageNumber,
-                    commentsPerPage,
-                    includeComments,
-                    cancellationToken);
-
-                if (!posts.Any())
-                {
-                    return NotFound(PostResponse.CreateErrorResponse
-                        ("No posts found for the requested page."));
-                }
-
-                return Ok(posts);
+                return NotFound(PostResponse.CreateErrorResponse
+                    (ErrorMessages.NoPostsFound));
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An error occurred while fetching posts.");
-                return StatusCode(StatusCodes.Status500InternalServerError, PostResponse.CreateErrorResponse
-                    ("An error occurred while processing your request."));
-            }
+
+            return Ok(posts);
         }
 
         /// <summary>

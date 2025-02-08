@@ -2,6 +2,7 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using PostApiService.Controllers;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -29,7 +30,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
-            Assert.Equal("Parameters must be greater than 0.", response.Message);
+            Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
         }
 
         [Fact]
@@ -41,36 +42,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
-            Assert.Equal("Page size or comments per page exceeds the allowed maximum.", response.Message);
-        }
-
-        [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenNoPostsFound()
-        {
-            // Arrange
-            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync(TestDataHelper.GetEmptyPostList());
-
-            // Act
-            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
-
-            // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
-            Assert.Equal("No posts found for the requested page.", response.Message);
-
-            _mockPostService.Verify(s => s.GetAllPostsAsync(
-                1,
-                10,
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()), Times.Once);
+            Assert.Equal(ErrorMessages.PageSizeExceeded, response.Message);
         }
 
         [Fact]
@@ -103,25 +75,32 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnInternalServerError_WhenExceptionIsThrown()
+        public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenNoPostsFound()
         {
+            // Arrange
+            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(TestDataHelper.GetEmptyPostList());
+
             // Act
             var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
 
             // Assert
-            var statusCodeResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(500, statusCodeResult.StatusCode);
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundResult.Value);
+            Assert.Equal(ErrorMessages.NoPostsFound, response.Message);
 
-            var response = Assert.IsType<PostResponse>(statusCodeResult.Value);
-            Assert.Equal("An error occurred while processing your request.", response.Message);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
+            _mockPostService.Verify(s => s.GetAllPostsAsync(
+                1,
+                10,
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -453,7 +432,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             }
         }
 
-        [Fact]        
+        [Fact]
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
         {
             // Arrange
