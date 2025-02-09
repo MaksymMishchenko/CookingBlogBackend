@@ -66,7 +66,8 @@ namespace PostApiService.Controllers
             }
 
             return Ok(PostResponse.CreateSuccessResponse(string.Format
-                (SuccessMessages.PostsRetrievedSuccessfully, posts.Count),
+                (string.Format
+                (SuccessMessages.PostsRetrievedSuccessfully, posts.Count), posts.Count),
                 posts));
         }
 
@@ -88,7 +89,8 @@ namespace PostApiService.Controllers
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
 
             return Ok(PostResponse.CreateSuccessResponse
-                (SuccessMessages.PostRetrievedSuccessfully, post));
+                (string.Format
+                (SuccessMessages.PostRetrievedSuccessfully, post.PostId), post));
         }
 
         /// <summary>

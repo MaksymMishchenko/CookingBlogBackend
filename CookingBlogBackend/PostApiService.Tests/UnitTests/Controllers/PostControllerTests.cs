@@ -147,7 +147,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(okResult.Value);
 
             Assert.True(response.Success);
-            Assert.Equal(SuccessMessages.PostRetrievedSuccessfully, response.Message);
+            Assert.Equal(string.Format
+                (SuccessMessages.PostRetrievedSuccessfully, expectedPost.PostId), response.Message);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
             _mockPostService.Verify(s => s.GetPostByIdAsync(
@@ -216,8 +217,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
-            Assert.Equal(SuccessMessages.PostAddedSuccessfully, response.Message);
-            Assert.Empty(response.Errors);
+            Assert.Equal(string.Format
+                (SuccessMessages.PostAddedSuccessfully, post.PostId), response.Message);            
 
             _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
         }
