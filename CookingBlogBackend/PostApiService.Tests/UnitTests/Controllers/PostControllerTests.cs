@@ -165,8 +165,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
+            Assert.NotNull(response);
+            Assert.False(response.Success);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
             Assert.Equal(ErrorMessages.PostCannotBeNull, response.Message);
+            Assert.Empty(response.Errors);
         }
 
         [Theory]
@@ -183,7 +186,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
+            Assert.NotNull(response);
+            Assert.False(response.Success);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
             Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
+            Assert.NotEmpty(response.Errors);
 
             foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
             {
@@ -207,8 +214,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
             var response = Assert.IsType<PostResponse>(createdAtActionResult.Value);
 
+            Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
             Assert.Equal(SuccessMessages.PostAddedSuccessfully, response.Message);
+            Assert.Empty(response.Errors);
 
             _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
         }

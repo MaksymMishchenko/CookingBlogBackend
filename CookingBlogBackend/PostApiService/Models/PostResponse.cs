@@ -42,7 +42,7 @@ namespace PostApiService.Models
             {
                 Success = true,
                 Message = message,
-                Post = post ?? new Post()
+                Post = post
             };
         }
 
