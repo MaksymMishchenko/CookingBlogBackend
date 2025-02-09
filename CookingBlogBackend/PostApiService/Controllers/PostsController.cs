@@ -135,17 +135,14 @@ namespace PostApiService.Controllers
         /// <returns>
         /// Returns an HTTP response:
         /// - 200 OK if the post was successfully updated.
-        /// - 400 Bad Request if the post is null, has an invalid ID, or fails validation.
-        /// - 404 Not Found if the post with the given ID does not exist.
-        /// - 409 Conflict if no changes were made to the post.
-        /// - 500 Internal Server Error if an unexpected error occurs.
+        /// - 400 Bad Request if the post is null, has an invalid ID, or fails validation.        
         [HttpPut]
         public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
         {
             if (post == null || post.PostId <= 0)
             {
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Post cannot be null, and ID should be greater than 0."));
+                    (ErrorMessages.InvalidPostOrId));
             }
 
             if (!ModelState.IsValid)
@@ -158,34 +155,14 @@ namespace PostApiService.Controllers
                     );
 
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Validation failed.", errors));
+                    (ErrorMessages.ValidationFailed, errors));
             }
 
-            try
-            {
-                await _postsService.UpdatePostAsync(post);
+            await _postsService.UpdatePostAsync(post);
 
-                return Ok(PostResponse.CreateSuccessResponse
-                    ($"Post with Post Id {post.PostId} updated successfully.", post.PostId));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogError(ex, "Post with the specified ID not found.");
-                return NotFound(PostResponse.CreateErrorResponse
-                    ($"Post with ID {post.PostId} not found. Please check the Post ID."));
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "No changes were made to post with ID {PostId}.");
-                return Conflict(PostResponse.CreateErrorResponse
-                    ($"No changes were made to post with ID {post.PostId}."));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error occurred while updating the post.");
-                return StatusCode(500, PostResponse.CreateErrorResponse
-                    ("An unexpected error occurred. Please try again later."));
-            }
+            return Ok(PostResponse.CreateSuccessResponse
+                (string.Format
+                (SuccessMessages.PostUpdatedSuccessfully, post.PostId), post.PostId));
         }
 
         /// <summary>

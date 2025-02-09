@@ -172,8 +172,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Theory]
-        [InlineData(-1, "Post cannot be null, and ID should be greater than 0.")]
-        [InlineData(0, "Post cannot be null, and ID should be greater than 0.")]
+        [InlineData(-1, ErrorMessages.InvalidPostOrId)]
+        [InlineData(0, ErrorMessages.InvalidPostOrId)]
         public async Task UpdatePostAsync_ShouldReturnBadRequest_IfPostIsNullOrIdLessOrEqualZero(int postId,
             string expectedMessage)
         {
@@ -187,7 +187,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
             Assert.Equal(expectedMessage, response.Message);
         }
 
@@ -195,27 +195,24 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
         public async Task UpdatePostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post)
         {
-            // Arrange
-            var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
-
-            ModelValidationHelper.ValidateModel(post, controller);
+            // Arrange           
+            ModelValidationHelper.ValidateModel(post, _postsController);
 
             // Act
-            var result = await controller.UpdatePostAsync(post);
+            var result = await _postsController.UpdatePostAsync(post);
 
-            // Assert
-            //if (!expectedIsValid)
-            //{
+            // Assert            
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.Equal("Validation failed.", response.Message);
+            Assert.False(response.Success);
+            Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
+            Assert.NotNull(response.Errors);
 
-            foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+            foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
             {
                 Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
             }
-            //}
         }
 
         [Fact]
@@ -226,109 +223,20 @@ namespace PostApiService.Tests.UnitTests.Controllers
             _mockPostService.Setup(service => service.UpdatePostAsync(post))
                 .Returns(Task.CompletedTask);
 
-            var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
-
             // Act
-            var result = await controller.UpdatePostAsync(post);
+            var result = await _postsController.UpdatePostAsync(post);
 
             // Assert            
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal(200, okObjectResult.StatusCode);
+            Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
-            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
-        }
+            var actualResponse = Assert.IsType<PostResponse>(okObjectResult.Value);
+            Assert.True(actualResponse.Success);
+            Assert.Equal(string.Format
+                (SuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
+            Assert.Equal(post.PostId, actualResponse.PostId);
 
-        [Fact]
-        public async Task UpdatePostAsync_ShouldReturnNotFound_IfPostNotFound()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = $"Post with ID {post.PostId} not found. Please check the Post ID.";
-
-            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new KeyNotFoundException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.UpdatePostAsync(post);
-
-            //Assert
-            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
-
-            Assert.Equal(404, notFoundObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldReturnConflict_WhenPostNotUpdated()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = $"No changes were made to post with ID {post.PostId}.";
-
-            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new InvalidOperationException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.UpdatePostAsync(post);
-
-            //Assert
-            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
-
-            Assert.Equal(409, conflictObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldReturnInternalServerError_WhenUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = "An unexpected error occurred. Please try again later.";
-
-            _mockPostService.Setup(s => s.UpdatePostAsync(It.IsAny<Post>()))
-                .ThrowsAsync(new Exception(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.UpdatePostAsync(post);
-
-            // Assert
-            var internalObjectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(internalObjectResult.Value);
-
-            Assert.Equal(500, internalObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.UpdatePostAsync(It.IsAny<Post>()), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
+            _mockPostService.Verify(s => s.UpdatePostAsync(post), Times.Once);
         }
 
         [Theory]
