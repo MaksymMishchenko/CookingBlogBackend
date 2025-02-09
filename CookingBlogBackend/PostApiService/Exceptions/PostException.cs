@@ -47,11 +47,11 @@
 
     public class DeletePostFailedException : InvalidOperationException
     {
-        public string Title { get; }
-        public DeletePostFailedException(string postTitle)
-            : base(string.Format(ErrorMessages.DeletePostFailed, postTitle))
+        public int PostId { get; }
+        public DeletePostFailedException(int postId)
+            : base(string.Format(ErrorMessages.DeletePostFailed, postId))
         {
-            Title = postTitle;
+            PostId = postId;
         }
     }
 }

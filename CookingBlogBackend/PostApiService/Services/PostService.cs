@@ -190,7 +190,7 @@ namespace PostApiService.Services
 
             if (result <= 0)
             {
-                throw new DeletePostFailedException(existingPost.Title);
+                throw new DeletePostFailedException(postId);
             }
         }
     }

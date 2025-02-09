@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using PostApiService.Infrastructure;
+using PostApiService.Middlewares;
 using PostApiService.Models;
 
 using var loggerFactory = LoggerFactory.Create(logging => logging.AddConsole());
@@ -61,6 +62,7 @@ try
         app.UseSwagger();
         app.UseSwaggerUI();
     }
+    app.UseMiddleware<GlobalExceptionMiddleware>();
 
     app.UseHttpsRedirection();
 

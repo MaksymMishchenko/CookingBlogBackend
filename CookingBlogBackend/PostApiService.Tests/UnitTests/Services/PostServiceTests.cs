@@ -403,7 +403,7 @@ namespace PostApiService.Tests.UnitTests
             var exception = await Assert.ThrowsAsync<DeletePostFailedException>(() =>
             _postService.DeletePostAsync(post.PostId));
 
-            Assert.Equal(string.Format(ErrorMessages.DeletePostFailed, post.Title), exception.Message);
+            Assert.Equal(string.Format(ErrorMessages.DeletePostFailed, post.PostId), exception.Message);
 
             _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
 
