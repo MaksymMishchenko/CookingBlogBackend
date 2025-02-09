@@ -87,7 +87,8 @@ namespace PostApiService.Controllers
 
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
 
-            return Ok(post);
+            return Ok(PostResponse.CreateSuccessResponse
+                (SuccessMessages.PostRetrievedSuccessfully, post));
         }
 
         /// <summary>

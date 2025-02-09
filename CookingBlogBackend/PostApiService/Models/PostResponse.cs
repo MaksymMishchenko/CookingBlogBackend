@@ -7,6 +7,9 @@ namespace PostApiService.Models
         public bool Success { get; set; }
         public string Message { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public Post? Post { get; set; }
+
         public List<Post>? Posts { get; set; }
 
         public int PostId { get; set; }
@@ -30,6 +33,16 @@ namespace PostApiService.Models
             {
                 Success = true,
                 Message = message
+            };
+        }
+
+        public static PostResponse CreateSuccessResponse(string message, Post? post = null)
+        {
+            return new PostResponse
+            {
+                Success = true,
+                Message = message,
+                Post = post ?? new Post()
             };
         }
 
