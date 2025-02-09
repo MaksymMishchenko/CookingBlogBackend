@@ -107,12 +107,6 @@ namespace PostApiService.Controllers
         [HttpPost("AddNewPost")]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
-            if (post == null)
-            {
-                return BadRequest(PostResponse.CreateErrorResponse
-                    (ErrorMessages.PostCannotBeNull));
-            }
-
             if (!ModelState.IsValid)
             {
                 var errors = ModelState
@@ -179,7 +173,7 @@ namespace PostApiService.Controllers
         /// - 200 OK if the post was successfully deleted.  
         /// - 400 Bad Request if the provided ID is invalid.          
         /// </returns>
-        [HttpDelete("{id}")]
+        [HttpDelete("{postId}")]
         public async Task<IActionResult> DeletePostAsync(int postId)
         {
             if (postId <= 0)

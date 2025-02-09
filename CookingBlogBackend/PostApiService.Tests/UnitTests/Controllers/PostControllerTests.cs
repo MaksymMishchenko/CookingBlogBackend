@@ -33,7 +33,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
-            Assert.Empty(response.Errors);
         }
 
         [Fact]
@@ -47,7 +46,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.PageSizeExceeded, response.Message);
-            Assert.Empty(response.Errors);
         }
 
         [Fact]
@@ -70,7 +68,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.NoPostsFound, response.Message);
-            Assert.Empty(response.Errors);
 
             _mockPostService.Verify(s => s.GetAllPostsAsync(
                 1,
@@ -126,8 +123,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
-            Assert.Empty(response.Errors);
+            Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);            
         }
 
         [Fact]
@@ -154,23 +150,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             _mockPostService.Verify(s => s.GetPostByIdAsync(
                 expectedPost.PostId,
                 true), Times.Once);
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldReturnBadRequest_IfPostIsNull()
-        {
-            // Act
-            var result = await _postsController.AddPostAsync(null);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
-
-            Assert.NotNull(response);
-            Assert.False(response.Success);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(ErrorMessages.PostCannotBeNull, response.Message);
-            Assert.Empty(response.Errors);
         }
 
         [Theory]
@@ -218,7 +197,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
             Assert.Equal(string.Format
-                (SuccessMessages.PostAddedSuccessfully, post.PostId), response.Message);            
+                (SuccessMessages.PostAddedSuccessfully, post.PostId), response.Message);
 
             _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
         }
@@ -241,7 +220,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
-            Assert.Empty(response.Errors);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
         }
 
@@ -310,7 +288,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
-            Assert.Empty(response.Errors);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
         }
 
@@ -330,6 +307,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<PostResponse>(okObjectResult.Value);
 
+            Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
             Assert.Equal(string.Format
                 (SuccessMessages.PostDeletedSuccessfully, postId), response.Message);

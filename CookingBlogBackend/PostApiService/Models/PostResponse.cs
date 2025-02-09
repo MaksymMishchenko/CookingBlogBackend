@@ -10,12 +10,23 @@ namespace PostApiService.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Post? Post { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<Post>? Posts { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public int PostId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string[]>? Errors { get; set; }
+
+        public static PostResponse CreateErrorResponse(string message)
+        {
+            return new PostResponse
+            {
+                Success = false,
+                Message = message
+            };
+        }
 
         public static PostResponse CreateErrorResponse(string message, Dictionary<string, string[]>? errors = null)
         {
