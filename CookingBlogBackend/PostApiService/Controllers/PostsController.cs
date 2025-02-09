@@ -65,7 +65,9 @@ namespace PostApiService.Controllers
                     (ErrorMessages.NoPostsFound));
             }
 
-            return Ok(posts);
+            return Ok(PostResponse.CreateSuccessResponse(string.Format
+                (SuccessMessages.PostsRetrievedSuccessfully, posts.Count),
+                posts));
         }
 
         /// <summary>

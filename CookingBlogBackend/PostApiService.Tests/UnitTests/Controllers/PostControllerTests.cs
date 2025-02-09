@@ -31,7 +31,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            Assert.False(response.Success);
             Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
+            Assert.Empty(response.Errors);
         }
 
         [Fact]
@@ -43,7 +45,40 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            Assert.False(response.Success);
             Assert.Equal(ErrorMessages.PageSizeExceeded, response.Message);
+            Assert.Empty(response.Errors);
+        }
+
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
+        {
+            // Arrange            
+            _mockPostService.Setup(service => service.GetAllPostsAsync(1,
+                10,
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()))
+                .ReturnsAsync(TestDataHelper.GetEmptyPostList());
+
+            // Act
+            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
+
+            // Assert
+            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
+            Assert.False(response.Success);
+            Assert.Equal(ErrorMessages.NoPostsFound, response.Message);
+            Assert.Empty(response.Errors);
+
+            _mockPostService.Verify(s => s.GetAllPostsAsync(
+                1,
+                10,
+                It.IsAny<int>(),
+                It.IsAny<int>(),
+                It.IsAny<bool>(),
+                It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
@@ -63,8 +98,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var returnValue = Assert.IsType<List<Post>>(okResult.Value);
-            Assert.Equal(10, returnValue.Count);
+            var response = Assert.IsType<PostResponse>(okResult.Value);
+            Assert.NotNull(response);
+            Assert.True(response.Success);
+            Assert.Equal(string.Format
+                (SuccessMessages.PostsRetrievedSuccessfully, response.Posts.Count), response.Message);
+            Assert.Equal(10, response.Posts.Count);            
 
             _mockPostService.Verify(s => s.GetAllPostsAsync(
                 1,
@@ -87,6 +126,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
             Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
+            Assert.Empty(response.Errors);
         }
 
         [Fact]
@@ -129,13 +169,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
         public async Task AddPostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post)
         {
-            // Arrange
-            var controller = new PostsController(_mockPostService.Object, _mockLogger.Object);
-
-            ModelValidationHelper.ValidateModel(post, controller);
+            // Arrange            
+            ModelValidationHelper.ValidateModel(post, _postsController);
 
             // Act
-            var result = await controller.AddPostAsync(post);
+            var result = await _postsController.AddPostAsync(post);
 
             // Assert            
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -143,7 +181,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
 
-            foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+            foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
             {
                 Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
             }
