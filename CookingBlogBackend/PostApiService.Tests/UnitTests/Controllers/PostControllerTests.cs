@@ -238,8 +238,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
+            Assert.False(response.Success);            
             Assert.Equal(expectedMessage, response.Message);
+            Assert.Empty(response.Errors);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
         }
 
         [Theory]
@@ -258,7 +260,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
-            Assert.NotNull(response.Errors);
+            Assert.NotEmpty(response.Errors);
 
             foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
             {
@@ -278,14 +280,15 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.UpdatePostAsync(post);
 
             // Assert            
-            var okObjectResult = Assert.IsType<OkObjectResult>(result);
-            Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
-
+            var okObjectResult = Assert.IsType<OkObjectResult>(result);            
             var actualResponse = Assert.IsType<PostResponse>(okObjectResult.Value);
+            
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
                 (SuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
             Assert.Equal(post.PostId, actualResponse.PostId);
+
+            Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
             _mockPostService.Verify(s => s.UpdatePostAsync(post), Times.Once);
         }
