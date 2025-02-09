@@ -13,6 +13,7 @@
         public const string NoPostsFound = "No posts found for the requested page.";
         public const string PostCannotBeNull = "Post cannot be null.";
         public const string ValidationFailed = "Validation failed.";
+        public const string InvalidPostIdParameter = "Post ID must be greater than 0.";
         public const string InvalidPostOrId = "Post cannot be null, and ID should be greater than 0.";
     }
 }

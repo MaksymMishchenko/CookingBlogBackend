@@ -128,7 +128,8 @@ namespace PostApiService.Controllers
 
             return CreatedAtAction("GetPostById", new { postId = addedPost.PostId },
                 PostResponse.CreateSuccessResponse
-                (SuccessMessages.PostAddedSuccessfully, addedPost.PostId));
+                (string.Format
+                (SuccessMessages.PostAddedSuccessfully, post.PostId), addedPost.PostId));
         }
 
         /// <summary>
@@ -174,9 +175,7 @@ namespace PostApiService.Controllers
         /// <param name="postId">The ID of the post to be deleted.</param>
         /// <returns>
         /// - 200 OK if the post was successfully deleted.  
-        /// - 400 Bad Request if the provided ID is invalid.  
-        /// - 409 Conflict if deletion failed due to an invalid operation.  
-        /// - 500 Internal Server Error if an unexpected error or database issue occurs.
+        /// - 400 Bad Request if the provided ID is invalid.          
         /// </returns>
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeletePostAsync(int postId)
@@ -184,34 +183,14 @@ namespace PostApiService.Controllers
             if (postId <= 0)
             {
                 return BadRequest(PostResponse.CreateErrorResponse
-                    ("Parameters must be greater than 0."));
+                    (ErrorMessages.InvalidPostIdParameter));
             }
 
-            try
-            {
-                await _postsService.DeletePostAsync(postId);
-                return Ok(PostResponse.CreateSuccessResponse
-                    ("Post was deleted successfully."));
-            }
-            catch (KeyNotFoundException ex)
-            {
-                _logger.LogError(ex, "Post with the specified ID not found.");
-                return NotFound(PostResponse.CreateErrorResponse
-                    ($"Post with ID {postId} not found. Please check the Post ID."));
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Invalid operation occurred while deleting post with ID {PostId}.", postId);
-                return Conflict(PostResponse.CreateErrorResponse
-                    ($"Failed to delete post with ID {postId}."));
-            }
-            catch (Exception ex)
-            {
-                var requestId = Guid.NewGuid();
-                _logger.LogError(ex, "Unexpected error occurred while deleting the post. Request ID: {RequestId}", requestId);
-                return StatusCode(500, PostResponse.CreateErrorResponse
-                    ($"An unexpected error occurred. Request ID: {requestId}. Please contact support."));
-            }
+            await _postsService.DeletePostAsync(postId);
+
+            return Ok(PostResponse.CreateSuccessResponse
+                (string.Format
+                (SuccessMessages.PostDeletedSuccessfully, postId), postId));
         }
     }
 }

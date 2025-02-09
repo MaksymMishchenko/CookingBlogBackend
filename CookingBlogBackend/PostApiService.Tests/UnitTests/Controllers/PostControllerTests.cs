@@ -238,7 +238,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.False(response.Success);            
+            Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
             Assert.Empty(response.Errors);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
@@ -280,9 +280,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.UpdatePostAsync(post);
 
             // Assert            
-            var okObjectResult = Assert.IsType<OkObjectResult>(result);            
+            var okObjectResult = Assert.IsType<OkObjectResult>(result);
             var actualResponse = Assert.IsType<PostResponse>(okObjectResult.Value);
-            
+
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
                 (SuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
@@ -294,8 +294,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Theory]
-        [InlineData(0, "Parameters must be greater than 0.")]
-        [InlineData(-1, "Parameters must be greater than 0.")]
+        [InlineData(0, ErrorMessages.InvalidPostIdParameter)]
+        [InlineData(-1, ErrorMessages.InvalidPostIdParameter)]
         public async Task DeletePostAsync_ShouldReturnBadRequest_IfParameterIsInvalid(
             int postId,
             string expectedMessage)
@@ -307,27 +307,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<PostResponse>(badRequestResult.Value);
 
-            Assert.Equal(400, badRequestResult.StatusCode);
+            Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
-        }
-
-        [Theory]
-        [InlineData(1)]
-        [InlineData(100)]
-        public async Task DeletePostAsync_ShouldNotReturnBadRequest_IfParameterIsValid(int postId)
-        {
-            //Arrange
-            _mockPostService
-                 .Setup(s => s.DeletePostAsync(postId))
-                 .Returns(Task.CompletedTask);
-
-            // Act
-            var result = await _postsController.DeletePostAsync(postId);
-
-            // Assert
-            Assert.IsNotType<BadRequestObjectResult>(result);
-
-            _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
+            Assert.Empty(response.Errors);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
         }
 
         [Fact]
@@ -346,104 +329,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<PostResponse>(okObjectResult.Value);
 
-            Assert.Equal(200, okObjectResult.StatusCode);
-            Assert.Equal("Post was deleted successfully.", response.Message);
+            Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
+            Assert.Equal(string.Format
+                (SuccessMessages.PostDeletedSuccessfully, postId), response.Message);
 
             _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldReturnNotFound_IfPostNotFound()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = $"Post with ID {post.PostId} not found. Please check the Post ID.";
-
-            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
-                .ThrowsAsync(new KeyNotFoundException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.DeletePostAsync(post.PostId);
-
-            //Assert
-            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
-
-            Assert.Equal(404, notFoundObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldReturnConflict_IfPostNotDeleted()
-        {
-            // Arrange
-            var post = TestDataHelper.GetSinglePost();
-            var exceptionMsg = $"Failed to delete post with ID {post.PostId}.";
-
-            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
-                .ThrowsAsync(new InvalidOperationException(exceptionMsg));
-
-            // Act 
-            var result = await _postsController.DeletePostAsync(post.PostId);
-
-            //Assert
-            var conflictObjectResult = Assert.IsType<ConflictObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(conflictObjectResult.Value);
-
-            Assert.Equal(409, conflictObjectResult.StatusCode);
-            Assert.Equal(exceptionMsg, response.Message);
-
-            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldReturnInternalServerError_WhenUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var requestId = Guid.NewGuid();
-            var post = TestDataHelper.GetSinglePost();
-
-            _mockPostService.Setup(s => s.DeletePostAsync(It.IsAny<int>()))
-                .ThrowsAsync(new Exception("An unexpected error occurred"));
-
-            // Act 
-            var result = await _postsController.DeletePostAsync(post.PostId);
-
-            //Assert
-            var objectResult = Assert.IsType<ObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(objectResult.Value);
-
-            Assert.Equal(500, objectResult.StatusCode);
-            Assert.Contains("An unexpected error occurred", response.Message);
-            Assert.Contains("Request ID:", response.Message);
-
-            _mockPostService.Verify(s => s.DeletePostAsync(post.PostId), Times.Once);
-
-            _mockLogger.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.IsAny<Exception>(),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
     }
 }
