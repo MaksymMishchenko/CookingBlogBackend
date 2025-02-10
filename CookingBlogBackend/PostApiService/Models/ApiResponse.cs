@@ -2,35 +2,35 @@
 
 namespace PostApiService.Models
 {
-    public class PostResponse
+    public class ApiResponse<T>
     {
         public bool Success { get; set; }
         public string Message { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Post? Post { get; set; }
+        public T? Data { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public List<Post>? Posts { get; set; }
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] // maybe WhenWritingDefault
+        public List<T>? DataList { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public int PostId { get; set; }
+        public int EntityId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string[]>? Errors { get; set; }
 
-        public static PostResponse CreateErrorResponse(string message)
+        public static ApiResponse<T> CreateErrorResponse(string message)
         {
-            return new PostResponse
+            return new ApiResponse<T>
             {
                 Success = false,
                 Message = message
             };
         }
 
-        public static PostResponse CreateErrorResponse(string message, Dictionary<string, string[]>? errors = null)
+        public static ApiResponse<T> CreateErrorResponse(string message, Dictionary<string, string[]>? errors = null)
         {
-            return new PostResponse
+            return new ApiResponse<T>
             {
                 Success = false,
                 Message = message,
@@ -38,42 +38,42 @@ namespace PostApiService.Models
             };
         }
 
-        public static PostResponse CreateSuccessResponse(string message)
+        public static ApiResponse<T> CreateSuccessResponse(string message)
         {
-            return new PostResponse
+            return new ApiResponse<T>
             {
                 Success = true,
                 Message = message
             };
         }
 
-        public static PostResponse CreateSuccessResponse(string message, Post? post = null)
+        public static ApiResponse<T> CreateSuccessResponse(string message, T? data = default)
         {
-            return new PostResponse
+            return new ApiResponse<T>
             {
                 Success = true,
                 Message = message,
-                Post = post
+                Data = data
             };
         }
 
-        public static PostResponse CreateSuccessResponse(string message, List<Post>? post = null)
+        public static ApiResponse<T> CreateSuccessResponse(string message, List<T>? dataList = null)
         {
-            return new PostResponse
+            return new ApiResponse<T>
             {
                 Success = true,
                 Message = message,
-                Posts = post ?? new List<Post>()
+                DataList = dataList ?? new List<T>()
             };
         }
 
-        public static PostResponse CreateSuccessResponse(string message, int postId)
+        public static ApiResponse<T> CreateSuccessResponse(string message, int entityId)
         {
-            return new PostResponse
+            return new ApiResponse<T>
             {
                 Success = true,
                 Message = message,
-                PostId = postId
+                EntityId = entityId
             };
         }
     }

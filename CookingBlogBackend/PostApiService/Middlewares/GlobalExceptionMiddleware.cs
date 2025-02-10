@@ -108,7 +108,7 @@ namespace PostApiService.Middlewares
             response.ContentType = "application/json";
             response.StatusCode = (int)httpStatusCode;
 
-            var errorResponse = PostResponse.CreateErrorResponse(message);
+            var errorResponse = ApiResponse<object>.CreateErrorResponse(message);
 
             await response.WriteAsJsonAsync(errorResponse);
         }

@@ -30,7 +30,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
         }
@@ -43,7 +43,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.PageSizeExceeded, response.Message);
         }
@@ -65,7 +65,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(notFoundObjectResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(notFoundObjectResult.Value);
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.NoPostsFound, response.Message);
 
@@ -95,12 +95,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(okResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(okResult.Value);
             Assert.NotNull(response);
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (SuccessMessages.PostsRetrievedSuccessfully, response.Posts.Count), response.Message);
-            Assert.Equal(10, response.Posts.Count);
+                (SuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+            Assert.Equal(10, response.DataList.Count);
 
             _mockPostService.Verify(s => s.GetAllPostsAsync(
                 1,
@@ -119,7 +119,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
 
             Assert.False(response.Success);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
@@ -140,7 +140,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(okResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(okResult.Value);
 
             Assert.True(response.Success);
             Assert.Equal(string.Format
@@ -164,7 +164,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert            
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
 
             Assert.NotNull(response);
             Assert.False(response.Success);
@@ -192,7 +192,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert            
             var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
-            var response = Assert.IsType<PostResponse>(createdAtActionResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(createdAtActionResult.Value);
 
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
@@ -216,7 +216,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
 
             Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
@@ -235,7 +235,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert            
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
 
             Assert.False(response.Success);
             Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
@@ -260,12 +260,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert            
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
-            var actualResponse = Assert.IsType<PostResponse>(okObjectResult.Value);
+            var actualResponse = Assert.IsType<ApiResponse<Post>>(okObjectResult.Value);
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
                 (SuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
-            Assert.Equal(post.PostId, actualResponse.PostId);
+            Assert.Equal(post.PostId, actualResponse.EntityId);
 
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
@@ -284,7 +284,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
 
             Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
@@ -305,7 +305,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<PostResponse>(okObjectResult.Value);
+            var response = Assert.IsType<ApiResponse<Post>>(okObjectResult.Value);
 
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);

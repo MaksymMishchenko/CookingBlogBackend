@@ -41,13 +41,13 @@ namespace PostApiService.Controllers
         {
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
             {
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.InvalidPageParameters));
             }
 
             if (pageSize > 10 || commentsPerPage > 10)
             {
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.PageSizeExceeded));
             }
 
@@ -61,14 +61,13 @@ namespace PostApiService.Controllers
 
             if (!posts.Any())
             {
-                return NotFound(PostResponse.CreateErrorResponse
+                return NotFound(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.NoPostsFound));
             }
 
-            return Ok(PostResponse.CreateSuccessResponse(string.Format
-                (string.Format
-                (SuccessMessages.PostsRetrievedSuccessfully, posts.Count), posts.Count),
-                posts));
+            return Ok(ApiResponse<Post>.CreateSuccessResponse
+                (string.Format(SuccessMessages.PostsRetrievedSuccessfully, posts.Count), posts));
+
         }
 
         /// <summary>
@@ -82,13 +81,13 @@ namespace PostApiService.Controllers
         {
             if (postId < 1)
             {
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.InvalidPageParameters));
             }
 
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
 
-            return Ok(PostResponse.CreateSuccessResponse
+            return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
                 (SuccessMessages.PostRetrievedSuccessfully, post.PostId), post));
         }
@@ -116,16 +115,15 @@ namespace PostApiService.Controllers
                         ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                     );
 
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.ValidationFailed, errors));
             }
 
             var addedPost = await _postsService.AddPostAsync(post);
 
             return CreatedAtAction("GetPostById", new { postId = addedPost.PostId },
-                PostResponse.CreateSuccessResponse
-                (string.Format
-                (SuccessMessages.PostAddedSuccessfully, post.PostId), addedPost.PostId));
+                ApiResponse<Post>.CreateSuccessResponse
+                (string.Format(SuccessMessages.PostAddedSuccessfully, post.PostId), addedPost.PostId));
         }
 
         /// <summary>
@@ -141,7 +139,7 @@ namespace PostApiService.Controllers
         {
             if (post == null || post.PostId <= 0)
             {
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.InvalidPostOrId));
             }
 
@@ -154,13 +152,13 @@ namespace PostApiService.Controllers
                         ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
                     );
 
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.ValidationFailed, errors));
             }
 
             await _postsService.UpdatePostAsync(post);
 
-            return Ok(PostResponse.CreateSuccessResponse
+            return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
                 (SuccessMessages.PostUpdatedSuccessfully, post.PostId), post.PostId));
         }
@@ -178,13 +176,13 @@ namespace PostApiService.Controllers
         {
             if (postId <= 0)
             {
-                return BadRequest(PostResponse.CreateErrorResponse
+                return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (ErrorMessages.InvalidPostIdParameter));
             }
 
             await _postsService.DeletePostAsync(postId);
 
-            return Ok(PostResponse.CreateSuccessResponse
+            return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
                 (SuccessMessages.PostDeletedSuccessfully, postId), postId));
         }
