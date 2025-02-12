@@ -1,49 +1,53 @@
-﻿//using PostApiService.Models;
-//using System.Net;
-//using System.Net.Http.Json;
+﻿using PostApiService.Exceptions;
+using PostApiService.Models;
+using System.Net.Http.Json;
 
-//namespace PostApiService.Tests.IntegrationTests
-//{
-//    public class PostControllerTests : IClassFixture<WebApplicationFactoryFixture>
-//    {
-//        public WebApplicationFactoryFixture _factory;
-//        public PostControllerTests(WebApplicationFactoryFixture factory)
-//        {
-//            _factory = factory;
-//        }
+namespace PostApiService.Tests.IntegrationTests
+{
+    public class PostControllerTests : IClassFixture<PostControllerFixture>
+    {
+        private readonly HttpClient _client;
+        public PostControllerTests(PostControllerFixture factory)
+        {
+            _client = factory.Client;
+        }
 
-//        [Fact]
-//        public async Task GetAllPosts_ShouldReturnAllPosts_WithoutToken()
-//        {
-//            // Arrange            
+        [Fact]
+        public async Task GetAllPostsAsync_ShouldReturnSeededPosts_WithComments()
+        {
+            // Act
+            var response = await _client.GetAsync(HttpHelper.Urls.GetAllPosts);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
 
-//            // Act
-//            var response = await _factory.HttpClient.GetAsync(HttpHelper.Urls.GetAllPosts);
-//            var result = await response.Content.ReadFromJsonAsync<List<Post>>();
+            response.EnsureSuccessStatusCode();
 
-//            // Assert
-//            response.EnsureSuccessStatusCode();
-//            Assert.NotNull(result);
-//            var list = DataFixture.GetPosts(_factory.InitializePostData);
-//            Assert.Equal(list.Count, result.Count);
-//            Assert.Equal(list.First().Title, result.First().Title);
-//        }
+            // Assert
+            Assert.True(content.Success);
+            Assert.Equal(string.Format(SuccessMessages.PostsRetrievedSuccessfully,
+                content.DataList.Count), content.Message);
+            Assert.Equal(TestDataHelper.GetPostsWithComments().Count, content.DataList.Count);
 
-//        [Fact]
-//        public async Task AddPostWithoutToken_ReturnsUnauthorized()
-//        {
-//            // Arrange
-//            var post = DataFixture.GetPost(true);
-//            var request = new HttpRequestMessage(HttpMethod.Post, HttpHelper.Urls.AddPost);
-//            request.Content = HttpHelper.GetJsonHttpContent(post);
+            Assert.All(content.DataList, post =>
+            {
+                var expectedPost = TestDataHelper.GetPostsWithComments()
+                    .FirstOrDefault(p => p.Title == post.Title);
 
-//            // Act
-//            var response = await _factory.HttpClient.SendAsync(request);
+                Assert.NotNull(expectedPost);
+                Assert.Equal(expectedPost.Title, post.Title);
+                Assert.Equal(expectedPost.Description, post.Description);
+                Assert.Equal(expectedPost.MetaTitle, post.MetaTitle);
+                Assert.Equal(expectedPost.Author, post.Author);
 
-//            // Assert
-//            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
-//        }
-
-
-//    }
-//}
+                Assert.Equal(expectedPost.Comments.Count, post.Comments.Count);
+                Assert.All(post.Comments, comment =>
+                {
+                    var expectedComment = expectedPost.Comments
+                        .FirstOrDefault(c => c.Content == comment.Content);
+                    Assert.NotNull(expectedComment);
+                    Assert.Equal(expectedComment.Content, comment.Content);
+                    Assert.Equal(expectedComment.Author, comment.Author);
+                });
+            });
+        }
+    }
+}
