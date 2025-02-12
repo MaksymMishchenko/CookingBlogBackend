@@ -94,5 +94,146 @@ namespace PostApiService.Tests.Helper
         {
             return new List<Comment>();
         }
+
+        public static List<Post> GetPostsWithComments()
+        {
+            return new List<Post> {
+                new Post {
+                    Title = "Title Lorem ipsum dolor sit amet 1",
+                    Description = "Description lorem ipsum dolor sit amet 1",
+                    Author = "Lorem 1",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 1",
+                    ImageUrl = "http://img-1.com",
+                    MetaTitle = "Meta title dolor sit amet 1",
+                    MetaDescription = "Meta lorem ipsum dolor 1",
+                    Slug = "post-slug-1",
+                    Comments = new List<Comment>{
+                        new Comment{
+                            Content = "Post comment content 1",
+                            Author = "Comment author 1",
+                            PostId = 1
+                        },
+                        new Comment{
+                            Content = "Post comment content 2",
+                            Author = "Comment author 2",
+                            PostId = 1
+                        },
+                        new Comment{
+                            Content = "Post comment content 3",
+                            Author = "Comment author 3",
+                            PostId = 1
+                        }
+                    }
+                },
+                new Post {
+                    Title = "Title Lorem ipsum dolor sit amet 2",
+                    Description = "Description lorem ipsum dolor sit amet 2",
+                    Author = "Lorem 2",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 2",
+                    ImageUrl = "http://img-2.com",
+                    MetaTitle = "Meta title dolor sit amet 2",
+                    MetaDescription = "Meta lorem ipsum dolor 2",
+                    Slug = "post-slug-2",
+                    Comments = new List<Comment>{
+                        new Comment{
+                            Content = "Post comment content 1",
+                            Author = "Comment author 1",
+                            PostId = 2
+                        },
+                        new Comment{
+                            Content = "Post comment content 2",
+                            Author = "Comment author 2",
+                            PostId = 2
+                        },
+                        new Comment{
+                            Content = "Post comment content 3",
+                            Author = "Comment author 3",
+                            PostId = 2
+                        }
+                    }
+                },
+                new Post {
+                    Title = "Title Lorem ipsum dolor sit amet 3",
+                    Description = "Description lorem ipsum dolor sit amet 3",
+                    Author = "Lorem 3",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 3",
+                    ImageUrl = "http://img-3.com",
+                    MetaTitle = "Meta title dolor sit amet 3",
+                    MetaDescription = "Meta lorem ipsum dolor 3",
+                    Slug = "post-slug-3",
+                    Comments = new List<Comment>{
+                        new Comment{
+                            Content = "Post comment content 1",
+                            Author = "Comment author 1",
+                            PostId = 3
+                        },
+                        new Comment{
+                            Content = "Post comment content 2",
+                            Author = "Comment author 2",
+                            PostId = 3
+                        },
+                        new Comment{
+                            Content = "Post comment content 3",
+                            Author = "Comment author 3",
+                            PostId = 3
+                        }
+                    }
+                },
+                new Post {
+                    Title = "Title Lorem ipsum dolor sit amet 4",
+                    Description = "Description lorem ipsum dolor sit amet 4",
+                    Author = "Lorem 4",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 4",
+                    ImageUrl = "http://img-4.com",
+                    MetaTitle = "Meta title dolor sit amet 4",
+                    MetaDescription = "Meta lorem ipsum dolor 4",
+                    Slug = "post-slug-4",
+                    Comments = new List<Comment>{
+                        new Comment{
+                            Content = "Post comment content 1",
+                            Author = "Comment author 1",
+                            PostId = 4
+                        },
+                        new Comment{
+                            Content = "Post comment content 2",
+                            Author = "Comment author 2",
+                            PostId = 4
+                        },
+                        new Comment{
+                            Content = "Post comment content 3",
+                            Author = "Comment author 3",
+                            PostId = 4
+                        }
+                    }
+                },
+                new Post {
+                    Title = "Title Lorem ipsum dolor sit amet 5",
+                    Description = "Description lorem ipsum dolor sit amet 5",
+                    Author = "Lorem 5",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 5",
+                    ImageUrl = "http://img-5.com",
+                    MetaTitle = "Meta title dolor sit amet 5",
+                    MetaDescription = "Meta lorem ipsum dolor 5",
+                    Slug = "post-slug-5",
+                    Comments = new List<Comment>{
+                        new Comment{
+                            Content = "Post comment content 1",
+                            Author = "Comment author 1",
+                            PostId = 5
+                        },
+                        new Comment{
+                            Content = "Post comment content 2",
+                            Author = "Comment author 2",
+                            PostId = 5
+                        },
+                        new Comment{
+                            Content = "Post comment content 3",
+                            Author = "Comment author 3",
+                            PostId = 5
+                        }
+                    }
+                }
+            };
+        }
     }
 }
