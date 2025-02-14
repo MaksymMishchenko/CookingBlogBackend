@@ -84,5 +84,46 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.InRange(content.DataList.Count, 0, pageSize);
             Assert.True(content.DataList.Last().PostId > 0);
         }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
+        {
+            // Arrange
+            var postId = 3;
+            var title = "Title Lorem ipsum dolor sit amet 3";
+            var expectedPost = TestDataHelper.GetPostsWithComments()
+                .FirstOrDefault(p => p.Title == title);
+
+            // Act
+            var response = await _client.GetAsync
+                (string.Format(HttpHelper.Urls.GetPostById, postId));
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            response.EnsureSuccessStatusCode();
+
+            // Assert
+            Assert.True(content.Success);
+            Assert.Equal(string.Format(SuccessMessages.PostRetrievedSuccessfully,
+                content.Data.PostId), content.Message);
+
+            Assert.Equal(postId, content.Data.PostId);
+            Assert.Equal(expectedPost.Title, content.Data.Title);
+            Assert.Equal(expectedPost.Description, content.Data.Description);
+            Assert.Equal(expectedPost.MetaTitle, content.Data.MetaTitle);
+            Assert.Equal(expectedPost.Author, content.Data.Author);
+
+            var commentCount = content.Data.Comments.Count;
+            Assert.Equal(expectedPost.Comments.Count, commentCount);
+
+            Assert.All(content.Data.Comments, comment =>
+            {
+                var expectedComment = expectedPost.Comments
+                .FirstOrDefault(c => c.Content == comment.Content &&
+                c.Author == comment.Author);
+
+                Assert.NotNull(expectedComment);
+                Assert.Equal(expectedComment.Content, comment.Content);
+                Assert.Equal(expectedComment.Author, comment.Author);
+            });
+        }
     }
 }
