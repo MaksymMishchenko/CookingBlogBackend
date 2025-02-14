@@ -6,9 +6,11 @@ namespace PostApiService.Tests.IntegrationTests
 {
     public class PostControllerTests : IClassFixture<PostControllerFixture>
     {
+        private readonly PostControllerFixture _factory;
         private readonly HttpClient _client;
         public PostControllerTests(PostControllerFixture factory)
         {
+            _factory = factory;
             _client = factory.Client;
         }
 
@@ -48,6 +50,39 @@ namespace PostApiService.Tests.IntegrationTests
                     Assert.Equal(expectedComment.Author, comment.Author);
                 });
             });
+        }
+
+        [Fact]
+        public async Task GetPosts_Pagination_ShouldReturnCorrectPageResults()
+        {
+            // Arrange
+            int pageSize = 5;
+            int totalPosts = TestDataHelper.GetPostsWithComments().Count;
+            int totalPages = (int)Math.Ceiling(totalPosts / (double)pageSize);
+
+            // Act
+            var response = await _factory.Client.GetAsync
+                (string.Format(HttpHelper.Urls.PaginatedPostsUrl, 1, pageSize));
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            Assert.NotNull(content);
+            Assert.Equal(pageSize, content.DataList.Count);
+            Assert.True(content.DataList.First().PostId > 0);
+
+            // Act
+            response = await _factory.Client.GetAsync
+                (string.Format(HttpHelper.Urls.PaginatedPostsUrl, totalPages, pageSize));
+
+            // Assert
+            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+
+            content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            Assert.NotNull(content);
+            Assert.InRange(content.DataList.Count, 0, pageSize);
+            Assert.True(content.DataList.Last().PostId > 0);
         }
     }
 }
