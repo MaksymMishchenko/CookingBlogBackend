@@ -1,5 +1,7 @@
-﻿using PostApiService.Exceptions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using PostApiService.Exceptions;
 using PostApiService.Models;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace PostApiService.Tests.IntegrationTests
@@ -17,6 +19,10 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnSeededPosts_WithComments()
         {
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
             // Act
             var response = await _client.GetAsync(HttpHelper.Urls.GetAllPosts);
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
@@ -27,11 +33,11 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.True(content.Success);
             Assert.Equal(string.Format(SuccessMessages.PostsRetrievedSuccessfully,
                 content.DataList.Count), content.Message);
-            Assert.Equal(TestDataHelper.GetPostsWithComments().Count, content.DataList.Count);
+            Assert.Equal(posts.Count, content.DataList.Count);
 
             Assert.All(content.DataList, post =>
             {
-                var expectedPost = TestDataHelper.GetPostsWithComments()
+                var expectedPost = posts
                     .FirstOrDefault(p => p.Title == post.Title);
 
                 Assert.NotNull(expectedPost);
@@ -56,8 +62,11 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetPosts_Pagination_ShouldReturnCorrectPageResults()
         {
             // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
             int pageSize = 5;
-            int totalPosts = TestDataHelper.GetPostsWithComments().Count;
+            int totalPosts = posts.Count;
             int totalPages = (int)Math.Ceiling(totalPosts / (double)pageSize);
 
             // Act
@@ -89,9 +98,12 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
         {
             // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
             var postId = 3;
             var title = "Title Lorem ipsum dolor sit amet 3";
-            var expectedPost = TestDataHelper.GetPostsWithComments()
+            var expectedPost = posts
                 .FirstOrDefault(p => p.Title == title);
 
             // Act
@@ -124,6 +136,55 @@ namespace PostApiService.Tests.IntegrationTests
                 Assert.Equal(expectedComment.Content, comment.Content);
                 Assert.Equal(expectedComment.Author, comment.Author);
             });
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldAddPost_Return201CreatedAtAction()
+        {
+            // Arrange            
+            var newPost = new Post
+            {
+                Title = "Title Lorem ipsum dolor sit amet",
+                Description = "Description lorem ipsum dolor sit amet",
+                Author = "Lorem",
+                Content = "Simple comtemt lorem ipsum dolor sit amet",
+                ImageUrl = "http://img-0.com",
+                MetaTitle = "Meta title dolor sit amet",
+                MetaDescription = "Meta lorem ipsum dolor",
+                Slug = "post-slug"
+            };
+
+            var content = HttpHelper.GetJsonHttpContent(newPost);
+
+            // Act
+            var response = await _client.PostAsync(HttpHelper.Urls.AddPost, content);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Created, response.StatusCode);
+
+            var locationHeader = response.Headers.Location?.ToString();
+            Assert.NotNull(locationHeader);
+            Assert.StartsWith("http://localhost/api/Posts/GetPost/", locationHeader);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(SuccessMessages.PostAddedSuccessfully, result.Message);
+            Assert.True(result.EntityId > 0);
+        }
+
+        private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
+        {
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                
+                await dbContext.Database.EnsureDeletedAsync();
+                await dbContext.Database.EnsureCreatedAsync();
+
+                await dbContext.Posts.AddRangeAsync(posts);
+                await dbContext.SaveChangesAsync();
+            }
         }
     }
 }
