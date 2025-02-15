@@ -16,7 +16,7 @@ namespace PostApiService.Tests.Helper
             public readonly static string GetPostById = "/api/Posts/GetPost/{0}";
             public readonly static string AddPost = "/api/Posts/AddNewPost";
             public readonly static string UpdatePost = "/api/Posts/UpdatePostAsync";
-            public readonly static string DeletePost = "/api/Posts/DeletePostAsync";
+            public readonly static string DeletePost = "/api/Posts/DeletePost/{0}";
 
             public readonly static string AddComment = "/api/Comments/posts/1";
             public readonly static string UpdateComment = "api/Comments/2";

@@ -216,6 +216,36 @@ namespace PostApiService.Tests.IntegrationTests
             }
         }
 
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturn200Ok_IfPostIsDeletedSuccessfully()
+        {
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
+            var postId = 4;
+
+            // Act
+            var request = await _client.DeleteAsync(string.Format(HttpHelper.Urls.DeletePost, postId));
+            request.EnsureSuccessStatusCode();
+
+            var response = await request.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+
+            // Assert
+            Assert.True(response.Success);
+            Assert.Equal(string.Format
+                (SuccessMessages.PostDeletedSuccessfully, postId), response.Message);
+            Assert.Equal(postId, response.EntityId);
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var deletedPost = await dbContext.Posts.AnyAsync(p => p.PostId == postId);
+
+                Assert.False(deletedPost);
+            }
+        }
+
         private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
         {
             using (var scope = _factory.Services.CreateScope())

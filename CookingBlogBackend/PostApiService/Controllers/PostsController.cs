@@ -171,7 +171,7 @@ namespace PostApiService.Controllers
         /// - 200 OK if the post was successfully deleted.  
         /// - 400 Bad Request if the provided ID is invalid.          
         /// </returns>
-        [HttpDelete("{postId}")]
+        [HttpDelete("DeletePost/{postId}")]
         public async Task<IActionResult> DeletePostAsync(int postId)
         {
             if (postId <= 0)
