@@ -8,15 +8,23 @@ var logger = loggerFactory.CreateLogger<Program>();
 
 try
 {
+    var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
     var builder = WebApplication.CreateBuilder(args);
 
-    // Add services to the container.
+    // Add services to the container.       
+
+    var configFile = environment == "Test" ? "appsettings.Test.json" : "appsettings.json";
+    builder.Configuration.SetBasePath(Directory.GetCurrentDirectory())
+                         .AddJsonFile(configFile, optional: true, reloadOnChange: true);
 
     // Get a connection string from appsettings.json and check for null
     var connectionString = builder.Configuration.GetConnectionString
-        ("DefaultConnection") ??
-        throw new InvalidOperationException
-            ("Connection string 'DefaultConnection' is not configured.");
+        ("DefaultConnection");
+
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+    }
 
     // Register AddDbContext service to the IServiceCollection
     builder.Services.AddApplicationService(connectionString);

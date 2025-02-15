@@ -342,3 +342,6 @@ healthchecksdb
 # Ignore appsettings.json and appsettings.*.json files
 appsettings.json
 appsettings.*.json
+
+# Allow add appsettings.Test.json
+!appsettings.Test.json
