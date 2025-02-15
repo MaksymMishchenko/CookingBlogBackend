@@ -175,7 +175,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldReturn200Ok_IfPostUpdatedSuccessfully()
+        public async Task UpdatePostAsync_ShouldReturn200Ok_IfPostIsUpdatedSuccessfully()
         {
             // Arrange
             var posts = TestDataHelper.GetPostsWithComments();
