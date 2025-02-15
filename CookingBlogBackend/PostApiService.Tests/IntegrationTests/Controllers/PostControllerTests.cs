@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Exceptions;
 using PostApiService.Models;
 using System.Net;
@@ -173,12 +174,54 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.True(result.EntityId > 0);
         }
 
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturn200Ok_IfPostUpdatedSuccessfully()
+        {
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
+            var postId = 2;
+
+            using (var scope = _factory.Services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var existingPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
+
+                Assert.NotNull(existingPost);
+
+                existingPost.Title = "Updated title";
+                existingPost.Description = "Updated description";
+
+                var content = HttpHelper.GetJsonHttpContent(existingPost);
+
+                // Act
+                var request = await _client.PutAsync(HttpHelper.Urls.UpdatePost, content);
+                request.EnsureSuccessStatusCode();
+
+                var response = await request.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+
+                // Assert                
+                Assert.NotNull(response);
+                Assert.True(response.Success);
+                Assert.Equal(string.Format
+                    (SuccessMessages.PostUpdatedSuccessfully, postId), response.Message);
+                Assert.Equal(postId, response.EntityId);
+
+                dbContext.ChangeTracker.Clear();
+
+                var updatedPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
+                Assert.Equal(existingPost.Title, updatedPost.Title);
+                Assert.Equal(existingPost.Description, updatedPost.Description);
+            }
+        }
+
         private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
         {
             using (var scope = _factory.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                
+
                 await dbContext.Database.EnsureDeletedAsync();
                 await dbContext.Database.EnsureCreatedAsync();
 

@@ -134,7 +134,7 @@ namespace PostApiService.Controllers
         /// Returns an HTTP response:
         /// - 200 OK if the post was successfully updated.
         /// - 400 Bad Request if the post is null, has an invalid ID, or fails validation.        
-        [HttpPut]
+        [HttpPut("UpdatePostAsync")]
         public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
         {
             if (post == null || post.PostId <= 0)
