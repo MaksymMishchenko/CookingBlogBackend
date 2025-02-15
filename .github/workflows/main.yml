@@ -19,7 +19,7 @@ jobs:
           dotnet-version: '8.0' 
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore CookingBlogBackend/PostApiService.sln
 
       - name: Build solution
         run: dotnet build --configuration Release --no-restore
