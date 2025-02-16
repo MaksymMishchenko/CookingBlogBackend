@@ -24,8 +24,8 @@ jobs:
         options: >-
           --health-cmd "echo 'SELECT 1' | /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -d master"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 15s
+          --health-retries 10
 
     steps:
       - name: Checkout repository
