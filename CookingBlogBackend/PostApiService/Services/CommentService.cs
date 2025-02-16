@@ -1,5 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -30,49 +30,24 @@ namespace PostApiService.Services
         /// </summary>
         /// <param name="postId">The ID of the post to which the comment will be added.</param>
         /// <param name="comment">The comment object containing the details of the comment to be added.</param>
-        /// <exception cref="KeyNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
-        /// <exception cref="InvalidOperationException">Thrown if the comment could not be added to the database.</exception>
-        /// <exception cref="DbUpdateException">Thrown if a database error occurs while adding the comment.</exception>
-        /// <exception cref="SqlException">Thrown if an SQL error occurs while adding the comment.</exception>
-        /// <exception cref="Exception">Thrown for any other unexpected errors during the comment saving process.</exception>
+        /// <exception cref="PostNotFoundException">Thrown if the post with the specified ID does not exist.</exception>
+        /// <exception cref="AddCommentFailedException">Thrown if the comment could not be added to the database.</exception>        
         public async Task AddCommentAsync(int postId, Comment comment)
         {
             var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId);
             if (!postExists)
             {
-                _logger.LogWarning($"Post with ID {postId} does not exist. Cannot add comment.");
-
-                throw new KeyNotFoundException($"Post with ID {postId} does not exist.");
+                throw new PostNotFoundException(postId);
             }
 
             comment.PostId = postId;
             await _context.Comments.AddAsync(comment);
 
-            try
-            {
-                var result = await _context.SaveChangesAsync();
+            var result = await _context.SaveChangesAsync();
 
-                if (result <= 0)
-                {
-                    _logger.LogError("Failed to add comment.");
-
-                    throw new InvalidOperationException($"Failed to add comment to post id: {postId}.");
-                }
-            }
-            catch (DbUpdateException ex)
+            if (result <= 0)
             {
-                _logger.LogError(ex, "Database error occurred while adding comment to post.");
-                throw;
-            }
-            catch (SqlException ex)
-            {
-                _logger.LogError(ex, "SQL error occurred while adding comment to post.");
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while saving comment to post ID: {postId}", postId);
-                throw;
+                throw new AddCommentFailedException(postId);
             }
         }
 

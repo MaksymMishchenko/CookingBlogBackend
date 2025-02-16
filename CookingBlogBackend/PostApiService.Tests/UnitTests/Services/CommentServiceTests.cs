@@ -2,46 +2,49 @@
 using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.UnitTests.Services
 {
-    public class CommentServiceTests
+    public class CommentServiceTests : IClassFixture<InMemoryDatabaseFixture>
     {
+        private readonly InMemoryDatabaseFixture _fixture;
         private readonly Mock<IApplicationDbContext> _mockContext;
         private readonly Mock<ILogger<CommentService>> _mockLoggerService;
         private readonly CommentService _commentService;
 
-        public CommentServiceTests()
+        public CommentServiceTests(InMemoryDatabaseFixture fixture)
         {
+            _fixture = fixture;
             _mockContext = new Mock<IApplicationDbContext>();
             _mockLoggerService = new Mock<ILogger<CommentService>>();
             _commentService = new CommentService(_mockContext.Object, _mockLoggerService.Object);
         }
 
+        private ICommentService CreateCommentService()
+        {
+            var context = _fixture.CreateContext();
+            context.Database.EnsureDeleted();
+            context.Database.EnsureCreated();
+
+            return new CommentService(context, _mockLoggerService.Object);
+        }
+
         [Fact]
-        public async Task AddCommentAsync_ShouldThrowKeyNotFoundException_IfPostDoesNotExist()
+        public async Task AddCommentAsync_ShouldThrowPostNotFoundException_IfPostDoesNotExist()
         {
             // Arrange
-            var postId = 1;
-
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetEmptyPostList());
+            var commentService = CreateCommentService();
+            var postId = 2;
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => _commentService.AddCommentAsync(postId, comment));
-            Assert.Equal($"Post with ID {postId} does not exist.", exception.Message);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Warning,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains($"Post with ID {postId} does not exist.")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
+            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() => commentService.AddCommentAsync(postId, comment));
+            Assert.Equal(string.Format(PostErrorMessages.PostNotFound, postId), exception.Message);
         }
 
         [Fact]
@@ -67,7 +70,7 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
-        public async Task AddCommentAsync_ShouldThrowInvalidOperationException_WhenSaveChangesFails()
+        public async Task AddCommentAsync_ShouldThrowAddCommentFailedException_WhenSaveChangesFails()
         {
             // Arrange
             var postId = 1;
@@ -80,76 +83,13 @@ namespace PostApiService.Tests.UnitTests.Services
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () =>
+            var exception = await Assert.ThrowsAsync<AddCommentFailedException>(async () =>
             await _commentService.AddCommentAsync(postId, comment));
 
-            Assert.Equal($"Failed to add comment to post id: {postId}.", exception.Message);
+            Assert.Equal(string.Format
+                (CommentErrorMessages.AddCommentFailed, postId), exception.Message);
 
             _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("Failed to add comment.")),
-                null,
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task AddCommentAsync_ShouldThrowDbUpdateException_IfAddingFails()
-        {
-            // Arrange
-            var postId = 1;
-
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetListWithPost());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetEmptyCommentList());
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateException("Database error occurred while adding comment to post."));
-
-            var comment = new Comment { Content = "Test comment", Author = "Test author" };
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<DbUpdateException>(() => _commentService.AddCommentAsync(postId, comment));
-            Assert.Equal("Database error occurred while adding comment to post.", exception.Message);
-
-            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.IsAny<It.IsAnyType>(),
-                It.Is<DbUpdateException>(e => e.Message.Contains("Database error occurred while adding comment")),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
-        }
-
-        [Fact]
-        public async Task AddCommentAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var postId = 1;
-            var exceptionMessage = "An unexpected error occurred. Please try again later.";
-            var comment = new Comment { Content = "Test comment", Author = "Test author" };
-
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetListWithPost());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetEmptyCommentList());
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception(exceptionMessage));
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<Exception>(() => _commentService.AddCommentAsync(postId, comment));
-            Assert.Equal(exceptionMessage, exception.Message);
-
-            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockLoggerService.Verify(l => l.Log(
-                LogLevel.Error,
-                It.IsAny<EventId>(),
-                It.Is<It.IsAnyType>((v, t) => v.ToString().Contains("An unexpected error occurred while saving comment")),
-                It.Is<Exception>(e => e.Message == exceptionMessage),
-                It.IsAny<Func<It.IsAnyType, Exception, string>>()),
-                Times.Once);
         }
 
         [Fact]

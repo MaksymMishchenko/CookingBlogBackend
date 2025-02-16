@@ -27,72 +27,79 @@ namespace PostApiService.Middlewares
             catch (PostNotFoundException ex)
             {
                 await HandleExceptionAsync(context,
-                    ex.Message,                       
+                    ex.Message,
                     HttpStatusCode.NotFound,
-                    string.Format(ErrorMessages.PostNotFound, ex.PostId));
+                    string.Format(PostErrorMessages.PostNotFound, ex.PostId));
             }
             catch (PostAlreadyExistException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.Conflict,
-                    string.Format(ErrorMessages.PostAlreadyExist, ex.Title));
+                    string.Format(PostErrorMessages.PostAlreadyExist, ex.Title));
             }
             catch (AddPostFailedException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    string.Format(ErrorMessages.AddPostFailed, ex.Title));
+                    string.Format(PostErrorMessages.AddPostFailed, ex.Title));
+            }
+            catch (AddCommentFailedException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    string.Format(CommentErrorMessages.AddCommentFailed, ex.PostId));
             }
             catch (UpdatePostFailedException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    string.Format(ErrorMessages.UpdatePostFailed, ex.Title));
+                    string.Format(PostErrorMessages.UpdatePostFailed, ex.Title));
             }
             catch (DeletePostFailedException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    string.Format(ErrorMessages.DeletePostFailed, ex.PostId));
+                    string.Format(PostErrorMessages.DeletePostFailed, ex.PostId));
             }
             catch (TimeoutException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    ErrorMessages.TimeoutException);
+                    PostErrorMessages.TimeoutException);
             }
             catch (SqlException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    ErrorMessages.SqlException);
+                    PostErrorMessages.SqlException);
             }
             catch (DbUpdateException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    ErrorMessages.DbUpdateException);
+                    PostErrorMessages.DbUpdateException);
             }
             catch (OperationCanceledException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    ErrorMessages.OperationCanceledException);
+                    PostErrorMessages.OperationCanceledException);
             }
             catch (Exception ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    ErrorMessages.UnexpectedErrorException);
+                    PostErrorMessages.UnexpectedErrorException);
             }
         }
 
