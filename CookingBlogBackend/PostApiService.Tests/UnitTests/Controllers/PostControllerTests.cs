@@ -32,7 +32,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
             Assert.False(response.Success);
-            Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);
+            Assert.Equal(PostErrorMessages.InvalidPageParameters, response.Message);
         }
 
         [Fact]
@@ -45,7 +45,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
             var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
             Assert.False(response.Success);
-            Assert.Equal(ErrorMessages.PageSizeExceeded, response.Message);
+            Assert.Equal(PostErrorMessages.PageSizeExceeded, response.Message);
         }
 
         [Fact]
@@ -67,7 +67,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
             var response = Assert.IsType<ApiResponse<Post>>(notFoundObjectResult.Value);
             Assert.False(response.Success);
-            Assert.Equal(ErrorMessages.NoPostsFound, response.Message);
+            Assert.Equal(PostErrorMessages.NoPostsFound, response.Message);
 
             _mockPostService.Verify(s => s.GetAllPostsAsync(
                 1,
@@ -99,7 +99,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.NotNull(response);
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (SuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
             Assert.Equal(10, response.DataList.Count);
 
             _mockPostService.Verify(s => s.GetAllPostsAsync(
@@ -123,7 +123,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(ErrorMessages.InvalidPageParameters, response.Message);            
+            Assert.Equal(PostErrorMessages.InvalidPageParameters, response.Message);            
         }
 
         [Fact]
@@ -144,7 +144,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (SuccessMessages.PostRetrievedSuccessfully, expectedPost.PostId), response.Message);
+                (PostSuccessMessages.PostRetrievedSuccessfully, expectedPost.PostId), response.Message);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
             _mockPostService.Verify(s => s.GetPostByIdAsync(
@@ -169,7 +169,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.NotNull(response);
             Assert.False(response.Success);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
+            Assert.Equal(PostErrorMessages.ValidationFailed, response.Message);
             Assert.NotEmpty(response.Errors);
 
             foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
@@ -197,14 +197,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
             Assert.Equal(string.Format
-                (SuccessMessages.PostAddedSuccessfully, post.PostId), response.Message);
+                (PostSuccessMessages.PostAddedSuccessfully, post.PostId), response.Message);
 
             _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
         }
 
         [Theory]
-        [InlineData(-1, ErrorMessages.InvalidPostOrId)]
-        [InlineData(0, ErrorMessages.InvalidPostOrId)]
+        [InlineData(-1, PostErrorMessages.InvalidPostOrId)]
+        [InlineData(0, PostErrorMessages.InvalidPostOrId)]
         public async Task UpdatePostAsync_ShouldReturnBadRequest_IfPostIsNullOrIdLessOrEqualZero(int postId,
             string expectedMessage)
         {
@@ -238,7 +238,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
 
             Assert.False(response.Success);
-            Assert.Equal(ErrorMessages.ValidationFailed, response.Message);
+            Assert.Equal(PostErrorMessages.ValidationFailed, response.Message);
             Assert.NotEmpty(response.Errors);
 
             foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
@@ -264,7 +264,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
-                (SuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
+                (PostSuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
             Assert.Equal(post.PostId, actualResponse.EntityId);
 
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
@@ -273,8 +273,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Theory]
-        [InlineData(0, ErrorMessages.InvalidPostIdParameter)]
-        [InlineData(-1, ErrorMessages.InvalidPostIdParameter)]
+        [InlineData(0, PostErrorMessages.InvalidPostIdParameter)]
+        [InlineData(-1, PostErrorMessages.InvalidPostIdParameter)]
         public async Task DeletePostAsync_ShouldReturnBadRequest_IfParameterIsInvalid(
             int postId,
             string expectedMessage)
@@ -310,7 +310,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
             Assert.Equal(string.Format
-                (SuccessMessages.PostDeletedSuccessfully, postId), response.Message);
+                (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
 
             _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
         }

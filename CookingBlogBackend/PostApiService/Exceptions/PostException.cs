@@ -5,11 +5,11 @@
         public PostException(string message) : base(message) { }
     }
 
-    public class PostNotFoundException : PostException
+    public class PostNotFoundException : KeyNotFoundException
     {
         public int PostId { get; }
         public PostNotFoundException(int postId)
-            : base(string.Format(ErrorMessages.PostNotFound, postId))
+            : base(string.Format(PostErrorMessages.PostNotFound, postId))
         {
             PostId = postId;
         }
@@ -19,7 +19,7 @@
     {
         public string Title { get; }
         public PostAlreadyExistException(string postTitle)
-             : base(string.Format(ErrorMessages.PostAlreadyExist, postTitle))
+             : base(string.Format(PostErrorMessages.PostAlreadyExist, postTitle))
         {
             Title = postTitle;
         }
@@ -29,7 +29,7 @@
     {
         public string Title { get; }
         public AddPostFailedException(string postTitle)
-            : base(string.Format(ErrorMessages.AddPostFailed, postTitle))
+            : base(string.Format(PostErrorMessages.AddPostFailed, postTitle))
         {
             Title = postTitle;
         }
@@ -39,7 +39,7 @@
     {
         public string Title { get; }
         public UpdatePostFailedException(string postTitle)
-            : base(string.Format(ErrorMessages.UpdatePostFailed, postTitle))
+            : base(string.Format(PostErrorMessages.UpdatePostFailed, postTitle))
         {
             Title = postTitle;
         }
@@ -49,7 +49,7 @@
     {
         public int PostId { get; }
         public DeletePostFailedException(int postId)
-            : base(string.Format(ErrorMessages.DeletePostFailed, postId))
+            : base(string.Format(PostErrorMessages.DeletePostFailed, postId))
         {
             PostId = postId;
         }

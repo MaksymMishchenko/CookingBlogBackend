@@ -30,7 +30,7 @@ namespace PostApiService.Controllers
         /// <param name="includeComments">Indicates whether to include comments in the response. Defaults to true.</param>
         /// <param name="cancellationToken">A token that can be used to cancel the request. Defaults to <c>default</c>.</param>
         /// <returns>A list of posts with optional comments, or an error response.</returns>        
-        [HttpGet("GetAllPosts")]
+        [HttpGet]
         public async Task<IActionResult> GetAllPostsAsync(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -42,13 +42,13 @@ namespace PostApiService.Controllers
             if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.InvalidPageParameters));
+                    (PostErrorMessages.InvalidPageParameters));
             }
 
             if (pageSize > 10 || commentsPerPage > 10)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.PageSizeExceeded));
+                    (PostErrorMessages.PageSizeExceeded));
             }
 
             var posts = await _postsService.GetAllPostsAsync(
@@ -62,12 +62,11 @@ namespace PostApiService.Controllers
             if (!posts.Any())
             {
                 return NotFound(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.NoPostsFound));
+                    (PostErrorMessages.NoPostsFound));
             }
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(SuccessMessages.PostsRetrievedSuccessfully, posts.Count), posts));
-
+                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count), posts));
         }
 
         /// <summary>
@@ -76,20 +75,20 @@ namespace PostApiService.Controllers
         /// <param name="postId">The ID of the post to retrieve.</param>
         /// <param name="includeComments">A flag indicating whether to include comments in the response. Defaults to true.</param>
         /// <returns>Returns an IActionResult with the post data if found, or a BadRequest if the postId is invalid.</returns>
-        [HttpGet("GetPost/{postId}", Name = "GetPostById")]
+        [HttpGet("{postId}")]
         public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
         {
             if (postId < 1)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.InvalidPageParameters));
+                    (PostErrorMessages.InvalidPageParameters));
             }
 
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (SuccessMessages.PostRetrievedSuccessfully, post.PostId), post));
+                (PostSuccessMessages.PostRetrievedSuccessfully, post.PostId), post));
         }
 
         /// <summary>
@@ -103,7 +102,7 @@ namespace PostApiService.Controllers
         /// </returns>
         /// <response code="201">Post successfully created.</response>
         /// <response code="400">Bad request if the post is null or validation fails.</response>        
-        [HttpPost("AddNewPost")]
+        [HttpPost]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             if (!ModelState.IsValid)
@@ -116,14 +115,14 @@ namespace PostApiService.Controllers
                     );
 
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.ValidationFailed, errors));
+                    (PostErrorMessages.ValidationFailed, errors));
             }
 
             var addedPost = await _postsService.AddPostAsync(post);
 
             return CreatedAtAction("GetPostById", new { postId = addedPost.PostId },
                 ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(SuccessMessages.PostAddedSuccessfully), addedPost.PostId));
+                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost.PostId));
         }
 
         /// <summary>
@@ -134,13 +133,13 @@ namespace PostApiService.Controllers
         /// Returns an HTTP response:
         /// - 200 OK if the post was successfully updated.
         /// - 400 Bad Request if the post is null, has an invalid ID, or fails validation.        
-        [HttpPut("UpdatePost")]
+        [HttpPut]
         public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
         {
             if (post == null || post.PostId <= 0)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.InvalidPostOrId));
+                    (PostErrorMessages.InvalidPostOrId));
             }
 
             if (!ModelState.IsValid)
@@ -153,14 +152,14 @@ namespace PostApiService.Controllers
                     );
 
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.ValidationFailed, errors));
+                    (PostErrorMessages.ValidationFailed, errors));
             }
 
             await _postsService.UpdatePostAsync(post);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (SuccessMessages.PostUpdatedSuccessfully, post.PostId), post.PostId));
+                (PostSuccessMessages.PostUpdatedSuccessfully, post.PostId), post.PostId));
         }
 
         /// <summary>
@@ -171,20 +170,20 @@ namespace PostApiService.Controllers
         /// - 200 OK if the post was successfully deleted.  
         /// - 400 Bad Request if the provided ID is invalid.          
         /// </returns>
-        [HttpDelete("DeletePost/{postId}")]
+        [HttpDelete("{postId}")]
         public async Task<IActionResult> DeletePostAsync(int postId)
         {
             if (postId <= 0)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (ErrorMessages.InvalidPostIdParameter));
+                    (PostErrorMessages.InvalidPostIdParameter));
             }
 
             await _postsService.DeletePostAsync(postId);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (SuccessMessages.PostDeletedSuccessfully, postId), postId));
+                (PostSuccessMessages.PostDeletedSuccessfully, postId), postId));
         }
     }
 }

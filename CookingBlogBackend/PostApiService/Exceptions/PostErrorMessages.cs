@@ -1,6 +1,6 @@
 ﻿namespace PostApiService.Exceptions
 {
-    public static class ErrorMessages
+    public static class PostErrorMessages
     {
         public const string PostNotFound = "Post with ID {0} was not found.";
         public const string PostAlreadyExist = "Post with title {0} already exists.";

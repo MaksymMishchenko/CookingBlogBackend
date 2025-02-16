@@ -32,7 +32,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             // Assert
             Assert.True(content.Success);
-            Assert.Equal(string.Format(SuccessMessages.PostsRetrievedSuccessfully,
+            Assert.Equal(string.Format(PostSuccessMessages.PostsRetrievedSuccessfully,
                 content.DataList.Count), content.Message);
             Assert.Equal(posts.Count, content.DataList.Count);
 
@@ -115,7 +115,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             // Assert
             Assert.True(content.Success);
-            Assert.Equal(string.Format(SuccessMessages.PostRetrievedSuccessfully,
+            Assert.Equal(string.Format(PostSuccessMessages.PostRetrievedSuccessfully,
                 content.Data.PostId), content.Message);
 
             Assert.Equal(postId, content.Data.PostId);
@@ -163,14 +163,16 @@ namespace PostApiService.Tests.IntegrationTests
             // Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            var locationHeader = response.Headers.Location?.ToString();
-            Assert.NotNull(locationHeader);
-            Assert.StartsWith("http://localhost/api/Posts/GetPost/", locationHeader);
-
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
             Assert.NotNull(result);
+
+            var locationHeader = response.Headers.Location?.ToString();
+            Assert.NotNull(locationHeader);
+            Assert.StartsWith($"http://localhost/api/posts/{result.EntityId}", locationHeader,
+                StringComparison.OrdinalIgnoreCase);
+
             Assert.True(result.Success);
-            Assert.Equal(SuccessMessages.PostAddedSuccessfully, result.Message);
+            Assert.Equal(PostSuccessMessages.PostAddedSuccessfully, result.Message);
             Assert.True(result.EntityId > 0);
         }
 
@@ -205,7 +207,7 @@ namespace PostApiService.Tests.IntegrationTests
                 Assert.NotNull(response);
                 Assert.True(response.Success);
                 Assert.Equal(string.Format
-                    (SuccessMessages.PostUpdatedSuccessfully, postId), response.Message);
+                    (PostSuccessMessages.PostUpdatedSuccessfully, postId), response.Message);
                 Assert.Equal(postId, response.EntityId);
 
                 dbContext.ChangeTracker.Clear();
@@ -234,7 +236,7 @@ namespace PostApiService.Tests.IntegrationTests
             // Assert
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (SuccessMessages.PostDeletedSuccessfully, postId), response.Message);
+                (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
             Assert.Equal(postId, response.EntityId);
 
             using (var scope = _factory.Services.CreateScope())

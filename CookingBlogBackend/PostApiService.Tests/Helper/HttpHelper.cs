@@ -11,16 +11,16 @@ namespace PostApiService.Tests.Helper
 
         internal static class Urls
         {
-            public readonly static string GetAllPosts = "/api/Posts/GetAllPosts";
-            public readonly static string PaginatedPostsUrl = "/api/Posts/GetAllPosts?pageNumber={0}&pageSize={1}";
-            public readonly static string GetPostById = "/api/Posts/GetPost/{0}";
-            public readonly static string AddPost = "/api/Posts/AddNewPost";
-            public readonly static string UpdatePost = "/api/Posts/UpdatePost";
-            public readonly static string DeletePost = "/api/Posts/DeletePost/{0}";
+            public readonly static string GetAllPosts = "/api/posts";
+            public readonly static string PaginatedPostsUrl = "/api/posts?pageNumber={0}&pageSize={1}";
+            public readonly static string GetPostById = "/api/Posts/{0}";
+            public readonly static string AddPost = "/api/posts";
+            public readonly static string UpdatePost = "/api/posts";
+            public readonly static string DeletePost = "/api/Posts/{0}";
 
-            public readonly static string AddComment = "/api/Comments/posts/1";
-            public readonly static string UpdateComment = "api/Comments/2";
-            public readonly static string DeleteComment = "api/Comments/3";
+            public readonly static string AddComment = "/api/comments/posts/1";
+            public readonly static string UpdateComment = "api/comments/2";
+            public readonly static string DeleteComment = "api/comments/3";
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace PostApiService.Exceptions
 {
-    public static class SuccessMessages
+    public static class PostSuccessMessages
     {
         public const string PostRetrievedSuccessfully = "Post with ID {0} retrieved successfully.";
         public const string PostsRetrievedSuccessfully = "Successfully retrieved {0} posts.";

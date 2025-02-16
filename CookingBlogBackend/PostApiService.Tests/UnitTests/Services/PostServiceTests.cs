@@ -146,7 +146,7 @@ namespace PostApiService.Tests.UnitTests
             postService.GetPostByIdAsync(invalidPostId));
             Assert.NotNull(exception);
             Assert.Equal(string.Format
-                (ErrorMessages.PostNotFound, invalidPostId), exception.Message);
+                (PostErrorMessages.PostNotFound, invalidPostId), exception.Message);
         }
 
         [Fact]
@@ -212,7 +212,7 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.NotNull(exception);
             Assert.Equal(string.Format
-                (ErrorMessages.PostAlreadyExist, post.Title), exception.Message);
+                (PostErrorMessages.PostAlreadyExist, post.Title), exception.Message);
         }
 
         [Fact]
@@ -233,7 +233,7 @@ namespace PostApiService.Tests.UnitTests
             _postService.AddPostAsync(newPost));
 
             Assert.Equal(string.Format
-                (ErrorMessages.AddPostFailed, newPost.Title), exception.Message);
+                (PostErrorMessages.AddPostFailed, newPost.Title), exception.Message);
 
             _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
             p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
@@ -281,7 +281,7 @@ namespace PostApiService.Tests.UnitTests
             var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
                 _postService.UpdatePostAsync(post));
 
-            Assert.Equal(string.Format(ErrorMessages.PostNotFound, post.PostId), exception.Message);
+            Assert.Equal(string.Format(PostErrorMessages.PostNotFound, post.PostId), exception.Message);
 
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
         }
@@ -332,7 +332,7 @@ namespace PostApiService.Tests.UnitTests
                 _postService.UpdatePostAsync(existingPost));
 
             Assert.Equal(string.Format
-                (ErrorMessages.UpdatePostFailed, existingPost.Title), exception.Message);
+                (PostErrorMessages.UpdatePostFailed, existingPost.Title), exception.Message);
 
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
 
@@ -352,7 +352,7 @@ namespace PostApiService.Tests.UnitTests
             _postService.DeletePostAsync(postId));
 
             Assert.Equal(string.Format
-                (ErrorMessages.PostNotFound, postId), exception.Message);
+                (PostErrorMessages.PostNotFound, postId), exception.Message);
 
             _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
         }
@@ -403,7 +403,7 @@ namespace PostApiService.Tests.UnitTests
             var exception = await Assert.ThrowsAsync<DeletePostFailedException>(() =>
             _postService.DeletePostAsync(post.PostId));
 
-            Assert.Equal(string.Format(ErrorMessages.DeletePostFailed, post.PostId), exception.Message);
+            Assert.Equal(string.Format(PostErrorMessages.DeletePostFailed, post.PostId), exception.Message);
 
             _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
 
