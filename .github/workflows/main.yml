@@ -1,0 +1,77 @@
+name: Run Tests
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        env:
+          SA_PASSWORD: YourStrong!Passw0rd
+          ACCEPT_EULA: Y
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "echo 'SELECT 1' | /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -d master"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Wait for SQL Server to be ready
+        run: |
+          for i in {1..30}; do
+            if /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P 'YourStrong!Passw0rd' -Q 'SELECT 1' &> /dev/null; then
+              echo "SQL Server is ready!"
+              exit 0
+            fi
+            echo "Waiting for SQL Server..."
+            sleep 2
+          done
+          echo "SQL Server did not start in time" >&2
+          exit 1
+
+      - name: Set up test appsettings
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        run: |
+          echo '{
+            "ConnectionStrings": {
+              "DefaultConnection": "Server=localhost;Database=TestDb;User Id=sa;Password=YourStrong!Passw0rd;"
+            },
+            "JwtConfiguration": {
+              "SecretKey": "'"${JWT_SECRET}"'",
+              "Issuer": "https://test.example.com",
+              "Audience": "https://test.example.com",
+              "TokenExpirationMinutes": 30
+            },
+            "Logging": {
+              "LogLevel": {
+                "Default": "Information",
+                "Microsoft": "Warning",
+                "Microsoft.Hosting.Lifetime": "Information"
+              }
+            },
+            "AllowedHosts": "*"
+          }' > appsettings.test.json
+
+      - name: Run tests
+        run: dotnet test --configuration Release --logger trx
