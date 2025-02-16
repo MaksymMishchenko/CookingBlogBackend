@@ -17,15 +17,15 @@ jobs:
       mssql:
         image: mcr.microsoft.com/mssql/server:2019-latest
         env:
-          SA_PASSWORD: YourStrong!Passw0rd
+          SA_PASSWORD: YourStrong!Passw0rd  # Ваш пароль для SQL Server
           ACCEPT_EULA: Y
         ports:
           - 1433:1433
         options: >-
           --health-cmd "echo 'SELECT 1' | /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P YourStrong!Passw0rd -d master"
           --health-interval 10s
-          --health-timeout 15s
-          --health-retries 10
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -55,13 +55,14 @@ jobs:
         run: |
           echo '{
             "ConnectionStrings": {
-              "DefaultConnection": "Server=localhost;Database=TestDb;User Id=sa;Password=YourStrong!Passw0rd;"
+              "DefaultConnection": "Server=mssql;Database=PostApiDb;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;",
+              "ApiPostIdentity": "Server=mssql;Database=Identity;User Id=sa;Password=YourStrong!Passw0rd;TrustServerCertificate=True;"
             },
             "JwtConfiguration": {
               "SecretKey": "'"${JWT_SECRET}"'",
-              "Issuer": "https://test.example.com",
-              "Audience": "https://test.example.com",
-              "TokenExpirationMinutes": 30
+              "Issuer": "https://localhost:7030",
+              "Audience": "https://localhost:7030",
+              "TokenExpirationMinutes": 15
             },
             "Logging": {
               "LogLevel": {
