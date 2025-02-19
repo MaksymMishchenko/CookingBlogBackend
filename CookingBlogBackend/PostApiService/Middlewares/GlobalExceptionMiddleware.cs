@@ -66,6 +66,13 @@ namespace PostApiService.Middlewares
                     HttpStatusCode.InternalServerError,
                     string.Format(CommentErrorMessages.UpdateCommentFailed, ex.CommentId));
             }
+            catch (DeleteCommentFailedException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    string.Format(CommentErrorMessages.DeleteCommentFailed, ex.CommentId));
+            }
             catch (UpdatePostFailedException ex)
             {
                 await HandleExceptionAsync(context,

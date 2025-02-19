@@ -79,52 +79,32 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Deletes a comment by its ID from the database.
+        /// Asynchronously deletes a comment identified by the specified comment ID.
         /// </summary>
         /// <param name="commentId">The ID of the comment to be deleted.</param>
-        /// <returns>
-        /// A task representing the asynchronous operation.
-        /// </returns>
-        /// <exception cref="KeyNotFoundException">
-        /// Thrown when the specified comment does not exist in the database.
+        /// <exception cref="CommentNotFoundException">
+        /// Thrown when no comment is found with the specified ID.
         /// </exception>
-        /// <exception cref="DbUpdateConcurrencyException">
-        /// Thrown when a concurrency issue occurs while deleting the comment.
+        /// <exception cref="DeletePostFailedException">
+        /// Thrown when the deletion operation fails.
         /// </exception>
-        /// <exception cref="Exception">
-        /// Thrown when an unexpected error occurs during the delete operation.
-        /// </exception>
+        /// <returns>A task that represents the asynchronous delete operation.</returns>
         public async Task DeleteCommentAsync(int commentId)
         {
             var existingComment = await _context.Comments.FindAsync(commentId);
 
             if (existingComment == null)
             {
-                _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot delete.", commentId);
-
-                throw new KeyNotFoundException($"Comment with ID {commentId} does not exist");
+                throw new CommentNotFoundException(commentId);
             }
 
             _context.Comments.Remove(existingComment);
 
-            try
+            var result = await _context.SaveChangesAsync();
+
+            if (result <= 0)
             {
-                var result = await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Comment with ID {CommentId} removed successfully.", commentId);
-
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "Concurrency issue while removing comment ID {CommentId}.", commentId);
-
-                throw new DbUpdateConcurrencyException($"Concurrency issue while removing comment ID {commentId}.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while removing comment ID {CommentId}.", commentId);
-
-                throw new Exception("An unexpected error occurred. Please try again later.");
+                throw new DeleteCommentFailedException(commentId);
             }
         }
     }

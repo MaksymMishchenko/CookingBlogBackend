@@ -33,5 +33,14 @@
         {
             CommentId = commentId;
         }
-    }    
+    }
+    public class DeleteCommentFailedException : CommentException
+    {
+        public int CommentId { get; }
+        public DeleteCommentFailedException(int commentId)
+            : base(string.Format(CommentErrorMessages.DeleteCommentFailed, commentId))
+        {
+            CommentId = commentId;
+        }
+    }
 }
