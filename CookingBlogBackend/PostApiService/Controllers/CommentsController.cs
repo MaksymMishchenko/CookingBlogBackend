@@ -71,64 +71,53 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Updates an existing comment with the specified comment ID and new content.
-        /// Performs validation on the comment ID, content, and model state.
-        /// If the comment is found and successfully updated, returns a success response with the updated content.
-        /// In case of validation failure, a missing comment, or concurrency issues, returns an appropriate error response.
-        /// Handles exceptions for not found comments, concurrency issues, and other unexpected errors.
+        /// Updates an existing comment based on the provided comment ID.
         /// </summary>
-        /// <param name="commentId">The ID of the comment to be updated.</param>
-        /// <param name="comment">The updated comment data, including the new content.</param>
-        /// <returns>An IActionResult indicating the result of the operation. Returns a success response if the comment is updated, or an error response if validation fails, the comment is not found, or there is a concurrency issue.</returns>
-        /// <response code="200">Successfully updated the comment.</response>
-        /// <response code="400">Invalid comment ID, null comment, missing content, or validation failure.</response>
-        /// <response code="404">Comment not found.</response>
-        /// <response code="409">Concurrency issue occurred while updating the comment.</response>
-        /// <response code="500">Unexpected error during the comment update process.</response>
+        /// <param name="commentId">The ID of the comment to update.</param>
+        /// <param name="comment">The updated comment data.</param>
+        /// <returns>
+        /// Returns a BadRequest response if the comment ID is invalid, the comment is null, 
+        /// or the content is empty. If validation fails, returns a BadRequest response with error details. 
+        /// Otherwise, returns an OK response indicating successful update.
+        /// </returns>
         [HttpPut("{commentId}")]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
             if (commentId <= 0)
             {
-                _logger.LogWarning("Comment ID must be greater than zero. Received value: {PostId}", commentId);
-
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Comment ID must be greater than zero."));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.InvalidCommentIdParameter));
             }
 
             if (comment == null)
             {
-                _logger.LogWarning("Received null comment for comment ID {PostId}.", commentId);
-
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Comment cannot be null."));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.CommentCannotBeNull));
             }
 
             if (string.IsNullOrEmpty(comment.Content))
             {
-                _logger.LogWarning("Content is required for editing comment ID {CommentId}.", commentId);
-
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Content is required."));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.ContentIsRequired));
             }
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
+                var errors = ModelState
+                    .Where(ms => ms.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        ms => ms.Key,
+                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
 
-                _logger.LogWarning("Validation failed for comment ID {CommentId}. Errors: {Errors}.", commentId, string.Join(", ", errors));
-
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Validation failed.", errors));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.ValidationFailed, errors));
             }
 
             await _commentService.UpdateCommentAsync(commentId, comment);
 
-            return Ok(CommentResponse.CreateSuccessResponse
-                ("Comment updated successfully."));
+            return Ok(ApiResponse<Comment>.CreateSuccessResponse
+                (CommentSuccessMessages.CommentUpdatedSuccessfully));
         }
 
         /// <summary>

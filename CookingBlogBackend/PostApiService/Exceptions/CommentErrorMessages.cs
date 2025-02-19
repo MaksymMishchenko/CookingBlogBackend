@@ -10,5 +10,8 @@
         public const string CommentCannotBeNull = "Comment cannot be null.";
         public const string MismatchedPostId = "The postId in the request URL does not match the PostId in the comment.";
         public const string ValidationFailed = "Validation failed.";
+        public const string InvalidCommentIdParameter = "Comment ID must be greater than 0.";
+        public const string ContentIsRequired = "Comment property 'Content' is required.";
+
     }
 }

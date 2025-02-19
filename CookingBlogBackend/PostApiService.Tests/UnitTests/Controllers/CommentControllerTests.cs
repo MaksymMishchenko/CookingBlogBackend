@@ -162,65 +162,49 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [InlineData(-1)]
         public async Task OnUpdateCommentAsync_CommentIdLessThanOrEqualZero_ReturnsBadRequest(int invalidCommentId)
         {
-            // Arrange            
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
             // Act
-            var result = await controller.UpdateCommentAsync(invalidCommentId, new EditCommentModel());
+            var result = await _commentController.UpdateCommentAsync(invalidCommentId, new EditCommentModel());
 
             //Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
 
             Assert.False(response.Success);
-            Assert.Equal("Comment ID must be greater than zero.", response.Message);
+            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, response.Message);
         }
 
         [Fact]
         public async Task OnUpdateCommentAsync_CommentIsNull_ReturnsBadRequest()
         {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
+            // Arrange            
             var validPostId = 1;
 
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
             // Act
-            var result = await controller.UpdateCommentAsync(validPostId, null);
+            var result = await _commentController.UpdateCommentAsync(validPostId, null);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
 
             Assert.False(response.Success);
-            Assert.Equal("Comment cannot be null.", response.Message);
+            Assert.Equal(CommentErrorMessages.CommentCannotBeNull, response.Message);
         }
 
         [Fact]
         public async Task OnUpdateCommentAsync_CommentContentIsNull_ReturnsBadRequest()
         {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
+            // Arrange            
             var validPostId = 1;
 
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
             // Act
-            var result = await controller.UpdateCommentAsync(validPostId, new EditCommentModel() { Content = null });
+            var result = await _commentController.UpdateCommentAsync(validPostId, new EditCommentModel() { Content = null });
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
 
             Assert.False(response.Success);
-            Assert.Equal("Content is required.", response.Message);
+            Assert.Equal(CommentErrorMessages.ContentIsRequired, response.Message);
         }
 
         [Theory]
@@ -230,157 +214,61 @@ namespace PostApiService.Tests.UnitTests.Controllers
             bool expectedIsValid)
         {
             // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            //commentServiceMock
-            //     .Setup(service => service.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
-            //     .ReturnsAsync(true);
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
             var validCommentId = 1;
             var comment = new EditCommentModel
             {
                 Content = content,
             };
 
-            ModelValidationHelper.ValidateModel(comment, controller);
+            ModelValidationHelper.ValidateModel(comment, _commentController);
 
             // Act
-            var result = await controller.UpdateCommentAsync(validCommentId, comment);
+            var result = await _commentController.UpdateCommentAsync(validCommentId, comment);
 
             // Assert
             if (expectedIsValid)
             {
                 var okResult = Assert.IsType<OkObjectResult>(result);
                 Assert.NotNull(okResult);
-                Assert.Equal("Comment updated successfully.", ((CommentResponse)okResult.Value).Message);
+                Assert.Equal(CommentSuccessMessages.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
             }
             else
             {
                 var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var response = Assert.IsType<CommentResponse>(badRequestResult.Value);
+                var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
 
-                Assert.Equal("Validation failed.", response.Message);
+                Assert.Equal(CommentErrorMessages.ValidationFailed, response.Message);
 
-                foreach (var validationResult in controller.ModelState.Values.SelectMany(v => v.Errors))
+                foreach (var validationResult in _commentController.ModelState.Values.SelectMany(v => v.Errors))
                 {
-                    Assert.Contains(response.Errors, error => error == validationResult.ErrorMessage);
+                    Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
                 }
             }
         }
 
-        //[Theory]
-        //[InlineData(true)]
-        //[InlineData(false)]
-        //public async Task OnUpdateCommentAsync_ShouldHandleSuccessAndFailureCorrectly(bool isSuccess)
-        //{
-        //    // Arrange
-        //    var commentServiceMock = new Mock<ICommentService>();
-        //    var loggerServiceMock = new Mock<ILogger<CommentsController>>();
+        [Fact]
+        public async Task OnUpdateCommentAsync_ShouldUpdateCommentSuccessfully()
+        {
+            // Arrange
+            int commentId = 1;
+            var updatedComment = new EditCommentModel
+            {
+                Content = "It is a long established fact that a reader will be distracted."
+            };
 
-        //    var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
+            _mockCommentService.Setup(t => t.UpdateCommentAsync(commentId, updatedComment))
+                .Returns(Task.CompletedTask);
 
-        //    //commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>())).ReturnsAsync(isSuccess);
+            // Act
+            var result = await _commentController.UpdateCommentAsync(commentId, updatedComment);
 
-        //    int commentId = 1;
-        //    var updatedComment = new EditCommentModel { Content = "It is a long established fact that a reader will be distracted." };
+            // Assert            
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult);
+            Assert.Equal(CommentSuccessMessages.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
 
-        //    // Act
-        //    var result = await controller.UpdateCommentAsync(commentId, updatedComment);
-
-        //    // Assert
-        //    if (isSuccess)
-        //    {
-        //        var okResult = Assert.IsType<OkObjectResult>(result);
-        //        Assert.NotNull(okResult);
-        //        Assert.Equal("Comment updated successfully.", ((CommentResponse)okResult.Value).Message);
-        //    }
-        //    else
-        //    {
-        //        var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-        //        var returnValue = Assert.IsType<CommentResponse>(badRequestResult.Value);
-
-        //        Assert.False(returnValue.Success);
-        //        Assert.Equal($"Failed to update comment ID {commentId}.", returnValue.Message);
-        //    }
-        //}
-
-        //[Fact]
-        //public async Task OnUpdateCommentAsync_CommentNotFound_ReturnsNotFound()
-        //{
-        //    // Arrange
-        //    var commentServiceMock = new Mock<ICommentService>();
-        //    var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-        //    var commentId = 999;
-
-        //    commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
-        //        .ThrowsAsync(new InvalidOperationException($"Comment with ID {commentId} does not exist"));
-
-        //    var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-        //    // Act
-        //    var result = await controller.UpdateCommentAsync(commentId, new EditCommentModel() { Content = "Lorem ipsum dolor sit." });
-
-        //    // Assert
-        //    var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-        //    var response = Assert.IsType<CommentResponse>(notFoundResult.Value);
-
-        //    Assert.Equal($"Comment with ID {commentId} does not exist", response.Message);
-        //}
-
-        //[Fact]
-        //public async Task OnUpdateCommentAsync_ShouldReturnConcurrencyIssue_WithStatusCode409()
-        //{
-        //    // Arrange
-        //    var commentServiceMock = new Mock<ICommentService>();
-        //    var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-        //    var commentId = 1;
-
-        //    commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
-        //        .ThrowsAsync(new DbUpdateConcurrencyException($"Concurrency issue while updating comment ID {commentId}."));
-
-        //    var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-        //    // Act
-        //    var result = await controller.UpdateCommentAsync(commentId, new EditCommentModel() { Content = "Lorem ipsum dolor sit." });
-
-        //    // Assert            
-
-        //    var conflictResult = Assert.IsType<ObjectResult>(result);
-        //    Assert.Equal(409, conflictResult.StatusCode);
-
-        //    var response = Assert.IsType<CommentResponse>(conflictResult.Value);
-        //    Assert.Equal($"Concurrency issue while updating comment ID {commentId}.", response.Message);
-        //}
-
-        //[Fact]
-        //public async Task OnUpdateCommentAsync_UnhandledException_ReturnsServerError()
-        //{
-        //    // Arrange
-        //    var commentServiceMock = new Mock<ICommentService>();
-        //    var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-        //    commentServiceMock.Setup(t => t.UpdateCommentAsync(It.IsAny<int>(), It.IsAny<EditCommentModel>()))
-        //        .ThrowsAsync(new Exception("An unexpected error occurred. Please try again later."));
-
-        //    var validPostId = 1;
-
-        //    var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-        //    // Act
-        //    var result = await controller.UpdateCommentAsync(validPostId, new EditCommentModel { Content = "Lorem ipsum dolor sit amet" });
-
-        //    // Assert
-        //    var serverErrorResult = Assert.IsType<ObjectResult>(result);
-        //    Assert.Equal(500, serverErrorResult.StatusCode);
-
-        //    var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
-        //    Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
-        //}
+            _mockCommentService.Verify(c => c.UpdateCommentAsync(commentId, updatedComment), Times.Once);
+        }
 
         [Theory]
         [InlineData(-1, false)]

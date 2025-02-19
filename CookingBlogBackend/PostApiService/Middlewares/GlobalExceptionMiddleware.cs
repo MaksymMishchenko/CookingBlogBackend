@@ -100,7 +100,7 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     PostErrorMessages.SqlException);
-            }
+            }            
             catch (DbUpdateException ex)
             {
                 await HandleExceptionAsync(context,
