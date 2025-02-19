@@ -93,31 +93,35 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
-        public async Task UpdateCommentAsync_ShouldThrowInvalidOperationException_IfCommentDoesNotExist()
+        public async Task UpdateCommentAsync_ShouldThrowCommentNotFoundException_IfCommentDoesNotExist()
         {
             // Arrange
             var commentId = 1;
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetListWithComments());
+            _mockContext.Setup(c => c.Comments.FindAsync(commentId)).ReturnsAsync((Comment)null);
 
             var comment = new EditCommentModel { Content = "Updated comment" };
 
             // Act & Assert
-            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            var exception = await Assert.ThrowsAsync<CommentNotFoundException>(() =>
             _commentService.UpdateCommentAsync(commentId, comment));
 
-            Assert.Equal($"Comment with ID {commentId} does not exist", exception.Message);
+            Assert.Equal(string.Format
+                (CommentErrorMessages.CommentNotFound, commentId), exception.Message);
+
+            _mockContext.Verify(s => s.Comments.FindAsync(It.IsAny<object[]>()), Times.Once);
         }
 
         [Fact]
-        public async Task UpdateCommentAsync_ShouldReturnTrue_IfCommentAddedSuccessfully()
+        public async Task UpdateCommentAsync_ShouldUpdateCommentContent_AndSaveChanges()
         {
             // Arrange
             var commentId = 1;
+            var existingPost = TestDataHelper.GetListWithComments()
+                .FirstOrDefault(c => c.CommentId == commentId);
             var saveChangedResult = 1;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(TestDataHelper.GetListWithComments()
-                .FirstOrDefault(c => c.CommentId == commentId));
+                .ReturnsAsync(existingPost);
 
             _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(saveChangedResult);
@@ -125,77 +129,36 @@ namespace PostApiService.Tests.UnitTests.Services
             var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
 
             // Act
-            var result = await _commentService.UpdateCommentAsync(commentId, updatedComment);
+            await _commentService.UpdateCommentAsync(commentId, updatedComment);
 
             // Assert            
-            Assert.True(result);
+            _mockContext.Verify(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)), Times.Once);
+            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]
-        public async Task UpdateCommentAsync_ShouldReturnFalse_WhenSaveChangesFails()
+        public async Task UpdateCommentAsync_ShouldThrowUpdateCommentFailedException_IfCommentDoesNotUpdated()
         {
             // Arrange
             var commentId = 1;
+            var existingPost = TestDataHelper.GetListWithComments()
+                .FirstOrDefault(c => c.CommentId == commentId);
             var saveChangedResult = 0;
 
             _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(TestDataHelper.GetListWithComments()
-                .FirstOrDefault(c => c.CommentId == commentId));
+                .ReturnsAsync(existingPost);
 
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(saveChangedResult);
+            var comment = new EditCommentModel { Content = "Updated comment" };
 
-            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<UpdateCommentFailedException>(() =>
+            _commentService.UpdateCommentAsync(commentId, comment));
 
-            // Act
-            var result = await _commentService.UpdateCommentAsync(commentId, updatedComment);
+            Assert.Equal(string.Format
+                (CommentErrorMessages.UpdateCommentFailed, commentId), exception.Message);
 
-            // Assert            
-            Assert.False(result);
-        }
-
-        [Fact]
-        public async Task UpdateCommentAsync_ShouldThrowDbUpdateConcurrencyException_WhenDbSaveFailsDueToConcurrency()
-        {
-            // Arrange
-            var commentId = 1;
-
-            _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(TestDataHelper.GetListWithComments()
-                .FirstOrDefault(c => c.CommentId == commentId));
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new DbUpdateConcurrencyException());
-
-            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
-
-            // Act & Assert            
-            var concurrencyException = await Assert.ThrowsAsync<DbUpdateConcurrencyException>(() => _commentService
-            .UpdateCommentAsync(commentId, updatedComment));
-
-            Assert.Equal($"Concurrency issue while updating comment ID {commentId}.", concurrencyException.Message);
-        }
-
-        [Fact]
-        public async Task UpdateCommentAsync_ShouldThrowException_IfUnexpectedErrorOccurs()
-        {
-            // Arrange
-            var commentId = 1;
-
-            _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-                .ReturnsAsync(TestDataHelper.GetListWithComments()
-                .FirstOrDefault(c => c.CommentId == commentId));
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new Exception());
-
-            var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
-
-            // Act & Assert            
-            var exception = await Assert.ThrowsAsync<Exception>(() => _commentService
-            .UpdateCommentAsync(commentId, updatedComment));
-
-            Assert.Equal("An unexpected error occurred. Please try again later.", exception.Message);
+            _mockContext.Verify(s => s.Comments.FindAsync(It.IsAny<object[]>()), Times.Once);
+            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }
 
         [Fact]

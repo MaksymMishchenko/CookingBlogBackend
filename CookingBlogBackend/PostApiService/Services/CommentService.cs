@@ -57,57 +57,24 @@ namespace PostApiService.Services
         /// <param name="commentId">The ID of the comment to be updated.</param>
         /// <param name="comment">The model containing the new content for the comment.</param>
         /// <returns>
-        /// A task that represents the asynchronous operation. 
-        /// The task result contains a boolean indicating whether the comment was successfully updated.
-        /// </returns>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown when the specified comment does not exist in the database.
-        /// </exception>
-        /// <exception cref="DbUpdateConcurrencyException">
-        /// Thrown when a concurrency issue occurs during the update process, such as conflicting changes.
-        /// </exception>
-        /// <exception cref="Exception">
-        /// Thrown when an unexpected error occurs during the database update operation.
-        /// </exception>
-        public async Task<bool> UpdateCommentAsync(int commentId, EditCommentModel comment)
+        /// A task that represents the asynchronous operation.         
+        /// </returns>        
+        public async Task UpdateCommentAsync(int commentId, EditCommentModel comment)
         {
             var existingComment = await _context.Comments.FindAsync(commentId);
 
             if (existingComment == null)
             {
-                _logger.LogWarning("Comment with ID {CommentId} does not exist. Cannot edit.", commentId);
-
-                throw new InvalidOperationException($"Comment with ID {commentId} does not exist");
+                throw new CommentNotFoundException(commentId);
             }
 
             existingComment.Content = comment.Content;
 
-            try
+            var result = await _context.SaveChangesAsync();
+
+            if (result <= 0)
             {
-                var result = await _context.SaveChangesAsync();
-
-                if (result > 0)
-                {
-                    _logger.LogInformation("Comment with ID {CommentId} was successfully updated.", commentId);
-
-                    return true;
-                }
-
-                _logger.LogWarning("No rows were affected while updating comment with ID {CommentId}.", commentId);
-
-                return false;
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "Concurrency issue while updating comment ID {CommentId}.", commentId);
-
-                throw new DbUpdateConcurrencyException($"Concurrency issue while updating comment ID {commentId}.");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while updating comment ID {CommentId}.", commentId);
-
-                throw new Exception("An unexpected error occurred. Please try again later.");
+                throw new UpdateCommentFailedException(commentId);
             }
         }
 

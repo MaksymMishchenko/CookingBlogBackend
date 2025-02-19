@@ -45,12 +45,26 @@ namespace PostApiService.Middlewares
                     HttpStatusCode.InternalServerError,
                     string.Format(PostErrorMessages.AddPostFailed, ex.Title));
             }
+            catch (CommentNotFoundException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.NotFound,
+                    string.Format(CommentErrorMessages.CommentNotFound, ex.CommentId));
+            }
             catch (AddCommentFailedException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     string.Format(CommentErrorMessages.AddCommentFailed, ex.PostId));
+            }
+            catch (UpdateCommentFailedException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    string.Format(CommentErrorMessages.UpdateCommentFailed, ex.CommentId));
             }
             catch (UpdatePostFailedException ex)
             {
