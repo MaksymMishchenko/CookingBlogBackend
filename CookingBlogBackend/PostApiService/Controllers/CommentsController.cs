@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -21,70 +21,53 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Adds a new comment to a post with the specified post ID.
-        /// Performs validation on the post ID, the comment object, and the model state.
-        /// If the post is found and the comment is successfully added, returns a success response.
-        /// In case of invalid data or failure to add the comment, returns an error response.
-        /// Handles exceptions such as a post not being found or unexpected errors.
+        /// Adds a comment to a specific post.
         /// </summary>
-        /// <param name="postId">The ID of the post to which the comment is being added.</param>
-        /// <param name="comment">The comment to be added to the post.</param>
-        /// <returns>An IActionResult indicating the result of the operation. Returns a success response if the comment is added, or an error response if validation fails or the post is not found.</returns>
-        /// <response code="200">Successfully added the comment to the post.</response>
-        /// <response code="400">Invalid post ID, null comment, or validation failure.</response>
-        /// <response code="404">Post not found.</response>
-        /// <response code="500">Unexpected error during the comment addition process.</response>
-        [HttpPost("posts/{postId}")]
+        /// <param name="postId">The ID of the post to which the comment should be added.</param>
+        /// <param name="comment">The comment to be added.</param>
+        /// <returns>
+        /// Returns a 200 OK response if the comment is successfully added.
+        /// Returns a 400 Bad Request response if the post ID is invalid, the comment is null, 
+        /// or if the model validation fails.
+        /// </returns>     
+        [HttpPost("{postId}")]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
             if (postId <= 0)
             {
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Post ID must be greater than zero."));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (PostErrorMessages.InvalidPostIdParameter));
             }
 
             if (comment == null)
             {
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Comment cannot be null."));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.CommentCannotBeNull));
             }
 
             if (!ModelState.IsValid)
             {
-                var errors = ModelState.Values
-                    .SelectMany(v => v.Errors)
-                    .Select(e => e.ErrorMessage)
-                    .ToList();
+                var errors = ModelState
+                    .Where(ms => ms.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        ms => ms.Key,
+                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
 
-                return BadRequest(CommentResponse.CreateErrorResponse
-                    ("Validation failed.", errors));
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.ValidationFailed, errors));
             }
-            try
-            {
-                await _commentService.AddCommentAsync(postId, comment);
 
-                return Ok(CommentResponse.CreateSuccessResponse
-                    ("Comment added successfully."));
-            }
-            catch (KeyNotFoundException ex)
+            if (comment.PostId != 0 && comment.PostId != postId)
             {
-                _logger.LogError(ex, "Post with ID {PostId} not found.", postId);
+                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
+                    (CommentErrorMessages.MismatchedPostId));
+            }
 
-                return NotFound(CommentResponse.CreateErrorResponse
-                    (ex.Message));
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Invalid operation occurred while adding comment to post with ID {PostId}.", postId);
-                return Conflict(CommentResponse.CreateErrorResponse
-                    ($"Failed to add comment to post with ID {postId}."));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while adding comment to post ID: {PostId}", postId);
-                return StatusCode(500, CommentResponse.CreateErrorResponse
-                    (ex.Message));
-            }
+            await _commentService.AddCommentAsync(postId, comment);
+
+            return Ok(ApiResponse<Comment>.CreateSuccessResponse
+                (CommentSuccessMessages.CommentAddedSuccessfully));
         }
 
         /// <summary>
@@ -142,44 +125,10 @@ namespace PostApiService.Controllers
                     ("Validation failed.", errors));
             }
 
-            try
-            {
-                var success = await _commentService.UpdateCommentAsync(commentId, comment);
+            await _commentService.UpdateCommentAsync(commentId, comment);
 
-                if (success)
-                {
-                    return Ok(CommentResponse.CreateSuccessResponse
-                        ("Comment updated successfully."));
-                }
-                else
-                {
-                    _logger.LogWarning("Failed to update comment ID {commentId}.", commentId);
-
-                    return BadRequest(CommentResponse.CreateErrorResponse
-                        ($"Failed to update comment ID {commentId}."));
-                }
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogError(ex, "Comment with ID {CommentId} not found.", commentId);
-
-                return NotFound(CommentResponse.CreateErrorResponse
-                    (ex.Message));
-            }
-            catch (DbUpdateConcurrencyException ex)
-            {
-                _logger.LogError(ex, "Concurrency issue occurred while updating comment ID {commentId}.", commentId);
-
-                return StatusCode(409, CommentResponse.CreateErrorResponse
-                    (ex.Message));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "An unexpected error occurred while updating comment ID: {PostId}", commentId);
-
-                return StatusCode(500, CommentResponse.CreateErrorResponse
-                    (ex.Message));
-            }
+            return Ok(CommentResponse.CreateSuccessResponse
+                ("Comment updated successfully."));
         }
 
         /// <summary>

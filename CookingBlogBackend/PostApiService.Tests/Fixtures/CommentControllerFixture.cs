@@ -17,9 +17,9 @@ namespace PostApiService.Tests.Fixtures
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
                 builder.ConfigureTestServices(services =>
-                {                    
+                {
                     services.RemoveAll(typeof(DbContextOptions<ApplicationDbContext>));
-                    
+
                     services.AddDbContext<ApplicationDbContext>(options =>
                     {
                         options.UseSqlServer(_connectionString);
@@ -30,27 +30,27 @@ namespace PostApiService.Tests.Fixtures
             Client = _factory.CreateClient();
             Services = _factory.Services;
         }
-        
+
         public async Task InitializeAsync()
         {
             using (var scope = _factory.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                
+
                 await dbContext.Database.EnsureDeletedAsync();
                 await dbContext.Database.EnsureCreatedAsync();
-               
+
                 await dbContext.Posts.AddRangeAsync(TestDataHelper.GetPostsWithComments());
                 await dbContext.SaveChangesAsync();
             }
         }
-       
+
         public async Task DisposeAsync()
         {
             using (var scope = _factory.Services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                
+
                 await dbContext.Database.EnsureDeletedAsync();
             }
         }

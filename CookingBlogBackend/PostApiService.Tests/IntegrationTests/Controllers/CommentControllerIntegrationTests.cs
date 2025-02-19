@@ -17,6 +17,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
         {
             // Arrange
+            var postId = 1;
             var newComment = new Comment
             {
                 Content = "Lorem ipsum dolor sit amet.",
@@ -27,7 +28,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var content = HttpHelper.GetJsonHttpContent(newComment);
 
             // Act
-            var response = await _factory.Client.PostAsync(HttpHelper.Urls.AddComment, content);
+            var response = await _factory.Client.PostAsync(string.Format(HttpHelper.Urls.AddComment, postId), content);
 
             // Assert
             response.EnsureSuccessStatusCode();
