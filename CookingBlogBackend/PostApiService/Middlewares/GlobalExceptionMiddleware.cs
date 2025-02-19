@@ -45,6 +45,20 @@ namespace PostApiService.Middlewares
                     HttpStatusCode.InternalServerError,
                     string.Format(PostErrorMessages.AddPostFailed, ex.Title));
             }
+            catch (UpdatePostFailedException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    string.Format(PostErrorMessages.UpdatePostFailed, ex.Title));
+            }
+            catch (DeletePostFailedException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    string.Format(PostErrorMessages.DeletePostFailed, ex.PostId));
+            }
             catch (CommentNotFoundException ex)
             {
                 await HandleExceptionAsync(context,
@@ -72,21 +86,7 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     string.Format(CommentErrorMessages.DeleteCommentFailed, ex.CommentId));
-            }
-            catch (UpdatePostFailedException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex.Message,
-                    HttpStatusCode.InternalServerError,
-                    string.Format(PostErrorMessages.UpdatePostFailed, ex.Title));
-            }
-            catch (DeletePostFailedException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex.Message,
-                    HttpStatusCode.InternalServerError,
-                    string.Format(PostErrorMessages.DeletePostFailed, ex.PostId));
-            }
+            }            
             catch (TimeoutException ex)
             {
                 await HandleExceptionAsync(context,
@@ -112,7 +112,7 @@ namespace PostApiService.Middlewares
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
-                    HttpStatusCode.InternalServerError,
+                    HttpStatusCode.RequestTimeout,
                     PostErrorMessages.OperationCanceledException);
             }
             catch (Exception ex)

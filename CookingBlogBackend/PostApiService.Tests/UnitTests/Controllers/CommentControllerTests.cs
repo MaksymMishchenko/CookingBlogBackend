@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Moq;
 using PostApiService.Controllers;
@@ -276,105 +275,30 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [InlineData(1, true)]
         public async Task OnDeleteCommentAsync_ShouldHandleSuccessAndFailureCorrectly(int commentId, bool isSuccess)
         {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()));
+            // Arrange            
+            _mockCommentService.Setup(t => t.DeleteCommentAsync(commentId));
 
             // Act
-            var result = await controller.DeleteCommentAsync(commentId);
+            var result = await _commentController.DeleteCommentAsync(commentId);
 
             // Assert
             if (isSuccess)
             {
                 var okResult = Assert.IsType<OkObjectResult>(result);
                 Assert.NotNull(okResult);
-                Assert.Equal("Comment deleted successfully", ((CommentResponse)okResult.Value).Message);
+                Assert.Equal(CommentSuccessMessages.CommentDeletedSuccessfully,
+                    ((ApiResponse<Comment>)okResult.Value).Message);
+
+                _mockCommentService.Verify(c => c.DeleteCommentAsync(commentId), Times.Once);
             }
             else
             {
                 var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var returnValue = Assert.IsType<CommentResponse>(badRequestResult.Value);
+                var returnValue = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
 
                 Assert.False(returnValue.Success);
-                Assert.Equal("Comment ID must be greater than zero.", returnValue.Message);
+                Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, returnValue.Message);
             }
-        }
-
-        [Fact]
-        public async Task OnDeleteCommentAsync_CommentNotFound_ReturnsNotFound()
-        {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            var commentNotFoundId = 999;
-
-            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()))
-                .ThrowsAsync(new KeyNotFoundException($"Comment with ID {commentNotFoundId} does not exist"));
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-            // Act
-            var result = await controller.DeleteCommentAsync(commentNotFoundId);
-
-            // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<CommentResponse>(notFoundResult.Value);
-
-            Assert.Equal($"Comment with ID {commentNotFoundId} does not exist", response.Message);
-        }
-
-        [Fact]
-        public async Task OnDeleteCommentAsync_ShouldReturnConcurrencyIssue_WithStatusCode409()
-        {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            var commentId = 1;
-
-            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()))
-                .ThrowsAsync(new DbUpdateConcurrencyException($"Concurrency issue while removing comment ID {commentId}."));
-
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-            // Act
-            var result = await controller.DeleteCommentAsync(commentId);
-
-            // Assert            
-            var conflictResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(409, conflictResult.StatusCode);
-
-            var response = Assert.IsType<CommentResponse>(conflictResult.Value);
-            Assert.Equal($"Concurrency issue while removing comment ID {commentId}.", response.Message);
-        }
-
-        [Fact]
-        public async Task OnDeleteCommentAsync_UnhandledException_ReturnsServerError()
-        {
-            // Arrange
-            var commentServiceMock = new Mock<ICommentService>();
-            var loggerServiceMock = new Mock<ILogger<CommentsController>>();
-
-            commentServiceMock.Setup(t => t.DeleteCommentAsync(It.IsAny<int>()))
-                .ThrowsAsync(new Exception("An unexpected error occurred. Please try again later."));
-
-            var validPostId = 1;
-            var controller = new CommentsController(commentServiceMock.Object, loggerServiceMock.Object);
-
-            // Act
-            var result = await controller.DeleteCommentAsync(validPostId);
-
-            // Assert
-            var serverErrorResult = Assert.IsType<ObjectResult>(result);
-            Assert.Equal(500, serverErrorResult.StatusCode);
-
-            var response = Assert.IsType<CommentResponse>(serverErrorResult.Value);
-            Assert.Equal("An unexpected error occurred. Please try again later.", response.Message);
         }
     }
 }
