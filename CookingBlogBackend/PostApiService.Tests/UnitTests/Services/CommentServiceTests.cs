@@ -27,8 +27,6 @@ namespace PostApiService.Tests.UnitTests.Services
         private ICommentService CreateCommentService()
         {
             var context = _fixture.CreateContext();
-            context.Database.EnsureDeleted();
-            context.Database.EnsureCreated();
 
             return new CommentService(context, _mockLoggerService.Object);
         }
@@ -51,22 +49,19 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task AddCommentAsync_ShouldAddCommentToPost()
         {
             // Arrange
+            var context = _fixture.CreateContext();
+            var commentService = new CommentService(context, _mockLoggerService.Object);
             var postId = 1;
-            var saveChangedResult = 1;
-
-            _mockContext.Setup(c => c.Posts).ReturnsDbSet(TestDataHelper.GetListWithPost());
-            _mockContext.Setup(c => c.Comments).ReturnsDbSet(TestDataHelper.GetEmptyCommentList());
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(saveChangedResult);
+            var initialCount = await context.Comments.CountAsync();
 
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act
-            await _commentService.AddCommentAsync(postId, comment);
+            await commentService.AddCommentAsync(postId, comment);
 
-            // Assert            
-            _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+            // Assert
+            var totalCount = await context.Comments.CountAsync();
+            Assert.Equal(initialCount + 1, totalCount);
         }
 
         [Fact]

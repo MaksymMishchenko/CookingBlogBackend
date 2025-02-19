@@ -52,13 +52,13 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Updates the content of an existing comment by its ID.
+        /// Updates the content of a comment with the specified comment ID.
         /// </summary>
         /// <param name="commentId">The ID of the comment to be updated.</param>
-        /// <param name="comment">The model containing the new content for the comment.</param>
-        /// <returns>
-        /// A task that represents the asynchronous operation.         
-        /// </returns>        
+        /// <param name="comment">An instance of <see cref="EditCommentModel"/> containing the new content for the comment.</param>
+        /// <exception cref="CommentNotFoundException">Thrown when a comment with the specified ID is not found.</exception>
+        /// <exception cref="UpdateCommentFailedException">Thrown when the update operation fails for reasons unrelated to business logic.</exception>
+        /// <returns>A task that represents the asynchronous operation.</returns>      
         public async Task UpdateCommentAsync(int commentId, EditCommentModel comment)
         {
             var existingComment = await _context.Comments.FindAsync(commentId);
