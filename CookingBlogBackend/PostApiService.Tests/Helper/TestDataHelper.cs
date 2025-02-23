@@ -66,8 +66,8 @@ namespace PostApiService.Tests.Helper
                 Description = "Test description",
                 MetaTitle = "Test meta title",
                 MetaDescription = "Test meta description",
-                ImageUrl = "img/img.jpg",
-                Slug = "post-slug"
+                ImageUrl = "http://example.com/img/img.jpg",
+                Slug = "post-slug",
             };
         }
 

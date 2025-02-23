@@ -91,36 +91,36 @@ namespace PostApiService.Middlewares
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
-                    HttpStatusCode.InternalServerError,
-                    PostErrorMessages.TimeoutException);
+                    HttpStatusCode.RequestTimeout,
+                    ResponseErrorMessages.TimeoutException);
             }
             catch (SqlException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    PostErrorMessages.SqlException);
+                    ResponseErrorMessages.SqlException);
             }            
             catch (DbUpdateException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    PostErrorMessages.DbUpdateException);
+                    ResponseErrorMessages.DbUpdateException);
             }
             catch (OperationCanceledException ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.RequestTimeout,
-                    PostErrorMessages.OperationCanceledException);
+                    ResponseErrorMessages.OperationCanceledException);
             }
             catch (Exception ex)
             {
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.InternalServerError,
-                    PostErrorMessages.UnexpectedErrorException);
+                    ResponseErrorMessages.UnexpectedErrorException);
             }
         }
 
