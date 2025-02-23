@@ -1,4 +1,5 @@
-﻿using PostApiService.Exceptions;
+﻿using Microsoft.EntityFrameworkCore;
+using PostApiService.Exceptions;
 using PostApiService.Models;
 using System.Net;
 using System.Net.Http.Json;
@@ -89,6 +90,60 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(PostNotFoundException) => string.Format(PostErrorMessages.PostNotFound, invalidPostId),
+                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
+                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
+                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+            };
+
+            Assert.Equal(expectedMessage, errorResponse.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(PostAlreadyExistException), "/api/posts", HttpStatusCode.Conflict)]
+        [InlineData(typeof(AddPostFailedException), "/api/posts", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), "/api/posts", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), "/api/posts", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), "/api/posts", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), "/api/posts", HttpStatusCode.InternalServerError)]
+        public async Task AddPostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
+    (Type exceptionType, string url, HttpStatusCode expectedStatus)
+        {
+            // Arrange
+            var postTitle = "Test title";
+
+            Exception exception = exceptionType switch
+            {
+                Type t when t == typeof(PostAlreadyExistException) => new PostAlreadyExistException(postTitle),
+                Type t when t == typeof(AddPostFailedException) => new AddPostFailedException(postTitle),
+                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
+                Type t when t == typeof(OperationCanceledException) =>
+                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
+                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
+                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
+            };
+
+            _factoryFixture.SetException(exception);
+
+            var newPost = TestDataHelper.GetSinglePost();
+            var content = HttpHelper.GetJsonHttpContent(newPost);
+
+            // Act
+            var response = await _client.PostAsync(url, content);
+
+            // Assert
+            Assert.Equal(expectedStatus, response.StatusCode);
+
+            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            Assert.NotNull(errorResponse);
+
+            string expectedMessage = exceptionType switch
+            {
+                Type t when t == typeof(PostAlreadyExistException) => string.Format
+                (PostErrorMessages.PostAlreadyExist, postTitle),
+                Type t when t == typeof(AddPostFailedException) => string.Format
+                (PostErrorMessages.AddPostFailed, postTitle),
+                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
                 Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
                 Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
                 Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
