@@ -1,0 +1,139 @@
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using PostApiService.Models;
+
+namespace PostApiService.Tests.IntegrationTests.Controllers
+{
+    public class CommentControllerTests : IClassFixture<CommentFixture>
+    {
+        private readonly HttpClient _client;
+        private readonly IServiceProvider _services;
+
+        public CommentControllerTests(CommentFixture fixture)
+        {
+            _client = fixture.Client;
+            _services = fixture.Services;
+        }
+
+        [Fact]
+        public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
+        {
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
+            var postId = 1;
+            var newComment = new Comment
+            {
+                Content = "Lorem ipsum dolor sit amet.",
+                Author = "Jane",
+                PostId = 1
+            };
+
+            var content = HttpHelper.GetJsonHttpContent(newComment);
+
+            // Act
+            var response = await _client.PostAsync(string.Format(HttpHelper.Urls.AddComment, postId), content);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var addedComment = await dbContext.Comments
+                    .FirstOrDefaultAsync(c => c.Content == newComment.Content &&
+                                              c.Author == newComment.Author &&
+                                              c.PostId == newComment.PostId);
+
+                Assert.NotNull(addedComment);
+                Assert.Equal(newComment.Content, addedComment.Content);
+                Assert.Equal(newComment.Author, addedComment.Author);
+                Assert.Equal(newComment.PostId, addedComment.PostId);
+            }
+        }
+
+        [Fact]
+        public async Task OnUpdateCommentAsync_ShouldUpdateCommentInDatabaseAndReturn200OkResult()
+        {
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
+            var commentToBeEdited = new EditCommentModel
+            {
+                Content = "Updated comment content."
+            };
+
+            var content = HttpHelper.GetJsonHttpContent(commentToBeEdited);
+
+            // Act
+            var response = await _client.PutAsync(HttpHelper.Urls.UpdateComment, content);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var editedComment = await dbContext.Comments
+                    .FirstOrDefaultAsync(c => c.Content == commentToBeEdited.Content);
+
+                Assert.NotNull(editedComment);
+                Assert.Equal(commentToBeEdited.Content, editedComment.Content);
+            }
+        }
+
+        [Fact]
+        public async Task OnDeleteCommentAsync_ShouldRemoveCommentInDatabaseAndReturn200OkResult()
+        {
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments();
+            await SeedDatabaseAsync(posts);
+
+            int initialCount;
+
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                initialCount = await dbContext.Comments.CountAsync();
+            }
+
+            // Act
+            var response = await _client.DeleteAsync(HttpHelper.Urls.DeleteComment);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                var removedComment = await dbContext.Comments
+                    .FirstOrDefaultAsync(c => c.CommentId == 3);
+
+                var commentCount = await dbContext.Comments.CountAsync();
+
+                Assert.Null(removedComment);
+                Assert.Equal(initialCount - 1, commentCount);
+            }
+        }
+
+        private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
+        {
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                await dbContext.Database.EnsureDeletedAsync();
+                if (await dbContext.Database.EnsureCreatedAsync())
+                {
+                    await dbContext.Posts.AddRangeAsync(posts);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        }
+    }
+}

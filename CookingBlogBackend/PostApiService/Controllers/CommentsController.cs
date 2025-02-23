@@ -1,5 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
