@@ -7,14 +7,14 @@ using System.Net.Http.Json;
 
 namespace PostApiService.Tests.IntegrationTests
 {
-    public class PostControllerTests : IClassFixture<PostControllerFixture>
+    public class PostControllerTests : IClassFixture<PostFixture>
     {
-        private readonly PostControllerFixture _factory;
         private readonly HttpClient _client;
-        public PostControllerTests(PostControllerFixture factory)
+        private readonly IServiceProvider _services;
+        public PostControllerTests(PostFixture fixture)
         {
-            _factory = factory;
-            _client = factory.Client;
+            _client = fixture.Client;
+            _services = fixture.Services;
         }
 
         [Fact]
@@ -71,11 +71,11 @@ namespace PostApiService.Tests.IntegrationTests
             int totalPages = (int)Math.Ceiling(totalPosts / (double)pageSize);
 
             // Act
-            var response = await _factory.Client.GetAsync
+            var response = await _client.GetAsync
                 (string.Format(HttpHelper.Urls.PaginatedPostsUrl, 1, pageSize));
 
             // Assert
-            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
             Assert.NotNull(content);
@@ -83,11 +83,11 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.True(content.DataList.First().PostId > 0);
 
             // Act
-            response = await _factory.Client.GetAsync
+            response = await _client.GetAsync
                 (string.Format(HttpHelper.Urls.PaginatedPostsUrl, totalPages, pageSize));
 
             // Assert
-            Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
             Assert.NotNull(content);
@@ -185,7 +185,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             var postId = 2;
 
-            using (var scope = _factory.Services.CreateScope())
+            using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var existingPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
@@ -239,7 +239,7 @@ namespace PostApiService.Tests.IntegrationTests
                 (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
             Assert.Equal(postId, response.EntityId);
 
-            using (var scope = _factory.Services.CreateScope())
+            using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var deletedPost = await dbContext.Posts.AnyAsync(p => p.PostId == postId);
@@ -250,15 +250,16 @@ namespace PostApiService.Tests.IntegrationTests
 
         private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
         {
-            using (var scope = _factory.Services.CreateScope())
+            using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 await dbContext.Database.EnsureDeletedAsync();
-                await dbContext.Database.EnsureCreatedAsync();
-
-                await dbContext.Posts.AddRangeAsync(posts);
-                await dbContext.SaveChangesAsync();
+                if (await dbContext.Database.EnsureCreatedAsync())
+                {
+                    await dbContext.Posts.AddRangeAsync(posts);
+                    await dbContext.SaveChangesAsync();
+                }
             }
         }
     }
