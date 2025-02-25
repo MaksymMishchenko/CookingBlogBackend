@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace PostApiService.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial : Migration
+    public partial class DatabaseInitial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

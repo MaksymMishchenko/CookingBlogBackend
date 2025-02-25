@@ -27,10 +27,12 @@ namespace PostApiService.Controllers
         {
             var (success, token, expires) = await _authService.LoginAsync(model);
 
-            if (!success)
+            if (!success) 
             {
                 return Unauthorized();
             }
+
+            return BadRequest();
 
             return Ok(new
             {

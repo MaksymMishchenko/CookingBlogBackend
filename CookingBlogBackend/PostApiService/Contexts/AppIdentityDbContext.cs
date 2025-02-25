@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 
 namespace PostApiService.Contexts
 {
-    public class AppIdentityDbContext : IdentityDbContext<IdentityUser>
+    namespace PostApiService.Contexts
     {
-        public AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options) : base(options) { }
+        public class AppIdentityDbContext : IdentityDbContext<IdentityUser>
+        {
+            public AppIdentityDbContext(DbContextOptions<AppIdentityDbContext> options) : base(options) { }
+        }
     }
 }
