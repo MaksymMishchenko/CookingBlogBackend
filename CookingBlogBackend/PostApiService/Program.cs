@@ -45,9 +45,10 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) // Skip seeding in Testing environment
+if (app.Environment.IsDevelopment()) 
 {
-    await DatabaseServiceExtensions.SeedDataAsync(app);
+    await app.SeedUserAsync();
+    await app.SeedDataAsync();
 
     app.UseSwagger();
     app.UseSwaggerUI();
@@ -64,8 +65,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
-
-await app.SeedUserAsync();
 
 app.Run();
 
