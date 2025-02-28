@@ -28,6 +28,8 @@ builder.Services.AppIdentityService(identityConnectionString);
 // Register IdentityBuilder service to the IServiceCollection
 builder.Services.AddApplicationIdentity();
 
+builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection("JwtConfiguration"));
+
 var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<JwtConfiguration>() ??
      throw new InvalidOperationException("Jwt configuration is missing in the appsettings.json file.");
 

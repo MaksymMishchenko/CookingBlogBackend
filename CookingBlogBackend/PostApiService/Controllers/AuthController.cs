@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -10,35 +11,33 @@ namespace PostApiService.Controllers
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
-        public AuthController(IAuthService authService)
+        private readonly JwtConfiguration _config;
+
+        public AuthController(
+            IAuthService authService,
+            IOptions<JwtConfiguration> config)
         {
             _authService = authService;
+            _config = config.Value;
         }
 
-        /// <summary>
-        /// Handles the login request by calling the authentication service to validate user credentials and generate a JWT token.
-        /// If the login is successful, returns the generated token and its expiration time. If not, returns an Unauthorized response.
-        /// </summary>
-        /// <param name="model">The login model containing the username and password.</param>
-        /// <returns>An IActionResult containing either an Unauthorized response or an Ok response with the JWT token and expiration time.</returns>
         [AllowAnonymous]
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginModel model)
+        [HttpPost("Login")]
+        public async Task<IActionResult> Login([FromBody] LoginUser credentials)
         {
-            var (success, token, expires) = await _authService.LoginAsync(model);
-
-            if (!success) 
+            if (credentials == null)
             {
-                return Unauthorized();
+                return BadRequest("LoginCredentials");
             }
 
-            return BadRequest();
-
-            return Ok(new
+            if (await _authService.LoginAsync(credentials))
             {
-                token,
-                expires
-            });
+                return Ok(new
+                {
+                    token = await _authService.GenerateTokenString(credentials.Username, _config)
+                });
+            }
+            return BadRequest();
         }
     }
 }

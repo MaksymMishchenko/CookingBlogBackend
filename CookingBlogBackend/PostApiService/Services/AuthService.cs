@@ -1,56 +1,78 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.IdentityModel.Tokens;
+using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
 
 namespace PostApiService.Services
 {
     public class AuthService : IAuthService
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly UserManager<IdentityRole> _userManage;
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly ITokenService _tokenService;       
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
-            ITokenService tokenService,            
+
+        public AuthService(UserManager<IdentityUser> userManager,            
             ILogger<AuthService> logger)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
-            _tokenService = tokenService;            
             _logger = logger;
         }
 
-        /// <summary>
-        /// Attempts to log in a user by verifying their credentials. 
-        /// If the user is found and the password is correct, generates a JWT token.
-        /// Returns a tuple indicating success status, the generated token, and its expiration time.
-        /// </summary>
-        /// <param name="model">The login model containing username and password.</param>
-        /// <returns>A tuple containing a boolean indicating success, the JWT token as a string, and the token expiration as a DateTime.</returns>
-        public async Task<(bool Success, string Token, DateTime Expiration)> LoginAsync(LoginModel model)
+        public async Task<bool> LoginAsync(LoginUser credentials)
         {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user == null)
-            {
-                _logger.LogWarning("Login failed: User not found.");
-                return (false, null, DateTime.MinValue);
+            var user = await _userManager.FindByNameAsync(credentials.Username);
+            if (user != null)
+            {                
+                return await _userManager.CheckPasswordAsync(user, credentials.Password);
             }
+            return false;
+        }
 
-            await _signInManager.SignOutAsync();
+        public async Task<string> GenerateTokenString(string user, JwtConfiguration config)
+        {
+            var claims = await GetClaims(user);
 
-            var signInResult = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: true);
-            if (!signInResult.Succeeded)
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SecretKey));
+
+            var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+            var securityToken = new JwtSecurityToken(
+                issuer: config.Issuer,
+                audience: config.Audience,
+                claims,
+                expires: DateTime.Now.AddMinutes(config.TokenExpirationMinutes),
+                signingCredentials: signingCred);
+
+            string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
+            return tokenString;
+        }
+
+        private async Task<List<Claim>> GetClaims(string userName)
+        {
+            var user = await _userManager.FindByNameAsync(userName);
+
+            var claims = new List<Claim>
             {
-                _logger.LogWarning("Login failed: Invalid credentials.");
-                return (false, null!, DateTime.MinValue);
-            }
+                new Claim(ClaimTypes.Name, userName)
+            };
 
-            var token = _tokenService.GenerateJwtToken(user);
-            _logger.LogInformation("Login succeeded.");
-            return (true, token.Token, token.Expiration);
+            claims.AddRange(GetClaimsSeparated(await _userManager.GetClaimsAsync(user)));
+            return claims;
+        }
+
+        private List<Claim> GetClaimsSeparated(IList<Claim> claims)
+        {
+            var result = new List<Claim>();
+            foreach (var claim in claims)
+            {
+                result.AddRange(claim.DeserializePermissions()
+                    .Select(t => new Claim(claim.Type, t.ToString())));
+            }
+            return result;
         }
     }
 }

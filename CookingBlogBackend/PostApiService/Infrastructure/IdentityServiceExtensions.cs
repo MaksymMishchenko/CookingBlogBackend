@@ -29,9 +29,7 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(identityConnectionString);
             });
 
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<ITokenService, TokenService>();
-
+            services.AddTransient<IAuthService, AuthService>();
             return services;
         }
 
@@ -52,7 +50,7 @@ namespace PostApiService.Infrastructure
         /// </remarks>
         public static IdentityBuilder AddApplicationIdentity(this IServiceCollection services)
         {
-            return services.AddIdentity<IdentityUser, IdentityRole>(options =>
+            return services.AddIdentityCore<IdentityUser>(options =>
             {
                 // Password settings
                 options.Password.RequireDigit = true;
@@ -117,21 +115,12 @@ namespace PostApiService.Infrastructure
             using (var scope = app.Services.CreateScope())
             {
                 var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();                
 
                 await cntx.Database.EnsureDeletedAsync();
 
                 if (await cntx.Database.EnsureCreatedAsync())
                 {
-                    // Creating Role Entities
-                    var adminRole = new IdentityRole(TS.Roles.Admin);
-                    var contributorRole = new IdentityRole(TS.Roles.Contributor);
-
-                    // Adding Roles
-                    await roleManager.CreateAsync(adminRole);
-                    await roleManager.CreateAsync(contributorRole);
-
                     // Creating User Entities
                     var adminUser = new IdentityUser() { UserName = "admin", Email = "admin@test.com" };
                     var contributorUser = new IdentityUser() { UserName = "cont", Email = "c@test.com" };

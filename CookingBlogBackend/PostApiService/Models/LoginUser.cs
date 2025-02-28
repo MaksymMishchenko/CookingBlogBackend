@@ -2,7 +2,7 @@
 
 namespace PostApiService.Models
 {
-    public class LoginModel
+    public class LoginUser
     {
         [Required(ErrorMessage = "Username is required.")]
         [StringLength(50, ErrorMessage = "Username cannot exceed 50 characters.")]

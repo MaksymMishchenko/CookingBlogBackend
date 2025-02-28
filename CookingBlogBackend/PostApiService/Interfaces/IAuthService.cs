@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Identity;
-using PostApiService.Models;
+﻿using PostApiService.Models;
 
 namespace PostApiService.Interfaces
 {
     public interface IAuthService
     {
-        Task<(bool Success, string Token, DateTime Expiration)> LoginAsync(LoginModel model);
+        Task<string> GenerateTokenString(string username, JwtConfiguration config);
+        Task<bool> LoginAsync(LoginUser model);
     }
 }

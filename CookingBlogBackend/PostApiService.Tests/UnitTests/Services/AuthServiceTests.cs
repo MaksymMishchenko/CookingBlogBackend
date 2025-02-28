@@ -35,7 +35,7 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task LoginAsync_SuccessfulLogin_ReturnsToken()
         {
             // Arrange
-            var loginModel = new LoginModel { Username = "validuser", Password = "correctpassword" };
+            var loginModel = new LoginUser { Username = "validuser", Password = "correctpassword" };
             var user = new IdentityUser { UserName = "validuser" };
 
             _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username))
@@ -61,7 +61,7 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task LoginAsync_UserDoesNotExist_ReturnsFailure()
         {
             // Arrange
-            var loginModel = new LoginModel { Username = "invaliduser", Password = "correctpassword" };
+            var loginModel = new LoginUser { Username = "invaliduser", Password = "correctpassword" };
             _mockUserManager.Setup(x => x.FindByNameAsync(loginModel.Username))
                 .ReturnsAsync((IdentityUser?)null);
 
@@ -78,7 +78,7 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task LoginAsync_IncorrectPassword_ReturnsFailure()
         {
             // Arrange
-            var loginModel = new LoginModel { Username = "validuser", Password = "wrongpassword" };
+            var loginModel = new LoginUser { Username = "validuser", Password = "wrongpassword" };
             var user = new IdentityUser(loginModel.Username);
 
             _mockUserManager.Setup(х => х.FindByNameAsync(loginModel.Username))
