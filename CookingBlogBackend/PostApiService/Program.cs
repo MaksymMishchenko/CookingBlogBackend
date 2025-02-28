@@ -36,6 +36,8 @@ var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<
 // Register Application Jwt Bearer Authentication 
 builder.Services.AddAppJwtAuthentication(jwtConfiguration);
 
+builder.Services.AddApplicationAuthorization();
+
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 

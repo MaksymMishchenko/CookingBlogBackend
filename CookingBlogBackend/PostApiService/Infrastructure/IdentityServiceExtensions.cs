@@ -130,7 +130,7 @@ namespace PostApiService.Infrastructure
                     await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
 
                     // Adding Claims to Users
-                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
+                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));                    
                     await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
                 }
             }

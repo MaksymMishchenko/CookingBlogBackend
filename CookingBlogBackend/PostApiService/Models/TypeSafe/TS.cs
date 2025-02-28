@@ -22,5 +22,14 @@
             public const int Update = 3;
             public const int Delete = 4;
         }
+
+        public static class Policies
+        {
+            public const string ReadPolicy = "ReadPolicy";
+            public const string ReadAndWritePolicy = "AddAndReadPolicy";
+            public const string FullControlPolicy = "FullControlPolicy";
+
+            public const string GenericPolicy = "GenericPolicy";
+        }
     }
 }
