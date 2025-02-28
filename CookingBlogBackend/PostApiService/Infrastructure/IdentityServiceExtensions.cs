@@ -150,11 +150,11 @@ namespace PostApiService.Infrastructure
         private static Claim GetContributorClaims(string controllerName)
         {
             return new Claim(controllerName,
-                        ClaimHelper.SerializePermissions(
-                            TS.Permissions.Read,
-                            TS.Permissions.Write,
-                            TS.Permissions.Update
-                        ));
+                ClaimHelper.SerializePermissions(                    
+                    TS.Permissions.Write,
+                    TS.Permissions.Update,
+                    TS.Permissions.Delete
+                ));
         }
     }
 }

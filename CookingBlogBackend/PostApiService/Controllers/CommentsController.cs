@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
 {
     [Controller]
     [Route("api/[controller]")]
+    [Authorize(Policy = "ClaimBasedCommentPolicy")]
     public class CommentsController : Controller
     {
         private readonly ICommentService _commentService;
@@ -30,6 +33,7 @@ namespace PostApiService.Controllers
         /// or if the model validation fails.
         /// </returns>     
         [HttpPost("{postId}")]
+        [Authorize(Policy = TS.Policies.FullControlPolicy)]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
             if (postId <= 0)
@@ -80,6 +84,7 @@ namespace PostApiService.Controllers
         /// Otherwise, returns an OK response indicating successful update.
         /// </returns>
         [HttpPut("{commentId}")]
+        [Authorize(Policy = TS.Policies.FullControlPolicy)]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
             if (commentId <= 0)
@@ -128,6 +133,7 @@ namespace PostApiService.Controllers
         /// Returns a 400 Bad Request response if the provided comment ID is invalid.
         /// </returns>
         [HttpDelete("{commentId}")]
+        [Authorize(Policy = TS.Policies.FullControlPolicy)]
         public async Task<IActionResult> DeleteCommentAsync(int commentId)
         {
             if (commentId <= 0)

@@ -16,17 +16,29 @@ namespace PostApiService.Infrastructure
                 options.AddPolicy(TS.Policies.FullControlPolicy, policy =>
                 {
                     policy.RequireClaim(TS.Controller.Post,
-                        TS.Permissions.Delete.ToString(),
-                        TS.Permissions.Write.ToString());
+                        TS.Permissions.Write.ToString(),
+                        TS.Permissions.Delete.ToString());
                 });
 
                 options.AddPolicy(TS.Policies.ReadAndWritePolicy, policy =>
                 {
                     policy.RequireClaim(TS.Controller.Post,
                         TS.Permissions.Write.ToString());
-                });                
-            });
+                });
 
+                options.AddPolicy("ClaimBasedCommentPolicy", policy =>
+                {
+                    policy.RequireClaim("Comment");
+                });
+
+                options.AddPolicy(TS.Policies.FullControlPolicy, policy =>
+                {
+                    policy.RequireClaim(TS.Controller.Comment,
+                        TS.Permissions.Write.ToString(),
+                        TS.Permissions.Update.ToString(),
+                        TS.Permissions.Delete.ToString());
+                });
+            });
             return services;
         }
 
@@ -50,6 +62,6 @@ namespace PostApiService.Infrastructure
             });
 
             return services;
-        }        
+        }
     }
-}    
+}
