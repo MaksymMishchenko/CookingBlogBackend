@@ -86,7 +86,21 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     string.Format(CommentErrorMessages.DeleteCommentFailed, ex.CommentId));
-            }            
+            }
+            catch (AuthenticationException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Unauthorized,
+                    AuthErrorMessages.InvalidCredentials);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Unauthorized,
+                    AuthErrorMessages.UnauthorizedAccess);
+            }
             catch (TimeoutException ex)
             {
                 await HandleExceptionAsync(context,

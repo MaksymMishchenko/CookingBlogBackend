@@ -10,11 +10,14 @@ namespace PostApiService.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public T? Data { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)] // maybe WhenWritingDefault
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public List<T>? DataList { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public int EntityId { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Token { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public Dictionary<string, string[]>? Errors { get; set; }
@@ -74,6 +77,16 @@ namespace PostApiService.Models
                 Success = true,
                 Message = message,
                 EntityId = entityId
+            };
+        }
+
+        public static ApiResponse<T> CreateSuccessResponse(string message, string token)
+        {
+            return new ApiResponse<T>
+            {
+                Success = true,
+                Message = message,
+                Token = !string.IsNullOrEmpty(token) ? token : null
             };
         }
     }

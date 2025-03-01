@@ -5,6 +5,6 @@ namespace PostApiService.Interfaces
     public interface IAuthService
     {
         Task<string> GenerateTokenString(string username, JwtConfiguration config);
-        Task<bool> LoginAsync(LoginUser model);
+        Task LoginAsync(LoginUser model);
     }
 }
