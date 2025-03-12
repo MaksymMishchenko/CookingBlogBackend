@@ -22,6 +22,39 @@ namespace PostApiService.Tests.Helper
             }
         }
 
+        public static IEnumerable<object[]> GetRegisterUserTestData()
+        {
+            yield return new object[]
+            {
+                new RegisterUser
+                {
+                    UserName = new string('a', 51),
+                    Email = "test@mail.com",
+                    Password = "-Rtyuehe1"
+                }
+            };
+
+            yield return new object[]
+            {
+                new RegisterUser
+                {
+                    UserName = "validUserName",
+                    Email = "IncorrectEmail.com",
+                    Password = "-Rtyuehe1"
+                }
+            };
+
+            yield return new object[]
+            {
+                new RegisterUser
+                {
+                    UserName = "validUserName",
+                    Email = "test@mail.com",
+                    Password = "123"
+                }
+            };
+        }
+
         public static IEnumerable<object[]> GetCommentTestData()
         {
             yield return new object[] { "Valid comment content that is sufficiently long", true };
