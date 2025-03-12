@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using PostApiService.Models;
 using PostApiService.Services;
 
@@ -16,8 +15,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         private CommentService CreateCommentService()
         {
             var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<CommentService>();
-            return new CommentService(context, logger);
+            return new CommentService(context);
         }
 
         [Fact]

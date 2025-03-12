@@ -5,23 +5,13 @@ using PostApiService.Models;
 
 namespace PostApiService.Services
 {
-    /// <summary>
-    /// Service class for managing comments on posts. This class provides methods to add, edit, and delete comments.
-    /// </summary>
     public class CommentService : ICommentService
     {
         private readonly IApplicationDbContext _context;
-        private readonly ILogger<CommentService> _logger;
 
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CommentService"/> class with the specified database context and logger.
-        /// </summary>
-        /// <param name="context">The database context used to interact with the database tables related to comments.</param>
-        /// <param name="logger">The logger used to log operations and events related to comments.</param>
-        public CommentService(IApplicationDbContext context, ILogger<CommentService> logger)
+        public CommentService(IApplicationDbContext context)
         {
             _context = context;
-            _logger = logger;
         }
 
         /// <summary>
