@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250114070139_Initial")]
+    [Migration("20250312122930_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -46,6 +46,10 @@ namespace PostApiService.Migrations
 
                     b.Property<int>("PostId")
                         .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("CommentId");
 

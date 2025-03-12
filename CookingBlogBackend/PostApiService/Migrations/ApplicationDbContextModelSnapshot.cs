@@ -44,6 +44,10 @@ namespace PostApiService.Migrations
                     b.Property<int>("PostId")
                         .HasColumnType("int");
 
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("CommentId");
 
                     b.HasIndex("PostId");

@@ -29,7 +29,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             {
                 PostId = postId,
                 Content = "Test comment from Bob",
-                Author = "Bob"
+                Author = "Bob",
+                UserId = "testUserId"
             };
 
             using var context = _fixture.CreateContext();

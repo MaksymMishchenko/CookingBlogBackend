@@ -28,7 +28,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postId = 1;
             var initialCount = await context.Comments.CountAsync();
 
-            var comment = new Comment { Content = "Test comment", Author = "Test author" };
+            var comment = new Comment { Content = "Test comment", Author = "Test author", UserId = "testUserId" };
 
             // Act
             await commentService.AddCommentAsync(postId, comment);

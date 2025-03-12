@@ -86,21 +86,24 @@ namespace PostApiService.Infrastructure
                             Author = "John Doe",
                             Content = "Great post!",
                             CreatedAt = DateTime.Now,
-                            PostId = posts[0].PostId
+                            PostId = posts[0].PostId,
+                            UserId = "testUserId"
                         },
                         new Comment
                         {
                             Author = "Jane Doe",
                             Content = "I totally agree with this!",
                             CreatedAt = DateTime.Now,
-                            PostId = posts[0].PostId
+                            PostId = posts[0].PostId,
+                            UserId = "testUserId"
                         },
                         new Comment
                         {
                             Author = "Alice",
                             Content = "This is a comment on the second post.",
                             CreatedAt = DateTime.Now,
-                            PostId = posts[1].PostId
+                            PostId = posts[1].PostId,
+                            UserId = "testUserId"
                         }
                     };
                     await cntx.Comments.AddRangeAsync(comments);

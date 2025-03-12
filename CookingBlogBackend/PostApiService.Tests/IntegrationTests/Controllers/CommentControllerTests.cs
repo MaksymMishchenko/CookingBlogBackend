@@ -27,7 +27,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             {
                 Content = "Lorem ipsum dolor sit amet.",
                 Author = "Jane",
-                PostId = 1
+                PostId = 1,
+                UserId = "testUserId"
             };
 
             var content = HttpHelper.GetJsonHttpContent(newComment);

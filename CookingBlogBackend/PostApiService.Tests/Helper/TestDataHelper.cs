@@ -48,6 +48,7 @@ namespace PostApiService.Tests.Helper
                             .RuleFor(c => c.Author, fc => fc.Person.FullName)
                             .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
                             .RuleFor(c => c.PostId, _ => post.PostId)
+                            .RuleFor(c => c.UserId, _ => "testUserId")
                             .Generate(commentCount);
                     }
                     return new List<Comment>();
@@ -84,9 +85,9 @@ namespace PostApiService.Tests.Helper
         public static List<Comment> GetListWithComments()
         {
             return new List<Comment> {
-                new Comment { PostId = 1, CommentId = 1, Content = "This is the test comment 1." },
-                new Comment { PostId = 1, CommentId = 2, Content = "This is the test comment 2." },
-                new Comment { PostId = 1, CommentId = 3, Content = "This is the test comment 3." }
+                new Comment { PostId = 1, CommentId = 1, UserId = "testUserId", Content = "This is the test comment 1." },
+                new Comment { PostId = 1, CommentId = 2, UserId = "testUserId", Content = "This is the test comment 2." },
+                new Comment { PostId = 1, CommentId = 3, UserId = "testUserId", Content = "This is the test comment 3." }
             };
         }
 
@@ -111,17 +112,20 @@ namespace PostApiService.Tests.Helper
                         new Comment{
                             Content = "Post comment content 1",
                             Author = "Comment author 1",
-                            PostId = 1
+                            PostId = 1,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 2",
                             Author = "Comment author 2",
-                            PostId = 1
+                            PostId = 1,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 3",
                             Author = "Comment author 3",
-                            PostId = 1
+                            PostId = 1,
+                            UserId = "testUserId"
                         }
                     }
                 },
@@ -138,17 +142,20 @@ namespace PostApiService.Tests.Helper
                         new Comment{
                             Content = "Post comment content 1",
                             Author = "Comment author 1",
-                            PostId = 2
+                            PostId = 2,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 2",
                             Author = "Comment author 2",
-                            PostId = 2
+                            PostId = 2,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 3",
                             Author = "Comment author 3",
-                            PostId = 2
+                            PostId = 2,
+                            UserId = "testUserId"
                         }
                     }
                 },
@@ -165,17 +172,20 @@ namespace PostApiService.Tests.Helper
                         new Comment{
                             Content = "Post comment content 1",
                             Author = "Comment author 1",
-                            PostId = 3
+                            PostId = 3,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 2",
                             Author = "Comment author 2",
-                            PostId = 3
+                            PostId = 3,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 3",
                             Author = "Comment author 3",
-                            PostId = 3
+                            PostId = 3,
+                            UserId = "testUserId"
                         }
                     }
                 },
@@ -192,17 +202,20 @@ namespace PostApiService.Tests.Helper
                         new Comment{
                             Content = "Post comment content 1",
                             Author = "Comment author 1",
-                            PostId = 4
+                            PostId = 4,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 2",
                             Author = "Comment author 2",
-                            PostId = 4
+                            PostId = 4,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 3",
                             Author = "Comment author 3",
-                            PostId = 4
+                            PostId = 4,
+                            UserId = "testUserId"
                         }
                     }
                 },
@@ -219,17 +232,20 @@ namespace PostApiService.Tests.Helper
                         new Comment{
                             Content = "Post comment content 1",
                             Author = "Comment author 1",
-                            PostId = 5
+                            PostId = 5,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 2",
                             Author = "Comment author 2",
-                            PostId = 5
+                            PostId = 5,
+                            UserId = "testUserId"
                         },
                         new Comment{
                             Content = "Post comment content 3",
                             Author = "Comment author 3",
-                            PostId = 5
+                            PostId = 5,
+                            UserId = "testUserId"
                         }
                     }
                 }

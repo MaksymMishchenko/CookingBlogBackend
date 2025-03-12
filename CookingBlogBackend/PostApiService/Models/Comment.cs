@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace PostApiService.Models
@@ -17,6 +18,9 @@ namespace PostApiService.Models
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow.ToLocalTime();
 
         public int PostId { get; set; }
+
+        [ValidateNever]
+        public string UserId { get; set; }
 
         [JsonIgnore]
         public Post? Post { get; set; }
