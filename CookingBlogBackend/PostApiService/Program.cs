@@ -43,18 +43,13 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment()) // Skip seeding in Testing environment
-{
-    await ServiceRegistration.SeedDataAsync(app);
-
-    await IdentitySeedData.EnsurePopulatedAsync(app.Services);
-}
-
 app.UseCors("AllowLocalhost");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    await app.SeedDataAsync();
+
     app.UseSwagger();
     app.UseSwaggerUI();
 }
