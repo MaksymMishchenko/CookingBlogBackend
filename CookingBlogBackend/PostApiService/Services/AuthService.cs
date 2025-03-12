@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 
@@ -7,49 +8,53 @@ namespace PostApiService.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
-        private readonly ITokenService _tokenService;       
-        private readonly ILogger<AuthService> _logger;
+        private readonly ITokenService _tokenService;
 
-        public AuthService(UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager,
-            ITokenService tokenService,            
-            ILogger<AuthService> logger)
+        public AuthService(UserManager<IdentityUser> userManager,            
+            ITokenService tokenService)
         {
             _userManager = userManager;
-            _signInManager = signInManager;
-            _tokenService = tokenService;            
-            _logger = logger;
+            _tokenService = tokenService;
         }
 
         /// <summary>
-        /// Attempts to log in a user by verifying their credentials. 
-        /// If the user is found and the password is correct, generates a JWT token.
-        /// Returns a tuple indicating success status, the generated token, and its expiration time.
+        /// Registers a new user in the system. Checks if a user with the same username already exists,
+        /// creates the user, assigns roles and claims. If any error occurs during creation or assigning claims,
+        /// it throws corresponding exceptions.
         /// </summary>
-        /// <param name="model">The login model containing username and password.</param>
-        /// <returns>A tuple containing a boolean indicating success, the JWT token as a string, and the token expiration as a DateTime.</returns>
-        public async Task<(bool Success, string Token, DateTime Expiration)> LoginAsync(LoginModel model)
+        /// <param name="user">The user model containing the registration data (username and password).</param>
+        /// <returns>Returns true if the user was successfully created and claims were assigned; otherwise, throws an exception.</returns>
+        /// <exception cref="UserAlreadyExistsException">Thrown if a user with the same username already exists in the system.</exception>
+        /// <exception cref="UserCreationException">Thrown if an error occurs during user creation in the system.</exception>        
+        public async Task RegisterUserAsync(RegisterUser user)
         {
-            var user = await _userManager.FindByNameAsync(model.Username);
-            if (user == null)
+            var existingUser = await _userManager.FindByNameAsync(user.UserName);
+            if (existingUser != null)
             {
-                _logger.LogWarning("Login failed: User not found.");
-                return (false, null, DateTime.MinValue);
+                throw new UserAlreadyExistsException
+                    (RegisterErrorMessages.UsernameAlreadyExists);
             }
 
-            await _signInManager.SignOutAsync();
-
-            var signInResult = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: true);
-            if (!signInResult.Succeeded)
+            var existingUserByEmail = await _userManager.FindByEmailAsync(user.Email);
+            if (existingUserByEmail != null)
             {
-                _logger.LogWarning("Login failed: Invalid credentials.");
-                return (false, null!, DateTime.MinValue);
+                throw new UserAlreadyExistsException
+                    (RegisterErrorMessages.EmailAlreadyExists);
             }
 
-            var token = _tokenService.GenerateJwtToken(user);
-            _logger.LogInformation("Login succeeded.");
-            return (true, token.Token, token.Expiration);
+            var identityUser = new IdentityUser
+            {
+                UserName = user.UserName,
+                Email = user.Email
+            };
+
+            var result = await _userManager.CreateAsync(identityUser, user.Password);
+
+            if (!result.Succeeded)
+            {
+                throw new UserCreationException
+                    (string.Join(", ", result.Errors.Select(e => e.Description)));
+            }            
         }
     }
 }
