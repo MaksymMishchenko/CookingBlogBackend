@@ -19,7 +19,7 @@ namespace PostApiService.Tests.UnitTests.Services
          );
             _mockTokenService = new Mock<ITokenService>();
             _authService = new AuthService
-                (_mockUserManager.Object, _mockTokenService.Object);
+                (_mockUserManager.Object);
         }
 
         [Fact]

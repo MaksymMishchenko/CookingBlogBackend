@@ -8,13 +8,13 @@ namespace PostApiService.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly ITokenService _tokenService;
+        //private readonly ITokenService _tokenService;
 
-        public AuthService(UserManager<IdentityUser> userManager,            
-            ITokenService tokenService)
+        public AuthService(UserManager<IdentityUser> userManager)            
+            //ITokenService tokenService)
         {
             _userManager = userManager;
-            _tokenService = tokenService;
+            //_tokenService = tokenService;
         }
 
         /// <summary>

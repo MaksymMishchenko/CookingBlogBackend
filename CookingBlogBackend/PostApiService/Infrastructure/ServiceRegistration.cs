@@ -131,8 +131,8 @@ namespace PostApiService.Infrastructure
                 .AddEntityFrameworkStores<AppIdentityDbContext>()
                 .AddDefaultTokenProviders();
 
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<ITokenService, TokenService>();
+            services.AddTransient<IAuthService, AuthService>();
+            //services.AddScoped<ITokenService, TokenService>();
 
             return services;
         }
