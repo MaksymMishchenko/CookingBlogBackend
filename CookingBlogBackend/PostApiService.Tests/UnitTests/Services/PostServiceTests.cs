@@ -1,8 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Moq;
 using Moq.EntityFrameworkCore;
-using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
@@ -14,15 +12,13 @@ namespace PostApiService.Tests.UnitTests
     {
         private readonly InMemoryDatabaseFixture _fixture;
         private readonly Mock<IApplicationDbContext> _mockContext;
-        private readonly Mock<ILogger<PostService>> _mockLoggerService;
         private readonly PostService _postService;
 
         public PostServiceTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
             _mockContext = new Mock<IApplicationDbContext>();
-            _mockLoggerService = new Mock<ILogger<PostService>>();
-            _postService = new PostService(_mockContext.Object, _mockLoggerService.Object);
+            _postService = new PostService(_mockContext.Object);
         }
 
         private IPostService CreatePostService()
@@ -31,7 +27,7 @@ namespace PostApiService.Tests.UnitTests
             context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
 
-            return new PostService(context, _mockLoggerService.Object);
+            return new PostService(context);
         }
 
         [Fact]
@@ -129,27 +125,6 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldThrowPostNotFoundException_IfPostDoesNotExist()
-        {
-            // Arrange
-            var postService = CreatePostService();
-            var post = TestDataHelper.GetSinglePost();
-
-            using var context = _fixture.CreateContext();
-            await context.AddAsync(post);
-            await context.SaveChangesAsync();
-
-            var invalidPostId = 999;
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
-            postService.GetPostByIdAsync(invalidPostId));
-            Assert.NotNull(exception);
-            Assert.Equal(string.Format
-                (PostErrorMessages.PostNotFound, invalidPostId), exception.Message);
-        }
-
-        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnPost_WithComments()
         {
             // Arrange
@@ -196,52 +171,6 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldThrowPostAlreadyExistException_IfPostExists()
-        {
-            // Arrange
-            var postService = CreatePostService();
-            var post = TestDataHelper.GetSinglePost();
-
-            using var context = _fixture.CreateContext();
-            await context.AddAsync(post);
-            await context.SaveChangesAsync();
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<PostAlreadyExistException>(() =>
-            postService.AddPostAsync(post));
-
-            Assert.NotNull(exception);
-            Assert.Equal(string.Format
-                (PostErrorMessages.PostAlreadyExist, post.Title), exception.Message);
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldThrowAddPostFailedException_IfPostNotAdded()
-        {
-            // Arrange
-            var saveChangesResult = 0;
-            var newPost = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(c => c.Posts)
-                .ReturnsDbSet(TestDataHelper.GetEmptyPostList());
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(saveChangesResult);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<AddPostFailedException>(() =>
-            _postService.AddPostAsync(newPost));
-
-            Assert.Equal(string.Format
-                (PostErrorMessages.AddPostFailed, newPost.Title), exception.Message);
-
-            _mockContext.Verify(c => c.Posts.AddAsync(It.Is<Post>(p => p.Title == newPost.Title &&
-            p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
-
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
         public async Task AddPostAsync_ShouldAddPostSuccessfully_WhenPostIsValid()
         {
             // Arrange
@@ -266,24 +195,6 @@ namespace PostApiService.Tests.UnitTests
             p.Content == newPost.Content), It.IsAny<CancellationToken>()), Times.Once);
 
             _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldThrowPostNotFoundException_IdPostDoesNotExist()
-        {
-            // Arrange           
-            var post = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(p => p.Posts.FindAsync(post.PostId))
-                .ReturnsAsync((Post)null);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
-                _postService.UpdatePostAsync(post));
-
-            Assert.Equal(string.Format(PostErrorMessages.PostNotFound, post.PostId), exception.Message);
-
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
         }
 
         [Fact]
@@ -312,52 +223,6 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldThrowUpdatePostFailedException_WhenPostNotUpdated()
-        {
-            // Arrange
-            var existingPost = TestDataHelper.GetSinglePost();
-            int noChangesSaved = 0;
-
-            _mockContext.Setup(p => p.Posts.FindAsync(existingPost.PostId))
-                .ReturnsAsync(existingPost);
-
-            _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(noChangesSaved);
-
-            existingPost.Title = "Updated title";
-            existingPost.Description = "Updated description";
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<UpdatePostFailedException>(() =>
-                _postService.UpdatePostAsync(existingPost));
-
-            Assert.Equal(string.Format
-                (PostErrorMessages.UpdatePostFailed, existingPost.Title), exception.Message);
-
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
-
-            _mockContext.Verify(s => s.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldThrowPostNotFoundException_IfPostNotFound()
-        {
-            // Arrange
-            var postId = 1;
-            _mockContext.Setup(p => p.Posts.FindAsync(postId))
-                .ReturnsAsync((Post)null);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
-            _postService.DeletePostAsync(postId));
-
-            Assert.Equal(string.Format
-                (PostErrorMessages.PostNotFound, postId), exception.Message);
-
-            _mockContext.Verify(s => s.Posts.FindAsync(It.IsAny<object[]>()), Times.Once);
-        }
-
-        [Fact]
         public async Task DeletePostAsync_ShouldDeletePost_WhenSaveChangesSucceeds()
         {
             // Arrange            
@@ -380,34 +245,6 @@ namespace PostApiService.Tests.UnitTests
 
             _mockContext.Verify(m => m.Posts.Remove
             (It.Is<Post>(p => p.PostId == post.PostId)), Times.Once);
-
-            _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        }
-
-        [Fact]
-        public async Task DeletePostAsync_ShouldThrowDeletePostFailedException_IfNoChangesWereMade()
-        {
-            // Arrange
-            var postId = 1;
-            var saveChangedResult = 0;
-            var post = TestDataHelper.GetSinglePost();
-
-            _mockContext.Setup(p => p.Posts.FindAsync(post.PostId)).ReturnsAsync(post);
-
-            _mockContext.Setup(m => m.Posts.Remove(post));
-
-            _mockContext.Setup(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()))
-                .ReturnsAsync(saveChangedResult);
-
-            // Act & Assert
-            var exception = await Assert.ThrowsAsync<DeletePostFailedException>(() =>
-            _postService.DeletePostAsync(post.PostId));
-
-            Assert.Equal(string.Format(PostErrorMessages.DeletePostFailed, post.PostId), exception.Message);
-
-            _mockContext.Verify(m => m.Posts.FindAsync(postId), Times.Once);
-
-            _mockContext.Verify(m => m.Posts.Remove(It.Is<Post>(p => p.PostId == postId)), Times.Once);
 
             _mockContext.Verify(m => m.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
         }

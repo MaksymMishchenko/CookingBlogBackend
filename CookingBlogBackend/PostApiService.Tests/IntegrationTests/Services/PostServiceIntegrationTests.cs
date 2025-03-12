@@ -17,7 +17,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             var context = _fixture.CreateContext();
             var logger = new LoggerFactory().CreateLogger<PostService>();
-            return new PostService(context, logger);
+            return new PostService(context);
         }
 
         [Fact]

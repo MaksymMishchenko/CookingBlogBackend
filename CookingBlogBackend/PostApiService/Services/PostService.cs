@@ -9,12 +9,10 @@ namespace PostApiService.Services
     public class PostService : IPostService
     {
         private readonly IApplicationDbContext _context;
-        private readonly ILogger<PostService> _logger;
 
-        public PostService(IApplicationDbContext context, ILogger<PostService> logger)
+        public PostService(IApplicationDbContext context)
         {
             _context = context;
-            _logger = logger;
         }
 
         /// <summary>
