@@ -66,6 +66,47 @@ namespace PostApiService.Controllers
             return Ok(ApiResponse<RegisterUser>.CreateSuccessResponse
                (string.Format(RegisterSuccessMessages.RegisterOk, user.UserName)));
         }
+
+        /// <summary>
+        /// Authenticates a user and generates a JWT token upon successful login.
+        /// </summary>
+        /// <param name="credentials">The user's login credentials.</param>
+        /// <returns>
+        /// Returns an HTTP 200 response with a JWT token if authentication is successful.  
+        /// Returns an HTTP 400 response if the credentials are invalid.
+        /// </returns>
+        [AllowAnonymous]
+        [HttpPost("Login")]
+        public async Task<IActionResult> LoginUserAsync([FromBody] LoginUser credentials)
+        {
+            if (credentials == null ||
+                string.IsNullOrWhiteSpace(credentials.UserName) ||
+                string.IsNullOrWhiteSpace(credentials.Password))
+            {
+                return BadRequest(ApiResponse<LoginUser>.CreateErrorResponse
+                    (AuthErrorMessages.InvalidCredentials));
+            }
+
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState
+                    .Where(ms => ms.Value.Errors.Count > 0)
+                    .ToDictionary(
+                        ms => ms.Key,
+                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                    );
+
+                return BadRequest(ApiResponse<LoginUser>.CreateErrorResponse
+                    (AuthErrorMessages.ValidationFailed, errors));
+            }
+
+            var user = await _authService.LoginAsync(credentials);
+
+            var token = await _authService.GenerateTokenString(user);
+
+            return Ok(ApiResponse<LoginUser>.CreateSuccessResponse
+                (string.Format(AuthSuccessMessages.LoginSuccess, user.UserName), token));
+        }
     }
 }
 

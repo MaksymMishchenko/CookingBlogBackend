@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Moq;
 using PostApiService.Controllers;
 using PostApiService.Exceptions;
@@ -82,6 +83,75 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 response.Message);
 
             _mockAuthService.Verify(s => s.RegisterUserAsync(newUser), Times.Once);
+        }
+
+        [Fact]
+        public async Task OnLoginUser_ShouldReturnBadRequest_IfInvalidLoginData()
+        {
+            // Act
+            var result = await _authController.LoginUserAsync(null);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<LoginUser>>(badRequestResult.Value);
+            Assert.False(response.Success);
+            Assert.Equal(AuthErrorMessages.InvalidCredentials, response.Message);
+        }
+
+        [Theory]
+        [MemberData(nameof(ModelValidationHelper.GetLoginUserTestData), MemberType = typeof(ModelValidationHelper))]
+        public async Task OnLoginUser_ShouldReturnBadRequest_WhenModelIsInvalid(LoginUser user)
+        {
+            // Arrange            
+            ModelValidationHelper.ValidateModel(user, _authController);
+
+            // Act
+            var result = await _authController.LoginUserAsync(user);
+
+            // Assert            
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<LoginUser>>(badRequestResult.Value);
+
+            Assert.NotNull(response);
+            Assert.False(response.Success);
+            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
+            Assert.Equal(AuthErrorMessages.ValidationFailed, response.Message);
+            Assert.NotEmpty(response.Errors);
+
+            foreach (var validationResult in _authController.ModelState.Values.SelectMany(v => v.Errors))
+            {
+                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
+            }
+        }
+
+        [Fact]
+        public async Task OnLoginUser_ShouldReturnOk_IfUserLoginSuccessfully()
+        {
+            // Arrange            
+            var newUser = new LoginUser
+            {
+                UserName = "correctUser",
+                Password = "-Rtyuehe2-"
+            };
+
+            var identityUser = new IdentityUser { UserName = newUser.UserName, PasswordHash = newUser.Password };
+
+            _mockAuthService.Setup(s => s.LoginAsync(It.Is<LoginUser>(user =>
+                        user.UserName == "correctUser" &&
+                        user.Password == "-Rtyuehe2-")))
+                .ReturnsAsync(identityUser);
+
+            // Act
+            var result = await _authController.LoginUserAsync(newUser);
+
+            // Assert
+            var okRequestResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<LoginUser>>(okRequestResult.Value);
+            Assert.True(response.Success);
+            Assert.Equal(string.Format(AuthSuccessMessages.LoginSuccess, newUser.UserName),
+                response.Message);
+
+            _mockAuthService.Verify(s => s.LoginAsync(newUser), Times.Once);
         }
     }
 }

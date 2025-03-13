@@ -55,6 +55,27 @@ namespace PostApiService.Tests.Helper
             };
         }
 
+        public static IEnumerable<object[]> GetLoginUserTestData()
+        {
+            yield return new object[]
+            {
+                new LoginUser
+                {
+                    UserName = new string('a', 51),
+                    Password = "-Rtyuehe1"
+                }
+            };
+
+            yield return new object[]
+            {
+                new LoginUser
+                {
+                    UserName = "testUser",
+                    Password = "123"
+                }
+            };
+        }
+
         public static IEnumerable<object[]> GetCommentTestData()
         {
             yield return new object[] { "Valid comment content that is sufficiently long", true };

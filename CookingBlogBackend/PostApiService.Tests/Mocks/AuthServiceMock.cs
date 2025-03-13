@@ -13,6 +13,14 @@ namespace PostApiService.Tests.Mocks
             _exception = exception;
         }
 
+        public Task<string> GenerateTokenString(IdentityUser user)
+        {
+            if (_exception != null)
+                throw _exception;
+
+            return Task.FromResult("mocked_token");
+        }
+
         public Task<IdentityUser> LoginAsync(LoginUser credentials)
         {
             if (_exception != null)
