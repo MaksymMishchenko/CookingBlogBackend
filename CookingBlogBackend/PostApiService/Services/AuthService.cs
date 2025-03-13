@@ -104,7 +104,8 @@ namespace PostApiService.Services
 
             if (!isPasswordValid)
             {
-                throw new AuthenticationException(AuthErrorMessages.InvalidCredentials);
+                throw new AuthenticationException
+                    (AuthErrorMessages.InvalidCredentials);
             }
 
             return user;
@@ -122,7 +123,8 @@ namespace PostApiService.Services
 
             if (user == null)
             {
-                throw new UserNotFoundException(AuthErrorMessages.UserNotFound);
+                throw new UserNotFoundException
+                    (AuthErrorMessages.UserNotFound);
             }
 
             var claims = new List<Claim>

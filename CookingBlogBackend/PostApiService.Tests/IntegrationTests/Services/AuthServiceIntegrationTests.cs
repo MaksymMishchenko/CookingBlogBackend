@@ -7,7 +7,7 @@ using PostApiService.Models;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
-{
+{    
     public class AuthServiceIntegrationTests
     {
         private readonly ServiceProvider _provider;
@@ -15,16 +15,18 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public AuthServiceIntegrationTests()
         {
             var services = new ServiceCollection();
-            
+
+            var dbName = Guid.NewGuid().ToString();
+
             services.AddDbContext<AppIdentityDbContext>(options =>
-                options.UseInMemoryDatabase("IdentityTestDb"));
-            
+                options.UseInMemoryDatabase(dbName));
+
             services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<AppIdentityDbContext>()
                 .AddDefaultTokenProviders();
-           
+
             services.AddLogging();
-            
+
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
 
@@ -53,6 +55,32 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             Assert.NotNull(createdUser);
             Assert.Equal(user.Email, createdUser.Email);
+        }
+
+        [Fact]
+        public async Task LoginUserAsync_ShouldLoginUser_WhenValidDataProvided()
+        {
+            // Arrange            
+            var testUser = new IdentityUser { UserName = "testUser", Email = "validemail@test.com" };
+            var password = "Password123!";
+
+            var userManager = _provider.GetRequiredService<UserManager<IdentityUser>>();
+            await userManager.CreateAsync(testUser, password);
+
+            var user = new LoginUser
+            {
+                UserName = "testUser",
+                Password = "Password123!"
+            };
+
+            var authService = _provider.GetRequiredService<IAuthService>();
+
+            // Act
+            var authenticatedUser = await authService.LoginAsync(user);
+
+            // Assert
+            Assert.NotNull(authenticatedUser);
+            Assert.Equal(user.UserName, authenticatedUser.UserName);
         }
     }
 }

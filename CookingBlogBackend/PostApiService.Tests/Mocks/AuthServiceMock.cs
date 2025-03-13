@@ -1,4 +1,5 @@
-﻿using PostApiService.Interfaces;
+﻿using Microsoft.AspNetCore.Identity;
+using PostApiService.Interfaces;
 using PostApiService.Models;
 
 namespace PostApiService.Tests.Mocks
@@ -10,6 +11,14 @@ namespace PostApiService.Tests.Mocks
         public AuthServiceMock(Exception? exception = null)
         {
             _exception = exception;
+        }
+
+        public Task<IdentityUser> LoginAsync(LoginUser credentials)
+        {
+            if (_exception != null)
+                throw _exception;
+
+            return Task.FromResult(new IdentityUser { UserName = "testuser" });
         }
 
         public Task RegisterUserAsync(RegisterUser user)
