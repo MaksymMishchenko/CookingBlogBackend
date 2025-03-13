@@ -24,6 +24,27 @@ namespace PostApiService.Middlewares
             {
                 await _next(context);
             }
+            catch (UserAlreadyExistsException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Conflict,
+                    RegisterErrorMessages.UsernameAlreadyExists);
+            }
+            catch (EmailAlreadyExistsException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Conflict,
+                    RegisterErrorMessages.EmailAlreadyExists);
+            }
+            catch (UserCreationException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    RegisterErrorMessages.CreationFailed);
+            }
             catch (PostNotFoundException ex)
             {
                 await HandleExceptionAsync(context,

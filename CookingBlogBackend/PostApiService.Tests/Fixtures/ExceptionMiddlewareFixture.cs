@@ -18,6 +18,9 @@ namespace PostApiService.Tests.Fixtures
 
             services.RemoveAll(typeof(ICommentService));
             services.AddScoped<ICommentService>(_ => new CommentServiceMock(_exception));
+
+            services.RemoveAll(typeof(IAuthService));
+            services.AddScoped<IAuthService>(_ => new AuthServiceMock(_exception));
         }
 
         public void SetException(Exception exception)

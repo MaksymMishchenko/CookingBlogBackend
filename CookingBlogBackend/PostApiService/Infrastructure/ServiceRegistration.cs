@@ -135,7 +135,7 @@ namespace PostApiService.Infrastructure
             //services.AddScoped<ITokenService, TokenService>();
 
             return services;
-        }
+        }        
 
         /// <summary>
         /// Configures JWT Bearer Authentication for the application.

@@ -38,7 +38,7 @@ namespace PostApiService.Services
             var existingUserByEmail = await _userManager.FindByEmailAsync(user.Email);
             if (existingUserByEmail != null)
             {
-                throw new UserAlreadyExistsException
+                throw new EmailAlreadyExistsException
                     (RegisterErrorMessages.EmailAlreadyExists);
             }
 

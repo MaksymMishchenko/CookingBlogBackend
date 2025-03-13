@@ -54,7 +54,29 @@ The frontend interacts with this API to display a list of posts, submit new post
 ### REST API
 The project provides an API for managing resources. Below are examples of key endpoints:
 
-### 1. Authentication
+### 1. Register User
+**Endpoint: POST /api/Auth/register**
+
+**Request body:**
+```
+json
+{
+  "username": "user@example.com",
+  "email": "test@mail.com",
+  "password": "password123"
+}
+```
+
+**Response body:**
+```
+json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  expires: "2025-01-06T22:21:58.206517+02:00"
+}
+```
+
+### 2. Authentication
 **Endpoint: POST /api/Auth/login**
 
 **Request body:**
@@ -75,7 +97,7 @@ json
 }
 ```
 
-### 2. Comments
+### 3. Comments
 **Endpoint: POST /api/Comments/posts/{postId}**
 
 **Headers:**
@@ -171,7 +193,7 @@ json
 }
 ```
 
-### 3. Posts
+### 4. Posts
 
 **Endpoint: GET /api/Posts/GetAllPosts**
 
@@ -339,10 +361,12 @@ Solution PostApiService/
 │   ├── Properties/                    // Auto-generated properties folder (e.g., launch settings)
 │   ├── Contexts/                      // Contains Entity Framework database context for managing database interactions
 │   ├── Controllers/                   // API controllers handling HTTP requests and routing
+│   ├── Exceptions/                    // Handling exceptions and error responses in API controllers
 │   ├── Helper/                        // Utility classes or methods to support business logic
 │   ├── Images/                        // Directory for storing images related to posts or other resources
 │   ├── Infrastructure/                // Core infrastructure-related code (e.g., dependency injection setup, configurations)
 │   ├── Interfaces/                    // Interface definitions for services and repositories, ensuring abstraction and testability
+│   ├── Middlewares/                   // Implementations of middlewares for handling HTTP requests and responses
 │   ├── Migrations/                    // Database migrations created via Entity Framework for schema evolution
 │   ├── Models/                        // Data models representing entities and request/response DTOs
 │   ├── Services/                      // Business logic implementation for handling operations

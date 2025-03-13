@@ -15,6 +15,14 @@
         }
     }
 
+    public class EmailAlreadyExistsException : UserRegistrationException
+    {
+        public EmailAlreadyExistsException(string message)
+            : base(message)
+        {
+        }
+    }
+
     public class UserCreationException : UserRegistrationException
     {
         public UserCreationException(string message)

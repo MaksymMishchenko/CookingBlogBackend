@@ -18,6 +18,52 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
+        [InlineData(typeof(UserAlreadyExistsException), "/api/auth/register", HttpStatusCode.Conflict)]
+        [InlineData(typeof(EmailAlreadyExistsException), "/api/auth/register", HttpStatusCode.Conflict)]
+        [InlineData(typeof(UserCreationException), "/api/auth/register", HttpStatusCode.InternalServerError)]
+        public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
+            (Type exceptionType, string url, HttpStatusCode expectedStatus)
+        {
+            // Arrange
+            Exception exception = exceptionType switch
+            {
+                Type t when t == typeof(UserAlreadyExistsException) =>
+                new UserAlreadyExistsException(RegisterErrorMessages.UsernameAlreadyExists),
+                Type t when t == typeof(EmailAlreadyExistsException) =>
+                new EmailAlreadyExistsException(RegisterErrorMessages.EmailAlreadyExists),
+                Type t when t == typeof(UserCreationException) =>
+                new UserCreationException(RegisterErrorMessages.CreationFailed),
+                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
+            };
+
+            _factoryFixture.SetException(exception);
+
+            var newUser = new RegisterUser { UserName = "testUser", Email = "test@test.com", Password = "Rtyuehe3-" };
+
+            var content = HttpHelper.GetJsonHttpContent(newUser);
+
+            // Act
+            var response = await _client.PostAsync(url, content);
+
+            // Assert
+            Assert.Equal(expectedStatus, response.StatusCode);
+
+            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterUser>>();
+            Assert.NotNull(errorResponse);
+
+            string expectedMessage = exceptionType switch
+            {
+                Type t when t == typeof(UserAlreadyExistsException) => RegisterErrorMessages.UsernameAlreadyExists,
+                Type t when t == typeof(EmailAlreadyExistsException) => RegisterErrorMessages.EmailAlreadyExists,
+                Type t when t == typeof(UserCreationException) => RegisterErrorMessages.CreationFailed,
+                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+            };
+
+            Assert.Equal(expectedMessage, errorResponse.Message);
+        }
+
+        [Theory]
         [InlineData(typeof(OperationCanceledException), "/api/posts", HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TimeoutException), "/api/posts", HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(Exception), "/api/posts", HttpStatusCode.InternalServerError)]
