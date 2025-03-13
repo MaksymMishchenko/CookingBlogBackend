@@ -23,6 +23,14 @@
         }
     }
 
+    public class UserClaimException : UserRegistrationException
+    {
+        public UserClaimException(string message)
+            : base(message)
+        {
+        }
+    }
+
     public class UserCreationException : UserRegistrationException
     {
         public UserCreationException(string message)

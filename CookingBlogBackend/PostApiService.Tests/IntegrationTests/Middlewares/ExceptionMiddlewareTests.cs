@@ -20,6 +20,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         [Theory]
         [InlineData(typeof(UserAlreadyExistsException), "/api/auth/register", HttpStatusCode.Conflict)]
         [InlineData(typeof(EmailAlreadyExistsException), "/api/auth/register", HttpStatusCode.Conflict)]
+        [InlineData(typeof(UserClaimException), "/api/auth/register", HttpStatusCode.InternalServerError)]
         [InlineData(typeof(UserCreationException), "/api/auth/register", HttpStatusCode.InternalServerError)]
         public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
@@ -31,6 +32,8 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 new UserAlreadyExistsException(RegisterErrorMessages.UsernameAlreadyExists),
                 Type t when t == typeof(EmailAlreadyExistsException) =>
                 new EmailAlreadyExistsException(RegisterErrorMessages.EmailAlreadyExists),
+                Type t when t == typeof(UserClaimException) =>
+                new UserClaimException(RegisterErrorMessages.CreationFailed),
                 Type t when t == typeof(UserCreationException) =>
                 new UserCreationException(RegisterErrorMessages.CreationFailed),
                 Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
@@ -56,6 +59,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 Type t when t == typeof(UserAlreadyExistsException) => RegisterErrorMessages.UsernameAlreadyExists,
                 Type t when t == typeof(EmailAlreadyExistsException) => RegisterErrorMessages.EmailAlreadyExists,
+                Type t when t == typeof(UserClaimException) => RegisterErrorMessages.CreationFailed,
                 Type t when t == typeof(UserCreationException) => RegisterErrorMessages.CreationFailed,
                 Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
             };

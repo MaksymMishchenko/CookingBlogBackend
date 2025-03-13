@@ -2,6 +2,7 @@
 using Moq;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using System.Security.Claims;
 using AuthService = PostApiService.Services.AuthService;
 
 namespace PostApiService.Tests.UnitTests.Services
@@ -17,9 +18,10 @@ namespace PostApiService.Tests.UnitTests.Services
          Mock.Of<IUserStore<IdentityUser>>(),
          null, null, null, null, null, null, null, null
          );
+
             _mockTokenService = new Mock<ITokenService>();
             _authService = new AuthService
-                (_mockUserManager.Object);
+                (_mockUserManager.Object, _mockTokenService.Object);
         }
 
         [Fact]
@@ -49,11 +51,16 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockUserManager.Setup(x => x.CreateAsync(It.IsAny<IdentityUser>(), registerUser.Password))
                 .ReturnsAsync(createResult);
 
+            var claimResult = IdentityResult.Success;
+            _mockUserManager.Setup(x => x.AddClaimAsync(It.IsAny<IdentityUser>(), It.IsAny<Claim>()))
+                .ReturnsAsync(claimResult);
+
             // Act
             await _authService.RegisterUserAsync(registerUser);
 
             // Assert
             _mockUserManager.Verify(x => x.CreateAsync(It.IsAny<IdentityUser>(), registerUser.Password), Times.Once);
+            _mockUserManager.Verify(x => x.AddClaimAsync(It.IsAny<IdentityUser>(), It.IsAny<Claim>()), Times.Once);
         }
     }
 }

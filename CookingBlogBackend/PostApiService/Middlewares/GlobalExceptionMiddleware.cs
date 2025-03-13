@@ -45,6 +45,13 @@ namespace PostApiService.Middlewares
                     HttpStatusCode.InternalServerError,
                     RegisterErrorMessages.CreationFailed);
             }
+            catch (UserClaimException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    RegisterErrorMessages.CreationFailed);
+            }
             catch (PostNotFoundException ex)
             {
                 await HandleExceptionAsync(context,
@@ -135,6 +142,13 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.RequestTimeout,
                     ResponseErrorMessages.OperationCanceledException);
+            }
+            catch (ArgumentException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.InternalServerError,
+                    TokenErrorMessages.GenerationFailed);
             }
             catch (Exception ex)
             {

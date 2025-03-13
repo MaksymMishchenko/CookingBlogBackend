@@ -25,8 +25,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
            
             services.AddLogging();
             
-            services.AddTransient<IAuthService, AuthService>();            
-            
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ITokenService, TokenService>();
+
             _provider = services.BuildServiceProvider();
         }
 
