@@ -1,6 +1,8 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
+using PostApiService.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -9,56 +11,55 @@ namespace PostApiService.Services
 {
     public class TokenService : ITokenService
     {
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<TokenService> _logger;
-
-        public TokenService(IConfiguration configuration, ILogger<TokenService> logger)
+        private readonly JwtConfiguration _config;
+        public TokenService(IOptions<JwtConfiguration> config)
         {
-            _configuration = configuration;
-            _logger = logger;
+            _config = config.Value;
         }
 
         /// <summary>
-        /// Generates a JWT token for the given user, including necessary claims and signing credentials.
-        /// Retrieves JWT configuration values from the application's settings, ensuring all values are present.
-        /// If any configuration value is missing, logs an error and throws an exception.
+        /// Generates a JWT token string based on the provided claims, using the configured secret key and expiration time.
         /// </summary>
-        /// <param name="user">The user for whom the JWT token is being generated.</param>
-        /// <returns>A tuple containing the generated JWT token as a string and the token expiration time as a DateTime.</returns>
-        /// <exception cref="InvalidOperationException">Thrown if any JWT configuration value is missing.</exception>
-        public (string Token, DateTime Expiration) GenerateJwtToken(IdentityUser user)
+        /// <param name="claims">The list of claims to be included in the JWT token.</param>
+        /// <returns>A JWT token string.</returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when the secret key is null or empty, or when the token expiration time is invalid.
+        /// </exception>
+        /// <exception cref="TokenGenerationException">
+        /// Thrown when an error occurs during token generation.
+        /// </exception>
+        public string GenerateTokenString(IEnumerable<Claim> claims)
         {
-            var claims = new List<Claim>
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-            var secretKey = _configuration["Jwt:SecretKey"];
-            var issuer = _configuration["Jwt:Issuer"];
-            var audience = _configuration["Jwt:Audience"];
-            var tokenExpiration = _configuration.GetValue<int>("Jwt:TokenExpirationMinutes", 30);
-
-            if (string.IsNullOrWhiteSpace(secretKey) ||
-                string.IsNullOrWhiteSpace(issuer) ||
-                string.IsNullOrWhiteSpace(audience))
+            try
             {
-                _logger.LogError("Login failed: Missing JWT configuration.");
-                throw new InvalidOperationException("JWT configuration values are missing");
+                if (string.IsNullOrWhiteSpace(_config.SecretKey))
+                {
+                    throw new ArgumentException(TokenErrorMessages.SecretKeyNullOrEmpty);
+                }
+
+                if (_config.TokenExpirationMinutes <= 0)
+                {
+                    throw new ArgumentException(TokenErrorMessages.TokenExpirationInvalid);
+                }
+
+                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.SecretKey));
+
+                var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+
+                var securityToken = new JwtSecurityToken(
+                    issuer: _config.Issuer,
+                    audience: _config.Audience,
+                    claims,
+                    expires: DateTime.Now.AddMinutes(_config.TokenExpirationMinutes),
+                    signingCredentials: signingCred);
+
+                string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
+                return tokenString;
             }
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.Now.AddMinutes(tokenExpiration);
-
-            var token = new JwtSecurityToken(
-                issuer: issuer,
-                audience: audience,
-                claims: claims,
-                expires: expires,
-                signingCredentials: creds);
-
-            return (new JwtSecurityTokenHandler().WriteToken(token), expires);
+            catch (Exception ex)
+            {
+                throw new TokenGenerationException(TokenErrorMessages.TokenGenerationFailed, ex);
+            }
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Security.Claims;
 
 namespace PostApiService.Interfaces
 {
     public interface ITokenService
     {
-        (string Token, DateTime Expiration) GenerateJwtToken(IdentityUser user);
+        string GenerateTokenString(IEnumerable<Claim> claims);
     }
 }

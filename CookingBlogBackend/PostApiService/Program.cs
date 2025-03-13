@@ -23,6 +23,8 @@ var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<
 // Register Application Jwt Bearer Authentication 
 builder.Services.AddAppJwtAuthentication(jwtConfiguration);
 
+builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection("JwtConfiguration"));
+
 // Get an identity connection string from appsettings.json and check for null
 var identityConnectionString = builder.Configuration.GetValue<string>
     ("ApiPostIdentity:ConnectionString") ??

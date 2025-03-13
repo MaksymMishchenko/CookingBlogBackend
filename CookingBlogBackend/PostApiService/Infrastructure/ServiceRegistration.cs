@@ -132,7 +132,7 @@ namespace PostApiService.Infrastructure
                 .AddDefaultTokenProviders();
 
             services.AddTransient<IAuthService, AuthService>();
-            //services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<ITokenService, TokenService>();
 
             return services;
         }        
