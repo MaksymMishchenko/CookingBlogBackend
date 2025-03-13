@@ -1,4 +1,6 @@
-﻿namespace PostApiService.Tests.Fixtures
+﻿using Microsoft.Extensions.DependencyInjection;
+
+namespace PostApiService.Tests.Fixtures
 {
     public class PostFixture : TestBaseFixture
     {
@@ -6,5 +8,16 @@
             "MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
         public PostFixture() : base(_connectionString, useDatabase: true) { }
+
+        public override async Task InitializeAsync()
+        {
+            await base.InitializeAsync();
+
+            using var scope = Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
+        }
     }
 }
