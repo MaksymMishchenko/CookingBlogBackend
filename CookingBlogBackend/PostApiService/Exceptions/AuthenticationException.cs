@@ -5,7 +5,7 @@
         public UserRegistrationException(string message) : base(message)
         {
         }
-    }
+    }   
 
     public class UserAlreadyExistsException : UserRegistrationException
     {
@@ -37,6 +37,11 @@
             : base(string.Format(RegisterErrorMessages.CreationFailed, message))
         {
         }
+    }
+
+    public class UserNotFoundException : InvalidOperationException
+    {
+        public UserNotFoundException(string message) : base(message) { }
     }
 
     public class TokenGenerationException : Exception

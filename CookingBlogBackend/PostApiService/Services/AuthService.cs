@@ -109,5 +109,58 @@ namespace PostApiService.Services
 
             return user;
         }
+
+        /// <summary>
+        /// Retrieves a list of claims for a specified user.
+        /// </summary>
+        /// <param name="userName">The username of the user whose claims are to be retrieved.</param>
+        /// <returns>A list of claims associated with the user.</returns>
+        /// <exception cref="UserNotFoundException">Thrown when the user with the specified username is not found.</exception>
+        private async Task<List<Claim>> GetClaims(string userName)
+        {
+            var user = await _userManager.FindByNameAsync(userName);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException(AuthErrorMessages.UserNotFound);
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, userName)
+            };
+
+            claims.AddRange(GetClaimsSeparated(await _userManager.GetClaimsAsync(user)));
+            return claims;
+        }
+
+        /// <summary>
+        /// Processes a list of claims and separates any claims that contain serialized permissions,
+        /// creating individual claims for each permission in the serialized claim.
+        /// </summary>
+        /// <param name="claims">A list of claims to process, potentially containing serialized permissions.</param>
+        /// <returns>A list of claims where each permission in a serialized claim is split into individual claims.</returns>
+        private List<Claim> GetClaimsSeparated(IList<Claim> claims)
+        {
+            var result = new List<Claim>();
+            foreach (var claim in claims)
+            {
+                result.AddRange(claim.DeserializePermissions()
+                    .Select(t => new Claim(claim.Type, t.ToString())));
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// Generates a JWT token string for the specified user based on their claims.
+        /// </summary>
+        /// <param name="user">The authenticated user for whom the token is generated.</param>
+        /// <returns>A JWT token string.</returns> 
+        public async Task<string> GenerateTokenString(IdentityUser user)
+        {
+            var claims = await GetClaims(user.UserName);
+
+            return _tokenService.GenerateTokenString(claims);
+        }
     }
 }

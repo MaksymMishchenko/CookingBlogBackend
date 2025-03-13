@@ -94,6 +94,49 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockUserManager.Verify(x => x.FindByNameAsync(loginUser.UserName), Times.Once);
             _mockUserManager.Verify(x => x.CheckPasswordAsync(identityUser, loginUser.Password), Times.Once);
         }
+
+        [Fact]
+        public async Task GenerateTokenString_ShouldReturnToken_WhenUserExists()
+        {
+            // Arrange
+            var userName = "testuser";
+            var user = new IdentityUser { UserName = userName };
+
+            var claimsFromManager = new List<Claim>
+            {
+                new Claim("permissions", "[1,2,3]")
+            };
+
+            var expectedToken = "generated_token";
+
+            _mockUserManager.Setup(x => x.FindByNameAsync(userName))
+                            .ReturnsAsync(user);
+
+            _mockUserManager.Setup(x => x.GetClaimsAsync(user))
+                            .ReturnsAsync(claimsFromManager);
+
+            _mockTokenService.Setup(x => x.GenerateTokenString(It.IsAny<IEnumerable<Claim>>()))
+                             .Returns(expectedToken);
+
+            // Act
+            var result = await _authService.GenerateTokenString(user);
+
+            // Assert
+            Assert.Equal(expectedToken, result);
+
+            _mockUserManager.Verify(x => x.FindByNameAsync(userName), Times.Once);
+            _mockUserManager.Verify(x => x.GetClaimsAsync(user), Times.Once);
+
+            _mockTokenService.Verify(x => x.GenerateTokenString(
+                It.Is<IEnumerable<Claim>>(claims =>
+                    claims.Any(c => c.Type == ClaimTypes.Name && c.Value == userName) &&
+                    claims.Count(c => c.Type == "permissions") == 3 &&
+                    claims.Any(c => c.Type == "permissions" && c.Value == "1") &&
+                    claims.Any(c => c.Type == "permissions" && c.Value == "2") &&
+                    claims.Any(c => c.Type == "permissions" && c.Value == "3")
+                )
+            ), Times.Once);
+        }
     }
 }
 
