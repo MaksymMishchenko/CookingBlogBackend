@@ -62,6 +62,38 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockUserManager.Verify(x => x.CreateAsync(It.IsAny<IdentityUser>(), registerUser.Password), Times.Once);
             _mockUserManager.Verify(x => x.AddClaimAsync(It.IsAny<IdentityUser>(), It.IsAny<Claim>()), Times.Once);
         }
+
+        [Fact]
+        public async Task LoginUser_ShouldLoginUserSuccessfully()
+        {
+            // Arrange
+            var loginUser = new LoginUser
+            {
+                UserName = "newuser",
+                Password = "P@ssw0rd"
+            };
+
+            var identityUser = new IdentityUser
+            {
+                UserName = loginUser.UserName,
+                Email = "newuser@example.com",
+            };
+
+            _mockUserManager.Setup(x => x.FindByNameAsync(loginUser.UserName))
+            .ReturnsAsync(identityUser);
+
+            _mockUserManager.Setup(x => x.CheckPasswordAsync(It.IsAny<IdentityUser>(), loginUser.Password))
+                .ReturnsAsync(true);
+
+            // Act
+            var result = await _authService.LoginAsync(loginUser);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(loginUser.UserName, result.UserName);
+            _mockUserManager.Verify(x => x.FindByNameAsync(loginUser.UserName), Times.Once);
+            _mockUserManager.Verify(x => x.CheckPasswordAsync(identityUser, loginUser.Password), Times.Once);
+        }
     }
 }
 

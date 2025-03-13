@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using PostApiService.Exceptions;
 using PostApiService.Models;
 using System.Net;
+using System.Security.Authentication;
 
 namespace PostApiService.Middlewares
 {
@@ -51,6 +52,13 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     RegisterErrorMessages.CreationFailed);
+            }
+            catch (AuthenticationException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Unauthorized,
+                    AuthErrorMessages.InvalidCredentials);
             }
             catch (PostNotFoundException ex)
             {

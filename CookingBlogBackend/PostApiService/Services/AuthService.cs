@@ -4,6 +4,7 @@ using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
+using System.Security.Authentication;
 using System.Security.Claims;
 
 namespace PostApiService.Services
@@ -84,6 +85,29 @@ namespace PostApiService.Services
                     TS.Permissions.Update,
                     TS.Permissions.Delete
                 ));
+        }
+
+        /// <summary>
+        /// Authenticates a user by verifying the provided credentials.
+        /// </summary>
+        /// <param name="credentials">The user's login credentials.</param>
+        /// <returns>The authenticated <see cref="IdentityUser"/> if the credentials are valid.</returns>
+        /// <exception cref="AuthenticationException">
+        /// Thrown when the username is not found or the password is incorrect.
+        /// </exception>
+        public async Task<IdentityUser> LoginAsync(LoginUser credentials)
+        {
+            var user = await _userManager.FindByNameAsync(credentials.UserName)
+                 ?? throw new AuthenticationException(AuthErrorMessages.InvalidCredentials);
+
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, credentials.Password);
+
+            if (!isPasswordValid)
+            {
+                throw new AuthenticationException(AuthErrorMessages.InvalidCredentials);
+            }
+
+            return user;
         }
     }
 }
