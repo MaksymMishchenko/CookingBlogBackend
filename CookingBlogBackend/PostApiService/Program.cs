@@ -47,12 +47,16 @@ app.UseCors("AllowLocalhost");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
-{
-    await app.SeedDataAsync();
-
+{    
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+if (!app.Environment.IsEnvironment("Testing"))
+{
+    await app.SeedDataAsync();
+}
+
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();

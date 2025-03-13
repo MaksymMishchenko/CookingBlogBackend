@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.TestHost;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -20,12 +21,14 @@ namespace PostApiService.Tests.Fixtures
             _useDatabase = useDatabase;
         }
 
-        public async Task InitializeAsync()
+        public virtual async Task InitializeAsync()
         {
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
+                builder.UseEnvironment("Testing");
+
                 builder.ConfigureTestServices(services =>
-                {
+                {                    
                     if (_useDatabase)
                     {
                         services.RemoveAll(typeof(DbContextOptions<ApplicationDbContext>));
