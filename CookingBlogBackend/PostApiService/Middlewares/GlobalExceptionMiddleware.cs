@@ -25,6 +25,13 @@ namespace PostApiService.Middlewares
             {
                 await _next(context);
             }
+            catch (UserNotFoundException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Unauthorized,
+                    AuthErrorMessages.InvalidCredentials);
+            }
             catch (UserAlreadyExistsException ex)
             {
                 await HandleExceptionAsync(context,

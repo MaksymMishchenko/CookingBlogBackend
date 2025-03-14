@@ -70,6 +70,8 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
         [Theory]
         [InlineData(typeof(AuthenticationException), "/api/auth/login", HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(UserNotFoundException), "/api/auth/login", HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(ArgumentException), "/api/auth/login", HttpStatusCode.InternalServerError)]
         public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -78,6 +80,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 Type t when t == typeof(AuthenticationException) =>
                 new AuthenticationException(AuthErrorMessages.InvalidCredentials),
+
+                Type t when t == typeof(UserNotFoundException) =>
+                new UserNotFoundException(AuthErrorMessages.InvalidCredentials),
+
+                Type t when t == typeof(ArgumentException) =>
+                new ArgumentException(TokenErrorMessages.GenerationFailed),
+
                 Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
@@ -100,11 +109,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(AuthenticationException) => AuthErrorMessages.InvalidCredentials,
+                Type t when t == typeof(UserNotFoundException) => AuthErrorMessages.InvalidCredentials,
+                Type t when t == typeof(ArgumentException) => TokenErrorMessages.GenerationFailed,
                 Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
-        }
+        }        
 
         [Theory]
         [InlineData(typeof(OperationCanceledException), "/api/posts", HttpStatusCode.RequestTimeout)]
