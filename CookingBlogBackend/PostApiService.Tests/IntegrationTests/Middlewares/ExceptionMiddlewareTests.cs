@@ -3,6 +3,7 @@ using PostApiService.Exceptions;
 using PostApiService.Models;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Authentication;
 
 namespace PostApiService.Tests.IntegrationTests.Middlewares
 {
@@ -61,6 +62,44 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(EmailAlreadyExistsException) => RegisterErrorMessages.EmailAlreadyExists,
                 Type t when t == typeof(UserClaimException) => RegisterErrorMessages.CreationFailed,
                 Type t when t == typeof(UserCreationException) => RegisterErrorMessages.CreationFailed,
+                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+            };
+
+            Assert.Equal(expectedMessage, errorResponse.Message);
+        }
+
+        [Theory]
+        [InlineData(typeof(AuthenticationException), "/api/auth/login", HttpStatusCode.Unauthorized)]
+        public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
+            (Type exceptionType, string url, HttpStatusCode expectedStatus)
+        {
+            // Arrange
+            Exception exception = exceptionType switch
+            {
+                Type t when t == typeof(AuthenticationException) =>
+                new AuthenticationException(AuthErrorMessages.InvalidCredentials),
+                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
+            };
+
+            _factoryFixture.SetException(exception);
+
+            var user = new LoginUser { UserName = "testUser", Password = "Rtyuehe3-" };
+
+            var content = HttpHelper.GetJsonHttpContent(user);
+
+            // Act
+            var response = await _client.PostAsync(url, content);
+
+            // Assert
+            Assert.Equal(expectedStatus, response.StatusCode);
+
+            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<LoginUser>>();
+            Assert.NotNull(errorResponse);
+
+            string expectedMessage = exceptionType switch
+            {
+                Type t when t == typeof(AuthenticationException) => AuthErrorMessages.InvalidCredentials,
                 Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
             };
 
