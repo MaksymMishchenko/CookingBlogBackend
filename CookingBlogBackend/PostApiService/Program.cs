@@ -57,6 +57,7 @@ if (app.Environment.IsDevelopment())
 if (!app.Environment.IsEnvironment("Testing"))
 {
     await app.SeedDataAsync();
+    await app.SeedUserAsync();
 }
 
 app.UseMiddleware<GlobalExceptionMiddleware>();

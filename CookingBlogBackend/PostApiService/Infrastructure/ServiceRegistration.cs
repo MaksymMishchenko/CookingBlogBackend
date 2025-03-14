@@ -3,9 +3,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Contexts;
+using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.TypeSafe;
 using PostApiService.Services;
+using System.Security.Claims;
 using System.Text;
 
 namespace PostApiService.Infrastructure
@@ -31,6 +34,65 @@ namespace PostApiService.Infrastructure
             services.AddTransient<ICommentService, CommentService>();
 
             return services;
+        }
+
+        public static async Task<IApplicationBuilder> SeedUserAsync(this WebApplication app)
+        {
+            using (var scope = app.Services.CreateScope())
+            {
+                var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+                await cntx.Database.EnsureDeletedAsync();
+
+                if (await cntx.Database.EnsureCreatedAsync())
+                {
+                    // Creating Role Entities
+                    var adminRole = new IdentityRole(TS.Roles.Admin);
+                    var contributorRole = new IdentityRole(TS.Roles.Contributor);
+
+                    // Adding Roles
+                    await roleManager.CreateAsync(adminRole);
+                    await roleManager.CreateAsync(contributorRole);                    
+
+                    // Creating User Entities
+                    var adminUser = new IdentityUser() { UserName = "admin", Email = "admin@test.com" };
+                    var contributorUser = new IdentityUser() { UserName = "cont", Email = "c@test.com" };
+
+                    // Adding Users with Password
+                    await userManager.CreateAsync(adminUser, "-Rtyuehe1");
+                    await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
+
+                    // Adding Claims to Users
+                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
+                    await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
+
+                    // Adding Roles to Users
+                    await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
+                    await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
+                }
+            }
+            return app;
+        }
+
+        private static Claim GetAdminClaims(string controllerName)
+        {
+            return new Claim(controllerName, ClaimHelper.SerializePermissions(                
+                TS.Permissions.Write,
+                TS.Permissions.Update,
+                TS.Permissions.Delete
+                ));
+        }
+
+        private static Claim GetContributorClaims(string controllerName)
+        {
+            return new Claim(controllerName,
+                ClaimHelper.SerializePermissions(
+                    TS.Permissions.Write,
+                    TS.Permissions.Update,
+                    TS.Permissions.Delete
+                ));
         }
 
         /// <summary>
@@ -135,7 +197,7 @@ namespace PostApiService.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
 
             return services;
-        }        
+        }
 
         /// <summary>
         /// Configures JWT Bearer Authentication for the application.
