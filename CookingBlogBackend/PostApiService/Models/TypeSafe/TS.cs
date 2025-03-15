@@ -21,6 +21,10 @@
             public const int Write = 2;
             public const int Update = 3;
             public const int Delete = 4;
-        }        
+        }
+        public static class Policies
+        {
+            public const string FullControlPolicy = "FullControlPolicy";
+        }
     }
 }

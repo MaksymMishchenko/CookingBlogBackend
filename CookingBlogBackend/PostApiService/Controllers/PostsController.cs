@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Policy = TS.Policies.FullControlPolicy)]
     public class PostsController : Controller
     {
         private readonly IPostService _postsService;
@@ -31,6 +34,7 @@ namespace PostApiService.Controllers
         /// <param name="cancellationToken">A token that can be used to cancel the request. Defaults to <c>default</c>.</param>
         /// <returns>A list of posts with optional comments, or an error response.</returns>        
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetAllPostsAsync(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -76,6 +80,7 @@ namespace PostApiService.Controllers
         /// <param name="includeComments">A flag indicating whether to include comments in the response. Defaults to true.</param>
         /// <returns>Returns an IActionResult with the post data if found, or a BadRequest if the postId is invalid.</returns>
         [HttpGet("{postId}")]
+        [AllowAnonymous]
         public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
         {
             if (postId < 1)

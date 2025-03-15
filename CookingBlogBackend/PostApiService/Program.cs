@@ -20,9 +20,6 @@ builder.Services.AddApplicationService(connectionString);
 var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<JwtConfiguration>() ??
      throw new InvalidOperationException("Jwt configuration is missing in the appsettings.json file.");
 
-// Register Application Jwt Bearer Authentication 
-builder.Services.AddAppJwtAuthentication(jwtConfiguration);
-
 builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection("JwtConfiguration"));
 
 // Get an identity connection string from appsettings.json and check for null
@@ -34,6 +31,15 @@ var identityConnectionString = builder.Configuration.GetValue<string>
 // Register AddIdentityDbContext service to the IServiceCollection
 builder.Services.AddAppIdentityService(identityConnectionString);
 
+builder.Services.AddApplicationIdentity();
+
+// Register Application Jwt Bearer Authentication 
+builder.Services.AddAppJwtAuthentication(jwtConfiguration);
+
+// Register application authorization
+// Adds policies and sets up authorization for protected resources.
+builder.Services.AddApplicationAuthorization();
+
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 
@@ -41,7 +47,6 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
@@ -49,7 +54,7 @@ app.UseCors("AllowLocalhost");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
-{    
+{
     app.UseSwagger();
     app.UseSwaggerUI();
 }
