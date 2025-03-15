@@ -2,6 +2,7 @@
 using Moq;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.TypeSafe;
 using System.Security.Claims;
 using AuthService = PostApiService.Services.AuthService;
 
@@ -99,13 +100,15 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task GenerateTokenString_ShouldReturnToken_WhenUserExists()
         {
             // Arrange
-            var userName = "testuser";
+            var userName = "admin";
             var user = new IdentityUser { UserName = userName };
 
-            var claimsFromManager = new List<Claim>
+            var claims = new List<Claim>
             {
-                new Claim("permissions", "[1,2,3]")
+                new Claim("permissions", "[1,2,3]"),
             };
+
+            var rolesFromManager = new List<string> { TS.Roles.Admin }; // Ролі користувача            
 
             var expectedToken = "generated_token";
 
@@ -113,7 +116,10 @@ namespace PostApiService.Tests.UnitTests.Services
                             .ReturnsAsync(user);
 
             _mockUserManager.Setup(x => x.GetClaimsAsync(user))
-                            .ReturnsAsync(claimsFromManager);
+                            .ReturnsAsync(claims);
+
+            _mockUserManager.Setup(x => x.GetRolesAsync(user))
+                            .ReturnsAsync(rolesFromManager);
 
             _mockTokenService.Setup(x => x.GenerateTokenString(It.IsAny<IEnumerable<Claim>>()))
                              .Returns(expectedToken);
@@ -126,16 +132,16 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockUserManager.Verify(x => x.FindByNameAsync(userName), Times.Once);
             _mockUserManager.Verify(x => x.GetClaimsAsync(user), Times.Once);
+            _mockUserManager.Verify(x => x.GetRolesAsync(user), Times.Once);
 
-            _mockTokenService.Verify(x => x.GenerateTokenString(
-                It.Is<IEnumerable<Claim>>(claims =>
-                    claims.Any(c => c.Type == ClaimTypes.Name && c.Value == userName) &&
-                    claims.Count(c => c.Type == "permissions") == 3 &&
-                    claims.Any(c => c.Type == "permissions" && c.Value == "1") &&
-                    claims.Any(c => c.Type == "permissions" && c.Value == "2") &&
-                    claims.Any(c => c.Type == "permissions" && c.Value == "3")
-                )
-            ), Times.Once);
+            _mockTokenService.Verify(x => x.GenerateTokenString(It.Is<IEnumerable<Claim>>(claims =>
+                claims.Any(c => c.Type == ClaimTypes.Name && c.Value == userName) &&
+                claims.Count(c => c.Type == "permissions") == 3 &&
+                claims.Any(c => c.Type == "permissions" && c.Value == "1") &&
+                claims.Any(c => c.Type == "permissions" && c.Value == "2") &&
+                claims.Any(c => c.Type == "permissions" && c.Value == "3") &&
+                claims.Any(c => c.Type == ClaimTypes.Role && c.Value == TS.Roles.Admin)
+            )), Times.Once);
         }
     }
 }
