@@ -7,7 +7,7 @@ namespace PostApiService.Services
 {
     public class CommentService : ICommentService
     {
-        private readonly IApplicationDbContext _context;
+        private readonly IApplicationDbContext _context;        
 
         public CommentService(IApplicationDbContext context)
         {
@@ -30,7 +30,10 @@ namespace PostApiService.Services
                 throw new PostNotFoundException(postId);
             }
 
+            //var user = await _authService.GetCurrentUserAsync();
+
             comment.PostId = postId;
+            //comment.UserId = user.Id;
             await _context.Comments.AddAsync(comment);
 
             var result = await _context.SaveChangesAsync();
