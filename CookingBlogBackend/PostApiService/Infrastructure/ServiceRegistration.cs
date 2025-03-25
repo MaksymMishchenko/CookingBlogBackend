@@ -52,6 +52,7 @@ namespace PostApiService.Infrastructure
 
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
+            services.AddHttpContextAccessor();
 
             return services;
         }
@@ -161,7 +162,10 @@ namespace PostApiService.Infrastructure
                     await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
 
                     // Adding Claims to Users
+                    await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
                     await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
+
+                    await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
                     await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
 
                     //// Adding Roles to Users

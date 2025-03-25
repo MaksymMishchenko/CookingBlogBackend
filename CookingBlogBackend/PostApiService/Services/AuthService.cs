@@ -12,12 +12,15 @@ namespace PostApiService.Services
     public class AuthService : IAuthService
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
         private readonly ITokenService _tokenService;
 
         public AuthService(UserManager<IdentityUser> userManager,
+            IHttpContextAccessor httpContextAccessor,
             ITokenService tokenService)
         {
             _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
             _tokenService = tokenService;
         }
 
@@ -123,16 +126,24 @@ namespace PostApiService.Services
 
             if (user == null)
             {
-                throw new UserNotFoundException
-                    (AuthErrorMessages.UserNotFound);
+                throw new UserNotFoundException(AuthErrorMessages.UserNotFound);
             }
 
             var claims = new List<Claim>
             {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
                 new Claim(ClaimTypes.Name, userName)
             };
 
-            claims.AddRange(GetClaimsSeparated(await _userManager.GetClaimsAsync(user)));
+            var userClaims = await _userManager.GetClaimsAsync(user);
+
+            var serializedClaims = userClaims
+                .Where(claim => claim.Type != ClaimTypes.NameIdentifier && claim.Type != ClaimTypes.Name)
+                .ToList();
+
+            var deserializedClaims = GetClaimsSeparated(serializedClaims);
+
+            claims.AddRange(deserializedClaims);
 
             var roles = await _userManager.GetRolesAsync(user);
             foreach (var role in roles)
@@ -158,6 +169,26 @@ namespace PostApiService.Services
                     .Select(t => new Claim(claim.Type, t.ToString())));
             }
             return result;
+        }
+
+        /// <summary>
+        /// Retrieves the currently authenticated user from the HTTP context.
+        /// </summary>
+        /// <returns>The authenticated <see cref="IdentityUser"/>.</returns>
+        /// <exception cref="UnauthorizedAccessException">
+        /// Thrown when no authenticated user is found in the HTTP context.
+        /// </exception>
+        public async Task<IdentityUser> GetCurrentUserAsync()
+        {
+            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
+
+            if (user == null)
+            {
+                throw new UnauthorizedAccessException
+                    (AuthErrorMessages.UnauthorizedAccess);
+            }
+
+            return user;
         }
 
         /// <summary>
