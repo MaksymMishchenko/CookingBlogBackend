@@ -1,16 +1,19 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models;
+using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
     public class CommentControllerTests : IClassFixture<CommentFixture>
     {
+        private readonly CommentFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
 
         public CommentControllerTests(CommentFixture fixture)
         {
+            _fixture = fixture;
             _client = fixture.Client;
             _services = fixture.Services;
         }
@@ -19,6 +22,20 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
         {
             // Arrange
+            var contClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "testContId"),
+                new Claim(ClaimTypes.Name, "cont"),
+                new Claim(ClaimTypes.Role, "Contributor"),
+                new Claim("Comment", "2"),
+                new Claim("Comment", "3"),
+                new Claim("Comment", "4")
+            };
+            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
+            var contPrincipal = new ClaimsPrincipal(contIdentity);
+
+            _fixture.SetCurrentUser(contPrincipal);
+
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
@@ -28,7 +45,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 Content = "Lorem ipsum dolor sit amet.",
                 Author = "Jane",
                 PostId = 1,
-                UserId = "testUserId"
+                UserId = "testContId"
             };
 
             var content = HttpHelper.GetJsonHttpContent(newComment);
@@ -58,6 +75,20 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnUpdateCommentAsync_ShouldUpdateCommentInDatabaseAndReturn200OkResult()
         {
             // Arrange
+            var contClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "testUserId"),
+                new Claim(ClaimTypes.Name, "cont"),
+                new Claim(ClaimTypes.Role, "Contributor"),
+                new Claim("Comment", "2"),
+                new Claim("Comment", "3"),
+                new Claim("Comment", "4")
+            };
+            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
+            var contPrincipal = new ClaimsPrincipal(contIdentity);
+
+            _fixture.SetCurrentUser(contPrincipal);
+
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
@@ -90,6 +121,20 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnDeleteCommentAsync_ShouldRemoveCommentInDatabaseAndReturn200OkResult()
         {
             // Arrange
+            var contClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "testUserId"),
+                new Claim(ClaimTypes.Name, "cont"),
+                new Claim(ClaimTypes.Role, "Contributor"),
+                new Claim("Comment", "2"),
+                new Claim("Comment", "3"),
+                new Claim("Comment", "4")
+            };
+            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
+            var contPrincipal = new ClaimsPrincipal(contIdentity);
+
+            _fixture.SetCurrentUser(contPrincipal);
+
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 

@@ -25,6 +25,7 @@
         public static class Policies
         {
             public const string FullControlPolicy = "FullControlPolicy";
+            public const string ContributorPolicy = "ContributorPolicy";            
         }
     }
 }

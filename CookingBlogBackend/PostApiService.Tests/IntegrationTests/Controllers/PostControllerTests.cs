@@ -10,9 +10,9 @@ namespace PostApiService.Tests.IntegrationTests
 {
     public class PostControllerTests : IClassFixture<PostFixture>
     {
+        private readonly PostFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
-        private readonly PostFixture _fixture;
 
         public PostControllerTests(PostFixture fixture)
         {
@@ -24,7 +24,7 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnSeededPosts_WithComments()
         {
-            // Arrange
+            // Arrange            
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
@@ -66,7 +66,7 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task GetPosts_Pagination_ShouldReturnCorrectPageResults()
         {
-            // Arrange
+            // Arrange            
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
@@ -102,7 +102,7 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
         {
-            // Arrange
+            // Arrange            
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 

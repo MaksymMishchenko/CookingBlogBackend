@@ -1,12 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
 {
     [Controller]
     [Route("api/[controller]")]
+    [Authorize(Policy = TS.Policies.ContributorPolicy)]
     public class CommentsController : Controller
     {
         private readonly ICommentService _commentService;

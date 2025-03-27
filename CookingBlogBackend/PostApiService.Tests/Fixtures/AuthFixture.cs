@@ -1,35 +1,56 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using PostApiService.Contexts;
 
 namespace PostApiService.Tests.Fixtures
 {
-    public class AuthFixture : BaseTestFixture
+    public class AuthFixture : IAsyncLifetime
     {
+        private WebApplicationFactory<Program> _factory;
         private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=IdentityTestDb;" +
-            "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
+           "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
-        public AuthFixture() : base("", useDatabase: false) { }
+        public HttpClient Client { get; private set; }
+        public IServiceProvider Services { get; private set; }
 
-        protected override void ConfigureTestServices(IServiceCollection services)
+        public virtual async Task InitializeAsync()
         {
-            services.RemoveAll(typeof(DbContextOptions<AppIdentityDbContext>));
-            services.AddDbContext<AppIdentityDbContext>(options =>
+            _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
-                options.UseSqlServer(_identityConnectionString);
+                builder.UseEnvironment("Testing");
+
+                builder.ConfigureTestServices(services =>
+                {
+                    services.RemoveAll(typeof(DbContextOptions<AppIdentityDbContext>));
+                    services.AddDbContext<AppIdentityDbContext>(options =>
+                    {
+                        options.UseSqlServer(_identityConnectionString);
+                    });
+                });
             });
+
+            Client = _factory.CreateClient();
+            Services = _factory.Services;
         }
 
-        public override async Task InitializeAsync()
+        public async Task DisposeAsync()
         {
-            await base.InitializeAsync();
+            using (var scope = Services.CreateScope())
+            {
+                var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-            using var scope = Services.CreateScope();
-            var context = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                await cntx.Database.EnsureCreatedAsync();
+                await cntx.Database.EnsureCreatedAsync();
+            }
 
-            await context.Database.EnsureDeletedAsync();
-            await context.Database.EnsureCreatedAsync();
+            _factory.Dispose();
+            await Task.CompletedTask;
         }
     }
 }
