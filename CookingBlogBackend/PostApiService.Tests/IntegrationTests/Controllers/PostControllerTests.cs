@@ -4,6 +4,7 @@ using PostApiService.Exceptions;
 using PostApiService.Models;
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests
 {
@@ -11,8 +12,11 @@ namespace PostApiService.Tests.IntegrationTests
     {
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
+        private readonly PostFixture _fixture;
+
         public PostControllerTests(PostFixture fixture)
         {
+            _fixture = fixture;
             _client = fixture.Client;
             _services = fixture.Services;
         }
@@ -142,7 +146,18 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task AddPostAsync_ShouldAddPost_Return201CreatedAtAction()
         {
-            // Arrange            
+            // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _fixture.SetCurrentUser(adminPrincipal);
+
             var newPost = new Post
             {
                 Title = "Title Lorem ipsum dolor sit amet",
@@ -180,6 +195,17 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task UpdatePostAsync_ShouldReturn200Ok_IfPostIsUpdatedSuccessfully()
         {
             // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _fixture.SetCurrentUser(adminPrincipal);
+
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
@@ -222,6 +248,17 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task DeletePostAsync_ShouldReturn200Ok_IfPostIsDeletedSuccessfully()
         {
             // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _fixture.SetCurrentUser(adminPrincipal);
+
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
