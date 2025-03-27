@@ -1,4 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Moq;
+using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Services;
 
@@ -7,34 +10,38 @@ namespace PostApiService.Tests.IntegrationTests.Services
     public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
+        private readonly Mock<IAuthService> _authServiceMock;
+        private readonly IdentityUser _testUser;
+
         public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
+            _authServiceMock = new Mock<IAuthService>();
+            _testUser = new IdentityUser { Id = "user123", UserName = "testuser", Email = "test@test.com" };
+
+            _authServiceMock.Setup(auth => auth.GetCurrentUserAsync()).ReturnsAsync(_testUser);
         }
 
         private CommentService CreateCommentService()
         {
             var context = _fixture.CreateContext();
-            return new CommentService(context);
+            return new CommentService(context, _authServiceMock.Object);
         }
 
         [Fact]
         public async Task AddCommentAsync_ShouldAddNewCommentToPostSuccessfully()
         {
             // Arrange
+            var postId = 1;
             var commentService = CreateCommentService();
-
-            int postId = 1;
-            var comment = new Comment
-            {
-                PostId = postId,
-                Content = "Test comment from Bob",
-                Author = "Bob",
-                UserId = "testUserId"
-            };
-
             using var context = _fixture.CreateContext();
             var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
+
+            var comment = new Comment
+            {
+                Content = "Test comment from Bob",
+                Author = "Bob"
+            };
 
             // Act
             await commentService.AddCommentAsync(postId, comment);
@@ -45,8 +52,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             Assert.NotNull(addedComment);
             Assert.Equal(postId, addedComment.PostId);
-            var commentCount = await context.Comments.CountAsync(c => c.PostId == postId);
-            Assert.Equal(initialCount + 1, commentCount);
+            Assert.Equal(_testUser.Id, addedComment.UserId);
+            Assert.Equal(initialCount + 1, await context.Comments.CountAsync(c => c.PostId == postId));
         }
 
         [Fact]

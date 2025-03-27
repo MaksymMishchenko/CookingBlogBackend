@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Moq;
 using PostApiService.Interfaces;
 using PostApiService.Models;
@@ -10,13 +11,21 @@ namespace PostApiService.Tests.UnitTests.Services
     {
         private readonly InMemoryDatabaseFixture _fixture;
         private readonly Mock<IApplicationDbContext> _mockContext;
+        private readonly Mock<IAuthService> _mockAuthService;
+        private readonly IdentityUser _testUser;
         private readonly CommentService _commentService;
 
         public CommentServiceTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
             _mockContext = new Mock<IApplicationDbContext>();
-            _commentService = new CommentService(_mockContext.Object);
+            _mockAuthService = new Mock<IAuthService>();
+            _testUser = new IdentityUser { Id = "user123", UserName = "testuser", Email = "test@test.com" };
+
+            _mockAuthService.Setup(auth => auth.GetCurrentUserAsync()).ReturnsAsync(_testUser);
+
+            _commentService = new CommentService(_mockContext.Object,
+                _mockAuthService.Object);
         }
 
         [Fact]
@@ -24,11 +33,11 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             var context = _fixture.CreateContext();
-            var commentService = new CommentService(context);
+            var commentService = new CommentService(context, _mockAuthService.Object);
             var postId = 1;
             var initialCount = await context.Comments.CountAsync();
 
-            var comment = new Comment { Content = "Test comment", Author = "Test author", UserId = "testUserId" };
+            var comment = new Comment { Content = "Test comment", Author = "Test author" };
 
             // Act
             await commentService.AddCommentAsync(postId, comment);
