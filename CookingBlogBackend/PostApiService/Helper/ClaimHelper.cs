@@ -2,7 +2,7 @@
 
 namespace PostApiService.Helper
 {
-    internal static class ClaimHelper
+    public static class ClaimHelper
     {
         public static string SerializePermissions(params int[] permissions)
         {

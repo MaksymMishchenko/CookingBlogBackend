@@ -4,15 +4,16 @@ using PostApiService.Models;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Authentication;
+using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Middlewares
 {
-    public class ExceptionMiddlewareTests : IClassFixture<ExceptionMiddlewareFixture>
+    public class AdminExceptionMiddlewareTests : IClassFixture<AdminExceptionMiddlewareFixture>
     {
         private readonly HttpClient _client;
-        private readonly ExceptionMiddlewareFixture _factoryFixture;
+        private readonly AdminExceptionMiddlewareFixture _factoryFixture;
 
-        public ExceptionMiddlewareTests(ExceptionMiddlewareFixture factoryFixture)
+        public AdminExceptionMiddlewareTests(AdminExceptionMiddlewareFixture factoryFixture)
         {
             _factoryFixture = factoryFixture;
             _client = _factoryFixture.Client;
@@ -26,7 +27,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
-            // Arrange
+            // Arrange            
             Exception exception = exceptionType switch
             {
                 Type t when t == typeof(UserAlreadyExistsException) =>
@@ -70,6 +71,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
         [Theory]
         [InlineData(typeof(AuthenticationException), "/api/auth/login", HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(UnauthorizedAccessException), "/api/auth/login", HttpStatusCode.Unauthorized)]
         [InlineData(typeof(UserNotFoundException), "/api/auth/login", HttpStatusCode.Unauthorized)]
         [InlineData(typeof(ArgumentException), "/api/auth/login", HttpStatusCode.InternalServerError)]
         public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
@@ -80,6 +82,9 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 Type t when t == typeof(AuthenticationException) =>
                 new AuthenticationException(AuthErrorMessages.InvalidCredentials),
+
+                Type t when t == typeof(UnauthorizedAccessException) =>
+                new UnauthorizedAccessException(AuthErrorMessages.UnauthorizedAccess),
 
                 Type t when t == typeof(UserNotFoundException) =>
                 new UserNotFoundException(AuthErrorMessages.InvalidCredentials),
@@ -109,13 +114,14 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(AuthenticationException) => AuthErrorMessages.InvalidCredentials,
+                Type t when t == typeof(UnauthorizedAccessException) => AuthErrorMessages.UnauthorizedAccess,
                 Type t when t == typeof(UserNotFoundException) => AuthErrorMessages.InvalidCredentials,
                 Type t when t == typeof(ArgumentException) => TokenErrorMessages.GenerationFailed,
                 Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
-        }        
+        }
 
         [Theory]
         [InlineData(typeof(OperationCanceledException), "/api/posts", HttpStatusCode.RequestTimeout)]
@@ -209,6 +215,17 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _factoryFixture.SetCurrentUser(adminPrincipal);
+
             var postTitle = "Test title";
 
             Exception exception = exceptionType switch
@@ -263,6 +280,17 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _factoryFixture.SetCurrentUser(adminPrincipal);
+
             var testPostId = 999;
             var postTitle = "Test title";
 
@@ -320,6 +348,17 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _factoryFixture.SetCurrentUser(adminPrincipal);
+
             var testPostId = 999;
 
             Exception exception = exceptionType switch
@@ -351,169 +390,6 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 (PostErrorMessages.PostNotFound, testPostId),
                 Type t when t == typeof(DeletePostFailedException) => string.Format
                 (PostErrorMessages.DeletePostFailed, testPostId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
-            };
-
-            Assert.Equal(expectedMessage, errorResponse.Message);
-        }
-
-        [Theory]
-        [InlineData(typeof(PostNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(AddCommentFailedException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        public async Task AddCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
-            (Type exceptionType, string url, HttpStatusCode expectedStatus)
-        {
-            // Arrange            
-            var testPostId = 999;
-
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(PostNotFoundException) => new PostNotFoundException(testPostId),
-                Type t when t == typeof(AddCommentFailedException) => new AddCommentFailedException(testPostId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
-
-            _factoryFixture.SetException(exception);
-
-            var comment = new Comment { Content = "Test comment" };
-
-            var content = HttpHelper.GetJsonHttpContent(comment);
-
-            // Act
-            var response = await _client.PostAsync(url, content);
-
-            // Assert
-            Assert.Equal(expectedStatus, response.StatusCode);
-
-            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<Comment>>();
-            Assert.NotNull(errorResponse);
-
-            string expectedMessage = exceptionType switch
-            {
-                Type t when t == typeof(PostNotFoundException) => string.Format
-                (PostErrorMessages.PostNotFound, testPostId),
-                Type t when t == typeof(AddCommentFailedException) => string.Format
-                (CommentErrorMessages.AddCommentFailed, testPostId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
-            };
-
-            Assert.Equal(expectedMessage, errorResponse.Message);
-        }
-
-        [Theory]
-        [InlineData(typeof(CommentNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(UpdateCommentFailedException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        public async Task UpdateCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
-            (Type exceptionType, string url, HttpStatusCode expectedStatus)
-        {
-            // Arrange            
-            var testCommentId = 999;
-
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(CommentNotFoundException) => new CommentNotFoundException(testCommentId),
-                Type t when t == typeof(UpdateCommentFailedException) => new UpdateCommentFailedException(testCommentId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
-
-            _factoryFixture.SetException(exception);
-
-            var updatedComment = new EditCommentModel { Content = "Test comment" };
-            var content = HttpHelper.GetJsonHttpContent(updatedComment);
-
-            // Act
-            var response = await _client.PostAsync(url, content);
-
-            // Assert
-            Assert.Equal(expectedStatus, response.StatusCode);
-
-            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<Comment>>();
-            Assert.NotNull(errorResponse);
-
-            string expectedMessage = exceptionType switch
-            {
-                Type t when t == typeof(CommentNotFoundException) => string.Format
-                (CommentErrorMessages.CommentNotFound, testCommentId),
-                Type t when t == typeof(UpdateCommentFailedException) => string.Format
-                (CommentErrorMessages.UpdateCommentFailed, testCommentId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
-            };
-
-            Assert.Equal(expectedMessage, errorResponse.Message);
-        }
-
-        [Theory]
-        [InlineData(typeof(CommentNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(DeleteCommentFailedException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        public async Task DeleteCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
-            (Type exceptionType, string url, HttpStatusCode expectedStatus)
-        {
-            // Arrange            
-            var testCommentId = 999;
-
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(CommentNotFoundException) => new CommentNotFoundException(testCommentId),
-                Type t when t == typeof(DeleteCommentFailedException) => new DeleteCommentFailedException(testCommentId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
-
-            _factoryFixture.SetException(exception);
-
-            var updatedComment = new EditCommentModel { Content = "Test comment" };
-            var content = HttpHelper.GetJsonHttpContent(updatedComment);
-
-            // Act
-            var response = await _client.PostAsync(url, content);
-
-            // Assert
-            Assert.Equal(expectedStatus, response.StatusCode);
-
-            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<Comment>>();
-            Assert.NotNull(errorResponse);
-
-            string expectedMessage = exceptionType switch
-            {
-                Type t when t == typeof(CommentNotFoundException) => string.Format
-                (CommentErrorMessages.CommentNotFound, testCommentId),
-                Type t when t == typeof(DeleteCommentFailedException) => string.Format
-                (CommentErrorMessages.DeleteCommentFailed, testCommentId),
                 Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
                 Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
                 Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,

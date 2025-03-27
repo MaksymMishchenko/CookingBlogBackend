@@ -1,26 +1,28 @@
-﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using PostApiService.Contexts;
+using PostApiService.Helper;
+using PostApiService.Models.TypeSafe;
 using System.Security.Claims;
-using System.Text.Encodings.Web;
 
 namespace PostApiService.Tests.Fixtures
 {
-    public class TestBaseFixture : IAsyncLifetime
+    public class BaseTestFixture : IAsyncLifetime
     {
         private WebApplicationFactory<Program> _factory;
         private readonly string _connectionString;
         private readonly bool _useDatabase;
+        private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=IdentityTestDb;" +
+           "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
         public HttpClient Client { get; private set; }
         public IServiceProvider Services { get; private set; }
 
-        public TestBaseFixture(string connectionString, bool useDatabase)
+        public BaseTestFixture(string connectionString, bool useDatabase)
         {
             _connectionString = connectionString;
             _useDatabase = useDatabase;
@@ -43,18 +45,10 @@ namespace PostApiService.Tests.Fixtures
                         });
                     }
 
-                    services.AddAuthentication("TestScheme")
-                            .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(
-                                "TestScheme", options =>
-                                {
-                                    // Optional: set custom time provider for testing
-                                    // options.TimeProvider = TimeProvider.System;
-                                });
-
-                    services.PostConfigure<AuthenticationOptions>(options =>
+                    services.RemoveAll(typeof(DbContextOptions<AppIdentityDbContext>));
+                    services.AddDbContext<AppIdentityDbContext>(options =>
                     {
-                        options.DefaultAuthenticateScheme = "TestScheme";
-                        options.DefaultChallengeScheme = "TestScheme";
+                        options.UseSqlServer(_identityConnectionString);
                     });
 
                     ConfigureTestServices(services);
@@ -63,39 +57,65 @@ namespace PostApiService.Tests.Fixtures
 
             Client = _factory.CreateClient();
             Services = _factory.Services;
+
+            await InitializeTestUsersDatabaseAsync();
         }
 
         protected virtual void ConfigureTestServices(IServiceCollection services) { }
+
+        private async Task InitializeTestUsersDatabaseAsync()
+        {
+            using (var scope = Services.CreateScope())
+            {
+                var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+
+                if (await cntx.Database.EnsureCreatedAsync())
+                {
+                    // Creating Role Entities
+                    var adminRole = new IdentityRole(TS.Roles.Admin);
+                    var contributorRole = new IdentityRole(TS.Roles.Contributor);
+
+                    // Adding Roles
+                    await roleManager.CreateAsync(adminRole);
+                    await roleManager.CreateAsync(contributorRole);
+
+                    // Creating User Entities
+                    var adminUser = new IdentityUser() { Id = "testAdminId", UserName = "admin", Email = "admin@test.com" };
+                    var contributorUser = new IdentityUser() { Id = "testContId", UserName = "cont", Email = "c@test.com" };
+
+                    // Adding Users with Password
+                    await userManager.CreateAsync(adminUser, "-Rtyuehe1");
+                    await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
+
+                    // Adding Claims to Users
+                    await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, "testAdminId"));
+
+                    await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, "testContId"));
+                    await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
+
+                    // Adding Roles to Users
+                    await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
+                    await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
+                }
+            }
+        }
+
+        private static Claim GetContributorClaims(string controllerName)
+        {
+            return new Claim(controllerName,
+                ClaimHelper.SerializePermissions(
+                    TS.Permissions.Write,
+                    TS.Permissions.Update,
+                    TS.Permissions.Delete
+                ));
+        }
 
         public async Task DisposeAsync()
         {
             _factory.Dispose();
             await Task.CompletedTask;
-        }
-    }
-
-    public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
-    {
-        public TestAuthHandler(
-            IOptionsMonitor<AuthenticationSchemeOptions> options,
-            ILoggerFactory logger,
-            UrlEncoder encoder)
-            : base(options, logger, encoder)
-        { }
-
-        protected override Task<AuthenticateResult> HandleAuthenticateAsync()
-        {
-            var claims = new[]
-            {
-                new Claim(ClaimTypes.Name, "testuser"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-
-            var identity = new ClaimsIdentity(claims, "TestScheme");
-            var principal = new ClaimsPrincipal(identity);
-            var ticket = new AuthenticationTicket(principal, "TestScheme");
-
-            return Task.FromResult(AuthenticateResult.Success(ticket));
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace PostApiService.Tests.Fixtures
 {
-    public class PostFixture : TestBaseFixture
+    public class PostFixture : BaseTestFixture
     {
         private const string _connectionString = "Server=MAX\\SQLEXPRESS;Database=TestPost;Trusted_Connection=True;" +
             "MultipleActiveResultSets=True;TrustServerCertificate=True;";

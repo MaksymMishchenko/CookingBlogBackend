@@ -5,7 +5,7 @@ using PostApiService.Contexts;
 
 namespace PostApiService.Tests.Fixtures
 {
-    public class AuthFixture : TestBaseFixture
+    public class AuthFixture : BaseTestFixture
     {
         private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=IdentityTestDb;" +
             "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";

@@ -67,6 +67,13 @@ namespace PostApiService.Middlewares
                     HttpStatusCode.Unauthorized,
                     AuthErrorMessages.InvalidCredentials);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                await HandleExceptionAsync(context,
+                    ex.Message,
+                    HttpStatusCode.Unauthorized,
+                    AuthErrorMessages.UnauthorizedAccess);
+            }
             catch (PostNotFoundException ex)
             {
                 await HandleExceptionAsync(context,
