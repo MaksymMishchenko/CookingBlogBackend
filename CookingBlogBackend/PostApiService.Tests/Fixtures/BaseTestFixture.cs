@@ -13,14 +13,14 @@ namespace PostApiService.Tests.Fixtures
 {
     public class BaseTestFixture : IAsyncLifetime
     {
-        private WebApplicationFactory<Program> _factory;
+        private WebApplicationFactory<Program>? _factory;
         private readonly string _connectionString;
         private readonly bool _useDatabase;
         private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=IdentityTestDb;" +
            "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
-        public HttpClient Client { get; private set; }
-        public IServiceProvider Services { get; private set; }
+        public HttpClient? Client { get; private set; }
+        public IServiceProvider? Services { get; private set; }
 
         public BaseTestFixture(string connectionString, bool useDatabase)
         {
@@ -63,13 +63,13 @@ namespace PostApiService.Tests.Fixtures
 
         protected virtual void ConfigureTestServices(IServiceCollection services) { }
 
-        private async Task InitializeTestUsersDatabaseAsync()
+        protected virtual async Task InitializeTestUsersDatabaseAsync()
         {
-            using (var scope = Services.CreateScope())
+            using (var scope = Services?.CreateScope())
             {
-                var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                var cntx = scope!.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();                
 
                 if (await cntx.Database.EnsureCreatedAsync())
                 {
@@ -112,9 +112,9 @@ namespace PostApiService.Tests.Fixtures
                 ));
         }
 
-        public async Task DisposeAsync()
-        {
-            _factory.Dispose();
+        public virtual async Task DisposeAsync()
+        {            
+            _factory?.Dispose();
             await Task.CompletedTask;
         }
     }

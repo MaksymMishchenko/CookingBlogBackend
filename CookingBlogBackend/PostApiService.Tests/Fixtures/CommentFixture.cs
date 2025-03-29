@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PostApiService.Contexts;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -14,6 +15,17 @@ namespace PostApiService.Tests.Fixtures
             "MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
         public CommentFixture() : base(_connectionString, useDatabase: true) { }
+
+        public override async Task InitializeAsync()
+        {
+            await base.InitializeAsync();
+
+            using var scope = Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            await context.Database.EnsureDeletedAsync();
+            await context.Database.EnsureCreatedAsync();
+        }
 
         protected override void ConfigureTestServices(IServiceCollection services)
         {
@@ -34,6 +46,20 @@ namespace PostApiService.Tests.Fixtures
         public void SetCurrentUser(ClaimsPrincipal user)
         {
             DynamicAuthHandler.CurrentPrincipal = user;
+        }
+
+        public override async Task DisposeAsync()
+        {
+            using var scope = Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+            await context.Database.EnsureDeletedAsync();
+
+            var identityContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+
+            await identityContext.Database.EnsureDeletedAsync();
+
+            await base.DisposeAsync();
         }
 
         public class DynamicAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
