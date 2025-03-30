@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using PostApiService.Contexts;
 using PostApiService.Interfaces;
 using PostApiService.Tests.Mocks;
 using System.Security.Claims;
@@ -14,7 +15,7 @@ namespace PostApiService.Tests.Fixtures
     {
         private Exception? _exception;
 
-        public ContributorExceptionMiddlewareFixture() : base("", useDatabase: false) { }
+        public ContributorExceptionMiddlewareFixture() : base("", useDatabase: false) { }        
 
         protected override void ConfigureTestServices(IServiceCollection services)
         {
@@ -52,6 +53,16 @@ namespace PostApiService.Tests.Fixtures
         public void SetException(Exception exception)
         {
             _exception = exception;
+        }
+
+        public override async Task DisposeAsync()
+        {
+            using var scope = Services.CreateScope();
+            var identityContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+
+            await identityContext.Database.EnsureDeletedAsync();
+
+            await base.DisposeAsync();
         }
 
         public class DynamicAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
