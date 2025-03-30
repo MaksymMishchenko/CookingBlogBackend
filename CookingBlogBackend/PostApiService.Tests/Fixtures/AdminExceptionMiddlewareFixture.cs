@@ -13,9 +13,12 @@ namespace PostApiService.Tests.Fixtures
 {
     public class AdminExceptionMiddlewareFixture : BaseTestFixture
     {
+        private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=AdminExIdentityTestDb;" +
+           "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
+
         private Exception? _exception;
 
-        public AdminExceptionMiddlewareFixture() : base("", useDatabase: false) { }
+        public AdminExceptionMiddlewareFixture() : base("", _identityConnectionString, useDatabase: false) { }        
 
         protected override void ConfigureTestServices(IServiceCollection services)
         {

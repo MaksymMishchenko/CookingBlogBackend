@@ -6,15 +6,10 @@ using System.Net.Http.Json;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
-
-    [CollectionDefinition("AuthSequentialTests")]
-    public class AuthSequentialTestsCollection : ICollectionFixture<AuthFixture> { }
-
-    [Collection("AuthSequentialTests")]
-    public class AuthControllerTests
+    public class AuthControllerTests : IClassFixture<AuthFixture>
     {
-        private readonly HttpClient _client;
-        private readonly IServiceProvider _services;
+        private readonly HttpClient? _client;
+        private readonly IServiceProvider? _services;
         public AuthControllerTests(AuthFixture fixture)
         {
             _client = fixture.Client;
@@ -25,21 +20,11 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnRegister_ShouldReturnSuccessResponse_IfUserRegisterSuccessfully()
         {
             // Arrange
-            var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe5" };
+            var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe6" };
             var content = HttpHelper.GetJsonHttpContent(newUser);
 
-            using (var scope = _services.CreateScope())
-            {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var existingUser = await userManager.FindByEmailAsync(newUser.Email);
-                if (existingUser != null)
-                {
-                    await userManager.DeleteAsync(existingUser);
-                }
-            }
-
             // Act            ;
-            var response = await _client.PostAsync("/api/auth/register", content);
+            var response = await _client!.PostAsync("/api/auth/register", content);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterUser>>();
@@ -49,7 +34,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(string.Format(RegisterSuccessMessages.RegisterOk,
                 newUser.UserName), result.Message);
 
-            using (var scope = _services.CreateScope())
+            using (var scope = _services!.CreateScope())
             {
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var userInDb = await userManager.FindByEmailAsync(newUser.Email);
@@ -64,17 +49,17 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully()
         {
             // Arrange            
-            var loginUser = new LoginUser { UserName = "Bob", Password = "-Rtyuehe5" };
+            var loginUser = new LoginUser { UserName = "cont", Password = "-Rtyuehe2" };
 
             // Act
             var loginContent = HttpHelper.GetJsonHttpContent(loginUser);
-            var loginResponse = await _client.PostAsync("/api/auth/login", loginContent);
+            var loginResponse = await _client!.PostAsync("/api/auth/login", loginContent);
             loginResponse.EnsureSuccessStatusCode();
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<ApiResponse<LoginUser>>();
 
             // Assert
-            Assert.True(loginResult.Success);
+            Assert.True(loginResult!.Success);
             Assert.Equal(string.Format(AuthSuccessMessages.LoginSuccess,
                 loginUser.UserName), loginResult.Message);
             Assert.NotNull(loginResult.Token);

@@ -13,9 +13,12 @@ namespace PostApiService.Tests.Fixtures
 {
     public class ContributorExceptionMiddlewareFixture : BaseTestFixture
     {
+        private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=ContExIdentityTestDb;" +
+           "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
+
         private Exception? _exception;
 
-        public ContributorExceptionMiddlewareFixture() : base("", useDatabase: false) { }        
+        public ContributorExceptionMiddlewareFixture() : base("", _identityConnectionString, useDatabase: false) { }        
 
         protected override void ConfigureTestServices(IServiceCollection services)
         {

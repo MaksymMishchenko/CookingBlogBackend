@@ -14,16 +14,18 @@ namespace PostApiService.Tests.Fixtures
     public class BaseTestFixture : IAsyncLifetime
     {
         private WebApplicationFactory<Program>? _factory;
+        private readonly string _identityConnectionString;
         private readonly string _connectionString;
         private readonly bool _useDatabase;
-        private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=IdentityTestDb;" +
-           "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
         public HttpClient? Client { get; private set; }
         public IServiceProvider? Services { get; private set; }
 
-        public BaseTestFixture(string connectionString, bool useDatabase)
+        public BaseTestFixture(string connectionString,
+            string identityConnectionString,
+            bool useDatabase)
         {
+            _identityConnectionString = identityConnectionString;
             _connectionString = connectionString;
             _useDatabase = useDatabase;
         }
@@ -69,7 +71,7 @@ namespace PostApiService.Tests.Fixtures
             {
                 var cntx = scope!.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();                
+                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
                 if (await cntx.Database.EnsureCreatedAsync())
                 {
@@ -113,7 +115,7 @@ namespace PostApiService.Tests.Fixtures
         }
 
         public virtual async Task DisposeAsync()
-        {            
+        {
             _factory?.Dispose();
             await Task.CompletedTask;
         }
