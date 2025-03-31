@@ -11,14 +11,14 @@ using System.Text.Encodings.Web;
 
 namespace PostApiService.Tests.Fixtures
 {
-    public class ContributorExceptionMiddlewareFixture : BaseTestFixture
+    public class ExceptionMiddlewareFixture : BaseTestFixture
     {
-        private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=ContExIdentityTestDb;" +
+        private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=AdminExIdentityTestDb;" +
            "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
         private Exception? _exception;
 
-        public ContributorExceptionMiddlewareFixture() : base("", _identityConnectionString, useDatabase: false) { }        
+        public ExceptionMiddlewareFixture() : base("", _identityConnectionString, useDatabase: false) { }        
 
         protected override void ConfigureTestServices(IServiceCollection services)
         {
