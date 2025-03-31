@@ -224,8 +224,8 @@ var assemblies = [
       { "name": "ApplicationDbContext", "rp": "PostApiService_ApplicationDbContext.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 16, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Contexts.AppIdentityDbContext", "rp": "PostApiService_AppIdentityDbContext.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 11, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Controllers.AuthController", "rp": "PostApiService_AuthController.html", "cl": 47, "ucl": 0, "cal": 47, "tl": 112, "cb": 16, "tb": 16, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Controllers.CommentsController", "rp": "PostApiService_CommentsController.html", "cl": 69, "ucl": 0, "cal": 69, "tl": 145, "cb": 20, "tb": 20, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Controllers.PostsController", "rp": "PostApiService_PostsController.html", "cl": 84, "ucl": 0, "cal": 84, "tl": 189, "cb": 26, "tb": 26, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Controllers.CommentsController", "rp": "PostApiService_CommentsController.html", "cl": 69, "ucl": 0, "cal": 69, "tl": 148, "cb": 20, "tb": 20, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Controllers.PostsController", "rp": "PostApiService_PostsController.html", "cl": 84, "ucl": 0, "cal": 84, "tl": 194, "cb": 26, "tb": 26, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Exceptions.AddCommentFailedException", "rp": "PostApiService_AddCommentFailedException.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 46, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Exceptions.AddPostFailedException", "rp": "PostApiService_AddPostFailedException.html", "cl": 5, "ucl": 0, "cal": 5, "tl": 57, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Exceptions.CommentException", "rp": "PostApiService_CommentException.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 46, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
@@ -245,9 +245,11 @@ var assemblies = [
       { "name": "PostApiService.Exceptions.UserNotFoundException", "rp": "PostApiService_UserNotFoundException.html", "cl": 1, "ucl": 0, "cal": 1, "tl": 52, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Exceptions.UserRegistrationException", "rp": "PostApiService_UserRegistrationException.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 52, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Helper.ClaimHelper", "rp": "PostApiService_ClaimHelper.html", "cl": 6, "ucl": 0, "cal": 6, "tl": 17, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Helper.Extensions", "rp": "PostApiService_Extensions.html", "cl": 8, "ucl": 10, "cal": 18, "tl": 34, "cb": 2, "tb": 6, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Infrastructure.ServiceRegistration", "rp": "PostApiService_ServiceRegistration.html", "cl": 41, "ucl": 85, "cal": 126, "tl": 198, "cb": 0, "tb": 2, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Middlewares.GlobalExceptionMiddleware", "rp": "PostApiService_GlobalExceptionMiddleware.html", "cl": 166, "ucl": 0, "cal": 166, "tl": 194, "cb": 22, "tb": 22, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Helper.Extensions", "rp": "PostApiService_Extensions.html", "cl": 12, "ucl": 6, "cal": 18, "tl": 34, "cb": 3, "tb": 6, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Infrastructure.Authorization.AuthorizeHelper", "rp": "PostApiService_AuthorizeHelper.html", "cl": 4, "ucl": 2, "cal": 6, "tl": 17, "cb": 1, "tb": 2, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Infrastructure.Authorization.Requirements.ContributorRequirementHandler", "rp": "PostApiService_ContributorRequirementHandler.html", "cl": 12, "ucl": 3, "cal": 15, "tl": 33, "cb": 4, "tb": 8, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Infrastructure.ServiceRegistration", "rp": "PostApiService_ServiceRegistration.html", "cl": 92, "ucl": 115, "cal": 207, "tl": 309, "cb": 0, "tb": 4, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Middlewares.GlobalExceptionMiddleware", "rp": "PostApiService_GlobalExceptionMiddleware.html", "cl": 173, "ucl": 0, "cal": 173, "tl": 201, "cb": 23, "tb": 23, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.AppIdentityDb.AppIdentityDbContextModelSnapshot", "rp": "PostApiService_AppIdentityDbContextModelSnapshot.html", "cl": 0, "ucl": 243, "cal": 243, "tl": 276, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.AppIdentityDb.Identity", "rp": "PostApiService_Identity.html", "cl": 0, "ucl": 431, "cal": 431, "tl": 503, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Migrations.ApplicationDbContextModelSnapshot", "rp": "PostApiService_ApplicationDbContextModelSnapshot.html", "cl": 0, "ucl": 104, "cal": 104, "tl": 128, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
@@ -261,11 +263,11 @@ var assemblies = [
       { "name": "PostApiService.Models.LoginUser", "rp": "PostApiService_LoginUser.html", "cl": 2, "ucl": 0, "cal": 2, "tl": 15, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Models.Post", "rp": "PostApiService_Post.html", "cl": 11, "ucl": 0, "cal": 11, "tl": 43, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Models.RegisterUser", "rp": "PostApiService_RegisterUser.html", "cl": 3, "ucl": 0, "cal": 3, "tl": 21, "cb": 0, "tb": 0, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Services.AuthService", "rp": "PostApiService_AuthService.html", "cl": 60, "ucl": 18, "cal": 78, "tl": 168, "cb": 9, "tb": 16, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "PostApiService.Services.CommentService", "rp": "PostApiService_CommentService.html", "cl": 26, "ucl": 12, "cal": 38, "tl": 101, "cb": 6, "tb": 12, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Services.AuthService", "rp": "PostApiService_AuthService.html", "cl": 78, "ucl": 20, "cal": 98, "tl": 206, "cb": 15, "tb": 24, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "PostApiService.Services.CommentService", "rp": "PostApiService_CommentService.html", "cl": 30, "ucl": 12, "cal": 42, "tl": 107, "cb": 6, "tb": 12, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Services.PostService", "rp": "PostApiService_PostService.html", "cl": 78, "ucl": 14, "cal": 92, "tl": 195, "cb": 17, "tb": 24, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
       { "name": "PostApiService.Services.TokenService", "rp": "PostApiService_TokenService.html", "cl": 19, "ucl": 7, "cal": 26, "tl": 65, "cb": 2, "tb": 4, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
-      { "name": "Program", "rp": "PostApiService_Program.html", "cl": 30, "ucl": 7, "cal": 37, "tl": 74, "cb": 5, "tb": 10, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
+      { "name": "Program", "rp": "PostApiService_Program.html", "cl": 31, "ucl": 8, "cal": 39, "tl": 80, "cb": 5, "tb": 10, "cm": 0, "tm": 0, "lch": [], "bch": [], "mch": [], "hc": [], "metrics": { } },
     ]},
 ];
 
@@ -282,8 +284,8 @@ var riskHotspots = [
   {
     "assembly": "PostApiService", "class": "PostApiService.Middlewares.GlobalExceptionMiddleware", "reportPath": "PostApiService_GlobalExceptionMiddleware.html", "methodName": "Invoke()", "methodShortName": "Invoke()", "fileIndex": 0, "line": 23,
     "metrics": [
-      { "value": 22, "exceeded": false },
-      { "value": 22, "exceeded": true },
+      { "value": 23, "exceeded": false },
+      { "value": 23, "exceeded": true },
     ]},
 ];
 
