@@ -33,29 +33,22 @@ The frontend interacts with this API to display a list of posts, submit new post
   cd CookingBlogBackend`
 
 ### Step 2: Configure the database
-1. Open or create the appsettings.json file and update the database connection string:
+1. Open or create the appsettings.json file and update the database connection strings:
+### `appsettings.json` Template
 
-`
+```json
 {
   "ConnectionStrings": {
-    // Main application database
     "DefaultConnection": "Server=your_server_instance;Database=YourAppDb;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;",
-    
-    // Identity database for authentication
     "IdentityConnection": "Server=your_server_instance;Database=YourAppIdentityDb;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;"
   },
-
   "Jwt": {
-    // Secret key (minimum 32 characters)
     "SecretKey": "your_strong_secret_key_32_chars_minimum",
-    
-    // JWT token generation settings
-    "Issuer": "https://localhost:5001",         // Your domain
-    "Audience": "https://localhost:5001",       // Client domain
-    "ExpiryInMinutes": 15,                     // Token lifetime
-    "RefreshTokenExpiryInDays": 7               // Refresh token lifetime
+    "Issuer": "https://localhost:5001",
+    "Audience": "https://localhost:5001",
+    "ExpiryInMinutes": 15,
+    "RefreshTokenExpiryInDays": 7
   },
-
   "Logging": {
     "LogLevel": {
       "Default": "Information",
@@ -63,10 +56,9 @@ The frontend interacts with this API to display a list of posts, submit new post
       "Microsoft.Hosting.Lifetime": "Information"
     }
   },
-
-  "AllowedHosts": "*",  // Allowed domains ("*" for any)
+  "AllowedHosts": "*"
 }
-`
+```
 
 2. Apply migrations to create the database tables:
 
@@ -100,8 +92,8 @@ json
 ```
 json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  expires: "2025-01-06T22:21:58.206517+02:00"
+    "success": true,
+    "message": "User with username {userName} registered successfully."
 }
 ```
 
@@ -121,13 +113,14 @@ json
 ```
 json
 {
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  expires: "2025-01-06T22:21:58.206517+02:00"
+    "success": true,
+    "message": "User with username {username} logged in successfully",
+    "token": "eyJhbGciOiJIU..."
 }
 ```
 
 ### 3. Comments
-**Endpoint: POST /api/Comments/posts/{postId}**
+**Endpoint: POST /api/Comments/{postId}**
 
 **Headers:**
 
@@ -147,8 +140,7 @@ json
 json
 {
     "success": true,
-    "message": "Comment added successfully.",
-    "errors": []
+    "message": "Comment added successfully."
 }
 ```
 **Validation errors**
@@ -183,8 +175,7 @@ json
 ```
 {
     "success": true,
-    "message": "Comment updated successfully.",
-    "errors": []
+    "message": "Comment updated successfully."
 }
 ```
 **Validation errors**
@@ -208,94 +199,106 @@ json
 
 **Request body:**
 `json
-{
-  "commentId": 1
-}`
+{}`
 
 **Response body:**
 json
 ```
 {
     "success": true,
-    "message": "Comment deleted successfully",
-    "errors": []
+    "message": "Comment deleted successfully."
 }
 ```
 
 ### 4. Posts
 
-**Endpoint: GET /api/Posts/GetAllPosts**
+**Endpoint: GET /api/posts?pageNumber=1&pageSize=10&commentPageNumber=1&commentsPerPage=10&includeComments=true**
 
 **Request body:**
 `json
-{
-  "pageNumber": 1,
-  "pageSize": 10,
-  "commentPageNumber": 1,
-  "commentsPerPage": 1,
-  "includeComments": true
-}`
+{}`
 
 **Response body:**
 ```
 json
-[
-  {
-    "postId": 1,
-    "title": "First Post",
-    "description": "Description for first post",
-    "content": "This is the content of the first post.",
-    "author": "Peter Jack",
-    "createAt": "2024-11-23T18:16:57.5541777",
-    "imageUrl": "/images/placeholder.jpg",
-    "metaTitle": "Meta title info",
-    "metaDescription": "This is meta description",
-    "slug": "http://localhost:4200/first-post",
-    "comments": [
-      {
-        "commentId": 1,
-        "author": "Jane Doe",
-        "content": "I totally agree with this!",
-        "createdAt": "2024-11-23T18:16:58.5548371",
-        "postId": 1
-      },
-      ...
-    ]
-  },
-  ...
-]
-```
-
-**Endpoint: GET /api/Posts/GetPost/{postId}**
-
-**Request body:**
-```
-json
 {
-  "postId": 1,
-  "title": "First Post",
-  "description": "Description for first post",
-  "content": "This is the content of the first post.",
-  "author": "Peter Jack",
-  "createAt": "2024-11-23T18:16:57.5541777",
-  "imageUrl": "/images/placeholder.jpg",
-  "metaTitle": "Meta title info",
-  "metaDescription": "This is meta description",
-  "slug": "http://localhost:4200/first-post",
-  "comments": [
-    {
-      "commentId": 2,
-      "author": "Jane Doe",
-      "content": "I totally agree with this!",
-      "createdAt": "2024-11-23T18:16:58.5548371",
-      "postId": 1
-    },
-    ...
-  ]
+    "success": true,
+    "message": "Successfully retrieved 2 posts.",
+    "dataList": [
+        {
+            "postId": 1,
+            "title": "First Post",
+            "description": "Description for first post",
+            "content": "This is the content of the first post.",
+            "author": "Peter Jack",
+            "createAt": "2025-03-31T18:22:44.1494039",
+            "imageUrl": "/images/placeholder.jpg",
+            "metaTitle": "Meta title info",
+            "metaDescription": "This is meta description",
+            "slug": "http://localhost:4200/first-post",
+            "comments": [
+                {
+                    "commentId": 2,
+                    "author": "Jane Doe",
+                    "content": "I totally agree with this!",
+                    "createdAt": "2025-03-31T18:22:44.954684",
+                    "postId": 1,
+                    "userId": "testUserId"
+                },
+                {
+                    "commentId": 4,
+                    "author": "Maks",
+                    "content": "Content must be at least 10 symbols",
+                    "createdAt": "2025-03-31T18:27:00.9048119",
+                    "postId": 1,
+                    "userId": "f1b207f3-1a6a-4862-b377-4089fb59d803"
+                }
+            ]
+        },
+        ...
+    ]
 }
 ```
 
-**Endpoint: POST /api/Posts/AddNewPost**
+**Endpoint: GET /api/posts/1?includeComments=true**
+
+**Request body:**
+`json
+{}`
+
+**Response body:**
+```
+json
+{
+    "success": true,
+    "message": "Post with ID 1 retrieved successfully.",
+    "data": {
+        "postId": 1,
+        "title": "First Post",
+        "description": "Description for first post",
+        "content": "This is the content of the first post.",
+        "author": "Peter Jack",
+        "createAt": "2025-03-31T18:22:44.1494039",
+        "imageUrl": "/images/placeholder.jpg",
+        "metaTitle": "Meta title info",
+        "metaDescription": "This is meta description",
+        "slug": "http://localhost:4200/first-post",
+        "comments": [
+            {
+                "commentId": 2,
+                "author": "Jane Doe",
+                "content": "I totally agree with this!",
+                "createdAt": "2025-03-31T18:22:44.954684",
+                "postId": 1,
+                "userId": "testUserId"
+            },
+            ...
+        ]
+    }
+}
+```
+
+**Endpoint: POST /api/Posts**
 
 **Headers:**
 
@@ -305,25 +308,14 @@ json
 ```
 json
 {
-  "postId": 0,
-  "title": "Some title here",
-  "description": "Some desc here",
-  "content": "Some content here",
-  "author": "Michael",
-  "createAt": "2025-01-06T20:19:00.733Z",
-  "imageUrl": "src/img/img.jpg",
-  "metaTitle": "Some meta title",
-  "metaDescription": "Some meta desc",
-  "slug": "some-post-slug",
-  "comments": [
-    {
-      "commentId": 1,
-      "author": "Kevin",
-      "content": "Some comment text",
-      "createdAt": "2025-01-06T20:19:00.740Z",
-      "postId": 1
-    }
-  ]
+    "title": "New test post title",
+    "description": "This is a sample description for the post.",
+    "content": "This is the detailed content of the post. It provides in-depth information about the topic.",
+    "author": "Peter",
+    "imageUrl": "https://example.com/sample-image.jpg",
+    "metaTitle": "Sample Meta Title",
+    "metaDescription": "This is a sample meta description for SEO purposes.",
+    "slug": "sample-post-title-1"
 }
 ```
 
@@ -331,13 +323,13 @@ json
 ```
 json
 {
-    Success = true,
-    postId = 1,
-    Message = "Post added successfully."
+    "success": true,
+    "message": "Post added successfully.",
+    "entityId": 3
 }
 ```
 
-**Endpoint: PUT /api/Posts/{id}**
+**Endpoint: PUT api/posts**
 
 **Headers:**
 
@@ -347,21 +339,27 @@ json
 ```
 json
 {
-  "postId": 1,
-  "title": "Some title here",
-  "description": "Some desc here",
-  "content": "Some content here",
-  "author": "Michael",
-  "createAt": "2025-01-06T20:19:00.733Z",
-  "imageUrl": "src/img/img.jpg",
-  "metaTitle": "Some meta title",
-  "metaDescription": "Some meta desc",
-  "slug": "some-post-slug"
+    "postId": 2,
+    "title": "Updated post title",
+    "description": "This is a sample description for the post.",
+    "content": "This is the detailed content of the post. It provides in-depth information about the topic.",
+    "author": "John Doe",
+    "imageUrl": "https://example.com/changed-image.jpg",
+    "metaTitle": "Sample changed Meta Title",
+    "metaDescription": "This is a changed sample meta description for SEO purposes.",
+    "slug": "sample-post-title-changed"
 }
 ```
 
 **Response body:**
-`Updated post successfully`
+```
+json
+{
+    "success": true,
+    "message": "Post with ID 2 updated successfully.",
+    "entityId": 2
+}
+```
 
 **Endpoint: DELETE /api/Posts/{Id}**
 
@@ -371,12 +369,16 @@ json
 
 **Request body:**
 `json
-{
-  "id": 1
-}`
+{}`
 
-**Response body**
--
+**Response body:**
+```
+{
+    "success": true,
+    "message": "Post with ID 2 deleted successfully.",
+    "entityId": 2
+}
+```
 
 ## Project Structure
 
@@ -404,7 +406,6 @@ Solution PostApiService/
                                            
 
 ```
-
 # Testing
 
 ## Project Structure
@@ -483,8 +484,6 @@ To use the collection:
 This provides an alternative testing method for verifying API functionality.
 
 ## To-Do
-- **Registration**
-- **Global Exception Handling Middleware:** Centralized error handling
 - **Docker** (for containerization)
 
 ## Contact
