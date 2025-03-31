@@ -35,9 +35,38 @@ The frontend interacts with this API to display a list of posts, submit new post
 ### Step 2: Configure the database
 1. Open or create the appsettings.json file and update the database connection string:
 
-`"ConnectionStrings": {
-    "DefaultConnection": "Server=localhost;Database=MyDatabase;User Id=sa;Password=your_password;"
-}`
+`
+{
+  "ConnectionStrings": {
+    // Main application database
+    "DefaultConnection": "Server=your_server_instance;Database=YourAppDb;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;",
+    
+    // Identity database for authentication
+    "IdentityConnection": "Server=your_server_instance;Database=YourAppIdentityDb;Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;"
+  },
+
+  "Jwt": {
+    // Secret key (minimum 32 characters)
+    "SecretKey": "your_strong_secret_key_32_chars_minimum",
+    
+    // JWT token generation settings
+    "Issuer": "https://localhost:5001",         // Your domain
+    "Audience": "https://localhost:5001",       // Client domain
+    "ExpiryInMinutes": 15,                     // Token lifetime
+    "RefreshTokenExpiryInDays": 7               // Refresh token lifetime
+  },
+
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+
+  "AllowedHosts": "*",  // Allowed domains ("*" for any)
+}
+`
 
 2. Apply migrations to create the database tables:
 
