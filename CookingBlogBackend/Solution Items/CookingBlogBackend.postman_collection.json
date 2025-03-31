@@ -11,11 +11,28 @@
 			"item": [
 				{
 					"name": "GetAllPosts",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/Posts/GetAllPosts?pageNumber=1&pageSize=10&commentPageNumber=1&commentsPerPage=10&includeComments=true",
+							"raw": "https://localhost:7030/api/posts?pageNumber=1&pageSize=10&commentPageNumber=1&commentsPerPage=10&includeComments=true",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -23,8 +40,7 @@
 							"port": "7030",
 							"path": [
 								"api",
-								"Posts",
-								"GetAllPosts"
+								"posts"
 							],
 							"query": [
 								{
@@ -54,11 +70,28 @@
 				},
 				{
 					"name": "GetPost",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "noauth"
+						},
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/Posts/GetPost/1?includeComments=true",
+							"raw": "https://localhost:7030/api/posts/1?includeComments=true",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -66,8 +99,7 @@
 							"port": "7030",
 							"path": [
 								"api",
-								"Posts",
-								"GetPost",
+								"posts",
 								"1"
 							],
 							"query": [
@@ -82,12 +114,36 @@
 				},
 				{
 					"name": "AddNewPost",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"Sample Post Title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title\"\r\n}",
+							"raw": "{\r\n    \"title\": \"New test post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-1\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -95,7 +151,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/Posts/AddNewPost",
+							"raw": "https://localhost:7030/api/Posts",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -103,8 +159,7 @@
 							"port": "7030",
 							"path": [
 								"api",
-								"Posts",
-								"AddNewPost"
+								"Posts"
 							]
 						}
 					},
@@ -112,12 +167,36 @@
 				},
 				{
 					"name": "UpdatePost",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "PUT",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"postId\": 3,\r\n    \"title\": \"Changed changed Post Title\",\r\n    \"description\": \"This is a Changed sample description for the post.\",\r\n    \"content\": \"This is the Changed detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Changed Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\"\r\n}",
+							"raw": "{\r\n    \"postId\": 2,\r\n    \"title\": \"Updated post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -125,7 +204,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/Posts/3",
+							"raw": "https://localhost:7030/api/posts",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -133,8 +212,7 @@
 							"port": "7030",
 							"path": [
 								"api",
-								"Posts",
-								"3"
+								"posts"
 							]
 						}
 					},
@@ -142,11 +220,35 @@
 				},
 				{
 					"name": "RemovePost",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/Posts/4",
+							"raw": "https://localhost:7030/api/posts/2",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -154,8 +256,8 @@
 							"port": "7030",
 							"path": [
 								"api",
-								"Posts",
-								"4"
+								"posts",
+								"2"
 							],
 							"query": [
 								{
@@ -174,7 +276,7 @@
 				"bearer": [
 					{
 						"key": "token",
-						"value": "{{JwtToken}}",
+						"value": "{{jwtToken}}}",
 						"type": "string"
 					}
 				]
@@ -208,42 +310,21 @@
 				{
 					"name": "AddComment",
 					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
 						"method": "POST",
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{  \r\n  \"author\": \"Bob\",\r\n  \"content\": \"Content must be at least 10 symbols\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "https://localhost:7030/api/Comments/posts/1",
-							"protocol": "https",
-							"host": [
-								"localhost"
-							],
-							"port": "7030",
-							"path": [
-								"api",
-								"Comments",
-								"posts",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "UpdateComment",
-					"request": {
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{  \r\n  \"content\": \"This is a sample comment with enough length Really?.\"\r\n}",
+							"raw": "{  \r\n  \"author\": \"Maks\",\r\n  \"content\": \"Content must be at least 10 symbols\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -267,12 +348,31 @@
 					"response": []
 				},
 				{
-					"name": "RemoveComment",
+					"name": "UpdateComment",
 					"request": {
-						"method": "DELETE",
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
 						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{  \r\n  \"content\": \"This is an updated sample comment with enough length.\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
 						"url": {
-							"raw": "https://localhost:7030/api/Comments/0",
+							"raw": "https://localhost:7030/api/Comments/3",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -281,7 +381,38 @@
 							"path": [
 								"api",
 								"Comments",
-								"0"
+								"3"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "RemoveComment",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:7030/api/Comments/1",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"Comments",
+								"1"
 							]
 						}
 					},
@@ -331,13 +462,9 @@
 							"listen": "test",
 							"script": {
 								"exec": [
-									"if (pm.response.code === 200) {\r",
-									"    var jsonResponse = pm.response.json();\r",
-									"    // Зберігаємо токен в змінну середовища\r",
-									"    pm.environment.set(\"JwtToken\", jsonResponse.token);\r",
-									"} else {\r",
-									"    console.error(\"Error fetching token: \", pm.response.status);\r",
-									"}"
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -349,7 +476,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"userName\": \"string\",\r\n  \"email\": \"test@example.com\",\r\n  \"password\": \"stringstr\"\r\n}",
+							"raw": "{\r\n  \"userName\": \"Nick\",\r\n  \"email\": \"nick@mail.ua\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -382,10 +509,24 @@
 									"if (pm.response.code === 200) {\r",
 									"    var jsonResponse = pm.response.json();\r",
 									"    // Зберігаємо токен в змінну середовища\r",
-									"    pm.environment.set(\"JwtToken\", jsonResponse.token);\r",
+									"    pm.environment.set(\"jwtToken\", jsonResponse.token);\r",
 									"} else {\r",
 									"    console.error(\"Error fetching token: \", pm.response.status);\r",
-									"}"
+									"}\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
 								],
 								"type": "text/javascript",
 								"packages": {}
@@ -397,7 +538,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n  \"userName\": \"admin\",\r\n  \"password\": \"~Rtyuehe1\"\r\n}",
+							"raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"-Rtyuehe1\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -405,7 +546,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/Auth/login",
+							"raw": "https://localhost:7030/api/Auth/Login",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -414,7 +555,7 @@
 							"path": [
 								"api",
 								"Auth",
-								"login"
+								"Login"
 							]
 						}
 					},

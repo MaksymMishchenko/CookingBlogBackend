@@ -15,6 +15,12 @@ namespace PostApiService.Infrastructure.Authorization.Requirements
 
             var userPermission = AuthorizeHelper.GetPermissionFromClaim(TS.Controller.Comment, claims);
 
+            if (context.User.IsInRole(TS.Roles.Admin))
+            {
+                context.Succeed(requirement);
+                return Task.CompletedTask;
+            }
+
             if (userPermission != null &&
                 userPermission.Contains(TS.Permissions.Write) &&
                 userPermission.Contains(TS.Permissions.Update) &&
