@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using PostApiService.Controllers.Filters;
 using PostApiService.Infrastructure;
 using PostApiService.Middlewares;
 using PostApiService.Models;
@@ -43,7 +44,10 @@ builder.Services.AddApplicationAuthorization();
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => {
+    options.Filters.Add<ValidateModelAttribute>();
+});
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

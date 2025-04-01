@@ -61,52 +61,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(CommentErrorMessages.CommentCannotBeNull, response.Message);
         }
 
-        [Theory]
-        [MemberData(nameof(ModelValidationHelper.GetCommentTestDataWithAuthor), MemberType = typeof(ModelValidationHelper))]
-        public async Task OnAddCommentAsync_ShouldReturnBadRequest_WhenModelIsInvalid(
-            string author,
-            string content,
-            bool expectedIsValid)
-        {
-            // Arrange
-            var postId = 1;
-            _mockCommentService
-                 .Setup(service => service.AddCommentAsync(It.IsAny<int>(), It.IsAny<Comment>()))
-                 .Returns(Task.CompletedTask);
-
-            var comment = new Comment
-            {
-                Author = author,
-                Content = content,
-                PostId = 1
-            };
-
-            ModelValidationHelper.ValidateModel(comment, _commentController);
-
-            // Act
-            var result = await _commentController.AddCommentAsync(postId, comment);
-
-            // Assert
-            if (expectedIsValid)
-            {
-                var okResult = Assert.IsType<OkObjectResult>(result);
-                Assert.NotNull(okResult);
-                Assert.Equal(CommentSuccessMessages.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
-            }
-            else
-            {
-                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-
-                Assert.Equal(CommentErrorMessages.ValidationFailed, response.Message);
-
-                foreach (var validationResult in _commentController.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-                }
-            }
-        }
-
         [Fact]
         public async Task OnAddCommentAsync_ShouldReturnBadRequest_IfPostIdDoesNotMatchCommentPostId()
         {
@@ -204,45 +158,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal(CommentErrorMessages.ContentIsRequired, response.Message);
-        }
-
-        [Theory]
-        [MemberData(nameof(ModelValidationHelper.GetCommentTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task UpdateCommentAsync_ShouldReturnBadRequest_WhenModelIsInvalid(
-            string content,
-            bool expectedIsValid)
-        {
-            // Arrange
-            var validCommentId = 1;
-            var comment = new EditCommentModel
-            {
-                Content = content,
-            };
-
-            ModelValidationHelper.ValidateModel(comment, _commentController);
-
-            // Act
-            var result = await _commentController.UpdateCommentAsync(validCommentId, comment);
-
-            // Assert
-            if (expectedIsValid)
-            {
-                var okResult = Assert.IsType<OkObjectResult>(result);
-                Assert.NotNull(okResult);
-                Assert.Equal(CommentSuccessMessages.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
-            }
-            else
-            {
-                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-
-                Assert.Equal(CommentErrorMessages.ValidationFailed, response.Message);
-
-                foreach (var validationResult in _commentController.ModelState.Values.SelectMany(v => v.Errors))
-                {
-                    Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-                }
-            }
         }
 
         [Fact]

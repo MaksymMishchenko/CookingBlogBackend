@@ -150,33 +150,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             _mockPostService.Verify(s => s.GetPostByIdAsync(
                 expectedPost.PostId,
                 true), Times.Once);
-        }
-
-        [Theory]
-        [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task AddPostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post)
-        {
-            // Arrange            
-            ModelValidationHelper.ValidateModel(post, _postsController);
-
-            // Act
-            var result = await _postsController.AddPostAsync(post);
-
-            // Assert            
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-
-            Assert.NotNull(response);
-            Assert.False(response.Success);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(PostErrorMessages.ValidationFailed, response.Message);
-            Assert.NotEmpty(response.Errors);
-
-            foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-            }
-        }
+        }        
 
         [Fact]
         public async Task AddPostAsync_ShouldReturn201AndSuccessMessage_WhenPostIsAddedSuccessfully()
@@ -221,31 +195,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-        }
-
-        [Theory]
-        [MemberData(nameof(ModelValidationHelper.GetPostTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task UpdatePostAsync_ShouldReturnBadRequest_WhenModelIsInvalid(Post post)
-        {
-            // Arrange           
-            ModelValidationHelper.ValidateModel(post, _postsController);
-
-            // Act
-            var result = await _postsController.UpdatePostAsync(post);
-
-            // Assert            
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(PostErrorMessages.ValidationFailed, response.Message);
-            Assert.NotEmpty(response.Errors);
-
-            foreach (var validationResult in _postsController.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-            }
-        }
+        }        
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()

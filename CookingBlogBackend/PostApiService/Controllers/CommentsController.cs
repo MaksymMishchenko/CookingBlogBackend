@@ -24,14 +24,7 @@ namespace PostApiService.Controllers
 
         /// <summary>
         /// Adds a comment to a specific post.
-        /// </summary>
-        /// <param name="postId">The ID of the post to which the comment should be added.</param>
-        /// <param name="comment">The comment to be added.</param>
-        /// <returns>
-        /// Returns a 200 OK response if the comment is successfully added.
-        /// Returns a 400 Bad Request response if the post ID is invalid, the comment is null, 
-        /// or if the model validation fails.
-        /// </returns>     
+        /// </summary>        
         [HttpPost("{postId}")]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
@@ -45,20 +38,7 @@ namespace PostApiService.Controllers
             {
                 return BadRequest(ApiResponse<Comment>.CreateErrorResponse
                     (CommentErrorMessages.CommentCannotBeNull));
-            }
-
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState
-                    .Where(ms => ms.Value.Errors.Count > 0)
-                    .ToDictionary(
-                        ms => ms.Key,
-                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
-
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.ValidationFailed, errors));
-            }
+            }            
 
             if (comment.PostId != 0 && comment.PostId != postId)
             {
@@ -74,14 +54,7 @@ namespace PostApiService.Controllers
 
         /// <summary>
         /// Updates an existing comment based on the provided comment ID.
-        /// </summary>
-        /// <param name="commentId">The ID of the comment to update.</param>
-        /// <param name="comment">The updated comment data.</param>
-        /// <returns>
-        /// Returns a BadRequest response if the comment ID is invalid, the comment is null, 
-        /// or the content is empty. If validation fails, returns a BadRequest response with error details. 
-        /// Otherwise, returns an OK response indicating successful update.
-        /// </returns>
+        /// </summary>        
         [HttpPut("{commentId}")]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
@@ -101,20 +74,7 @@ namespace PostApiService.Controllers
             {
                 return BadRequest(ApiResponse<Comment>.CreateErrorResponse
                     (CommentErrorMessages.ContentIsRequired));
-            }
-
-            if (!ModelState.IsValid)
-            {
-                var errors = ModelState
-                    .Where(ms => ms.Value.Errors.Count > 0)
-                    .ToDictionary(
-                        ms => ms.Key,
-                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
-                    );
-
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.ValidationFailed, errors));
-            }
+            }            
 
             await _commentService.UpdateCommentAsync(commentId, comment);
 
@@ -124,12 +84,7 @@ namespace PostApiService.Controllers
 
         /// <summary>
         /// Deletes a comment by its ID.
-        /// </summary>
-        /// <param name="commentId">The ID of the comment to delete.</param>
-        /// <returns>
-        /// Returns a 200 OK response if the comment was successfully deleted.  
-        /// Returns a 400 Bad Request response if the provided comment ID is invalid.
-        /// </returns>
+        /// </summary>        
         [HttpDelete("{commentId}")]
         public async Task<IActionResult> DeleteCommentAsync(int commentId)
         {

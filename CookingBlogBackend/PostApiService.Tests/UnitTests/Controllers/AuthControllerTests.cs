@@ -5,7 +5,6 @@ using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using System.Net;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -31,32 +30,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<ApiResponse<RegisterUser>>(badRequestResult.Value);
             Assert.False(response.Success);
             Assert.Equal(RegisterErrorMessages.InvalidRegistrationData, response.Message);
-        }
-
-        [Theory]
-        [MemberData(nameof(ModelValidationHelper.GetRegisterUserTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task OnRegisterUser_ShouldReturnBadRequest_WhenModelIsInvalid(RegisterUser user)
-        {
-            // Arrange            
-            ModelValidationHelper.ValidateModel(user, _authController);
-
-            // Act
-            var result = await _authController.RegisterUser(user);
-
-            // Assert            
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<RegisterUser>>(badRequestResult.Value);
-
-            Assert.NotNull(response);
-            Assert.False(response.Success);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(RegisterErrorMessages.ValidationFailed, response.Message);
-            Assert.NotEmpty(response.Errors);
-
-            foreach (var validationResult in _authController.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-            }
         }
 
         [Fact]
@@ -96,32 +69,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<ApiResponse<LoginUser>>(badRequestResult.Value);
             Assert.False(response.Success);
             Assert.Equal(AuthErrorMessages.InvalidCredentials, response.Message);
-        }
-
-        [Theory]
-        [MemberData(nameof(ModelValidationHelper.GetLoginUserTestData), MemberType = typeof(ModelValidationHelper))]
-        public async Task OnLoginUser_ShouldReturnBadRequest_WhenModelIsInvalid(LoginUser user)
-        {
-            // Arrange            
-            ModelValidationHelper.ValidateModel(user, _authController);
-
-            // Act
-            var result = await _authController.LoginUserAsync(user);
-
-            // Assert            
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<LoginUser>>(badRequestResult.Value);
-
-            Assert.NotNull(response);
-            Assert.False(response.Success);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(AuthErrorMessages.ValidationFailed, response.Message);
-            Assert.NotEmpty(response.Errors);
-
-            foreach (var validationResult in _authController.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                Assert.Contains(validationResult.ErrorMessage, response.Errors.Values.SelectMany(errors => errors));
-            }
         }
 
         [Fact]
