@@ -1,11 +1,13 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using PostApiService.Contexts;
 using PostApiService.Interfaces;
-using PostApiService.Tests.Mocks;
+using PostApiService.Models;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -16,9 +18,7 @@ namespace PostApiService.Tests.Fixtures
         private const string _identityConnectionString = "Server=MAX\\SQLEXPRESS;Database=AdminExIdentityTestDb;" +
            "Trusted_Connection=True;MultipleActiveResultSets=True;TrustServerCertificate=True;";
 
-        private Exception? _exception;
-
-        public ExceptionMiddlewareFixture() : base("", _identityConnectionString, useDatabase: false) { }        
+        public ExceptionMiddlewareFixture() : base("", _identityConnectionString, useDatabase: false) { }
 
         protected override void ConfigureTestServices(IServiceCollection services)
         {
@@ -36,26 +36,85 @@ namespace PostApiService.Tests.Fixtures
             });
 
             services.RemoveAll(typeof(IPostService));
-            services.AddScoped<IPostService>(_ => new PostServiceMock(_exception));
+
+            var postServiceMock = Substitute.For<IPostService>();
+            postServiceMock.GetAllPostsAsync(
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<bool>(),
+                Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(new List<Post> { new Post { Title = "Mocked Post" } }));
+
+            postServiceMock.GetPostByIdAsync(
+                Arg.Any<int>(),
+                Arg.Any<bool>())
+                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
+
+            postServiceMock.AddPostAsync(
+                Arg.Any<Post>())
+                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
+
+            postServiceMock.UpdatePostAsync(
+                Arg.Any<Post>())
+                .Returns(Task.CompletedTask);
+
+            postServiceMock.DeletePostAsync(
+                Arg.Any<int>())
+                .Returns(Task.CompletedTask);
+
+            services.AddScoped(_ => postServiceMock);
 
             services.RemoveAll(typeof(ICommentService));
-            services.AddScoped<ICommentService>(_ => new CommentServiceMock(_exception));
+
+            var commentServiceMock = Substitute.For<ICommentService>();
+            commentServiceMock.AddCommentAsync(
+                Arg.Any<int>(),
+                Arg.Any<Comment>())
+                .Returns(Task.CompletedTask);
+
+            commentServiceMock.UpdateCommentAsync(
+                Arg.Any<int>(),
+                Arg.Any<EditCommentModel>())
+                .Returns(Task.CompletedTask);
+
+            commentServiceMock.DeleteCommentAsync(
+                Arg.Any<int>())
+                .Returns(Task.CompletedTask);
+
+            services.AddScoped(_ => commentServiceMock);
 
             services.RemoveAll(typeof(IAuthService));
-            services.AddScoped<IAuthService>(_ => new AuthServiceMock(_exception));
+            var authServiceMock = Substitute.For<IAuthService>();
+
+            authServiceMock.GenerateTokenString(
+                Arg.Any<IdentityUser>())
+                .Returns(Task.FromResult("mocked_token"));
+
+            authServiceMock.GetCurrentUserAsync()
+                .Returns(Task.FromResult(new IdentityUser { UserName = "testUser" }));
+
+            authServiceMock.LoginAsync(Arg.Any<LoginUser>())
+                .Returns(Task.FromResult(new IdentityUser { UserName = "testUser" }));
+
+            authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                .Returns(Task.CompletedTask);
+
+            services.AddScoped(_ => authServiceMock);
 
             services.RemoveAll(typeof(ITokenService));
-            services.AddScoped<ITokenService>(_ => new TokenServiceMock(_exception));
+            var tokenServiceMock = Substitute.For<ITokenService>();
+
+            tokenServiceMock.GenerateTokenString(Arg.Any<IEnumerable<Claim>>())
+                .Returns("");
+
+            services.AddScoped(_ => tokenServiceMock);
         }
 
         public void SetCurrentUser(ClaimsPrincipal user)
         {
             DynamicAuthHandler.CurrentPrincipal = user;
-        }
-
-        public void SetException(Exception exception)
-        {
-            _exception = exception;
         }
 
         public override async Task DisposeAsync()

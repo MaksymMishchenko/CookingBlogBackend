@@ -1,5 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using PostApiService.Exceptions;
+using PostApiService.Interfaces;
 using PostApiService.Models;
 using System.Net;
 using System.Net.Http.Json;
@@ -8,12 +11,12 @@ using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Middlewares
 {
-    public class AdminExceptionMiddlewareTests : IClassFixture<ExceptionMiddlewareFixture>
+    public class ExceptionMiddlewareTests : IClassFixture<ExceptionMiddlewareFixture>
     {
         private readonly HttpClient _client;
         private readonly ExceptionMiddlewareFixture _factoryFixture;
 
-        public AdminExceptionMiddlewareTests(ExceptionMiddlewareFixture factoryFixture)
+        public ExceptionMiddlewareTests(ExceptionMiddlewareFixture factoryFixture)
         {
             _factoryFixture = factoryFixture;
             _client = _factoryFixture.Client;
@@ -27,22 +30,32 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
-            // Arrange            
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(UserAlreadyExistsException) =>
-                new UserAlreadyExistsException(RegisterErrorMessages.UsernameAlreadyExists),
-                Type t when t == typeof(EmailAlreadyExistsException) =>
-                new EmailAlreadyExistsException(RegisterErrorMessages.EmailAlreadyExists),
-                Type t when t == typeof(UserClaimException) =>
-                new UserClaimException(RegisterErrorMessages.CreationFailed),
-                Type t when t == typeof(UserCreationException) =>
-                new UserCreationException(RegisterErrorMessages.CreationFailed),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
+            // Arrange                        
+            var authServiceMock = _factoryFixture?.Services?.GetRequiredService<IAuthService>() as IAuthService;
 
-            _factoryFixture.SetException(exception);
+            authServiceMock.ClearReceivedCalls();
+
+            switch (exceptionType)
+            {
+                case Type t when t == typeof(UserAlreadyExistsException):
+                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                        .Returns(Task.FromException(new UserAlreadyExistsException(RegisterErrorMessages.UsernameAlreadyExists)));
+                    break;
+                case Type t when t == typeof(EmailAlreadyExistsException):
+                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                        .Returns(Task.FromException(new EmailAlreadyExistsException(RegisterErrorMessages.EmailAlreadyExists)));
+                    break;
+                case Type t when t == typeof(UserClaimException):
+                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                        .Returns(Task.FromException(new UserClaimException(RegisterErrorMessages.CreationFailed)));
+                    break;
+                case Type t when t == typeof(UserCreationException):
+                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                        .Returns(Task.FromException(new UserCreationException(RegisterErrorMessages.CreationFailed)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported exception type: {exceptionType}");
+            }
 
             var newUser = new RegisterUser { UserName = "testUser", Email = "test@test.com", Password = "Rtyuehe3-" };
 
@@ -62,8 +75,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(UserAlreadyExistsException) => RegisterErrorMessages.UsernameAlreadyExists,
                 Type t when t == typeof(EmailAlreadyExistsException) => RegisterErrorMessages.EmailAlreadyExists,
                 Type t when t == typeof(UserClaimException) => RegisterErrorMessages.CreationFailed,
-                Type t when t == typeof(UserCreationException) => RegisterErrorMessages.CreationFailed,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                Type t when t == typeof(UserCreationException) => RegisterErrorMessages.CreationFailed
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -96,7 +108,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             var user = new LoginUser { UserName = "testUser", Password = "Rtyuehe3-" };
 
@@ -140,7 +152,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -182,7 +194,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -240,7 +252,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             var newPost = TestDataHelper.GetSinglePost();
             var content = HttpHelper.GetJsonHttpContent(newPost);
@@ -306,7 +318,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             var post = TestDataHelper.GetSinglePost();
             post.Title = "Updated post title";
@@ -373,7 +385,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             // Act
             var response = await _client.DeleteAsync(url);
@@ -438,7 +450,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             var comment = new Comment { Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(comment);
@@ -506,7 +518,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            //_factoryFixture.SetException(exception);
 
             var updatedComment = new EditCommentModel { Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(updatedComment);
@@ -574,7 +586,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            _factoryFixture.SetException(exception);
+            // _factoryFixture.SetException(exception);
 
             var updatedComment = new EditCommentModel { Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(updatedComment);
