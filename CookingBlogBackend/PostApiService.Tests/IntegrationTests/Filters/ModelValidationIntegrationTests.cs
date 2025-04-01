@@ -16,7 +16,7 @@ namespace PostApiService.Tests.IntegrationTests.Filters
         }
 
         [Fact]
-        public async Task Returns400_WhenModelIsInvalid()
+        public async Task ValidateModelAttribute_ReturnsBadRequest_WhenModelIsInvalid()
         {
             // Arrange           
             var invalidLogin = new LoginUser { UserName = "test" };
