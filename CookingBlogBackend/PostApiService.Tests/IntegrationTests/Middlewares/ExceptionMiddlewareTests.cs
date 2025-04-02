@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using PostApiService.Exceptions;
@@ -31,7 +32,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange                        
-            var authServiceMock = _factoryFixture?.Services?.GetRequiredService<IAuthService>() as IAuthService;
+            var authServiceMock = _factoryFixture?.Services?.GetRequiredService<IAuthService>();
 
             authServiceMock.ClearReceivedCalls();
 
@@ -89,26 +90,24 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
-            // Arrange
-            Exception exception = exceptionType switch
+            var authServiceMock = _factoryFixture?.Services?.GetRequiredService<IAuthService>();
+
+            authServiceMock.ClearReceivedCalls();
+
+            Task<IdentityUser> failedTask = exceptionType switch
             {
                 Type t when t == typeof(AuthenticationException) =>
-                new AuthenticationException(AuthErrorMessages.InvalidCredentials),
-
+                    Task.FromException<IdentityUser>(new AuthenticationException(AuthErrorMessages.InvalidCredentials)),
                 Type t when t == typeof(UnauthorizedAccessException) =>
-                new UnauthorizedAccessException(AuthErrorMessages.UnauthorizedAccess),
-
+                    Task.FromException<IdentityUser>(new UnauthorizedAccessException(AuthErrorMessages.UnauthorizedAccess)),
                 Type t when t == typeof(UserNotFoundException) =>
-                new UserNotFoundException(AuthErrorMessages.InvalidCredentials),
-
+                    Task.FromException<IdentityUser>(new UserNotFoundException(AuthErrorMessages.InvalidCredentials)),
                 Type t when t == typeof(ArgumentException) =>
-                new ArgumentException(TokenErrorMessages.GenerationFailed),
-
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                    Task.FromException<IdentityUser>(new ArgumentException(TokenErrorMessages.GenerationFailed)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            //_factoryFixture.SetException(exception);
+            authServiceMock?.LoginAsync(Arg.Any<LoginUser>()).Returns(failedTask);
 
             var user = new LoginUser { UserName = "testUser", Password = "Rtyuehe3-" };
 
@@ -143,16 +142,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange
-            Exception exception = exceptionType switch
+            var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
+
+            postServiceMock.ClearReceivedCalls();
+
+            Task<List<Post>> failedTask = exceptionType switch
             {
                 Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                    Task.FromException<List<Post>>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                Type t when t == typeof(TimeoutException) =>
+                    Task.FromException<List<Post>>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                Type t when t == typeof(Exception) =>
+                    Task.FromException<List<Post>>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
+                Type t when t == typeof(ArgumentException) =>
+                    Task.FromException<List<Post>>(new ArgumentException($"Unsupported exception type: {exceptionType}")),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            //_factoryFixture.SetException(exception);
+            postServiceMock?.GetAllPostsAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
+                .Returns(failedTask);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -183,18 +191,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         {
             // Arrange
             var invalidPostId = 999;
+            var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
 
-            Exception exception = exceptionType switch
+            postServiceMock.ClearReceivedCalls();
+
+            Task<Post> failedTask = exceptionType switch
             {
-                Type t when t == typeof(PostNotFoundException) => new PostNotFoundException(invalidPostId),
+                Type t when t == typeof(PostNotFoundException) =>
+                    Task.FromException<Post>(new PostNotFoundException(invalidPostId)),
                 Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                    Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                Type t when t == typeof(TimeoutException) =>
+                    Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                Type t when t == typeof(Exception) =>
+                    Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            //_factoryFixture.SetException(exception);
+            postServiceMock?.GetPostByIdAsync(Arg.Any<int>(), Arg.Any<bool>())
+                .Returns(failedTask);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -239,20 +254,29 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             _factoryFixture.SetCurrentUser(adminPrincipal);
 
             var postTitle = "Test title";
+            var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
 
-            Exception exception = exceptionType switch
+            postServiceMock.ClearReceivedCalls();
+
+            Task<Post> failedTask = exceptionType switch
             {
-                Type t when t == typeof(PostAlreadyExistException) => new PostAlreadyExistException(postTitle),
-                Type t when t == typeof(AddPostFailedException) => new AddPostFailedException(postTitle),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
+                Type t when t == typeof(PostAlreadyExistException) =>
+                    Task.FromException<Post>(new PostAlreadyExistException(postTitle)),
+                Type t when t == typeof(AddPostFailedException) =>
+                    Task.FromException<Post>(new AddPostFailedException(postTitle)),
+                Type t when t == typeof(DbUpdateException) =>
+                    Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)),
                 Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                    Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                Type t when t == typeof(TimeoutException) =>
+                    Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                Type t when t == typeof(Exception) =>
+                    Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            //_factoryFixture.SetException(exception);
+            postServiceMock?.AddPostAsync(Arg.Any<Post>())
+                .Returns(failedTask);
 
             var newPost = TestDataHelper.GetSinglePost();
             var content = HttpHelper.GetJsonHttpContent(newPost);
@@ -306,19 +330,39 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             var testPostId = 999;
             var postTitle = "Test title";
 
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(PostNotFoundException) => new PostNotFoundException(testPostId),
-                Type t when t == typeof(UpdatePostFailedException) => new UpdatePostFailedException(postTitle),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
+            var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
 
-            //_factoryFixture.SetException(exception);
+            postServiceMock.ClearReceivedCalls();
+
+            switch (exceptionType)
+            {
+                case Type t when t == typeof(PostNotFoundException):
+                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                        .Returns(Task.FromException(new PostNotFoundException(testPostId)));
+                    break;
+                case Type t when t == typeof(UpdatePostFailedException):
+                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                        .Returns(Task.FromException(new UpdatePostFailedException(postTitle)));
+                    break;
+                case Type t when t == typeof(DbUpdateException):
+                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                    break;
+                case Type t when t == typeof(OperationCanceledException):
+                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                    break;
+                case Type t when t == typeof(TimeoutException):
+                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                    break;
+                case Type t when t == typeof(Exception):
+                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported exception type: {exceptionType}");
+            }
 
             var post = TestDataHelper.GetSinglePost();
             post.Title = "Updated post title";
@@ -372,20 +416,39 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             _factoryFixture.SetCurrentUser(adminPrincipal);
 
             var testPostId = 999;
+            var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
 
-            Exception exception = exceptionType switch
+            postServiceMock.ClearReceivedCalls();
+
+            switch (exceptionType)
             {
-                Type t when t == typeof(PostNotFoundException) => new PostNotFoundException(testPostId),
-                Type t when t == typeof(DeletePostFailedException) => new DeletePostFailedException(testPostId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
-
-            //_factoryFixture.SetException(exception);
+                case Type t when t == typeof(PostNotFoundException):
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new PostNotFoundException(testPostId)));
+                    break;
+                case Type t when t == typeof(DeletePostFailedException):
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new DeletePostFailedException(testPostId)));
+                    break;
+                case Type t when t == typeof(DbUpdateException):
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                    break;
+                case Type t when t == typeof(OperationCanceledException):
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                    break;
+                case Type t when t == typeof(TimeoutException):
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                    break;
+                case Type t when t == typeof(Exception):
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported exception type: {exceptionType}");
+            }
 
             // Act
             var response = await _client.DeleteAsync(url);
@@ -437,20 +500,39 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             _factoryFixture.SetCurrentUser(adminPrincipal);
 
             var testPostId = 999;
+            var commentServiceMock = _factoryFixture?.Services?.GetRequiredService<ICommentService>();
 
-            Exception exception = exceptionType switch
+            commentServiceMock.ClearReceivedCalls();
+
+            switch (exceptionType)
             {
-                Type t when t == typeof(PostNotFoundException) => new PostNotFoundException(testPostId),
-                Type t when t == typeof(AddCommentFailedException) => new AddCommentFailedException(testPostId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
-
-            //_factoryFixture.SetException(exception);
+                case Type t when t == typeof(PostNotFoundException):
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                        .Returns(Task.FromException(new PostNotFoundException(testPostId)));
+                    break;
+                case Type t when t == typeof(AddCommentFailedException):
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                        .Returns(Task.FromException(new AddCommentFailedException(testPostId)));
+                    break;
+                case Type t when t == typeof(DbUpdateException):
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                    break;
+                case Type t when t == typeof(OperationCanceledException):
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                    break;
+                case Type t when t == typeof(TimeoutException):
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                    break;
+                case Type t when t == typeof(Exception):
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported exception type: {exceptionType}");
+            }
 
             var comment = new Comment { Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(comment);
@@ -506,25 +588,45 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             _factoryFixture.SetCurrentUser(adminPrincipal);
 
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(CommentNotFoundException) => new CommentNotFoundException(testCommentId),
-                Type t when t == typeof(UpdateCommentFailedException) => new UpdateCommentFailedException(testCommentId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
+            var commentServiceMock = _factoryFixture?.Services?.GetRequiredService<ICommentService>();
 
-            //_factoryFixture.SetException(exception);
+            commentServiceMock.ClearReceivedCalls();
+
+            switch (exceptionType)
+            {
+                case Type t when t == typeof(CommentNotFoundException):
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                        .Returns(Task.FromException(new CommentNotFoundException(testCommentId)));
+                    break;
+                case Type t when t == typeof(UpdateCommentFailedException):
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                        .Returns(Task.FromException(new UpdateCommentFailedException(testCommentId)));
+                    break;
+                case Type t when t == typeof(DbUpdateException):
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                    break;
+                case Type t when t == typeof(OperationCanceledException):
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                    break;
+                case Type t when t == typeof(TimeoutException):
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                    break;
+                case Type t when t == typeof(Exception):
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported exception type: {exceptionType}");
+            }
 
             var updatedComment = new EditCommentModel { Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(updatedComment);
 
             // Act
-            var response = await _client.PostAsync(url, content);
+            var response = await _client.PutAsync(url, content);
 
             // Assert
             Assert.Equal(expectedStatus, response.StatusCode);
@@ -574,25 +676,45 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             _factoryFixture.SetCurrentUser(adminPrincipal);
 
-            Exception exception = exceptionType switch
-            {
-                Type t when t == typeof(CommentNotFoundException) => new CommentNotFoundException(testCommentId),
-                Type t when t == typeof(DeleteCommentFailedException) => new DeleteCommentFailedException(testCommentId),
-                Type t when t == typeof(DbUpdateException) => new DbUpdateException(ResponseErrorMessages.DbUpdateException),
-                Type t when t == typeof(OperationCanceledException) =>
-                new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
-                Type t when t == typeof(TimeoutException) => new TimeoutException(ResponseErrorMessages.TimeoutException),
-                Type t when t == typeof(Exception) => new Exception(ResponseErrorMessages.UnexpectedErrorException),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
-            };
+            var commentServiceMock = _factoryFixture?.Services?.GetRequiredService<ICommentService>();
 
-            // _factoryFixture.SetException(exception);
+            commentServiceMock.ClearReceivedCalls();
+
+            switch (exceptionType)
+            {
+                case Type t when t == typeof(CommentNotFoundException):
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new CommentNotFoundException(testCommentId)));
+                    break;
+                case Type t when t == typeof(DeleteCommentFailedException):
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new DeleteCommentFailedException(testCommentId)));
+                    break;
+                case Type t when t == typeof(DbUpdateException):
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                    break;
+                case Type t when t == typeof(OperationCanceledException):
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                         .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                    break;
+                case Type t when t == typeof(TimeoutException):
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                    break;
+                case Type t when t == typeof(Exception):
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                         .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                    break;
+                default:
+                    throw new ArgumentException($"Unsupported exception type: {exceptionType}");
+            }
 
             var updatedComment = new EditCommentModel { Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(updatedComment);
 
             // Act
-            var response = await _client.PostAsync(url, content);
+            var response = await _client.DeleteAsync(url);
 
             // Assert
             Assert.Equal(expectedStatus, response.StatusCode);
