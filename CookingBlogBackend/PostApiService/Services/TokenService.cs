@@ -18,16 +18,9 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Generates a JWT token string based on the provided claims, using the configured secret key and expiration time.
-        /// </summary>
-        /// <param name="claims">The list of claims to be included in the JWT token.</param>
-        /// <returns>A JWT token string.</returns>
-        /// <exception cref="ArgumentException">
-        /// Thrown when the secret key is null or empty, or when the token expiration time is invalid.
-        /// </exception>
-        /// <exception cref="TokenGenerationException">
-        /// Thrown when an error occurs during token generation.
-        /// </exception>
+        /// Generates a JWT token string based on the provided claims,
+        /// using the configured secret key and expiration time.
+        /// </summary>        
         public string GenerateTokenString(IEnumerable<Claim> claims)
         {
             try

@@ -20,7 +20,7 @@ namespace PostApiService.Controllers.Filters
 
                 context.Result = new BadRequestObjectResult(
                     ApiResponse<object>.CreateErrorResponse
-                    (GeneralErrorMessages.ValidationFailed, errors)
+                    (ResponseErrorMessages.ValidationFailed, errors)
                 );
             }            
         }

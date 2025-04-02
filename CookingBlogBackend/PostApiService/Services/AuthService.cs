@@ -24,16 +24,64 @@ namespace PostApiService.Services
             _tokenService = tokenService;
         }
 
+        private static Claim GetContributorClaims(string controllerName)
+        {
+            return new Claim(controllerName,
+                ClaimHelper.SerializePermissions(
+                    TS.Permissions.Write,
+                    TS.Permissions.Update,
+                    TS.Permissions.Delete
+                ));
+        }
+
+        private async Task<List<Claim>> GetClaims(string userName)
+        {
+            var user = await _userManager.FindByNameAsync(userName);
+
+            if (user == null)
+            {
+                throw new UserNotFoundException(AuthErrorMessages.UserNotFound);
+            }
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, userName)
+            };
+
+            var userClaims = await _userManager.GetClaimsAsync(user);
+
+            var serializedClaims = userClaims
+                .Where(claim => claim.Type != ClaimTypes.NameIdentifier && claim.Type != ClaimTypes.Name)
+                .ToList();
+
+            var deserializedClaims = GetClaimsSeparated(serializedClaims);
+
+            claims.AddRange(deserializedClaims);
+
+            var roles = await _userManager.GetRolesAsync(user);
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            return claims;
+        }
+
+        private List<Claim> GetClaimsSeparated(IList<Claim> claims)
+        {
+            var result = new List<Claim>();
+            foreach (var claim in claims)
+            {
+                result.AddRange(claim.DeserializePermissions()
+                    .Select(t => new Claim(claim.Type, t.ToString())));
+            }
+            return result;
+        }
+
         /// <summary>
-        /// Registers a new user in the system. Checks if a user with the same username already exists,
-        /// creates the user, assigns roles and claims. If any error occurs during creation or assigning claims,
-        /// it throws corresponding exceptions.
-        /// </summary>
-        /// <param name="user">The user model containing the registration data (username and password).</param>
-        /// <returns>Returns true if the user was successfully created and claims were assigned; otherwise, throws an exception.</returns>
-        /// <exception cref="UserAlreadyExistsException">Thrown if a user with the same username already exists in the system.</exception>
-        /// <exception cref="UserCreationException">Thrown if an error occurs during user creation in the system.</exception>  
-        /// <exception cref="UserClaimException">Thrown if assigning claims to the user fails during registration.</exception>
+        /// Registers a new user in the system.        
+        /// </summary>        
         public async Task RegisterUserAsync(RegisterUser user)
         {
             var existingUser = await _userManager.FindByNameAsync(user.UserName);
@@ -72,32 +120,11 @@ namespace PostApiService.Services
                 throw new UserClaimException
                     (RegisterErrorMessages.ClaimAssignmentFailed);
             }
-        }
-
-        /// <summary>
-        /// Generates a claim for a contributor with write, update, and delete permissions 
-        /// for the specified controller.
-        /// </summary>
-        /// <param name="controllerName">The name of the controller to associate with the claim.</param>
-        /// <returns>A claim containing serialized contributor permissions for the controller.</returns>
-        private static Claim GetContributorClaims(string controllerName)
-        {
-            return new Claim(controllerName,
-                ClaimHelper.SerializePermissions(
-                    TS.Permissions.Write,
-                    TS.Permissions.Update,
-                    TS.Permissions.Delete
-                ));
-        }
+        }        
 
         /// <summary>
         /// Authenticates a user by verifying the provided credentials.
-        /// </summary>
-        /// <param name="credentials">The user's login credentials.</param>
-        /// <returns>The authenticated <see cref="IdentityUser"/> if the credentials are valid.</returns>
-        /// <exception cref="AuthenticationException">
-        /// Thrown when the username is not found or the password is incorrect.
-        /// </exception>
+        /// </summary>       
         public async Task<IdentityUser> LoginAsync(LoginUser credentials)
         {
             var user = await _userManager.FindByNameAsync(credentials.UserName)
@@ -115,69 +142,8 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a list of claims for a specified user.
-        /// </summary>
-        /// <param name="userName">The username of the user whose claims are to be retrieved.</param>
-        /// <returns>A list of claims associated with the user.</returns>
-        /// <exception cref="UserNotFoundException">Thrown when the user with the specified username is not found.</exception>
-        private async Task<List<Claim>> GetClaims(string userName)
-        {
-            var user = await _userManager.FindByNameAsync(userName);
-
-            if (user == null)
-            {
-                throw new UserNotFoundException(AuthErrorMessages.UserNotFound);
-            }
-
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, userName)
-            };
-
-            var userClaims = await _userManager.GetClaimsAsync(user);
-
-            var serializedClaims = userClaims
-                .Where(claim => claim.Type != ClaimTypes.NameIdentifier && claim.Type != ClaimTypes.Name)
-                .ToList();
-
-            var deserializedClaims = GetClaimsSeparated(serializedClaims);
-
-            claims.AddRange(deserializedClaims);
-
-            var roles = await _userManager.GetRolesAsync(user);
-            foreach (var role in roles)
-            {
-                claims.Add(new Claim(ClaimTypes.Role, role));
-            }
-
-            return claims;
-        }
-
-        /// <summary>
-        /// Processes a list of claims and separates any claims that contain serialized permissions,
-        /// creating individual claims for each permission in the serialized claim.
-        /// </summary>
-        /// <param name="claims">A list of claims to process, potentially containing serialized permissions.</param>
-        /// <returns>A list of claims where each permission in a serialized claim is split into individual claims.</returns>
-        private List<Claim> GetClaimsSeparated(IList<Claim> claims)
-        {
-            var result = new List<Claim>();
-            foreach (var claim in claims)
-            {
-                result.AddRange(claim.DeserializePermissions()
-                    .Select(t => new Claim(claim.Type, t.ToString())));
-            }
-            return result;
-        }
-
-        /// <summary>
         /// Retrieves the currently authenticated user from the HTTP context.
         /// </summary>
-        /// <returns>The authenticated <see cref="IdentityUser"/>.</returns>
-        /// <exception cref="UnauthorizedAccessException">
-        /// Thrown when no authenticated user is found in the HTTP context.
-        /// </exception>
         public async Task<IdentityUser> GetCurrentUserAsync()
         {
             var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
@@ -193,9 +159,7 @@ namespace PostApiService.Services
 
         /// <summary>
         /// Generates a JWT token string for the specified user based on their claims.
-        /// </summary>
-        /// <param name="user">The authenticated user for whom the token is generated.</param>
-        /// <returns>A JWT token string.</returns> 
+        /// </summary>        
         public async Task<string> GenerateTokenString(IdentityUser user)
         {
             var claims = await GetClaims(user.UserName);
