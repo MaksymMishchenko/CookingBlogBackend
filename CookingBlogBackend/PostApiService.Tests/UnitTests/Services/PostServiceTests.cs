@@ -3,6 +3,7 @@ using NSubstitute;
 using PostApiService.Models;
 using PostApiService.Repositories;
 using PostApiService.Services;
+using System.Linq.Expressions;
 
 namespace PostApiService.Tests.UnitTests
 {
@@ -103,6 +104,37 @@ namespace PostApiService.Tests.UnitTests
             Assert.NotNull(post);
             Assert.NotNull(post.Comments);
             Assert.Empty(post.Comments);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldAddPostSuccessfully_WhenPostIsValid()
+        {
+            // Arrange           
+            var newPost = TestDataHelper.GetSinglePost();
+
+            var mockRepository = Substitute.For<IRepository<Post>>();
+            mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
+
+            mockRepository.AddAsync(newPost, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(newPost));
+
+            var postService = new PostService(mockRepository);
+
+            // Act
+            var result = await postService.AddPostAsync(newPost);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal(newPost.Title, result.Title);
+            Assert.Equal(newPost.Content, result.Content);
+           
+            await mockRepository.Received(1)
+                .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
+                    p.Compile()(newPost)), Arg.Any<CancellationToken>());
+            
+            await mockRepository.Received(1)
+                .AddAsync(newPost, Arg.Any<CancellationToken>());
         }
     }
 }
