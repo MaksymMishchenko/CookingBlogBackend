@@ -128,11 +128,11 @@ namespace PostApiService.Tests.UnitTests
             Assert.NotNull(result);
             Assert.Equal(newPost.Title, result.Title);
             Assert.Equal(newPost.Content, result.Content);
-           
+
             await mockRepository.Received(1)
                 .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
                     p.Compile()(newPost)), Arg.Any<CancellationToken>());
-            
+
             await mockRepository.Received(1)
                 .AddAsync(newPost, Arg.Any<CancellationToken>());
         }
@@ -155,10 +155,10 @@ namespace PostApiService.Tests.UnitTests
             };
 
             var mockRepository = Substitute.For<IRepository<Post>>();
-           
+
             mockRepository.GetByIdAsync(originalPost.PostId)
                 .Returns(Task.FromResult(originalPost));
-            
+
             mockRepository.UpdateAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 
@@ -170,7 +170,7 @@ namespace PostApiService.Tests.UnitTests
             // Assert            
             await mockRepository.Received(1)
                 .GetByIdAsync(originalPost.PostId);
-            
+
             await mockRepository.Received(1)
                 .UpdateAsync(Arg.Is<Post>(p =>
                     p.PostId == originalPost.PostId &&
@@ -181,6 +181,34 @@ namespace PostApiService.Tests.UnitTests
                     p.MetaTitle == "Updated meta" &&
                     p.MetaDescription == "Updated meta desc" &&
                     p.Slug == "updated-slug"));
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldDeletePost_WhenSaveChangesSucceeds()
+        {
+            // Arrange            
+            var post = TestDataHelper.GetSinglePost();
+
+            var mockRepository = Substitute.For<IRepository<Post>>();
+
+            mockRepository.GetByIdAsync(post.PostId)
+                .Returns(Task.FromResult(post));
+
+            mockRepository.DeleteAsync(Arg.Any<Post>())
+                .Returns(Task.CompletedTask);
+
+            var service = new PostService(mockRepository);
+
+            // Act
+            await service.DeletePostAsync(post.PostId);
+
+            // Assert
+            await mockRepository.Received(1)
+                .GetByIdAsync(post.PostId);
+
+            await mockRepository.Received(1)
+                .DeleteAsync(Arg.Is<Post>(p =>
+                    p.PostId == post.PostId));
         }
     }
 }
