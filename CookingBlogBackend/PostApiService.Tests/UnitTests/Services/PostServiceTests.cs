@@ -60,5 +60,49 @@ namespace PostApiService.Tests.UnitTests
                 Assert.Empty(post.Comments);
             });
         }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnPost_WithComments()
+        {
+            // Arrange
+            var postId = 2;
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, commentCount: 3, generateIds: true);
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+
+            var mockRepository = Substitute.For<IRepository<Post>>();
+            mockRepository.AsQueryable().Returns(mockQueryable);
+
+            var service = new PostService(mockRepository);
+
+            // Act
+            var post = await service.GetPostByIdAsync(postId, includeComments: true);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.NotNull(post.Comments);
+            Assert.NotEmpty(post.Comments);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnPost_WithoutComments()
+        {
+            // Arrange
+            var postId = 2;
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, generateComments: false, generateIds: true);
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+
+            var mockRepository = Substitute.For<IRepository<Post>>();
+            mockRepository.AsQueryable().Returns(mockQueryable);
+
+            var service = new PostService(mockRepository);
+
+            // Act
+            var post = await service.GetPostByIdAsync(postId, includeComments: false);
+
+            // Assert
+            Assert.NotNull(post);
+            Assert.NotNull(post.Comments);
+            Assert.Empty(post.Comments);
+        }
     }
 }
