@@ -136,5 +136,51 @@ namespace PostApiService.Tests.UnitTests
             await mockRepository.Received(1)
                 .AddAsync(newPost, Arg.Any<CancellationToken>());
         }
+
+        [Fact]
+        public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
+        {
+            // Arrange
+            var originalPost = TestDataHelper.GetSinglePost();
+            var updatedPost = new Post
+            {
+                PostId = originalPost.PostId,
+                Title = "Updated title",
+                Description = "Updated description",
+                Content = "Updated content",
+                ImageUrl = "updated.jpg",
+                MetaTitle = "Updated meta",
+                MetaDescription = "Updated meta desc",
+                Slug = "updated-slug"
+            };
+
+            var mockRepository = Substitute.For<IRepository<Post>>();
+           
+            mockRepository.GetByIdAsync(originalPost.PostId)
+                .Returns(Task.FromResult(originalPost));
+            
+            mockRepository.UpdateAsync(Arg.Any<Post>())
+                .Returns(Task.CompletedTask);
+
+            var service = new PostService(mockRepository);
+
+            // Act
+            await service.UpdatePostAsync(updatedPost);
+
+            // Assert            
+            await mockRepository.Received(1)
+                .GetByIdAsync(originalPost.PostId);
+            
+            await mockRepository.Received(1)
+                .UpdateAsync(Arg.Is<Post>(p =>
+                    p.PostId == originalPost.PostId &&
+                    p.Title == "Updated title" &&
+                    p.Description == "Updated description" &&
+                    p.Content == "Updated content" &&
+                    p.ImageUrl == "updated.jpg" &&
+                    p.MetaTitle == "Updated meta" &&
+                    p.MetaDescription == "Updated meta desc" &&
+                    p.Slug == "updated-slug"));
+        }
     }
 }
