@@ -9,6 +9,7 @@ using PostApiService.Infrastructure.Authorization.Requirements;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
+using PostApiService.Repositories;
 using PostApiService.Services;
 using System.Security.Claims;
 using System.Text;
@@ -19,10 +20,7 @@ namespace PostApiService.Infrastructure
     {
         /// <summary>
         /// Registers application-specific services and the database context to the IServiceCollection.
-        /// </summary>
-        /// <param name="services">The IServiceCollection to which services will be added.</param>
-        /// <param name="connectionString">The connection string used to configure the database context.</param>
-        /// <returns>The IServiceCollection with the added services.</returns>
+        /// </summary>        
         public static IServiceCollection AddApplicationService(this IServiceCollection services, string connectionString)
         {
             services.AddDbContext<ApplicationDbContext>(options =>
@@ -30,7 +28,8 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(connectionString);
             });
 
-            services.AddScoped<IApplicationDbContext, ApplicationDbContext>();
+            services.AddTransient<DbContext, ApplicationDbContext>();
+            services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             services.AddTransient<IPostService, PostService>();
             services.AddTransient<ICommentService, CommentService>();
@@ -41,10 +40,7 @@ namespace PostApiService.Infrastructure
         /// <summary>
         /// Configures identity services for the application, including database context,
         /// identity management, and dependency injection for authentication and token services.
-        /// </summary>
-        /// <param name="services">The IServiceCollection to add the services to.</param>
-        /// <param name="identityConnectionString">The connection string for the Identity database.</param>
-        /// <returns>The IServiceCollection with the configured identity services.</returns>
+        /// </summary>        
         public static IServiceCollection AddAppIdentityService(this IServiceCollection services, string identityConnectionString)
         {
             services.AddDbContext<AppIdentityDbContext>(options =>
@@ -87,14 +83,7 @@ namespace PostApiService.Infrastructure
 
         /// <summary>
         /// Configures JWT Bearer Authentication for the application.
-        /// </summary>
-        /// <param name="services">The IServiceCollection to which authentication services will be added.</param>
-        /// <param name="config">The JwtConfiguration object containing JWT settings such as Issuer, Audience, and Key.</param>
-        /// <returns>The IServiceCollection with the configured JWT authentication services.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if the provided JwtConfiguration is null.</exception>
-        /// <exception cref="InvalidOperationException">
-        /// Thrown if any of the required properties (Issuer, Audience, or Key) in the JwtConfiguration are null or empty.
-        /// </exception>
+        /// </summary>        
         public static IServiceCollection AddAppJwtAuthentication(this IServiceCollection services, JwtConfiguration config)
         {
             services
@@ -205,11 +194,8 @@ namespace PostApiService.Infrastructure
         }
 
         /// <summary>
-        /// Seeds the database with initial data for posts and comments if no posts are already present.
-        /// This method ensures that the database is created and populated with sample data during application startup.
-        /// </summary>
-        /// <param name="app">The WebApplication instance to configure services and perform seeding.</param>
-        /// <returns>The WebApplication instance for method chaining.</returns>
+        /// Seeds the database with initial data for posts and comments if no posts are already present.        
+        /// </summary>        
         public static async Task<IApplicationBuilder> SeedDataAsync(this WebApplication app)
         {
             using (var scope = app.Services.CreateScope())
@@ -285,12 +271,8 @@ namespace PostApiService.Infrastructure
         }
 
         /// <summary>
-        /// Configures CORS (Cross-Origin Resource Sharing) to allow requests from specific origins.
-        /// In this case, it allows requests from "http://localhost:4200".
-        /// This is useful to enable cross-origin requests between the frontend (Angular) and backend (API).
-        /// </summary>
-        /// <param name="services">The IServiceCollection to register the CORS policy.</param>
-        /// <returns>The updated IServiceCollection with the CORS policy registered.</returns>
+        /// Configures CORS (Cross-Origin Resource Sharing) to allow requests from specific origins.       
+        /// </summary>       
         public static IServiceCollection AddAppCors(this IServiceCollection services)
         {
             services.AddCors(options =>
