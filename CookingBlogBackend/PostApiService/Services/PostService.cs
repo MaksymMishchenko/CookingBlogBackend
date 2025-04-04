@@ -48,7 +48,7 @@ namespace PostApiService.Services
             bool includeComments = true,
             CancellationToken cancellationToken = default)
         {
-            var query = _repository.AsQueryable().AsNoTracking();
+            var query = _repository.AsQueryable();
 
             if (includeComments)
             {
@@ -71,7 +71,7 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
         {
-            var query = _repository.AsQueryable().AsNoTracking();
+            var query = _repository.AsQueryable();
 
             if (includeComments)
             {
@@ -91,12 +91,10 @@ namespace PostApiService.Services
         /// <summary>
         /// Adds a new post to the database.
         /// </summary>        
-        public async Task<Post> AddPostAsync(Post post)
+        public async Task<Post> AddPostAsync(Post post, CancellationToken cancel = default)
         {
-            var existingPost = await _repository
-                .AsQueryable()
-                .AsNoTracking()
-                .AnyAsync(p => p.Title == post.Title);
+            var existingPost = await _repository                
+                .AnyAsync(p => p.Title == post.Title, cancel);
 
             if (existingPost)
             {
@@ -105,7 +103,7 @@ namespace PostApiService.Services
 
             try
             {
-                Post addedPost = await _repository.AddAsync(post);
+                Post addedPost = await _repository.AddAsync(post, cancel);
                 return addedPost;
             }
             catch (DbUpdateException ex)
@@ -165,6 +163,6 @@ namespace PostApiService.Services
             {
                 throw new DeletePostFailedException(postId, ex);
             }
-        }
+        }       
     }
 }
