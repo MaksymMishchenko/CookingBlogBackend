@@ -1,8 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using PostApiService.Repositories;
+using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Models
 {
-    public class Post
+    public class Post : IEntity
     {
         public int PostId { get; set; }
 
