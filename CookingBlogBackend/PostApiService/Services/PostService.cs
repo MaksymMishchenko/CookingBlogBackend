@@ -2,17 +2,18 @@
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Repositories;
 using System.Data;
 
 namespace PostApiService.Services
 {
     public class PostService : IPostService
     {
-        private readonly IApplicationDbContext _context;
+        private readonly IRepository<Post> _repository;
 
-        public PostService(IApplicationDbContext context)
+        public PostService(IRepository<Post> repository)
         {
-            _context = context;
+            _repository = repository;
         }
 
         private void ProcessComments(List<Post> posts, bool includeComments, int commentPageNumber, int commentsPerPage)
@@ -47,7 +48,7 @@ namespace PostApiService.Services
             bool includeComments = true,
             CancellationToken cancellationToken = default)
         {
-            var query = _context.Posts.AsNoTracking();
+            var query = _repository.AsQueryable().AsNoTracking();
 
             if (includeComments)
             {
@@ -70,7 +71,7 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
         {
-            var query = _context.Posts.AsNoTracking();
+            var query = _repository.AsQueryable().AsNoTracking();
 
             if (includeComments)
             {
@@ -92,7 +93,8 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Post> AddPostAsync(Post post)
         {
-            var existingPost = await _context.Posts
+            var existingPost = await _repository
+                .AsQueryable()
                 .AsNoTracking()
                 .AnyAsync(p => p.Title == post.Title);
 
@@ -101,15 +103,15 @@ namespace PostApiService.Services
                 throw new PostAlreadyExistException(post.Title);
             }
 
-            await _context.Posts.AddAsync(post);
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
+            try
             {
-                throw new AddPostFailedException(post.Title);
+                Post addedPost = await _repository.AddAsync(post);
+                return addedPost;
             }
-
-            return post;
+            catch (DbUpdateException ex)
+            {
+                throw new AddPostFailedException(post.Title, ex);
+            }
         }
 
         /// <summary>
@@ -117,27 +119,29 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task UpdatePostAsync(Post post)
         {
-            var existingPost = await _context.Posts
-                .FindAsync(post.PostId);
+            var existingPost = await _repository
+                .GetByIdAsync(post.PostId);
 
             if (existingPost == null)
             {
                 throw new PostNotFoundException(post.PostId);
             }
 
-            existingPost.Title = post.Title;
-            existingPost.Description = post.Description;
-            existingPost.Content = post.Content;
-            existingPost.ImageUrl = post.ImageUrl;
-            existingPost.MetaTitle = post.MetaTitle;
-            existingPost.MetaDescription = post.MetaDescription;
-            existingPost.Slug = post.Slug;
-
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
+            try
             {
-                throw new UpdatePostFailedException(post.Title);
+                existingPost.Title = post.Title;
+                existingPost.Description = post.Description;
+                existingPost.Content = post.Content;
+                existingPost.ImageUrl = post.ImageUrl;
+                existingPost.MetaTitle = post.MetaTitle;
+                existingPost.MetaDescription = post.MetaDescription;
+                existingPost.Slug = post.Slug;
+
+                await _repository.UpdateAsync(existingPost);
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new UpdatePostFailedException(post.Title, ex);
             }
         }
 
@@ -146,20 +150,20 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task DeletePostAsync(int postId)
         {
-            var existingPost = await _context.Posts.FindAsync(postId);
+            var existingPost = await _repository.GetByIdAsync(postId);
 
             if (existingPost == null)
             {
                 throw new PostNotFoundException(postId);
             }
 
-            _context.Posts.Remove(existingPost);
-
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
+            try
             {
-                throw new DeletePostFailedException(postId);
+                await _repository.DeleteAsync(existingPost);
+            }
+            catch (DbUpdateException ex)
+            {
+                throw new DeletePostFailedException(postId, ex);
             }
         }
     }

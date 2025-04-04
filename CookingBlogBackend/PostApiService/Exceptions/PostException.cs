@@ -1,4 +1,6 @@
-﻿namespace PostApiService.Exceptions
+﻿using Microsoft.EntityFrameworkCore;
+
+namespace PostApiService.Exceptions
 {
     public class PostException : InvalidOperationException
     {
@@ -28,8 +30,8 @@
     public class AddPostFailedException : InvalidOperationException
     {
         public string Title { get; }
-        public AddPostFailedException(string postTitle)
-            : base(string.Format(PostErrorMessages.AddPostFailed, postTitle))
+        public AddPostFailedException(string postTitle, Exception ex)
+            : base(string.Format(PostErrorMessages.AddPostFailed, postTitle), ex)
         {
             Title = postTitle;
         }
@@ -38,8 +40,8 @@
     public class UpdatePostFailedException : InvalidOperationException
     {
         public string Title { get; }
-        public UpdatePostFailedException(string postTitle)
-            : base(string.Format(PostErrorMessages.UpdatePostFailed, postTitle))
+        public UpdatePostFailedException(string postTitle, DbUpdateException ex)
+            : base(string.Format(PostErrorMessages.UpdatePostFailed, postTitle), ex)
         {
             Title = postTitle;
         }
@@ -48,8 +50,8 @@
     public class DeletePostFailedException : InvalidOperationException
     {
         public int PostId { get; }
-        public DeletePostFailedException(int postId)
-            : base(string.Format(PostErrorMessages.DeletePostFailed, postId))
+        public DeletePostFailedException(int postId, DbUpdateException ex)
+            : base(string.Format(PostErrorMessages.DeletePostFailed, postId), ex)
         {
             PostId = postId;
         }
