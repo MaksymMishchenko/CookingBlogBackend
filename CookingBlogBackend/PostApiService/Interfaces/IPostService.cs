@@ -11,7 +11,7 @@ namespace PostApiService.Interfaces
             bool includeComments = true,
             CancellationToken cancellationToken = default);
         Task<Post> GetPostByIdAsync(int postId, bool includeComments = true);
-        Task<Post> AddPostAsync(Post post, CancellationToken cancel = default);
+        Task<Post> AddPostAsync(Post post);
         Task UpdatePostAsync(Post post);
         Task DeletePostAsync(int postId);
     }

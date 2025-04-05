@@ -92,7 +92,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Adds a new post to the database.
         /// </summary>        
-        public async Task<Post> AddPostAsync(Post post, CancellationToken cancel = default)
+        public async Task<Post> AddPostAsync(Post post)
         {
             var existingPost = await _repository                
                 .AnyAsync(p => p.Title == post.Title);
@@ -104,7 +104,7 @@ namespace PostApiService.Services
 
             try
             {
-                Post addedPost = await _repository.AddAsync(post, cancel);
+                Post addedPost = await _repository.AddAsync(post);
                 return addedPost;
             }
             catch (DbException ex)
