@@ -1,12 +1,15 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace PostApiService.Models
 {
-    public class Comment
+    public class Comment : IEntity
     {
-        public int CommentId { get; set; }
+        [Column("CommentId")]
+        public int Id { get; set; }       
 
         [StringLength(50, MinimumLength = 1, ErrorMessage = "Author must be between 1 and 50 characters.")]
         public string? Author { get; set; }

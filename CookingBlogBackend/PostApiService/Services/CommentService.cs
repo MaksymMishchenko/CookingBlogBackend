@@ -1,19 +1,23 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Exceptions;
+﻿using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Repositories;
+using System.Data.Common;
 
 namespace PostApiService.Services
 {
     public class CommentService : ICommentService
     {
-        private readonly IApplicationDbContext _context;
+        private readonly IRepository<Comment> _commentRepository;
+        private readonly IRepository<Post> _postRepository;
         private readonly IAuthService _authService;
 
-        public CommentService(IApplicationDbContext context,
+        public CommentService(IRepository<Comment> commentRepository,
+            IRepository<Post> postRepository,
             IAuthService authService)
         {
-            _context = context;
+            _commentRepository = commentRepository;
+            _postRepository = postRepository;
             _authService = authService;
         }
 
@@ -22,7 +26,7 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task AddCommentAsync(int postId, Comment comment)
         {
-            var postExists = await _context.Posts.AnyAsync(p => p.PostId == postId);
+            var postExists = await _postRepository.AnyAsync(p => p.Id == postId);
             if (!postExists)
             {
                 throw new PostNotFoundException(postId);
@@ -32,13 +36,14 @@ namespace PostApiService.Services
 
             comment.PostId = postId;
             comment.UserId = user.Id;
-            await _context.Comments.AddAsync(comment);
 
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
+            try
             {
-                throw new AddCommentFailedException(postId);
+                await _commentRepository.AddAsync(comment);
+            }
+            catch (DbException ex)
+            {
+                throw new AddCommentFailedException(postId, ex);
             }
         }
 
@@ -47,7 +52,7 @@ namespace PostApiService.Services
         /// </summary>              
         public async Task UpdateCommentAsync(int commentId, EditCommentModel comment)
         {
-            var existingComment = await _context.Comments.FindAsync(commentId);
+            var existingComment = await _commentRepository.GetByIdAsync(commentId);
 
             if (existingComment == null)
             {
@@ -56,11 +61,13 @@ namespace PostApiService.Services
 
             existingComment.Content = comment.Content;
 
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
+            try
             {
-                throw new UpdateCommentFailedException(commentId);
+                await _commentRepository.UpdateAsync(existingComment);
+            }
+            catch (DbException ex)
+            {
+                throw new UpdateCommentFailedException(commentId, ex);
             }
         }
 
@@ -69,20 +76,20 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task DeleteCommentAsync(int commentId)
         {
-            var existingComment = await _context.Comments.FindAsync(commentId);
+            var existingComment = await _commentRepository.GetByIdAsync(commentId);
 
             if (existingComment == null)
             {
                 throw new CommentNotFoundException(commentId);
             }
 
-            _context.Comments.Remove(existingComment);
-
-            var result = await _context.SaveChangesAsync();
-
-            if (result <= 0)
+            try
             {
-                throw new DeleteCommentFailedException(commentId);
+                await _commentRepository.DeleteAsync(existingComment);
+            }
+            catch (DbException ex)
+            {
+                throw new DeleteCommentFailedException(commentId, ex);
             }
         }
     }

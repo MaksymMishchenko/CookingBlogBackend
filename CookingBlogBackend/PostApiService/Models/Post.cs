@@ -1,11 +1,13 @@
 ﻿using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PostApiService.Models
 {
     public class Post : IEntity
     {
-        public int PostId { get; set; }
+        [Column("PostId")]
+        public int Id { get; set; }
 
         [Required(ErrorMessage = "Title is required.")]
         [StringLength(200, MinimumLength = 10, ErrorMessage = "Title must be between 10 and 200 characters.")]

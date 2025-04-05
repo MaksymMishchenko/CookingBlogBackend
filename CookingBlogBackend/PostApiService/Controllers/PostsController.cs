@@ -81,7 +81,7 @@ namespace PostApiService.Controllers
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, post.PostId), post));
+                (PostSuccessMessages.PostRetrievedSuccessfully, post.Id), post));
         }
 
         /// <summary>
@@ -92,9 +92,9 @@ namespace PostApiService.Controllers
         {
             var addedPost = await _postsService.AddPostAsync(post);
 
-            return CreatedAtAction("GetPostById", new { postId = addedPost.PostId },
+            return CreatedAtAction("GetPostById", new { postId = addedPost.Id },
                 ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost.PostId));
+                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost.Id));
         }
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace PostApiService.Controllers
         [HttpPut]
         public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
         {
-            if (post == null || post.PostId <= 0)
+            if (post == null || post.Id <= 0)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (PostErrorMessages.InvalidPostOrId));
@@ -113,7 +113,7 @@ namespace PostApiService.Controllers
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, post.PostId), post.PostId));
+                (PostSuccessMessages.PostUpdatedSuccessfully, post.Id), post.Id));
         }
 
         /// <summary>

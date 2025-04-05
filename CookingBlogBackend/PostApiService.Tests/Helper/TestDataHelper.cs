@@ -7,21 +7,38 @@ namespace PostApiService.Tests.Helper
         public static List<Post> GetPostsWithComments(int count,
             bool useNewSeed = false,
             bool generateComments = true,
-            int commentCount = 1)
+            int commentCount = 1,
+            bool generateIds = false)
         {
-            return GetPostFaker(useNewSeed, generateComments, commentCount).Generate(count);
-        }
+            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, generateIds).Generate(count);
 
-        public static Post GetPostWithComments(bool useNewSeed = false,
-            bool generateComments = true,
-            int commentCount = 1)
-        {
-            return GetPostsWithComments(1, useNewSeed, generateComments, commentCount)[0];
+            if (generateIds)
+            {
+                int postId = 1;
+                int commentId = 1;
+
+                foreach (var post in posts)
+                {
+                    post.Id = postId++;
+
+                    if (post.Comments != null)
+                    {
+                        foreach (var comment in post.Comments)
+                        {
+                            comment.Id = commentId++;
+                            comment.PostId = post.Id;
+                        }
+                    }
+                }
+            }
+
+            return posts;
         }
 
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
-            int commentCount)
+            int commentCount,
+            bool generateIds)
         {
             var seed = 0;
             if (useNewSeed)
@@ -30,7 +47,7 @@ namespace PostApiService.Tests.Helper
             }
 
             return new Faker<Post>()
-                .RuleFor(p => p.PostId, f => 0)
+                .RuleFor(p => p.Id, _ => 0)
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
@@ -41,17 +58,16 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
-                    if (generateComments)
-                    {
-                        return new Faker<Comment>()
-                            .RuleFor(c => c.CommentId, _ => 0)
-                            .RuleFor(c => c.Author, fc => fc.Person.FullName)
-                            .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
-                            .RuleFor(c => c.PostId, _ => post.PostId)
-                            .RuleFor(c => c.UserId, _ => "testUserId")
-                            .Generate(commentCount);
-                    }
-                    return new List<Comment>();
+                    if (!generateComments)
+                        return new List<Comment>();
+
+                    return new Faker<Comment>()
+                        .RuleFor(c => c.Id, _ => 0)
+                        .RuleFor(c => c.PostId, _ => post.Id)
+                        .RuleFor(c => c.Author, fc => fc.Person.FullName)
+                        .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
+                        .RuleFor(c => c.UserId, _ => "testUserId")
+                        .Generate(commentCount);
                 })
                 .UseSeed(seed);
         }
@@ -60,7 +76,7 @@ namespace PostApiService.Tests.Helper
         {
             return new Post
             {
-                PostId = 1,
+                Id = 1,
                 Title = "Lorem ipsum dolor sit amet",
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
                 Author = "Test author",
@@ -74,7 +90,7 @@ namespace PostApiService.Tests.Helper
 
         public static List<Post> GetListWithPost()
         {
-            return new List<Post> { new Post { PostId = 1 } };
+            return new List<Post> { new Post { Id = 1 } };
         }
 
         public static List<Post> GetEmptyPostList()
@@ -85,16 +101,16 @@ namespace PostApiService.Tests.Helper
         public static List<Comment> GetListWithComments()
         {
             return new List<Comment> {
-                new Comment { PostId = 1, CommentId = 1, UserId = "testUserId", Content = "This is the test comment 1." },
-                new Comment { PostId = 1, CommentId = 2, UserId = "testUserId", Content = "This is the test comment 2." },
-                new Comment { PostId = 1, CommentId = 3, UserId = "testUserId", Content = "This is the test comment 3." }
+                new Comment { PostId = 1, Id = 1, UserId = "testUserId", Content = "This is the test comment 1." },
+                new Comment { PostId = 1, Id = 2, UserId = "testUserId", Content = "This is the test comment 2." },
+                new Comment { PostId = 1, Id = 3, UserId = "testUserId", Content = "This is the test comment 3." }
             };
         }
 
         public static List<Comment> GetEmptyCommentList()
         {
             return new List<Comment>();
-        }
+        }        
 
         public static List<Post> GetPostsWithComments()
         {

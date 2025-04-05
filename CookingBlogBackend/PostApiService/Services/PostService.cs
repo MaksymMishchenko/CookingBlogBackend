@@ -57,7 +57,7 @@ namespace PostApiService.Services
             }
 
             var posts = await query
-                .OrderBy(p => p.PostId)
+                .OrderBy(p => p.Id)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
@@ -79,7 +79,7 @@ namespace PostApiService.Services
                 query = query.Include(p => p.Comments);
             }
 
-            var post = await query.FirstOrDefaultAsync(p => p.PostId == postId);
+            var post = await query.FirstOrDefaultAsync(p => p.Id == postId);
 
             if (post == null)
             {
@@ -119,11 +119,11 @@ namespace PostApiService.Services
         public async Task UpdatePostAsync(Post post)
         {
             var existingPost = await _repository
-                .GetByIdAsync(post.PostId);
+                .GetByIdAsync(post.Id);
 
             if (existingPost == null)
             {
-                throw new PostNotFoundException(post.PostId);
+                throw new PostNotFoundException(post.Id);
             }
 
             try
