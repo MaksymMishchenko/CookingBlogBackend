@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PostApiService.Models;
 using System.Linq.Expressions;
 
 namespace PostApiService.Repositories

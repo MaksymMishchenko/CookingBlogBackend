@@ -4,6 +4,7 @@ using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Repositories;
 using System.Data;
+using System.Data.Common;
 
 namespace PostApiService.Services
 {
@@ -94,7 +95,7 @@ namespace PostApiService.Services
         public async Task<Post> AddPostAsync(Post post, CancellationToken cancel = default)
         {
             var existingPost = await _repository                
-                .AnyAsync(p => p.Title == post.Title, cancel);
+                .AnyAsync(p => p.Title == post.Title);
 
             if (existingPost)
             {
@@ -106,7 +107,7 @@ namespace PostApiService.Services
                 Post addedPost = await _repository.AddAsync(post, cancel);
                 return addedPost;
             }
-            catch (DbUpdateException ex)
+            catch (DbException ex)
             {
                 throw new AddPostFailedException(post.Title, ex);
             }
@@ -137,7 +138,7 @@ namespace PostApiService.Services
 
                 await _repository.UpdateAsync(existingPost);
             }
-            catch (DbUpdateException ex)
+            catch (DbException ex)
             {
                 throw new UpdatePostFailedException(post.Title, ex);
             }
@@ -159,7 +160,7 @@ namespace PostApiService.Services
             {
                 await _repository.DeleteAsync(existingPost);
             }
-            catch (DbUpdateException ex)
+            catch (DbException ex)
             {
                 throw new DeletePostFailedException(postId, ex);
             }
