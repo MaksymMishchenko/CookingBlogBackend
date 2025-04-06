@@ -1,10 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+using PostApiService.Models;
+using PostApiService.Repositories;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>, IAsyncLifetime
+    public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
 
@@ -16,8 +17,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
         private PostService CreatePostService()
         {
             var context = _fixture.CreateContext();
-            var logger = new LoggerFactory().CreateLogger<PostService>();
-            return new PostService(context);
+            var repo = new Repository<Post>(context);
+            return new PostService(repo);
         }
 
         [Fact]
@@ -37,15 +38,15 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var returnedPost = listOfPosts[0];
             var post = await context.Posts
                 .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.PostId == 1);
+                .FirstOrDefaultAsync(p => p.Id == 1);
             Assert.NotNull(post);
 
             var comments = await context.Comments
-                .Where(c => c.PostId == post.PostId)
+                .Where(c => c.PostId == post.Id)
                 .ToListAsync();
             Assert.NotNull(post);
 
-            Assert.Equal(post.PostId, returnedPost.PostId);
+            Assert.Equal(post.Id, returnedPost.Id);
             Assert.Equal(post.Title, returnedPost.Title);
             Assert.Equal(post.Description, returnedPost.Description);
 
@@ -55,7 +56,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             Assert.All(returnedPost.Comments, comment =>
             {
-                Assert.Equal(post.PostId, comment.PostId);
+                Assert.Equal(post.Id, comment.PostId);
             });
 
             Assert.Equal(comments[0].Content, returnedPost.Comments[0].Content);
@@ -76,14 +77,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var post = await context.Posts
                 .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.PostId == 1);
+                .FirstOrDefaultAsync(p => p.Id == 1);
 
             Assert.NotNull(post);
 
             var postList = listOfPosts[0];
 
             Assert.Single(listOfPosts);
-            Assert.Equal(post.PostId, postList.PostId);
+            Assert.Equal(post.Id, postList.Id);
             Assert.Equal(post.Title, postList.Title);
             Assert.Equal(post.Description, postList.Description);
             Assert.All(listOfPosts, post => Assert.NotNull(post.Comments));
@@ -107,10 +108,10 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var post = await context.Posts
                 .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.PostId == 1);
+                .FirstOrDefaultAsync(p => p.Id == 1);
             Assert.NotNull(post);
 
-            Assert.Equal(post.PostId, existingPost.PostId);
+            Assert.Equal(post.Id, existingPost.Id);
             Assert.Equal(post.Title, existingPost.Title);
             Assert.Equal(post.Description, existingPost.Description);
             Assert.NotNull(existingPost.Comments);
@@ -188,12 +189,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             // Assert
             var removedPost = await context.Posts
-                .AnyAsync(p => p.PostId == postId);
+                .AnyAsync(p => p.Id == postId);
             Assert.False(removedPost);
-        }
-
-        public Task InitializeAsync() => _fixture.InitializeAsync();
-
-        public Task DisposeAsync() => _fixture.DisposeAsync();
+        }        
     }
 }
