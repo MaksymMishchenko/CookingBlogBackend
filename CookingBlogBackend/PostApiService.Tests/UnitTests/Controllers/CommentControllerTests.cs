@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
@@ -10,15 +9,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
 {
     public class CommentControllerTests
     {
-        private readonly Mock<ICommentService> _mockCommentService;
-        private readonly Mock<ILogger<CommentsController>> _mockLoggerService;
+        private readonly ICommentService _mockCommentService;
         private readonly CommentsController _commentController;
         public CommentControllerTests()
         {
-            _mockCommentService = new Mock<ICommentService>();
-            _mockLoggerService = new Mock<ILogger<CommentsController>>();
+            _mockCommentService = Substitute.For<ICommentService>();
             _commentController = new CommentsController
-                 (_mockCommentService.Object, _mockLoggerService.Object);
+                 (_mockCommentService);
         }
 
         [Theory]
@@ -96,7 +93,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
             };
 
-            _mockCommentService.Setup(t => t.AddCommentAsync(postId, newComment))
+            _mockCommentService.AddCommentAsync(postId, newComment)
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -107,7 +104,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.NotNull(okResult);
             Assert.Equal(CommentSuccessMessages.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
 
-            _mockCommentService.Verify(s => s.AddCommentAsync(postId, newComment), Times.Once);
+            await _mockCommentService.Received(1)
+                .AddCommentAsync(postId, newComment);
         }
 
         [Theory]
@@ -170,7 +168,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Content = "It is a long established fact that a reader will be distracted."
             };
 
-            _mockCommentService.Setup(t => t.UpdateCommentAsync(commentId, updatedComment))
+            _mockCommentService.UpdateCommentAsync(commentId, updatedComment)
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -181,7 +179,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.NotNull(okResult);
             Assert.Equal(CommentSuccessMessages.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
 
-            _mockCommentService.Verify(c => c.UpdateCommentAsync(commentId, updatedComment), Times.Once);
+            await _mockCommentService.Received(1)
+                .UpdateCommentAsync(commentId, updatedComment);
         }
 
         [Theory]
@@ -190,8 +189,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [InlineData(1, true)]
         public async Task OnDeleteCommentAsync_ShouldHandleSuccessAndFailureCorrectly(int commentId, bool isSuccess)
         {
-            // Arrange            
-            _mockCommentService.Setup(t => t.DeleteCommentAsync(commentId));
+            // Arrange                        
+            _mockCommentService.DeleteCommentAsync(commentId)
+                .Returns(Task.CompletedTask);
 
             // Act
             var result = await _commentController.DeleteCommentAsync(commentId);
@@ -204,7 +204,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Assert.Equal(CommentSuccessMessages.CommentDeletedSuccessfully,
                     ((ApiResponse<Comment>)okResult.Value).Message);
 
-                _mockCommentService.Verify(c => c.DeleteCommentAsync(commentId), Times.Once);
+                await _mockCommentService.Received(1)
+                    .DeleteCommentAsync(commentId);
             }
             else
             {
@@ -216,4 +217,5 @@ namespace PostApiService.Tests.UnitTests.Controllers
             }
         }
     }
+
 }

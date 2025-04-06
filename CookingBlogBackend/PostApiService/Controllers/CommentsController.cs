@@ -12,14 +12,11 @@ namespace PostApiService.Controllers
     [Authorize(Policy = TS.Policies.ContributorPolicy)]
     public class CommentsController : Controller
     {
-        private readonly ICommentService _commentService;
-        private readonly ILogger<CommentsController> _logger;
+        private readonly ICommentService _commentService;        
 
-        public CommentsController(ICommentService commentService,
-            ILogger<CommentsController> logger)
+        public CommentsController(ICommentService commentService)
         {
-            _commentService = commentService;
-            _logger = logger;
+            _commentService = commentService;           
         }
 
         /// <summary>
