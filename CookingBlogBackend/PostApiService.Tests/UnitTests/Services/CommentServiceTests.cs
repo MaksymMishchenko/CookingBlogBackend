@@ -62,25 +62,29 @@ namespace PostApiService.Tests.UnitTests.Services
                 .GetByIdAsync(Arg.Any<int>());
         }
 
-        //[Fact]
-        //public async Task DeleteCommentAsync_ShouldRemoveCommentAndSaveChanges()
-        //{
-        //    // Arrange
-        //    var commentId = 1;
-        //    var saveChangedResult = 1;
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldRemoveCommentAndSaveChanges()
+        {
+            // Arrange
+            var commentId = 1;
 
-        //    _mockContext.Setup(c => c.Comments.FindAsync(It.Is<int>(id => id == commentId)))
-        //        .ReturnsAsync(TestDataHelper.GetListWithComments()
-        //        .FirstOrDefault(c => c.CommentId == commentId));
+            var post = TestDataHelper.GetListWithComments()
+                .FirstOrDefault(c => c.Id == commentId);
 
-        //    _mockContext.Setup(c => c.SaveChangesAsync(It.IsAny<CancellationToken>())).ReturnsAsync(saveChangedResult);
+            var mockCommentRepo = Substitute.For<IRepository<Comment>>();
+            mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(post);
 
-        //    // Act
-        //    await _commentService.DeleteCommentAsync(commentId);
+            var mockPostRepo = Substitute.For<IRepository<Post>>();
+            var mockAuthService = Substitute.For<IAuthService>();
 
-        //    // Assert            
-        //    _mockContext.Verify(c => c.Comments.Remove(It.Is<Comment>(c => c.CommentId == commentId)), Times.Once);
-        //    _mockContext.Verify(c => c.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
-        //}
+            var service = new CommentService(mockCommentRepo, mockPostRepo, mockAuthService);
+
+            // Act
+            await service.DeleteCommentAsync(commentId);
+
+            // Assert            
+            await mockCommentRepo.Received(1)
+                .GetByIdAsync(Arg.Any<int>());
+        }
     }
 }
