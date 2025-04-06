@@ -12,13 +12,11 @@ namespace PostApiService.Controllers
     [Authorize(Policy = TS.Policies.FullControlPolicy)]
     public class PostsController : Controller
     {
-        private readonly IPostService _postsService;
-        private readonly ILogger<PostsController> _logger;
+        private readonly IPostService _postsService;       
 
-        public PostsController(IPostService postsService, ILogger<PostsController> logger)
+        public PostsController(IPostService postsService)
         {
-            _postsService = postsService;
-            _logger = logger;
+            _postsService = postsService;            
         }
 
         /// <summary>
