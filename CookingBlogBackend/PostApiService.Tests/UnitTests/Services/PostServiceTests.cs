@@ -9,6 +9,13 @@ namespace PostApiService.Tests.UnitTests
 {
     public class PostServiceTests
     {
+        private readonly IRepository<Post> _mockRepository;
+
+        public PostServiceTests()
+        {
+            _mockRepository = Substitute.For<IRepository<Post>>();
+        }
+
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnPagedPosts()
         {
@@ -19,10 +26,9 @@ namespace PostApiService.Tests.UnitTests
             var testPosts = TestDataHelper.GetPostsWithComments(count: 25, commentCount: 10);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-            mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(_mockRepository);
 
             // Act
             var result = await service.GetAllPostsAsync(pageNumber, pageSize);
@@ -41,10 +47,9 @@ namespace PostApiService.Tests.UnitTests
             var testPosts = TestDataHelper.GetPostsWithComments(count: 25, commentCount: 10);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-            mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(_mockRepository);
 
             // Act
             var result = await service.GetAllPostsAsync(pageNumber, pageSize, includeComments: false);
@@ -70,10 +75,9 @@ namespace PostApiService.Tests.UnitTests
             var testPosts = TestDataHelper.GetPostsWithComments(count: 5, commentCount: 3, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-            mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(_mockRepository);
 
             // Act
             var post = await service.GetPostByIdAsync(postId, includeComments: true);
@@ -92,10 +96,9 @@ namespace PostApiService.Tests.UnitTests
             var testPosts = TestDataHelper.GetPostsWithComments(count: 5, generateComments: false, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-            mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(_mockRepository);
 
             // Act
             var post = await service.GetPostByIdAsync(postId, includeComments: false);
@@ -112,14 +115,13 @@ namespace PostApiService.Tests.UnitTests
             // Arrange           
             var newPost = TestDataHelper.GetSinglePost();
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-            mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(false);
 
-            mockRepository.AddAsync(newPost, Arg.Any<CancellationToken>())
+            _mockRepository.AddAsync(newPost, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(newPost));
 
-            var postService = new PostService(mockRepository);
+            var postService = new PostService(_mockRepository);
 
             // Act
             var result = await postService.AddPostAsync(newPost);
@@ -129,11 +131,11 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(newPost.Title, result.Title);
             Assert.Equal(newPost.Content, result.Content);
 
-            await mockRepository.Received(1)
+            await _mockRepository.Received(1)
                 .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
                     p.Compile()(newPost)), Arg.Any<CancellationToken>());
 
-            await mockRepository.Received(1)
+            await _mockRepository.Received(1)
                 .AddAsync(newPost, Arg.Any<CancellationToken>());
         }
 
@@ -154,24 +156,22 @@ namespace PostApiService.Tests.UnitTests
                 Slug = "updated-slug"
             };
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-
-            mockRepository.GetByIdAsync(originalPost.Id)
+            _mockRepository.GetByIdAsync(originalPost.Id)
                 .Returns(Task.FromResult(originalPost));
 
-            mockRepository.UpdateAsync(Arg.Any<Post>())
+            _mockRepository.UpdateAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(_mockRepository);
 
             // Act
             await service.UpdatePostAsync(updatedPost);
 
             // Assert            
-            await mockRepository.Received(1)
+            await _mockRepository.Received(1)
                 .GetByIdAsync(originalPost.Id);
 
-            await mockRepository.Received(1)
+            await _mockRepository.Received(1)
                 .UpdateAsync(Arg.Is<Post>(p =>
                     p.Id == originalPost.Id &&
                     p.Title == "Updated title" &&
@@ -189,24 +189,22 @@ namespace PostApiService.Tests.UnitTests
             // Arrange            
             var post = TestDataHelper.GetSinglePost();
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-
-            mockRepository.GetByIdAsync(post.Id)
+            _mockRepository.GetByIdAsync(post.Id)
                 .Returns(Task.FromResult(post));
 
-            mockRepository.DeleteAsync(Arg.Any<Post>())
+            _mockRepository.DeleteAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(_mockRepository);
 
             // Act
             await service.DeletePostAsync(post.Id);
 
             // Assert
-            await mockRepository.Received(1)
+            await _mockRepository.Received(1)
                 .GetByIdAsync(post.Id);
 
-            await mockRepository.Received(1)
+            await _mockRepository.Received(1)
                 .DeleteAsync(Arg.Is<Post>(p =>
                     p.Id == post.Id));
         }
