@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-using Moq;
+using NSubstitute;
 using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
@@ -11,15 +10,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
 {
     public class PostControllerTests
     {
-        private readonly Mock<ILogger<PostsController>> _mockLogger;
-        private readonly Mock<IPostService> _mockPostService;
+        private readonly IPostService _mockPostService;
         private readonly PostsController _postsController;
 
         public PostControllerTests()
         {
-            _mockLogger = new Mock<ILogger<PostsController>>();
-            _mockPostService = new Mock<IPostService>();
-            _postsController = new PostsController(_mockPostService.Object, _mockLogger.Object);
+            _mockPostService = Substitute.For<IPostService>();
+            _postsController = new PostsController(_mockPostService);
         }
 
         [Fact]
@@ -51,14 +48,17 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
         {
-            // Arrange            
-            _mockPostService.Setup(service => service.GetAllPostsAsync(1,
-                10,
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync(TestDataHelper.GetEmptyPostList());
+            // Arrange
+            var posts = TestDataHelper.GetEmptyPostList();
+
+            _mockPostService.GetAllPostsAsync(
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<bool>(),
+                Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(posts));            
 
             // Act
             var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
@@ -69,26 +69,30 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.False(response.Success);
             Assert.Equal(PostErrorMessages.NoPostsFound, response.Message);
 
-            _mockPostService.Verify(s => s.GetAllPostsAsync(
-                1,
-                10,
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()), Times.Once);
+            await _mockPostService.Received(1)
+                .GetAllPostsAsync(
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<bool>(),
+                Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnOk_WhenPostsAreFound()
         {
-            // Arrange            
-            _mockPostService.Setup(service => service.GetAllPostsAsync(It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()))
-                .ReturnsAsync(TestDataHelper.GetPostsWithComments(count: 10, generateComments: false));
+            // Arrange
+            var posts = TestDataHelper.GetPostsWithComments(count: 10, generateComments: false);
+
+            _mockPostService.GetAllPostsAsync(
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<bool>(),
+                Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(posts));
 
             // Act
             var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
@@ -102,13 +106,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
             Assert.Equal(10, response.DataList.Count);
 
-            _mockPostService.Verify(s => s.GetAllPostsAsync(
-                1,
-                10,
-                It.IsAny<int>(),
-                It.IsAny<int>(),
-                It.IsAny<bool>(),
-                It.IsAny<CancellationToken>()), Times.Once);
+            await _mockPostService.Received(1)
+                .GetAllPostsAsync(Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<bool>(),
+                Arg.Any<CancellationToken>());                
         }
 
         [Fact]
@@ -123,7 +127,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(PostErrorMessages.InvalidPageParameters, response.Message);            
+            Assert.Equal(PostErrorMessages.InvalidPageParameters, response.Message);
         }
 
         [Fact]
@@ -131,12 +135,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var expectedPost = TestDataHelper.GetSinglePost();
-            _mockPostService.Setup(s => s.GetPostByIdAsync(expectedPost.PostId, true))
-                .ReturnsAsync(expectedPost);
+            _mockPostService.GetPostByIdAsync(expectedPost.Id, true)
+                .Returns(expectedPost);
 
             // Act
             var result = await _postsController.GetPostByIdAsync
-                (expectedPost.PostId, true);
+                (expectedPost.Id, true);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -144,13 +148,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, expectedPost.PostId), response.Message);
+                (PostSuccessMessages.PostRetrievedSuccessfully, expectedPost.Id), response.Message);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
-            _mockPostService.Verify(s => s.GetPostByIdAsync(
-                expectedPost.PostId,
-                true), Times.Once);
-        }        
+            await _mockPostService.Received(1)
+                .GetPostByIdAsync(expectedPost.Id, true);
+        }
 
         [Fact]
         public async Task AddPostAsync_ShouldReturn201AndSuccessMessage_WhenPostIsAddedSuccessfully()
@@ -158,8 +161,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var post = TestDataHelper.GetSinglePost();
 
-            _mockPostService.Setup(s => s.AddPostAsync(post))
-                .ReturnsAsync(post);
+            _mockPostService.AddPostAsync(post)
+                .Returns(post);
 
             // Act
             var result = await _postsController.AddPostAsync(post);
@@ -171,9 +174,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostAddedSuccessfully, post.PostId), response.Message);
+                (PostSuccessMessages.PostAddedSuccessfully, post.Id), response.Message);
 
-            _mockPostService.Verify(s => s.AddPostAsync(post), Times.Once);
+            await _mockPostService.Received(1).AddPostAsync(post);
         }
 
         [Theory]
@@ -183,7 +186,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             string expectedMessage)
         {
             // Arrange
-            Post post = postId > 0 ? new Post { PostId = postId } : null;
+            Post post = postId > 0 ? new Post { Id = postId } : null;
 
             // Act
             var result = await _postsController.UpdatePostAsync(post);
@@ -195,14 +198,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.False(response.Success);
             Assert.Equal(expectedMessage, response.Message);
             Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-        }        
+        }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
         {
             // Arrange
             var post = TestDataHelper.GetSinglePost();
-            _mockPostService.Setup(service => service.UpdatePostAsync(post))
+            _mockPostService.UpdatePostAsync(post)
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -214,12 +217,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, post.PostId), actualResponse.Message);
-            Assert.Equal(post.PostId, actualResponse.EntityId);
+                (PostSuccessMessages.PostUpdatedSuccessfully, post.Id), actualResponse.Message);
+            Assert.Equal(post.Id, actualResponse.EntityId);
 
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
-            _mockPostService.Verify(s => s.UpdatePostAsync(post), Times.Once);
+            await _mockPostService.Received(1).UpdatePostAsync(post);
         }
 
         [Theory]
@@ -246,8 +249,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var postId = 1;
-            _mockPostService
-                 .Setup(s => s.DeletePostAsync(postId))
+            _mockPostService.DeletePostAsync(postId)
                  .Returns(Task.CompletedTask);
 
             // Act
@@ -262,7 +264,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(string.Format
                 (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
 
-            _mockPostService.Verify(s => s.DeletePostAsync(postId), Times.Once);
+            await _mockPostService.Received(1).DeletePostAsync(postId);
         }
     }
 }
