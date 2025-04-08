@@ -84,7 +84,7 @@ namespace PostApiService.Tests.IntegrationTests
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
             Assert.NotNull(content);
             Assert.Equal(pageSize, content.DataList.Count);
-            Assert.True(content.DataList.First().PostId > 0);
+            Assert.True(content.DataList.First().Id > 0);
 
             // Act
             response = await _client.GetAsync
@@ -96,7 +96,7 @@ namespace PostApiService.Tests.IntegrationTests
             content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
             Assert.NotNull(content);
             Assert.InRange(content.DataList.Count, 0, pageSize);
-            Assert.True(content.DataList.Last().PostId > 0);
+            Assert.True(content.DataList.Last().Id > 0);
         }
 
         [Fact]
@@ -120,9 +120,9 @@ namespace PostApiService.Tests.IntegrationTests
             // Assert
             Assert.True(content.Success);
             Assert.Equal(string.Format(PostSuccessMessages.PostRetrievedSuccessfully,
-                content.Data.PostId), content.Message);
+                content.Data.Id), content.Message);
 
-            Assert.Equal(postId, content.Data.PostId);
+            Assert.Equal(postId, content.Data.Id);
             Assert.Equal(expectedPost.Title, content.Data.Title);
             Assert.Equal(expectedPost.Description, content.Data.Description);
             Assert.Equal(expectedPost.MetaTitle, content.Data.MetaTitle);
@@ -214,7 +214,7 @@ namespace PostApiService.Tests.IntegrationTests
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var existingPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
+                var existingPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
 
                 Assert.NotNull(existingPost);
 
@@ -238,7 +238,7 @@ namespace PostApiService.Tests.IntegrationTests
 
                 dbContext.ChangeTracker.Clear();
 
-                var updatedPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.PostId == postId);
+                var updatedPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
                 Assert.Equal(existingPost.Title, updatedPost.Title);
                 Assert.Equal(existingPost.Description, updatedPost.Description);
             }
@@ -279,7 +279,7 @@ namespace PostApiService.Tests.IntegrationTests
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var deletedPost = await dbContext.Posts.AnyAsync(p => p.PostId == postId);
+                var deletedPost = await dbContext.Posts.AnyAsync(p => p.Id == postId);
 
                 Assert.False(deletedPost);
             }

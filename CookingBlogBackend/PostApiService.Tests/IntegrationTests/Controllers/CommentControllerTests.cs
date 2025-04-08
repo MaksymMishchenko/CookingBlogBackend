@@ -158,7 +158,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 var removedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.CommentId == 3);
+                    .FirstOrDefaultAsync(c => c.Id == 3);
 
                 var commentCount = await dbContext.Comments.CountAsync();
 
