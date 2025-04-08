@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Moq;
+using NSubstitute;
 using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
@@ -10,13 +10,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
 {
     public class AuthControllerTests
     {
-        private readonly Mock<IAuthService> _mockAuthService;
+        private readonly IAuthService _mockAuthService;
         private readonly AuthController _authController;
 
         public AuthControllerTests()
         {
-            _mockAuthService = new Mock<IAuthService>();
-            _authController = new AuthController(_mockAuthService.Object);
+            _mockAuthService = Substitute.For<IAuthService>();
+            _authController = new AuthController(_mockAuthService);
         }
 
         [Fact]
@@ -43,7 +43,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Password = "-Rtyuehe2-"
             };
 
-            _mockAuthService.Setup(s => s.RegisterUserAsync(newUser)).Returns(Task.FromResult(newUser));
+            _mockAuthService.RegisterUserAsync(newUser).Returns(Task.FromResult(newUser));
 
             // Act
             var result = await _authController.RegisterUser(newUser);
@@ -55,7 +55,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(string.Format(RegisterSuccessMessages.RegisterOk, newUser.UserName),
                 response.Message);
 
-            _mockAuthService.Verify(s => s.RegisterUserAsync(newUser), Times.Once);
+            await _mockAuthService.Received(1)
+                .RegisterUserAsync(newUser);
         }
 
         [Fact]
@@ -83,10 +84,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var identityUser = new IdentityUser { UserName = newUser.UserName, PasswordHash = newUser.Password };
 
-            _mockAuthService.Setup(s => s.LoginAsync(It.Is<LoginUser>(user =>
-                        user.UserName == "correctUser" &&
-                        user.Password == "-Rtyuehe2-")))
-                .ReturnsAsync(identityUser);
+            _mockAuthService.LoginAsync(Arg.Any<LoginUser>())
+                .Returns(identityUser);
 
             // Act
             var result = await _authController.LoginUserAsync(newUser);
@@ -98,7 +97,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(string.Format(AuthSuccessMessages.LoginSuccess, newUser.UserName),
                 response.Message);
 
-            _mockAuthService.Verify(s => s.LoginAsync(newUser), Times.Once);
+            await _mockAuthService.Received(1)
+                .LoginAsync(newUser);
         }
     }
 }
