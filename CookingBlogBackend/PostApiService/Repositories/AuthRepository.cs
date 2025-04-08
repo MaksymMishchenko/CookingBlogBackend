@@ -12,9 +12,9 @@ namespace PostApiService.Repositories
             _userManager = userManager;
         }
 
-        public Task<IdentityResult> AddClaimsAsync(IdentityUser user, Claim claim)
+        public async Task<IdentityResult> AddClaimsAsync(IdentityUser user, IEnumerable<Claim> claim)
         {
-            throw new NotImplementedException();
+            return await _userManager.AddClaimsAsync(user, claim);
         }
 
         public Task<bool> CheckPasswordAsync(IdentityUser user, string password)
