@@ -40,9 +40,9 @@ namespace PostApiService.Repositories
             return await _userManager.FindByNameAsync(userName);
         }
 
-        public Task<IList<Claim>> GetClaimsAsync(IdentityUser user)
+        public async Task<IList<Claim>> GetClaimsAsync(IdentityUser user)
         {
-            throw new NotImplementedException();
+            return await _userManager.GetClaimsAsync(user);
         }
 
         public Task<IList<string>> GetRolesAsync(IdentityUser user)
