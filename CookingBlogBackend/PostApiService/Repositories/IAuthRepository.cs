@@ -7,7 +7,7 @@ namespace PostApiService.Repositories
     {
         Task<IdentityUser> FindByNameAsync(string userName);
         Task<IdentityUser> FindByEmailAsync(string email);
-        Task<IdentityUser> CreateAsync(IdentityUser user, string password);
+        Task<IdentityResult> CreateAsync(IdentityUser user, string password);
         Task<IdentityResult> AddClaimsAsync(IdentityUser user, Claim claim);
         Task<IList<Claim>> GetClaimsAsync(IdentityUser user);
         Task<IList<string>> GetRolesAsync(IdentityUser user);

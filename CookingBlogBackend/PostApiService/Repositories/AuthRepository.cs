@@ -22,9 +22,9 @@ namespace PostApiService.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<IdentityUser> CreateAsync(IdentityUser user, string password)
+        public async Task<IdentityResult> CreateAsync(IdentityUser user, string password)
         {
-            throw new NotImplementedException();
+            return await _userManager.CreateAsync(user, password);
         }
 
         public async Task<IdentityUser> FindByEmailAsync(string email)
