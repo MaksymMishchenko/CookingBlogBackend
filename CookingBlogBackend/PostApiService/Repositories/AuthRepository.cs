@@ -20,9 +20,9 @@ namespace PostApiService.Repositories
             return await _userManager.AddClaimsAsync(user, claim);
         }
 
-        public Task<bool> CheckPasswordAsync(IdentityUser user, string password)
+        public async Task<bool> CheckPasswordAsync(IdentityUser user, string password)
         {
-            throw new NotImplementedException();
+            return await _userManager.CheckPasswordAsync(user, password);
         }
 
         public async Task<IdentityResult> CreateAsync(IdentityUser user, string password)
