@@ -45,9 +45,9 @@ namespace PostApiService.Repositories
             return await _userManager.GetClaimsAsync(user);
         }
 
-        public Task<IList<string>> GetRolesAsync(IdentityUser user)
+        public async Task<IList<string>> GetRolesAsync(IdentityUser user)
         {
-            throw new NotImplementedException();
+            return await _userManager.GetRolesAsync(user);
         }
 
         public async Task<IdentityUser> GetUserAsync(ClaimsPrincipal principal)
