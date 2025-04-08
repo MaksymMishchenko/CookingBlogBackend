@@ -263,7 +263,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(PostAlreadyExistException) =>
                     Task.FromException<Post>(new PostAlreadyExistException(postTitle)),
                 Type t when t == typeof(AddPostFailedException) =>
-                    Task.FromException<Post>(new AddPostFailedException(postTitle)),
+                    Task.FromException<Post>(new AddPostFailedException(postTitle, null)),
                 Type t when t == typeof(DbUpdateException) =>
                     Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)),
                 Type t when t == typeof(OperationCanceledException) =>
@@ -342,7 +342,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(UpdatePostFailedException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
-                        .Returns(Task.FromException(new UpdatePostFailedException(postTitle)));
+                        .Returns(Task.FromException(new UpdatePostFailedException(postTitle, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
@@ -428,7 +428,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DeletePostFailedException):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new DeletePostFailedException(testPostId)));
+                        .Returns(Task.FromException(new DeletePostFailedException(testPostId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
@@ -512,7 +512,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(AddCommentFailedException):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
-                        .Returns(Task.FromException(new AddCommentFailedException(testPostId)));
+                        .Returns(Task.FromException(new AddCommentFailedException(testPostId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
@@ -600,7 +600,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(UpdateCommentFailedException):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
-                        .Returns(Task.FromException(new UpdateCommentFailedException(testCommentId)));
+                        .Returns(Task.FromException(new UpdateCommentFailedException(testCommentId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
@@ -688,7 +688,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DeleteCommentFailedException):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new DeleteCommentFailedException(testCommentId)));
+                        .Returns(Task.FromException(new DeleteCommentFailedException(testCommentId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())

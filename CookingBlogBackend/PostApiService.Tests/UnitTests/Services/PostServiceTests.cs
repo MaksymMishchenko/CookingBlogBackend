@@ -13,7 +13,7 @@ namespace PostApiService.Tests.UnitTests
 
         public PostServiceTests()
         {
-            _mockRepository = Substitute.For<IRepository<Post>>();
+         _mockRepository = Substitute.For<IRepository<Post>>();
         }
 
         [Fact]
@@ -25,7 +25,7 @@ namespace PostApiService.Tests.UnitTests
 
             var testPosts = TestDataHelper.GetPostsWithComments(count: 25, commentCount: 10);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-
+            
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
             var service = new PostService(_mockRepository);
@@ -46,7 +46,7 @@ namespace PostApiService.Tests.UnitTests
 
             var testPosts = TestDataHelper.GetPostsWithComments(count: 25, commentCount: 10);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-
+            
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
             var service = new PostService(_mockRepository);
@@ -74,7 +74,7 @@ namespace PostApiService.Tests.UnitTests
             var postId = 2;
             var testPosts = TestDataHelper.GetPostsWithComments(count: 5, commentCount: 3, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-
+            
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
             var service = new PostService(_mockRepository);
@@ -95,7 +95,7 @@ namespace PostApiService.Tests.UnitTests
             var postId = 2;
             var testPosts = TestDataHelper.GetPostsWithComments(count: 5, generateComments: false, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-
+           
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
             var service = new PostService(_mockRepository);
@@ -114,7 +114,7 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange           
             var newPost = TestDataHelper.GetSinglePost();
-
+           
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(false);
 
@@ -154,7 +154,7 @@ namespace PostApiService.Tests.UnitTests
                 MetaTitle = "Updated meta",
                 MetaDescription = "Updated meta desc",
                 Slug = "updated-slug"
-            };
+            };            
 
             _mockRepository.GetByIdAsync(originalPost.Id)
                 .Returns(Task.FromResult(originalPost));
@@ -189,22 +189,24 @@ namespace PostApiService.Tests.UnitTests
             // Arrange            
             var post = TestDataHelper.GetSinglePost();
 
-            _mockRepository.GetByIdAsync(post.Id)
+            var mockRepository = Substitute.For<IRepository<Post>>();
+
+            mockRepository.GetByIdAsync(post.Id)
                 .Returns(Task.FromResult(post));
 
-            _mockRepository.DeleteAsync(Arg.Any<Post>())
+            mockRepository.DeleteAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(mockRepository);
 
             // Act
             await service.DeletePostAsync(post.Id);
 
             // Assert
-            await _mockRepository.Received(1)
+            await mockRepository.Received(1)
                 .GetByIdAsync(post.Id);
 
-            await _mockRepository.Received(1)
+            await mockRepository.Received(1)
                 .DeleteAsync(Arg.Is<Post>(p =>
                     p.Id == post.Id));
         }

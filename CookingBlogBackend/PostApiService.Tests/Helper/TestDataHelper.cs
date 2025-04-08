@@ -35,6 +35,13 @@ namespace PostApiService.Tests.Helper
             return posts;
         }
 
+        public static Post GetPostWithComments(bool useNewSeed = false,
+            bool generateComments = true,
+            int commentCount = 1)
+        {
+            return GetPostsWithComments(1, useNewSeed, generateComments, commentCount)[0];
+        }
+
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
             int commentCount,
