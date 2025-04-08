@@ -27,9 +27,9 @@ namespace PostApiService.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<IdentityUser> FindByEmailAsync(string email)
+        public async Task<IdentityUser> FindByEmailAsync(string email)
         {
-            throw new NotImplementedException();
+            return await _userManager.FindByEmailAsync(email);
         }
 
         public async Task<IdentityUser> FindByNameAsync(string userName)
