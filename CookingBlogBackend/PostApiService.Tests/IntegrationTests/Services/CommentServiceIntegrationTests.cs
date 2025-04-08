@@ -1,8 +1,9 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Moq;
+using NSubstitute;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Repositories;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
@@ -10,22 +11,24 @@ namespace PostApiService.Tests.IntegrationTests.Services
     public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
-        private readonly Mock<IAuthService> _authServiceMock;
+        private readonly IAuthService _authServiceMock;
         private readonly IdentityUser _testUser;
 
         public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
-            _authServiceMock = new Mock<IAuthService>();
+            _authServiceMock = Substitute.For<IAuthService>();
             _testUser = new IdentityUser { Id = "user123", UserName = "testuser", Email = "test@test.com" };
 
-            _authServiceMock.Setup(auth => auth.GetCurrentUserAsync()).ReturnsAsync(_testUser);
+            _authServiceMock.GetCurrentUserAsync().Returns(_testUser);
         }
 
         private CommentService CreateCommentService()
         {
             var context = _fixture.CreateContext();
-            return new CommentService(context, _authServiceMock.Object);
+            var commentRepo = new Repository<Comment>(context);
+            var postRepo = new Repository<Post>(context);
+            return new CommentService(commentRepo, postRepo, _authServiceMock);
         }
 
         [Fact]
@@ -74,7 +77,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             // Assert
             var editedComment = await context.Comments
-                .FirstOrDefaultAsync(c => c.CommentId == commentId);
+                .FirstOrDefaultAsync(c => c.Id == commentId);
 
             Assert.NotNull(editedComment);
             Assert.Equal(comment.Content, editedComment.Content);
