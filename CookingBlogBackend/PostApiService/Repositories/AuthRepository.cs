@@ -6,10 +6,13 @@ namespace PostApiService.Repositories
     public class AuthRepository : IAuthRepository
     {
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
-        public AuthRepository(UserManager<IdentityUser> userManager)
+        public AuthRepository(UserManager<IdentityUser> userManager,
+            IHttpContextAccessor httpContextAccessor)
         {
             _userManager = userManager;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         public async Task<IdentityResult> AddClaimsAsync(IdentityUser user, IEnumerable<Claim> claim)
@@ -47,9 +50,9 @@ namespace PostApiService.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<IdentityUser> GetUserAsync(ClaimsPrincipal principal)
+        public async Task<IdentityUser> GetUserAsync(ClaimsPrincipal principal)
         {
-            throw new NotImplementedException();
+            return await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
         }
     }
 }
