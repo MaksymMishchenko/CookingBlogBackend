@@ -4,6 +4,7 @@ using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
+using PostApiService.Repositories;
 using System.Security.Authentication;
 using System.Security.Claims;
 
@@ -11,16 +12,13 @@ namespace PostApiService.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IAuthRepository _authRepository;
         private readonly ITokenService _tokenService;
 
-        public AuthService(UserManager<IdentityUser> userManager,
-            IHttpContextAccessor httpContextAccessor,
+        public AuthService(IAuthRepository authRepository,
             ITokenService tokenService)
         {
-            _userManager = userManager;
-            _httpContextAccessor = httpContextAccessor;
+            _authRepository = authRepository;
             _tokenService = tokenService;
         }
 
@@ -36,7 +34,7 @@ namespace PostApiService.Services
 
         private async Task<List<Claim>> GetClaims(string userName)
         {
-            var user = await _userManager.FindByNameAsync(userName);
+            var user = await _authRepository.FindByNameAsync(userName);
 
             if (user == null)
             {
@@ -49,7 +47,7 @@ namespace PostApiService.Services
                 new Claim(ClaimTypes.Name, userName)
             };
 
-            var userClaims = await _userManager.GetClaimsAsync(user);
+            var userClaims = await _authRepository.GetClaimsAsync(user);
 
             var serializedClaims = userClaims
                 .Where(claim => claim.Type != ClaimTypes.NameIdentifier && claim.Type != ClaimTypes.Name)
@@ -59,7 +57,7 @@ namespace PostApiService.Services
 
             claims.AddRange(deserializedClaims);
 
-            var roles = await _userManager.GetRolesAsync(user);
+            var roles = await _authRepository.GetRolesAsync(user);
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
@@ -84,14 +82,14 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task RegisterUserAsync(RegisterUser user)
         {
-            var existingUser = await _userManager.FindByNameAsync(user.UserName);
+            var existingUser = await _authRepository.FindByNameAsync(user.UserName);
             if (existingUser != null)
             {
                 throw new UserAlreadyExistsException
                     (RegisterErrorMessages.UsernameAlreadyExists);
             }
 
-            var existingUserByEmail = await _userManager.FindByEmailAsync(user.Email);
+            var existingUserByEmail = await _authRepository.FindByEmailAsync(user.Email);
             if (existingUserByEmail != null)
             {
                 throw new EmailAlreadyExistsException
@@ -104,7 +102,7 @@ namespace PostApiService.Services
                 Email = user.Email
             };
 
-            var result = await _userManager.CreateAsync(identityUser, user.Password);
+            var result = await _authRepository.CreateAsync(identityUser, user.Password);
 
             if (!result.Succeeded)
             {
@@ -112,7 +110,7 @@ namespace PostApiService.Services
                     (string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
-            var identityResult = await _userManager.AddClaimAsync
+            var identityResult = await _authRepository.AddClaimAsync
                 (identityUser, GetContributorClaims(TS.Controller.Comment));
 
             if (!identityResult.Succeeded)
@@ -120,17 +118,17 @@ namespace PostApiService.Services
                 throw new UserClaimException
                     (RegisterErrorMessages.ClaimAssignmentFailed);
             }
-        }        
+        }
 
         /// <summary>
         /// Authenticates a user by verifying the provided credentials.
         /// </summary>       
         public async Task<IdentityUser> LoginAsync(LoginUser credentials)
         {
-            var user = await _userManager.FindByNameAsync(credentials.UserName)
+            var user = await _authRepository.FindByNameAsync(credentials.UserName)
                  ?? throw new AuthenticationException(AuthErrorMessages.InvalidCredentials);
 
-            var isPasswordValid = await _userManager.CheckPasswordAsync(user, credentials.Password);
+            var isPasswordValid = await _authRepository.CheckPasswordAsync(user, credentials.Password);
 
             if (!isPasswordValid)
             {
@@ -146,7 +144,7 @@ namespace PostApiService.Services
         /// </summary>
         public async Task<IdentityUser> GetCurrentUserAsync()
         {
-            var user = await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
+            var user = await _authRepository.GetUserAsync();
 
             if (user == null)
             {
