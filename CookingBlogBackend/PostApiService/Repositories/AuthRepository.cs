@@ -15,9 +15,9 @@ namespace PostApiService.Repositories
             _httpContextAccessor = httpContextAccessor;
         }
 
-        public async Task<IdentityResult> AddClaimsAsync(IdentityUser user, IEnumerable<Claim> claim)
+        public async Task<IdentityResult> AddClaimAsync(IdentityUser user, Claim claim)
         {
-            return await _userManager.AddClaimsAsync(user, claim);
+            return await _userManager.AddClaimAsync(user, claim);
         }
 
         public async Task<bool> CheckPasswordAsync(IdentityUser user, string password)
@@ -50,7 +50,7 @@ namespace PostApiService.Repositories
             return await _userManager.GetRolesAsync(user);
         }
 
-        public async Task<IdentityUser> GetUserAsync(ClaimsPrincipal principal)
+        public async Task<IdentityUser> GetUserAsync()
         {
             return await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
         }
