@@ -1,10 +1,8 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Moq;
 using NSubstitute;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using System.Security.Claims;
 using AuthService = PostApiService.Services.AuthService;
@@ -101,36 +99,35 @@ namespace PostApiService.Tests.UnitTests.Services
                 .CheckPasswordAsync(identityUser, loginUser.Password);
         }
 
-        //[Fact]
-        //public async Task GetCurrentUserAsync_ReturnsUser_WhenUserIsAuthenticated()
-        //{
-        //    // Arrange
-        //    var user = new IdentityUser { UserName = "testuser", Email = "test@example.com" };
-        //    var claims = new List<Claim>
-        //    {
-        //        new Claim(ClaimTypes.Name, "testuser")
-        //    };
-        //    var identity = new ClaimsIdentity(claims, "TestAuthType");
-        //    var claimsPrincipal = new ClaimsPrincipal(identity);
+        [Fact]
+        public async Task GetCurrentUserAsync_ReturnsUser_WhenUserIsAuthenticated()
+        {
+            // Arrange
+            var user = new IdentityUser { UserName = "testuser", Email = "test@example.com" };
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.Name, "testuser")
+            };
+            var identity = new ClaimsIdentity(claims, "TestAuthType");
+            var claimsPrincipal = new ClaimsPrincipal(identity);
 
-        //    var httpContext = new DefaultHttpContext
-        //    {
-        //        User = claimsPrincipal
-        //    };
+            var httpContext = new DefaultHttpContext
+            {
+                User = claimsPrincipal
+            };
 
-        //    _mockContextAccessor.Setup(x => x.HttpContext).Returns(httpContext);
+            _mockHttpContextAccessor.HttpContext.Returns(httpContext);
 
-        //    _mockUserManager
-        //        .Setup(x => x.GetUserAsync(It.Is<ClaimsPrincipal>(c => c == claimsPrincipal)))
-        //        .ReturnsAsync(user);
+            _mockAuthRepository.GetUserAsync()
+                .Returns(Task.FromResult(user));
 
-        //    // Act
-        //    var result = await _authService.GetCurrentUserAsync();
+            // Act
+            var result = await _authService.GetCurrentUserAsync();
 
-        //    // Assert
-        //    Assert.Equal("testuser", result.UserName);
-        //    Assert.Equal("test@example.com", result.Email);
-        //}
+            // Assert
+            Assert.Equal("testuser", result.UserName);
+            Assert.Equal("test@example.com", result.Email);
+        }
 
         //[Fact]
         //public async Task GenerateTokenString_ShouldReturnToken_WhenUserExists()
