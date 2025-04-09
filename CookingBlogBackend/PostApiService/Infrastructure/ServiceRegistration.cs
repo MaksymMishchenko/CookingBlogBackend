@@ -48,6 +48,7 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(identityConnectionString);
             });
 
+            services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddHttpContextAccessor();

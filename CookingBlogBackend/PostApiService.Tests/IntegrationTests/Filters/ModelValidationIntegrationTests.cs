@@ -6,13 +6,11 @@ namespace PostApiService.Tests.IntegrationTests.Filters
 {
     public class ModelValidationIntegrationTests : IClassFixture<FilterFixture>
     {
-        private readonly HttpClient? _client;
-        private readonly IServiceProvider? _services;
+        private readonly HttpClient? _client;      
 
         public ModelValidationIntegrationTests(FilterFixture fixture)
         {
-            _client = fixture.Client;
-            _services = fixture.Services;
+            _client = fixture.Client;           
         }
 
         [Fact]
