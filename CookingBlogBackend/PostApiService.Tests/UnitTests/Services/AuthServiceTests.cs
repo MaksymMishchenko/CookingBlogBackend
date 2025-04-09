@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using NSubstitute;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using System.Security.Claims;
 using AuthService = PostApiService.Services.AuthService;
@@ -129,53 +130,53 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal("test@example.com", result.Email);
         }
 
-        //[Fact]
-        //public async Task GenerateTokenString_ShouldReturnToken_WhenUserExists()
-        //{
-        //    // Arrange
-        //    var userName = "admin";
-        //    var user = new IdentityUser { UserName = userName };
+        [Fact]
+        public async Task GenerateTokenString_ShouldReturnToken_WhenUserExists()
+        {
+            // Arrange
+            var userName = "admin";
+            var user = new IdentityUser { UserName = userName };
 
-        //    var claims = new List<Claim>
-        //    {
-        //        new Claim("permissions", "[1,2,3]"),
-        //    };
+            var claims = new List<Claim>
+            {
+                new Claim("permissions", "[1,2,3]"),
+            };
 
-        //    var rolesFromManager = new List<string> { TS.Roles.Admin }; // Ролі користувача            
+            var rolesFromManager = new List<string> { TS.Roles.Admin };
 
-        //    var expectedToken = "generated_token";
+            var expectedToken = "generated_token";
 
-        //    _mockUserManager.Setup(x => x.FindByNameAsync(userName))
-        //                    .ReturnsAsync(user);
+            _mockAuthRepository.FindByNameAsync(userName)
+                            .Returns(Task.FromResult(user));
 
-        //    _mockUserManager.Setup(x => x.GetClaimsAsync(user))
-        //                    .ReturnsAsync(claims);
+            _mockAuthRepository.GetClaimsAsync(user)
+                            .Returns(claims);
 
-        //    _mockUserManager.Setup(x => x.GetRolesAsync(user))
-        //                    .ReturnsAsync(rolesFromManager);
+            _mockAuthRepository.GetRolesAsync(user)
+                            .Returns(rolesFromManager);
 
-        //    _mockTokenService.Setup(x => x.GenerateTokenString(It.IsAny<IEnumerable<Claim>>()))
-        //                     .Returns(expectedToken);
+            _mockTokenService.GenerateTokenString(Arg.Any<IEnumerable<Claim>>())
+                             .Returns(expectedToken);
 
-        //    // Act
-        //    var result = await _authService.GenerateTokenString(user);
+            // Act
+            var result = await _authService.GenerateTokenString(user);
 
-        //    // Assert
-        //    Assert.Equal(expectedToken, result);
+            // Assert
+            Assert.Equal(expectedToken, result);
 
-        //    _mockUserManager.Verify(x => x.FindByNameAsync(userName), Times.Once);
-        //    _mockUserManager.Verify(x => x.GetClaimsAsync(user), Times.Once);
-        //    _mockUserManager.Verify(x => x.GetRolesAsync(user), Times.Once);
+            await _mockAuthRepository.Received(1).FindByNameAsync(userName);
+            await _mockAuthRepository.Received(1).GetClaimsAsync(user);
+            await _mockAuthRepository.Received(1).GetRolesAsync(user);
 
-        //    _mockTokenService.Verify(x => x.GenerateTokenString(It.Is<IEnumerable<Claim>>(claims =>
-        //        claims.Any(c => c.Type == ClaimTypes.Name && c.Value == userName) &&
-        //        claims.Count(c => c.Type == "permissions") == 3 &&
-        //        claims.Any(c => c.Type == "permissions" && c.Value == "1") &&
-        //        claims.Any(c => c.Type == "permissions" && c.Value == "2") &&
-        //        claims.Any(c => c.Type == "permissions" && c.Value == "3") &&
-        //        claims.Any(c => c.Type == ClaimTypes.Role && c.Value == TS.Roles.Admin)
-        //    )), Times.Once);
-        //}
+            _mockTokenService.Received(1).GenerateTokenString(Arg.Is<IEnumerable<Claim>>(claims =>
+                claims.Any(c => c.Type == ClaimTypes.Name && c.Value == userName) &&
+                claims.Count(c => c.Type == "permissions") == 3 &&
+                claims.Any(c => c.Type == "permissions" && c.Value == "1") &&
+                claims.Any(c => c.Type == "permissions" && c.Value == "2") &&
+                claims.Any(c => c.Type == "permissions" && c.Value == "3") &&
+                claims.Any(c => c.Type == ClaimTypes.Role && c.Value == TS.Roles.Admin)
+            ));
+        }
     }
 }
 
