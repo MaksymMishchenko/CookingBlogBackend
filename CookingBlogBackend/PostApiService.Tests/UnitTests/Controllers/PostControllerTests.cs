@@ -4,6 +4,7 @@ using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto.Requests;
 using System.Net;
 
 namespace PostApiService.Tests.UnitTests.Controllers
@@ -22,8 +23,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [Fact]
         public async Task OnGetAllPostsAsync_ShouldReturnBadRequest_WhenParametersAreInvalid()
         {
+            // Arrange
+            var postParameters = new PostQueryParameters();
+            postParameters.PageNumber = -1;
+            postParameters.PageSize = 10;
+
             // Act
-            var result = await _postsController.GetAllPostsAsync(-1, 10);
+            var result = await _postsController.GetAllPostsAsync(postParameters);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -35,8 +41,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
         {
+            // Arrange
+            var postParameters = new PostQueryParameters();
+            postParameters.PageNumber = 1;
+            postParameters.PageSize = 11;
+
             // Act
-            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 11);
+            var result = await _postsController.GetAllPostsAsync(postParameters);
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -49,6 +60,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
         {
             // Arrange
+            var postParameters = new PostQueryParameters();
+            postParameters.PageNumber = 1;
+            postParameters.PageSize = 10;
+
             var posts = TestDataHelper.GetEmptyPostList();
 
             _mockPostService.GetAllPostsAsync(
@@ -61,7 +76,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .Returns(Task.FromResult(posts));            
 
             // Act
-            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
+            var result = await _postsController.GetAllPostsAsync(postParameters);
 
             // Assert
             var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -83,6 +98,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAllPostsAsync_ShouldReturnOk_WhenPostsAreFound()
         {
             // Arrange
+            var postParameters = new PostQueryParameters();
+            postParameters.PageNumber = 1;
+            postParameters.PageSize = 10;
+
             var posts = TestDataHelper.GetPostsWithComments(count: 10, generateComments: false);
 
             _mockPostService.GetAllPostsAsync(
@@ -95,7 +114,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .Returns(Task.FromResult(posts));
 
             // Act
-            var result = await _postsController.GetAllPostsAsync(pageNumber: 1, pageSize: 10);
+            var result = await _postsController.GetAllPostsAsync(postParameters);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);

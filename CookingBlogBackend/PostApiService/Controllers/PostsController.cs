@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -12,11 +13,11 @@ namespace PostApiService.Controllers
     [Authorize(Policy = TS.Policies.FullControlPolicy)]
     public class PostsController : Controller
     {
-        private readonly IPostService _postsService;       
+        private readonly IPostService _postsService;
 
         public PostsController(IPostService postsService)
         {
-            _postsService = postsService;            
+            _postsService = postsService;
         }
 
         /// <summary>
@@ -24,32 +25,30 @@ namespace PostApiService.Controllers
         /// </summary>            
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllPostsAsync(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] int commentPageNumber = 1,
-        [FromQuery] int commentsPerPage = 10,
-        [FromQuery] bool includeComments = true,
+        public async Task<IActionResult> GetAllPostsAsync([FromQuery] PostQueryParameters query,
         CancellationToken cancellationToken = default)
         {
-            if (pageNumber < 1 || pageSize < 1 || commentPageNumber < 1 || commentsPerPage < 1)
+            if (query.PageNumber < 1 ||
+                query.PageSize < 1 ||
+                query.CommentPageNumber < 1 ||
+                query.CommentsPerPage < 1)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (PostErrorMessages.InvalidPageParameters));
             }
 
-            if (pageSize > 10 || commentsPerPage > 10)
+            if (query.PageSize > 10 || query.CommentsPerPage > 10)
             {
                 return BadRequest(ApiResponse<Post>.CreateErrorResponse
                     (PostErrorMessages.PageSizeExceeded));
             }
 
             var posts = await _postsService.GetAllPostsAsync(
-                pageNumber,
-                pageSize,
-                commentPageNumber,
-                commentsPerPage,
-                includeComments,
+                query.PageNumber,
+                query.PageSize,
+                query.CommentPageNumber,
+                query.CommentsPerPage,
+                query.IncludeComments,
                 cancellationToken);
 
             if (!posts.Any())
