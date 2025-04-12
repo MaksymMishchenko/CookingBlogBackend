@@ -15,7 +15,7 @@ namespace PostApiService.Tests.Helper
             public readonly static string PaginatedPostsUrl = "/api/posts?pageNumber={0}&pageSize={1}";
             public readonly static string GetPostById = "/api/Posts/{0}";
             public readonly static string AddPost = "/api/posts";
-            public readonly static string UpdatePost = "/api/posts";
+            public readonly static string UpdatePost = "/api/posts/2";
             public readonly static string DeletePost = "/api/Posts/{0}";
 
             public readonly static string AddComment = "/api/comments/{0}";
