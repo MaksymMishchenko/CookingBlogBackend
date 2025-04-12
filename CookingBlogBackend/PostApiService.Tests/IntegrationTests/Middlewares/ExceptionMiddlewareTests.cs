@@ -306,12 +306,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), "/api/Posts", HttpStatusCode.NotFound)]
-        [InlineData(typeof(UpdatePostFailedException), "/api/Posts", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/Posts", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/Posts", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/Posts", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/Posts", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), "/api/Posts/1", HttpStatusCode.NotFound)]
+        [InlineData(typeof(UpdatePostFailedException), "/api/Posts/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), "/api/Posts/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), "/api/Posts/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), "/api/Posts/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), "/api/Posts/1", HttpStatusCode.InternalServerError)]
         public async Task UpdatePostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
