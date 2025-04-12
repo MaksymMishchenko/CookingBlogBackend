@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
@@ -11,7 +12,7 @@ namespace PostApiService.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(Policy = TS.Policies.FullControlPolicy)]
-    public class PostsController : Controller
+    public class PostsController : ControllerBase
     {
         private readonly IPostService _postsService;
 
@@ -25,24 +26,10 @@ namespace PostApiService.Controllers
         /// </summary>            
         [HttpGet]
         [AllowAnonymous]
+        [ValidatePostQueryParameters]
         public async Task<IActionResult> GetAllPostsAsync([FromQuery] PostQueryParameters query,
         CancellationToken cancellationToken = default)
         {
-            if (query.PageNumber < 1 ||
-                query.PageSize < 1 ||
-                query.CommentPageNumber < 1 ||
-                query.CommentsPerPage < 1)
-            {
-                return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (PostErrorMessages.InvalidPageParameters));
-            }
-
-            if (query.PageSize > 10 || query.CommentsPerPage > 10)
-            {
-                return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (PostErrorMessages.PageSizeExceeded));
-            }
-
             var posts = await _postsService.GetAllPostsAsync(
                 query.PageNumber,
                 query.PageSize,
@@ -85,6 +72,7 @@ namespace PostApiService.Controllers
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
+        [ValidateModel]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             var addedPost = await _postsService.AddPostAsync(post);
@@ -98,6 +86,7 @@ namespace PostApiService.Controllers
         /// Updates an existing post.
         /// </summary>               
         [HttpPut]
+        [ValidateModel]
         public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
         {
             if (post == null || post.Id <= 0)

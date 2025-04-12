@@ -18,43 +18,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             _mockPostService = Substitute.For<IPostService>();
             _postsController = new PostsController(_mockPostService);
-        }
-
-        [Fact]
-        public async Task OnGetAllPostsAsync_ShouldReturnBadRequest_WhenParametersAreInvalid()
-        {
-            // Arrange
-            var postParameters = new PostQueryParameters();
-            postParameters.PageNumber = -1;
-            postParameters.PageSize = 10;
-
-            // Act
-            var result = await _postsController.GetAllPostsAsync(postParameters);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-            Assert.False(response.Success);
-            Assert.Equal(PostErrorMessages.InvalidPageParameters, response.Message);
-        }
-
-        [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
-        {
-            // Arrange
-            var postParameters = new PostQueryParameters();
-            postParameters.PageNumber = 1;
-            postParameters.PageSize = 11;
-
-            // Act
-            var result = await _postsController.GetAllPostsAsync(postParameters);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-            Assert.False(response.Success);
-            Assert.Equal(PostErrorMessages.PageSizeExceeded, response.Message);
-        }
+        }                
 
         [Fact]
         public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
