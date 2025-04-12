@@ -96,22 +96,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Arg.Any<int>(),
                 Arg.Any<bool>(),
                 Arg.Any<CancellationToken>());                
-        }
-
-        [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnBadRequest_IfParameterIsInvalid()
-        {
-            // Act
-            var result = await _postsController.GetPostByIdAsync(-1, true);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-            Assert.Equal(PostErrorMessages.InvalidPageParameters, response.Message);
-        }
+        }        
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()

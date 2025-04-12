@@ -5,6 +5,7 @@ using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -53,14 +54,9 @@ namespace PostApiService.Controllers
         /// </summary>        
         [HttpGet("{postId}")]
         [AllowAnonymous]
+        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
         {
-            if (postId < 1)
-            {
-                return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (PostErrorMessages.InvalidPageParameters));
-            }
-
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
