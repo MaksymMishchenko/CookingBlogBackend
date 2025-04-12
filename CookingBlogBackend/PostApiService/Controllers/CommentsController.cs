@@ -53,14 +53,9 @@ namespace PostApiService.Controllers
         /// Deletes a comment by its ID.
         /// </summary>        
         [HttpDelete("{commentId}")]
+        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
         public async Task<IActionResult> DeleteCommentAsync(int commentId)
         {
-            if (commentId <= 0)
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.InvalidCommentIdParameter));
-            }
-
             await _commentService.DeleteCommentAsync(commentId);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse

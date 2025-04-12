@@ -69,39 +69,25 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .UpdateCommentAsync(commentId, updatedComment);
         }
 
-        [Theory]
-        [InlineData(-1, false)]
-        [InlineData(0, false)]
-        [InlineData(1, true)]
-        public async Task OnDeleteCommentAsync_ShouldHandleSuccessAndFailureCorrectly(int commentId, bool isSuccess)
+        [Fact]
+        public async Task OnDeleteCommentAsync_ShouldHandleSuccessAndFailureCorrectly()
         {
-            // Arrange                        
+            // Arrange
+            var commentId = 1;
             _mockCommentService.DeleteCommentAsync(commentId)
                 .Returns(Task.CompletedTask);
 
             // Act
             var result = await _commentController.DeleteCommentAsync(commentId);
 
-            // Assert
-            if (isSuccess)
-            {
-                var okResult = Assert.IsType<OkObjectResult>(result);
-                Assert.NotNull(okResult);
-                Assert.Equal(CommentSuccessMessages.CommentDeletedSuccessfully,
-                    ((ApiResponse<Comment>)okResult.Value).Message);
+            // Assert           
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            Assert.NotNull(okResult);
+            Assert.Equal(CommentSuccessMessages.CommentDeletedSuccessfully,
+                ((ApiResponse<Comment>)okResult.Value).Message);
 
-                await _mockCommentService.Received(1)
-                    .DeleteCommentAsync(commentId);
-            }
-            else
-            {
-                var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-                var returnValue = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-
-                Assert.False(returnValue.Success);
-                Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, returnValue.Message);
-            }
+            await _mockCommentService.Received(1)
+                .DeleteCommentAsync(commentId);
         }
     }
-
 }
