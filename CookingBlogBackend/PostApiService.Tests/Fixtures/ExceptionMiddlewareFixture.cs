@@ -57,6 +57,7 @@ namespace PostApiService.Tests.Fixtures
                 .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
 
             postServiceMock.UpdatePostAsync(
+                Arg.Any<int>(),
                 Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 

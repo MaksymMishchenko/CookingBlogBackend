@@ -337,27 +337,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             switch (exceptionType)
             {
                 case Type t when t == typeof(PostNotFoundException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
                         .Returns(Task.FromException(new PostNotFoundException(testPostId)));
                     break;
                 case Type t when t == typeof(UpdatePostFailedException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
                         .Returns(Task.FromException(new UpdatePostFailedException(postTitle, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
                         .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
                         .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
                         .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
                     break;
                 case Type t when t == typeof(Exception):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
                         .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
                     break;
                 default:
