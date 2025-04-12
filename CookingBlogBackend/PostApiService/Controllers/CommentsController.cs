@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -10,39 +12,23 @@ namespace PostApiService.Controllers
     [Controller]
     [Route("api/[controller]")]
     [Authorize(Policy = TS.Policies.ContributorPolicy)]
-    public class CommentsController : Controller
+    public class CommentsController : ControllerBase
     {
-        private readonly ICommentService _commentService;        
+        private readonly ICommentService _commentService;
 
         public CommentsController(ICommentService commentService)
         {
-            _commentService = commentService;           
+            _commentService = commentService;
         }
 
         /// <summary>
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
+        [ValidateModel]
+        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
-        {
-            if (postId <= 0)
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (PostErrorMessages.InvalidPostIdParameter));
-            }
-
-            if (comment == null)
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.CommentCannotBeNull));
-            }            
-
-            if (comment.PostId != 0 && comment.PostId != postId)
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.MismatchedPostId));
-            }
-
+        {            
             await _commentService.AddCommentAsync(postId, comment);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse
@@ -71,7 +57,7 @@ namespace PostApiService.Controllers
             {
                 return BadRequest(ApiResponse<Comment>.CreateErrorResponse
                     (CommentErrorMessages.ContentIsRequired));
-            }            
+            }
 
             await _commentService.UpdateCommentAsync(commentId, comment);
 
