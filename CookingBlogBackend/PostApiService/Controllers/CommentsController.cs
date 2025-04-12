@@ -26,9 +26,10 @@ namespace PostApiService.Controllers
         /// </summary>        
         [HttpPost("{postId}")]
         [ValidateModel]
+        [ValidatePostIdMatch(InvalidPostIdErrorMessage = CommentErrorMessages.MismatchedPostId)]
         [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
-        {            
+        {
             await _commentService.AddCommentAsync(postId, comment);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse
