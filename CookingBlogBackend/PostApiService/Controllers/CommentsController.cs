@@ -40,26 +40,9 @@ namespace PostApiService.Controllers
         /// Updates an existing comment based on the provided comment ID.
         /// </summary>        
         [HttpPut("{commentId}")]
+        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
-            if (commentId <= 0)
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.InvalidCommentIdParameter));
-            }
-
-            if (comment == null)
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.CommentCannotBeNull));
-            }
-
-            if (string.IsNullOrEmpty(comment.Content))
-            {
-                return BadRequest(ApiResponse<Comment>.CreateErrorResponse
-                    (CommentErrorMessages.ContentIsRequired));
-            }
-
             await _commentService.UpdateCommentAsync(commentId, comment);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse

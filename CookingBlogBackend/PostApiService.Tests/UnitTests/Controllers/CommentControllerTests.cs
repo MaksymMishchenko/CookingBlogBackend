@@ -44,56 +44,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .AddCommentAsync(postId, newComment);
         }
 
-        [Theory]
-        [InlineData(0)]
-        [InlineData(-1)]
-        public async Task OnUpdateCommentAsync_CommentIdLessThanOrEqualZero_ReturnsBadRequest(int invalidCommentId)
-        {
-            // Act
-            var result = await _commentController.UpdateCommentAsync(invalidCommentId, new EditCommentModel());
-
-            //Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, response.Message);
-        }
-
-        [Fact]
-        public async Task OnUpdateCommentAsync_CommentIsNull_ReturnsBadRequest()
-        {
-            // Arrange            
-            var validPostId = 1;
-
-            // Act
-            var result = await _commentController.UpdateCommentAsync(validPostId, null);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(CommentErrorMessages.CommentCannotBeNull, response.Message);
-        }
-
-        [Fact]
-        public async Task OnUpdateCommentAsync_CommentContentIsNull_ReturnsBadRequest()
-        {
-            // Arrange            
-            var validPostId = 1;
-
-            // Act
-            var result = await _commentController.UpdateCommentAsync(validPostId, new EditCommentModel() { Content = null });
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(CommentErrorMessages.ContentIsRequired, response.Message);
-        }
-
         [Fact]
         public async Task OnUpdateCommentAsync_ShouldUpdateCommentSuccessfully()
         {
