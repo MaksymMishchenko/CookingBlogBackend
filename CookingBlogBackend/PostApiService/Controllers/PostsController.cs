@@ -81,21 +81,16 @@ namespace PostApiService.Controllers
         /// <summary>
         /// Updates an existing post.
         /// </summary>               
-        [HttpPut]
+        [HttpPut("{postId}")]
         [ValidateModel]
-        public async Task<IActionResult> UpdatePostAsync([FromBody] Post post)
+        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
+        public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
         {
-            if (post == null || post.Id <= 0)
-            {
-                return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (PostErrorMessages.InvalidPostOrId));
-            }
-
             await _postsService.UpdatePostAsync(post);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, post.Id), post.Id));
+                (PostSuccessMessages.PostUpdatedSuccessfully, postId), postId));
         }
 
         /// <summary>

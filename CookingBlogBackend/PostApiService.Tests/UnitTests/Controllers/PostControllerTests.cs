@@ -145,39 +145,19 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 (PostSuccessMessages.PostAddedSuccessfully, post.Id), response.Message);
 
             await _mockPostService.Received(1).AddPostAsync(post);
-        }
-
-        [Theory]
-        [InlineData(-1, PostErrorMessages.InvalidPostOrId)]
-        [InlineData(0, PostErrorMessages.InvalidPostOrId)]
-        public async Task UpdatePostAsync_ShouldReturnBadRequest_IfPostIsNullOrIdLessOrEqualZero(int postId,
-            string expectedMessage)
-        {
-            // Arrange
-            Post post = postId > 0 ? new Post { Id = postId } : null;
-
-            // Act
-            var result = await _postsController.UpdatePostAsync(post);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(expectedMessage, response.Message);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-        }
+        }        
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
         {
             // Arrange
+            var postId = 1;
             var post = TestDataHelper.GetSinglePost();
             _mockPostService.UpdatePostAsync(post)
                 .Returns(Task.CompletedTask);
 
             // Act
-            var result = await _postsController.UpdatePostAsync(post);
+            var result = await _postsController.UpdatePostAsync(postId, post);
 
             // Assert            
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
