@@ -153,7 +153,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var postId = 1;
             var post = TestDataHelper.GetSinglePost();
-            _mockPostService.UpdatePostAsync(post)
+            _mockPostService.UpdatePostAsync(postId, post)
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -165,12 +165,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, post.Id), actualResponse.Message);
-            Assert.Equal(post.Id, actualResponse.EntityId);
+                (PostSuccessMessages.PostUpdatedSuccessfully, postId), actualResponse.Message);
+            Assert.Equal(postId, actualResponse.EntityId);
 
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
-            await _mockPostService.Received(1).UpdatePostAsync(post);
+            await _mockPostService.Received(1).UpdatePostAsync(postId, post);
         }
 
         [Theory]
