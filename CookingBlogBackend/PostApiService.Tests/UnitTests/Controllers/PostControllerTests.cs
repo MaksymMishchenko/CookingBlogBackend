@@ -171,26 +171,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
             await _mockPostService.Received(1).UpdatePostAsync(postId, post);
-        }
-
-        [Theory]
-        [InlineData(0, PostErrorMessages.InvalidPostIdParameter)]
-        [InlineData(-1, PostErrorMessages.InvalidPostIdParameter)]
-        public async Task DeletePostAsync_ShouldReturnBadRequest_IfParameterIsInvalid(
-            int postId,
-            string expectedMessage)
-        {
-            // Act
-            var result = await _postsController.DeletePostAsync(postId);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(expectedMessage, response.Message);
-            Assert.Equal((int)HttpStatusCode.BadRequest, badRequestResult.StatusCode);
-        }
+        }        
 
         [Fact]
         public async Task DeletePostAsync_ShouldReturnOk_IfPostRemovedSuccessfully()

@@ -97,14 +97,9 @@ namespace PostApiService.Controllers
         /// Deletes a post by its ID.
         /// </summary>        
         [HttpDelete("{postId}")]
+        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> DeletePostAsync(int postId)
         {
-            if (postId <= 0)
-            {
-                return BadRequest(ApiResponse<Post>.CreateErrorResponse
-                    (PostErrorMessages.InvalidPostIdParameter));
-            }
-
             await _postsService.DeletePostAsync(postId);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
