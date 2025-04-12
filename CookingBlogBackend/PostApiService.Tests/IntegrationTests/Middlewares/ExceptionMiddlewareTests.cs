@@ -476,11 +476,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
         [Theory]
         [InlineData(typeof(PostNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(AddCommentFailedException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(AddCommentFailedException), "/api/comments/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), "/api/comments/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), "/api/comments/999", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), "/api/comments/999", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), "/api/comments/999", HttpStatusCode.InternalServerError)]
         public async Task AddCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -534,7 +534,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
             }
 
-            var comment = new Comment { Content = "Test comment" };
+            var comment = new Comment {PostId = testPostId, Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(comment);
 
             // Act
