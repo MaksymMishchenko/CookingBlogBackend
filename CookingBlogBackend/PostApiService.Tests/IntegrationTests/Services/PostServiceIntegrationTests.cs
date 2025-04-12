@@ -163,7 +163,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             existingPost.MetaTitle = "Updated meta title";
 
             // Act
-            await postService.UpdatePostAsync(existingPost);
+            await postService.UpdatePostAsync(postId, existingPost);
 
             // Assert
             var updatedPost = await context.Posts.FindAsync(postId);

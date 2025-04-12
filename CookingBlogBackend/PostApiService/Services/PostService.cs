@@ -116,14 +116,14 @@ namespace PostApiService.Services
         /// <summary>
         /// Updates an existing post with the provided data.        
         /// </summary>        
-        public async Task UpdatePostAsync(Post post)
+        public async Task UpdatePostAsync(int postId, Post post)
         {
             var existingPost = await _repository
-                .GetByIdAsync(post.Id);
+                .GetByIdAsync(postId);
 
             if (existingPost == null)
             {
-                throw new PostNotFoundException(post.Id);
+                throw new PostNotFoundException(postId);
             }
 
             try

@@ -143,10 +143,11 @@ namespace PostApiService.Tests.UnitTests
         public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
         {
             // Arrange
+            var postId = 1;
             var originalPost = TestDataHelper.GetSinglePost();
             var updatedPost = new Post
             {
-                Id = originalPost.Id,
+                Id = postId,
                 Title = "Updated title",
                 Description = "Updated description",
                 Content = "Updated content",
@@ -156,7 +157,7 @@ namespace PostApiService.Tests.UnitTests
                 Slug = "updated-slug"
             };            
 
-            _mockRepository.GetByIdAsync(originalPost.Id)
+            _mockRepository.GetByIdAsync(postId)
                 .Returns(Task.FromResult(originalPost));
 
             _mockRepository.UpdateAsync(Arg.Any<Post>())
@@ -165,7 +166,7 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(_mockRepository);
 
             // Act
-            await service.UpdatePostAsync(updatedPost);
+            await service.UpdatePostAsync(postId,updatedPost);
 
             // Assert            
             await _mockRepository.Received(1)
