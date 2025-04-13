@@ -25,8 +25,7 @@ namespace PostApiService.Controllers
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
-        [ValidateModel]
-        [ValidatePostIdMatch(InvalidPostIdErrorMessage = CommentErrorMessages.MismatchedPostId)]
+        [ValidateModel]        
         [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
