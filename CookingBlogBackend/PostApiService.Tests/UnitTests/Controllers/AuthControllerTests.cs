@@ -44,20 +44,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             await _mockAuthService.Received(1)
                 .RegisterUserAsync(newUser);
-        }
-
-        [Fact]
-        public async Task OnLoginUser_ShouldReturnBadRequest_IfInvalidLoginData()
-        {
-            // Act
-            var result = await _authController.LoginUserAsync(null);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<LoginUser>>(badRequestResult.Value);
-            Assert.False(response.Success);
-            Assert.Equal(AuthErrorMessages.InvalidCredentials, response.Message);
-        }
+        }        
 
         [Fact]
         public async Task OnLoginUser_ShouldReturnOk_IfUserLoginSuccessfully()

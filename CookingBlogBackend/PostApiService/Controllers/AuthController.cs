@@ -38,16 +38,9 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Login")]
+        [ValidateModel(InvalidIdErrorMessage = AuthErrorMessages.InvalidCredentials, ErrorResponseType = ResourceType.LoginUser)]
         public async Task<IActionResult> LoginUserAsync([FromBody] LoginUser credentials)
         {
-            if (credentials == null ||
-                string.IsNullOrWhiteSpace(credentials.UserName) ||
-                string.IsNullOrWhiteSpace(credentials.Password))
-            {
-                return BadRequest(ApiResponse<LoginUser>.CreateErrorResponse
-                    (AuthErrorMessages.InvalidCredentials));
-            }
-
             var user = await _authService.LoginAsync(credentials);
 
             var token = await _authService.GenerateTokenString(user);
