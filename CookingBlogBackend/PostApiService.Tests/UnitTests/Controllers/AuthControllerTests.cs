@@ -17,20 +17,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             _mockAuthService = Substitute.For<IAuthService>();
             _authController = new AuthController(_mockAuthService);
-        }
-
-        [Fact]
-        public async Task OnRegisterUser_ShouldReturnBadRequest_IfInvalidRegistrationData()
-        {
-            // Act
-            var result = await _authController.RegisterUser(null);
-
-            // Assert
-            var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<RegisterUser>>(badRequestResult.Value);
-            Assert.False(response.Success);
-            Assert.Equal(RegisterErrorMessages.InvalidRegistrationData, response.Message);
-        }
+        }        
 
         [Fact]
         public async Task OnRegisterUser_ShouldReturnOk_IfUserRegisterSuccessfully()

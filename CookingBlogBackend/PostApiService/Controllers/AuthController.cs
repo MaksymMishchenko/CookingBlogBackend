@@ -1,8 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Enums;
 
 namespace PostApiService.Controllers
 {
@@ -22,16 +24,9 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Register")]
+        [ValidateModel(InvalidIdErrorMessage = RegisterErrorMessages.InvalidRegistrationData, ErrorResponseType = ResourceType.RegisterUser)]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUser user)
         {
-            if (user == null ||
-                string.IsNullOrWhiteSpace(user.UserName) ||
-                string.IsNullOrWhiteSpace(user.Password))
-            {
-                return BadRequest(ApiResponse<RegisterUser>.CreateErrorResponse
-                    (RegisterErrorMessages.InvalidRegistrationData));
-            }
-
             await _authService.RegisterUserAsync(user);
 
             return Ok(ApiResponse<RegisterUser>.CreateSuccessResponse
