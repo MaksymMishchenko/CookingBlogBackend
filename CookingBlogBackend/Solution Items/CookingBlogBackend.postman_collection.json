@@ -196,7 +196,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"postId\": 2,\r\n    \"title\": \"Updated post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\"\r\n}",
+							"raw": "{\r\n    \"title\": \"Updated post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -204,7 +204,7 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/posts",
+							"raw": "https://localhost:7030/api/posts/3",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -212,7 +212,8 @@
 							"port": "7030",
 							"path": [
 								"api",
-								"posts"
+								"posts",
+								"3"
 							]
 						}
 					},
@@ -248,7 +249,7 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/posts/2",
+							"raw": "https://localhost:7030/api/posts/3",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -257,7 +258,7 @@
 							"path": [
 								"api",
 								"posts",
-								"2"
+								"3"
 							],
 							"query": [
 								{
