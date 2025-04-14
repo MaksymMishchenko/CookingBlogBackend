@@ -24,7 +24,7 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Register")]
-        [ValidateModel(InvalidIdErrorMessage = RegisterErrorMessages.InvalidRegistrationData, ErrorResponseType = ResourceType.RegisterUser)]
+        [ValidateModel(InvalidErrorMessage = RegisterErrorMessages.InvalidRegistrationData, ErrorResponseType = ResourceType.RegisterUser)]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUser user)
         {
             await _authService.RegisterUserAsync(user);
@@ -38,7 +38,7 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Login")]
-        [ValidateModel(InvalidIdErrorMessage = AuthErrorMessages.InvalidCredentials, ErrorResponseType = ResourceType.LoginUser)]
+        [ValidateModel(InvalidErrorMessage = AuthErrorMessages.InvalidCredentials, ErrorResponseType = ResourceType.LoginUser)]
         public async Task<IActionResult> LoginUserAsync([FromBody] LoginUser credentials)
         {
             var user = await _authService.LoginAsync(credentials);

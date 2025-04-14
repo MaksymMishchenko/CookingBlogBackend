@@ -7,7 +7,7 @@ namespace PostApiService.Controllers.Filters
 {
     public class ValidateModelAttribute : ActionFilterAttribute
     {
-        public string InvalidIdErrorMessage { get; set; }
+        public string InvalidErrorMessage { get; set; }
         public ResourceType ErrorResponseType { get; set; }
 
         public override void OnActionExecuting(ActionExecutingContext context)
@@ -30,11 +30,11 @@ namespace PostApiService.Controllers.Filters
         {
             return ErrorResponseType switch
             {
-                ResourceType.Post => ApiResponse<Post>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.Comment => ApiResponse<Comment>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.EditComment => ApiResponse<EditCommentModel>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.RegisterUser => ApiResponse<RegisterUser>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.LoginUser => ApiResponse<LoginUser>.CreateErrorResponse(InvalidIdErrorMessage),
+                ResourceType.Post => ApiResponse<Post>.CreateErrorResponse(InvalidErrorMessage, errors),
+                ResourceType.Comment => ApiResponse<Comment>.CreateErrorResponse(InvalidErrorMessage, errors),
+                ResourceType.EditComment => ApiResponse<EditCommentModel>.CreateErrorResponse(InvalidErrorMessage, errors),
+                ResourceType.RegisterUser => ApiResponse<RegisterUser>.CreateErrorResponse(InvalidErrorMessage, errors),
+                ResourceType.LoginUser => ApiResponse<LoginUser>.CreateErrorResponse(InvalidErrorMessage, errors),
                 _ => ApiResponse<object>.CreateErrorResponse("Invalid model state")
             };
         }

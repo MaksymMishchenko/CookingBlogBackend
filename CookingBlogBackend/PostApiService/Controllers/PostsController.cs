@@ -68,7 +68,7 @@ namespace PostApiService.Controllers
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
-        [ValidateModel(InvalidIdErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
+        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             var addedPost = await _postsService.AddPostAsync(post);
@@ -82,7 +82,7 @@ namespace PostApiService.Controllers
         /// Updates an existing post.
         /// </summary>               
         [HttpPut("{postId}")]
-        [ValidateModel(InvalidIdErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
+        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
         [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
         {
