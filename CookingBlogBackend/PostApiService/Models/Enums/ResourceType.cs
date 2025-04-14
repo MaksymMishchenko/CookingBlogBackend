@@ -3,6 +3,9 @@
     public enum ResourceType
     {
         Post,
-        Comment
+        Comment,
+        EditComment,
+        RegisterUser,
+        LoginUser     
     }
 }
