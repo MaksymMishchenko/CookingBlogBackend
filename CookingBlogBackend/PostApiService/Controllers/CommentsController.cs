@@ -25,7 +25,7 @@ namespace PostApiService.Controllers
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
-        [ValidateModel]        
+        [ValidateModel(InvalidIdErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Comment)]        
         [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
@@ -39,6 +39,7 @@ namespace PostApiService.Controllers
         /// Updates an existing comment based on the provided comment ID.
         /// </summary>        
         [HttpPut("{commentId}")]
+        [ValidateModel(InvalidIdErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.EditComment)]
         [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
