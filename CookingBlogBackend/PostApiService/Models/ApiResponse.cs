@@ -16,6 +16,15 @@ namespace PostApiService.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public int EntityId { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public int PageSize { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public int PageNumber { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public int TotalCount { get; set; }
+
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Token { get; set; }
 
@@ -60,13 +69,21 @@ namespace PostApiService.Models
             };
         }
 
-        public static ApiResponse<T> CreateSuccessResponse(string message, List<T>? dataList = null)
+        public static ApiResponse<T> CreateSuccessResponse(
+            string message,
+            List<T>? dataList = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            int totalCount = 0)
         {
             return new ApiResponse<T>
             {
                 Success = true,
                 Message = message,
-                DataList = dataList ?? new List<T>()
+                DataList = dataList ?? new List<T>(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalCount
             };
         }
 

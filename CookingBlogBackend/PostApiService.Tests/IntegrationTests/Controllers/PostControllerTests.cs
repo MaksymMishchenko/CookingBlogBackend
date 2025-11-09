@@ -22,23 +22,28 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnSeededPosts_WithComments()
+        public async Task GetPostsWithTotalAsync_ShouldReturnSeededPosts_WithComments()
         {
             // Arrange            
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
-            // Act
+            // Act            
             var response = await _client.GetAsync(HttpHelper.Urls.GetAllPosts);
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
 
             response.EnsureSuccessStatusCode();
 
             // Assert
+            Assert.NotNull(content);
             Assert.True(content.Success);
             Assert.Equal(string.Format(PostSuccessMessages.PostsRetrievedSuccessfully,
-                content.DataList.Count), content.Message);
+                posts.Count), content.Message);
+
+            Assert.NotNull(content.DataList);
             Assert.Equal(posts.Count, content.DataList.Count);
+
+            Assert.Equal(posts.Count, content.TotalCount);
 
             Assert.All(content.DataList, post =>
             {
@@ -64,40 +69,60 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPosts_Pagination_ShouldReturnCorrectPageResults()
+        public async Task GetPostsWithTotalAsync_Pagination_ShouldReturnCorrectPageResults()
         {
-            // Arrange            
+            // Arrange
+            int pageNumber1 = 1;
+            int pageNumber2;
+            int pageSize = 3;
+
             var posts = TestDataHelper.GetPostsWithComments();
             await SeedDatabaseAsync(posts);
 
-            int pageSize = 5;
             int totalPosts = posts.Count;
-            int totalPages = (int)Math.Ceiling(totalPosts / (double)pageSize);
+            pageNumber2 = (int)Math.Ceiling(totalPosts / (double)pageSize);
 
             // Act
-            var response = await _client.GetAsync
-                (string.Format(HttpHelper.Urls.PaginatedPostsUrl, 1, pageSize));
+            var response1 = await _client.GetAsync
+                (string.Format(HttpHelper.Urls.PaginatedPostsUrl, pageNumber1, pageSize));
 
-            // Assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            // Assert (Page 1)
+            Assert.Equal(HttpStatusCode.OK, response1.StatusCode);
 
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
-            Assert.NotNull(content);
-            Assert.Equal(pageSize, content.DataList.Count);
-            Assert.True(content.DataList.First().Id > 0);
+            var content1 = await response1.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            Assert.NotNull(content1);
+            Assert.NotNull(content1.DataList);
+
+            Assert.Equal(pageSize, content1.DataList.Count);
+
+            Assert.Equal(totalPosts, content1.TotalCount);
+            Assert.Equal(pageNumber1, content1.PageNumber);
+            Assert.Equal(pageSize, content1.PageSize);
+
+            Assert.Equal(1, content1.DataList.First().Id);
+            Assert.Equal(3, content1.DataList.Last().Id);
 
             // Act
-            response = await _client.GetAsync
-                (string.Format(HttpHelper.Urls.PaginatedPostsUrl, totalPages, pageSize));
+            var response2 = await _client.GetAsync(
+                string.Format(HttpHelper.Urls.PaginatedPostsUrl, pageNumber2, pageSize)
+            );
 
-            // Assert
-            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            // Assert (Page 2)
+            Assert.Equal(HttpStatusCode.OK, response2.StatusCode);
 
-            content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
-            Assert.NotNull(content);
-            Assert.InRange(content.DataList.Count, 0, pageSize);
-            Assert.True(content.DataList.Last().Id > 0);
-        }
+            var content2 = await response2.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            Assert.NotNull(content2);
+            Assert.NotNull(content2.DataList);
+
+            Assert.InRange(content2.DataList.Count, 1, pageSize); 
+            
+            Assert.Equal(totalPosts, content2.TotalCount); 
+            Assert.Equal(pageNumber2, content2.PageNumber);
+            Assert.Equal(pageSize, content2.PageSize);    
+            
+            Assert.Equal(4, content2.DataList.First().Id);
+            Assert.Equal(5, content2.DataList.Last().Id);
+        }        
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
