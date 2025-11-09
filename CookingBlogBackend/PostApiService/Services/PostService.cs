@@ -40,9 +40,11 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts from the database with optional comments pagination.
+        /// Retrieves a paginated list of posts and their total count from the database, 
+        /// with optional inclusion and pagination of comments.
         /// </summary>
-        public async Task<List<Post>> GetAllPostsAsync(int pageNumber,
+        public async Task<(List<Post> Posts, int TotalCount)> GetPostsWithTotalAsync(
+            int pageNumber,
             int pageSize,
             int commentPageNumber = 1,
             int commentsPerPage = 10,
@@ -64,7 +66,9 @@ namespace PostApiService.Services
 
             ProcessComments(posts, includeComments, commentPageNumber, commentsPerPage);
 
-            return posts;
+            var totalCount = await _repository.GetTotalCountAsync();
+
+            return (posts, totalCount);
         }
 
         /// <summary>
@@ -94,7 +98,7 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Post> AddPostAsync(Post post)
         {
-            var existingPost = await _repository                
+            var existingPost = await _repository
                 .AnyAsync(p => p.Title == post.Title);
 
             if (existingPost)
@@ -164,6 +168,6 @@ namespace PostApiService.Services
             {
                 throw new DeletePostFailedException(postId, ex);
             }
-        }       
+        }
     }
 }
