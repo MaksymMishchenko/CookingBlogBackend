@@ -13,58 +13,62 @@ namespace PostApiService.Tests.UnitTests
 
         public PostServiceTests()
         {
-         _mockRepository = Substitute.For<IRepository<Post>>();
+            _mockRepository = Substitute.For<IRepository<Post>>();
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnPagedPosts()
+        public async Task GetPostsWithTotalAsync_ShouldReturnPagedPosts()
         {
-            // Arrange                                   
+            // Arrange
+            const int expectedTotalCount = 25;
             int pageNumber = 1;
             int pageSize = 10;
 
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 25, commentCount: 10);
+
+            var testPosts = TestDataHelper.GetPostsWithComments(count: expectedTotalCount, commentCount: 10);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-            
+
             _mockRepository.AsQueryable().Returns(mockQueryable);
+
+            _mockRepository.GetTotalCountAsync()
+                .Returns(Task.FromResult(expectedTotalCount));
 
             var service = new PostService(_mockRepository);
 
             // Act
-            var result = await service.GetAllPostsAsync(pageNumber, pageSize);
+            var result = await service.GetPostsWithTotalAsync(pageNumber, pageSize);
 
             // Assert
-            Assert.Equal(pageSize, result.Count);
+            Assert.Equal(pageSize, result.Posts.Count);
+            Assert.Equal(expectedTotalCount, result.TotalCount);
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnPaginatedPosts_WithoutComments()
+        public async Task GetPostsWithTotalAsync_ShouldReturnPaginatedPosts_WithoutComments()
         {
-            // Arrange                        
+            // Arrange
+            const int expectedTotalCount = 23;
             var pageNumber = 2;
             var pageSize = 10;
 
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 25, commentCount: 10);
+            var testPosts = TestDataHelper.GetPostsWithComments(count: expectedTotalCount, generateComments: false);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-            
+
             _mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.GetTotalCountAsync().Returns(Task.FromResult(expectedTotalCount));
 
             var service = new PostService(_mockRepository);
 
             // Act
-            var result = await service.GetAllPostsAsync(pageNumber, pageSize, includeComments: false);
+            var result = await service.GetPostsWithTotalAsync(pageNumber, pageSize, includeComments: false);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(pageSize, result.Count);
-
-            var actualPostIds = result.Select(p => p.Id).ToList();
-
-            Assert.All(result, post =>
-            {
+            Assert.Equal(pageSize, result.Posts.Count);
+            Assert.Equal(expectedTotalCount, result.TotalCount);
+            Assert.All(result.Posts, post => {
                 Assert.NotNull(post);
                 Assert.Empty(post.Comments);
-            });
+            });                                   
         }
 
         [Fact]
@@ -74,7 +78,7 @@ namespace PostApiService.Tests.UnitTests
             var postId = 2;
             var testPosts = TestDataHelper.GetPostsWithComments(count: 5, commentCount: 3, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-            
+
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
             var service = new PostService(_mockRepository);
@@ -95,7 +99,7 @@ namespace PostApiService.Tests.UnitTests
             var postId = 2;
             var testPosts = TestDataHelper.GetPostsWithComments(count: 5, generateComments: false, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
-           
+
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
             var service = new PostService(_mockRepository);
@@ -114,7 +118,7 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange           
             var newPost = TestDataHelper.GetSinglePost();
-           
+
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(false);
 
@@ -155,7 +159,7 @@ namespace PostApiService.Tests.UnitTests
                 MetaTitle = "Updated meta",
                 MetaDescription = "Updated meta desc",
                 Slug = "updated-slug"
-            };            
+            };
 
             _mockRepository.GetByIdAsync(postId)
                 .Returns(Task.FromResult(originalPost));
@@ -166,7 +170,7 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(_mockRepository);
 
             // Act
-            await service.UpdatePostAsync(postId,updatedPost);
+            await service.UpdatePostAsync(postId, updatedPost);
 
             // Assert            
             await _mockRepository.Received(1)

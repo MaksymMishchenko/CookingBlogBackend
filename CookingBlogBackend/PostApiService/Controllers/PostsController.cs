@@ -23,15 +23,16 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts from the database with optional comments.        
-        /// </summary>            
+        /// Retrieves a paginated list of posts and the total count of all posts in the database.
+        /// Allows optional inclusion and pagination of comments.
+        /// </summary>           
         [HttpGet]
         [AllowAnonymous]
         [ValidatePostQueryParameters]
-        public async Task<IActionResult> GetAllPostsAsync([FromQuery] PostQueryParameters query,
+        public async Task<IActionResult> GetPostsWithTotalAsync([FromQuery] PostQueryParameters query,
         CancellationToken cancellationToken = default)
         {
-            var posts = await _postsService.GetAllPostsAsync(
+            var (posts, totalCount) = await _postsService.GetPostsWithTotalAsync(
                 query.PageNumber,
                 query.PageSize,
                 query.CommentPageNumber,
@@ -46,7 +47,11 @@ namespace PostApiService.Controllers
             }
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count), posts));
+                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count),
+                posts,
+                query.PageNumber,
+                query.PageSize,
+                totalCount));
         }
 
         /// <summary>
