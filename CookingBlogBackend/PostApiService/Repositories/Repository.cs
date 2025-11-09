@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Models;
 using System.Linq.Expressions;
 
 namespace PostApiService.Repositories
@@ -47,6 +46,13 @@ namespace PostApiService.Repositories
                 .AsQueryable()
                 .AsNoTracking()
                 .AnyAsync(predicate, cancellationToken);
-        }        
+        }
+
+        public async Task<int> GetTotalCountAsync()
+        {
+            return await _dbSet
+                .AsNoTracking()
+                .CountAsync();
+        }
     }
 }
