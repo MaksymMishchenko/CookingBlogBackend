@@ -20,6 +20,7 @@ namespace PostApiService.Repositories
         {
             await _dbSet.AddAsync(entity);
             await _context.SaveChangesAsync();
+
             return entity;
         }
 
@@ -27,7 +28,7 @@ namespace PostApiService.Repositories
 
         public async Task DeleteAsync(T entity)
         {
-            _dbSet.Remove(entity);
+            _context.Entry(entity).State = EntityState.Deleted;
             await _context.SaveChangesAsync();
         }
 
@@ -35,7 +36,7 @@ namespace PostApiService.Repositories
 
         public async Task UpdateAsync(T entity)
         {
-            _dbSet.Update(entity);
+            _context.Entry(entity).State = EntityState.Modified;
             await _context.SaveChangesAsync();
         }
 

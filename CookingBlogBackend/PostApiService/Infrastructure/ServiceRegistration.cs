@@ -218,7 +218,7 @@ namespace PostApiService.Infrastructure
                             ImageUrl = "/images/placeholder.jpg",
                             MetaTitle = "Meta title info",
                             MetaDescription = "This is meta description",
-                            Slug = "http://localhost:4200/first-post"
+                            Slug = "first-post"
                         },
                         new Post
                         {
@@ -230,7 +230,7 @@ namespace PostApiService.Infrastructure
                             ImageUrl = "/images/placeholder.jpg",
                             MetaTitle = "Meta title info 2",
                             MetaDescription = "This is meta description 2",
-                            Slug = "http://localhost:4200/second-post"
+                            Slug = "second-post"
                         }
                     };
 

@@ -44,8 +44,8 @@ namespace PostApiService.Services
         /// with optional inclusion and pagination of comments.
         /// </summary>
         public async Task<(List<Post> Posts, int TotalCount)> GetPostsWithTotalAsync(
-            int pageNumber,
-            int pageSize,
+            int pageNumber = 1,
+            int pageSize = 10,
             int commentPageNumber = 1,
             int commentsPerPage = 10,
             bool includeComments = true,
