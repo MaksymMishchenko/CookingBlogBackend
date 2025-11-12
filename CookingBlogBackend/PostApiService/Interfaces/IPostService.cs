@@ -4,7 +4,8 @@ namespace PostApiService.Interfaces
 {
     public interface IPostService
     {
-        Task<List<Post>> GetAllPostsAsync(int pageNumber,
+        Task<(List<Post> Posts, int TotalCount)> GetPostsWithTotalAsync(
+            int pageNumber,
             int pageSize,
             int commentPageNumber = 1,
             int commentsPerPage = 10,
@@ -13,6 +14,6 @@ namespace PostApiService.Interfaces
         Task<Post> GetPostByIdAsync(int postId, bool includeComments = true);
         Task<Post> AddPostAsync(Post post);
         Task UpdatePostAsync(int postId, Post post);
-        Task DeletePostAsync(int postId);
+        Task DeletePostAsync(int postId);        
     }
 }

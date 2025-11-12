@@ -14,6 +14,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 {
     public class ExceptionMiddlewareTests : IClassFixture<ExceptionMiddlewareFixture>
     {
+        public const string AuthApiEndpoint = "/api/auth/register";
+        public const string LoginApiEndpoint = "/api/auth/login";
+        public const string PostsApiEndpoint = "/api/posts";
+        public const string CommentsApiEndpoint = "/api/comments";
+
         private readonly HttpClient _client;
         private readonly ExceptionMiddlewareFixture _factoryFixture;
 
@@ -24,10 +29,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(UserAlreadyExistsException), "/api/auth/register", HttpStatusCode.Conflict)]
-        [InlineData(typeof(EmailAlreadyExistsException), "/api/auth/register", HttpStatusCode.Conflict)]
-        [InlineData(typeof(UserClaimException), "/api/auth/register", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(UserCreationException), "/api/auth/register", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(UserAlreadyExistsException), AuthApiEndpoint, HttpStatusCode.Conflict)]
+        [InlineData(typeof(EmailAlreadyExistsException), AuthApiEndpoint, HttpStatusCode.Conflict)]
+        [InlineData(typeof(UserClaimException), AuthApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(UserCreationException), AuthApiEndpoint, HttpStatusCode.InternalServerError)]
         public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -83,10 +88,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(AuthenticationException), "/api/auth/login", HttpStatusCode.Unauthorized)]
-        [InlineData(typeof(UnauthorizedAccessException), "/api/auth/login", HttpStatusCode.Unauthorized)]
-        [InlineData(typeof(UserNotFoundException), "/api/auth/login", HttpStatusCode.Unauthorized)]
-        [InlineData(typeof(ArgumentException), "/api/auth/login", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(AuthenticationException), LoginApiEndpoint, HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(UnauthorizedAccessException), LoginApiEndpoint, HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(UserNotFoundException), LoginApiEndpoint, HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(ArgumentException), LoginApiEndpoint, HttpStatusCode.InternalServerError)]
         public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -135,10 +140,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(OperationCanceledException), "/api/posts", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/posts", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/posts", HttpStatusCode.InternalServerError)]
-        public async Task GetAllPostsAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
+        [InlineData(typeof(OperationCanceledException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
+        public async Task GetPostsWithTotalAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange
@@ -146,21 +151,26 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             postServiceMock.ClearReceivedCalls();
 
-            Task<List<Post>> failedTask = exceptionType switch
+            Exception exceptionToThrow = exceptionType switch
             {
                 Type t when t == typeof(OperationCanceledException) =>
-                    Task.FromException<List<Post>>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                    new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
                 Type t when t == typeof(TimeoutException) =>
-                    Task.FromException<List<Post>>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                    new TimeoutException(ResponseErrorMessages.TimeoutException),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<List<Post>>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
-                Type t when t == typeof(ArgumentException) =>
-                    Task.FromException<List<Post>>(new ArgumentException($"Unsupported exception type: {exceptionType}")),
-                _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
+                    new Exception(ResponseErrorMessages.UnexpectedErrorException),
             };
 
-            postServiceMock?.GetAllPostsAsync(Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
-                .Returns(failedTask);
+            var failedTupleTask = Task.FromException<(List<Post> Posts, int TotalCount)>(exceptionToThrow);
+
+            postServiceMock?.GetPostsWithTotalAsync
+               (Arg.Any<int>(),
+               Arg.Any<int>(),
+               Arg.Any<int>(),
+               Arg.Any<int>(),
+               Arg.Any<bool>(),
+               Arg.Any<CancellationToken>())
+               .Returns(failedTupleTask);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -182,10 +192,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), "/api/Posts/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(OperationCanceledException), "/api/Posts/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/Posts/2", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/Posts/4", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{PostsApiEndpoint}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(OperationCanceledException), $"{PostsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{PostsApiEndpoint}/2", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{PostsApiEndpoint}/3", HttpStatusCode.InternalServerError)]
         public async Task GetPostByIdAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -232,12 +242,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(PostAlreadyExistException), "/api/posts", HttpStatusCode.Conflict)]
-        [InlineData(typeof(AddPostFailedException), "/api/posts", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/posts", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/posts", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/posts", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/posts", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostAlreadyExistException), PostsApiEndpoint, HttpStatusCode.Conflict)]
+        [InlineData(typeof(AddPostFailedException), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
         public async Task AddPostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -306,12 +316,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), "/api/Posts/1", HttpStatusCode.NotFound)]
-        [InlineData(typeof(UpdatePostFailedException), "/api/Posts/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/Posts/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/Posts/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/Posts/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/Posts/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{PostsApiEndpoint}/1", HttpStatusCode.NotFound)]
+        [InlineData(typeof(UpdatePostFailedException), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{PostsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{PostsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
         public async Task UpdatePostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -394,12 +404,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), "/api/Posts/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(DeletePostFailedException), "/api/Posts/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/Posts/2", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/Posts/3", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/Posts/4", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/Posts/5", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{PostsApiEndpoint}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(DeletePostFailedException), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{PostsApiEndpoint}/2", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{PostsApiEndpoint}/3", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{PostsApiEndpoint}/4", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{PostsApiEndpoint}/5", HttpStatusCode.InternalServerError)]
         public async Task DeletePostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -475,12 +485,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(AddCommentFailedException), "/api/comments/999", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/999", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/999", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/999", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{CommentsApiEndpoint}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(AddCommentFailedException), $"{CommentsApiEndpoint}/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{CommentsApiEndpoint}/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{CommentsApiEndpoint}/999", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{CommentsApiEndpoint}/999", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{CommentsApiEndpoint}/999", HttpStatusCode.InternalServerError)]
         public async Task AddCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -534,7 +544,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
             }
 
-            var comment = new Comment {PostId = testPostId, Content = "Test comment" };
+            var comment = new Comment { PostId = testPostId, Content = "Test comment" };
             var content = HttpHelper.GetJsonHttpContent(comment);
 
             // Act
@@ -562,12 +572,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(CommentNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(UpdateCommentFailedException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(CommentNotFoundException), $"{CommentsApiEndpoint}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(UpdateCommentFailedException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
         public async Task UpdateCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -650,12 +660,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(CommentNotFoundException), "/api/comments/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(DeleteCommentFailedException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), "/api/comments/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), "/api/comments/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), "/api/comments/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(CommentNotFoundException), $"{CommentsApiEndpoint}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(DeleteCommentFailedException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
         public async Task DeleteCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {

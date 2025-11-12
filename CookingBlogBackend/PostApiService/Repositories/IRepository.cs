@@ -1,5 +1,4 @@
-﻿using PostApiService.Models;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace PostApiService.Repositories
 {
@@ -11,6 +10,7 @@ namespace PostApiService.Repositories
         Task UpdateAsync(T entity);
         Task DeleteAsync(T entity);
         IQueryable<T> AsQueryable();
-        Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);        
+        Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+        Task<int> GetTotalCountAsync();
     }
 }

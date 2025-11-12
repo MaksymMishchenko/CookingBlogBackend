@@ -51,7 +51,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var attribute = new ValidateModelAttribute
             {
                 ErrorResponseType = ResourceType.Post,
-                InvalidIdErrorMessage = "Invalid post data"
+                InvalidErrorMessage = "Invalid post data"
             };
 
             var errors = new Dictionary<string, string[]>
@@ -78,7 +78,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var attribute = new ValidateModelAttribute
             {
                 ErrorResponseType = ResourceType.Comment,
-                InvalidIdErrorMessage = "Invalid comment data"
+                InvalidErrorMessage = "Invalid comment data"
             };
 
             var context = GetActionExecutingContext(true);
@@ -97,7 +97,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var attribute = new ValidateModelAttribute
             {
                 ErrorResponseType = ResourceType.LoginUser,
-                InvalidIdErrorMessage = "Invalid login data"
+                InvalidErrorMessage = "Invalid login data"
             };
 
             var errors = new Dictionary<string, string[]>

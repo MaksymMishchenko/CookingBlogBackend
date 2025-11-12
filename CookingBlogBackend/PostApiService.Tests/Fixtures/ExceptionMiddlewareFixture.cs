@@ -38,14 +38,23 @@ namespace PostApiService.Tests.Fixtures
             services.RemoveAll(typeof(IPostService));
 
             var postServiceMock = Substitute.For<IPostService>();
-            postServiceMock.GetAllPostsAsync(
+            var mockPosts = new List<Post> {
+                new Post { Title = "Mocked Post" }
+            };
+
+            const int mockTotalCount = 100;
+
+            postServiceMock.GetPostsWithTotalAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<bool>(),
                 Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(new List<Post> { new Post { Title = "Mocked Post" } }));
+                .Returns(Task.FromResult((
+                    Posts: mockPosts,         
+                    TotalCount: mockTotalCount
+                )));            
 
             postServiceMock.GetPostByIdAsync(
                 Arg.Any<int>(),
