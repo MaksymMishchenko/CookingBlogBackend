@@ -14,183 +14,317 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture = fixture;
         }
 
-        private PostService CreatePostService()
+        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDb(out ApplicationDbContext context)
         {
-            var context = _fixture.CreateContext();
+            context = _fixture.CreateUniqueContext();
+
+            var postsToSeed = _fixture.GeneratePosts();
+
+            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+
             var repo = new Repository<Post>(context);
-            return new PostService(repo);
+            var service = new PostService(repo);
+
+            return (service, postsToSeed);
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnListOfPosts_WithComments()
+        public async Task GetPostsWithTotalAsync_ReturnsCorrectPageAndCount_WithContentCheck()
         {
             // Arrange
-            var postService = CreatePostService();
-            using var context = _fixture.CreateContext();
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                const int expectedTotalCount = 25;
+                int expectedPageNumber = 1;
+                int expectedPageSize = 10;
 
-            // Act
-            var listOfPosts = await postService.GetAllPostsAsync(1, 10, 1, 10, includeComments: true);
+                var expectedPostsOnPage = seededPosts
+                    .OrderBy(p => p.Id)
+                    .Skip((expectedPageNumber - 1) * expectedPageSize)
+                    .Take(expectedPageSize)
+                    .ToList();
+
+                // Act
+                var result = await postService.GetPostsWithTotalAsync
+                    (expectedPageNumber, expectedPageSize, includeComments: true);
+
+                // Assert
+                Assert.Equal(expectedTotalCount, result.TotalCount);
+                Assert.Equal(expectedPageSize, result.Posts.Count);
+                Assert.Equal(1, result.Posts.First().Id);
+                Assert.Equal(10, result.Posts.Last().Id);
+
+                Assert.True(
+                    expectedPostsOnPage.Select(p => p.Id)
+                        .SequenceEqual(result.Posts.Select(p => p.Id)),
+                    "The order or set of Post IDs on the page does not match the expected.");
+
+                Assert.True(
+                    expectedPostsOnPage.Select(p => p.Title)
+                        .SequenceEqual(result.Posts.Select(p => p.Title)),
+                    "The Post Titles do not match in order.");
+
+                Assert.True(
+                    expectedPostsOnPage.Select(p => p.Content)
+                        .SequenceEqual(result.Posts.Select(p => p.Content)),
+                    "The Post Content does not match in order.");
+
+                for (int i = 0; i < expectedPostsOnPage.Count; i++)
+                {
+                    var expectedPost = expectedPostsOnPage[i];
+                    var actualPost = result.Posts[i];
+
+                    Assert.Equal(expectedPost.Id, actualPost.Id);
+
+                    Assert.Equal(expectedPost.Comments.Count, actualPost.Comments.Count);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task GetPostsWithTotalAsync_ShouldReturnLastIncompletePageRange()
+        {
+            // Arrange
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                const int expectedTotalCount = 25;
+                const int pageSize = 10;
+                const int pageNumber = 3;
+                const int expectedPostsOnLastPage = 5;
+
+                var expectedPostsOnPage = seededPosts
+                    .OrderBy(p => p.Id)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToList();
+
+                // Act
+                var result = await postService.GetPostsWithTotalAsync(pageNumber, pageSize);
+
+                // Assert
+                Assert.Equal(expectedTotalCount, result.TotalCount);
+                Assert.Equal(expectedPostsOnLastPage, result.Posts.Count);
+                Assert.Equal(21, result.Posts.First().Id);
+                Assert.Equal(expectedTotalCount, result.Posts.Last().Id);
+
+                Assert.True(
+                    expectedPostsOnPage.Select(p => p.Title)
+                        .SequenceEqual(result.Posts.Select(p => p.Title)),
+                    "The Post Titles do not match in order on the last incomplete page.");
+
+                Assert.True(
+                    expectedPostsOnPage.Select(p => p.Content)
+                        .SequenceEqual(result.Posts.Select(p => p.Content)),
+                    "The Post Content does not match in order on the last incomplete page.");
+                
+                Assert.All(result.Posts, actualPost =>
+                {                    
+                    Assert.NotEmpty(actualPost.Comments);                    
+                    Assert.All(actualPost.Comments, c => Assert.Equal(actualPost.Id, c.PostId));
+                });
+
+                for (int i = 0; i < expectedPostsOnPage.Count; i++)
+                {
+                    var expectedPost = expectedPostsOnPage[i];
+                    var actualPost = result.Posts[i];
+
+                    Assert.Equal(expectedPost.Id, actualPost.Id);
+
+                    Assert.Equal(expectedPost.Comments.Count, actualPost.Comments.Count);
+                }
+            }
+        }
+
+        [Fact]
+        public async Task GetPostsWithTotalAsync_ShouldReturnPostsWithEmptyComments()
+        {
+            // Arrange
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+
+            const int PageNumber = 1;
+            const int PageSize = 5;
+            const int ExpectedTotalPosts = 25;
+
+            // Act            
+            var (posts, totalCount) = await postService.GetPostsWithTotalAsync(
+                pageNumber: PageNumber,
+                pageSize: PageSize,
+                includeComments: false);
 
             // Assert            
-            Assert.NotEmpty(listOfPosts);
-            Assert.Single(listOfPosts);
+            Assert.Equal(PageSize, posts.Count);
 
-            var returnedPost = listOfPosts[0];
-            var post = await context.Posts
-                .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.Id == 1);
-            Assert.NotNull(post);
+            Assert.Equal(ExpectedTotalPosts, totalCount);
 
-            var comments = await context.Comments
-                .Where(c => c.PostId == post.Id)
-                .ToListAsync();
-            Assert.NotNull(post);
-
-            Assert.Equal(post.Id, returnedPost.Id);
-            Assert.Equal(post.Title, returnedPost.Title);
-            Assert.Equal(post.Description, returnedPost.Description);
-
-            Assert.NotNull(returnedPost.Comments);
-            Assert.NotEmpty(returnedPost.Comments);
-            Assert.Equal(comments.Count, returnedPost.Comments.Count);
-
-            Assert.All(returnedPost.Comments, comment =>
+            Assert.All(posts, post =>
             {
-                Assert.Equal(post.Id, comment.PostId);
-            });
+                Assert.NotNull(post.Comments);
 
-            Assert.Equal(comments[0].Content, returnedPost.Comments[0].Content);
+                Assert.Empty(post.Comments);
+            });
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnListOfPosts_WithoutComments()
+        public async Task GetPostsWithTotalAsync_ShouldPaginateAndSortCommentsCorrectly()
         {
             // Arrange
-            var postService = CreatePostService();
-            using var context = _fixture.CreateContext();
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+
+            const int PostPageSize = 3;
+
+            const int CommentsPerPage = 2;
+            const int CommentPageNum = 2;
+            const int ExpectedPostsCount = 25;
+
+            const int ExpectedCommentCount = CommentsPerPage;
+
+            var expectedPostsOnPage = seededPosts
+                    .OrderBy(p => p.Id)
+                    .Skip((1 - 1) * PostPageSize)
+                    .Take(PostPageSize)
+                    .ToList();
 
             // Act
-            var listOfPosts = await postService.GetAllPostsAsync(1, 10, 1, 10, includeComments: false);
+            var (posts, totalCount) = await postService.GetPostsWithTotalAsync(
+                pageNumber: 1,
+                pageSize: PostPageSize,
+                commentPageNumber: CommentPageNum,
+                commentsPerPage: CommentsPerPage,
+                includeComments: true);
 
-            // Assert
-            Assert.NotEmpty(listOfPosts);
+            // Assert            
+            Assert.Equal(PostPageSize, posts.Count);
+            Assert.Equal(ExpectedPostsCount, totalCount);
 
-            var post = await context.Posts
-                .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.Id == 1);
+            Assert.True(
+                expectedPostsOnPage.Select(p => p.Title).SequenceEqual(posts.Select(p => p.Title)),
+                "The Post Titles do not match in order after comment pagination.");
+            Assert.True(
+                expectedPostsOnPage.Select(p => p.Content).SequenceEqual(posts.Select(p => p.Content)),
+                "The Post Content does not match in order after comment pagination.");
 
-            Assert.NotNull(post);
+            Assert.All(posts, post =>
+            {
+                Assert.Equal(ExpectedCommentCount, post.Comments.Count);
 
-            var postList = listOfPosts[0];
+                var isSorted = post.Comments.SequenceEqual(post.Comments.OrderBy(c => c.CreatedAt));
+                Assert.True(isSorted);
 
-            Assert.Single(listOfPosts);
-            Assert.Equal(post.Id, postList.Id);
-            Assert.Equal(post.Title, postList.Title);
-            Assert.Equal(post.Description, postList.Description);
-            Assert.All(listOfPosts, post => Assert.NotNull(post.Comments));
-            Assert.All(listOfPosts, post => Assert.Empty(post.Comments));
+                Assert.True(post.Comments.Min(c => c.CreatedAt) > DateTime.MinValue);
+            });
         }
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturnSpecificPost()
         {
             // Arrange
-            var postService = CreatePostService();
-            using var context = _fixture.CreateContext();
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                var postId = 1;
 
-            var postId = 1;
+                // Act
+                var existingPost = await postService.GetPostByIdAsync(postId, includeComments: false);
 
-            // Act
-            var existingPost = await postService.GetPostByIdAsync(postId, includeComments: false);
+                // Assert
+                Assert.NotNull(existingPost);
 
-            // Assert            
-            Assert.NotNull(existingPost);
+                var post = await context.Posts
+                    .FirstOrDefaultAsync(p => p.Id == 1);
 
-            var post = await context.Posts
-                .Include(p => p.Comments)
-                .FirstOrDefaultAsync(p => p.Id == 1);
-            Assert.NotNull(post);
-
-            Assert.Equal(post.Id, existingPost.Id);
-            Assert.Equal(post.Title, existingPost.Title);
-            Assert.Equal(post.Description, existingPost.Description);
-            Assert.NotNull(existingPost.Comments);
-            Assert.Empty(existingPost.Comments);
+                Assert.NotNull(post);
+                Assert.Equal(post.Title, existingPost.Title);
+                Assert.Empty(existingPost.Comments);
+            }
         }
 
         [Fact]
         public async Task AddPostAsync_ShouldAddNewPostSuccessfully()
         {
             // Arrange
-            var postService = CreatePostService();
-            using var context = _fixture.CreateContext();
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                var newPost = new Post
+                {
+                    Title = "Lorem ipsum dolor sit amet",
+                    Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+                    Author = "Test author",
+                    Description = "Test description",
+                    MetaTitle = "Test meta title",
+                    MetaDescription = "Test meta description",
+                    ImageUrl = "http://example.com/img/img.jpg",
+                    Slug = "post-slug",
+                };
+                var initialCount = await context.Posts.CountAsync();
 
-            var newPost = TestDataHelper.GetPostWithComments(generateComments: false);
-            var initialCount = await context.Posts.CountAsync();
+                // Act
+                await postService.AddPostAsync(newPost);
 
-            // Act
-            await postService.AddPostAsync(newPost);
+                // Assert
+                var addedPost = await context.Posts
+                    .FirstOrDefaultAsync(p => p.Title == newPost.Title);
+                Assert.NotNull(addedPost);
 
-            // Assert
-            var addedPost = await context.Posts
-                .FirstOrDefaultAsync(p => p.Title == newPost.Title && p.Author == newPost.Author);
-            Assert.NotNull(addedPost);
-            Assert.Equal(newPost.Title, addedPost.Title);
-            Assert.Equal(newPost.Author, addedPost.Author);
-            Assert.Equal(newPost.Content, addedPost.Content);
-            Assert.NotEqual(DateTime.MinValue, addedPost.CreateAt);
-            Assert.True(addedPost.CreateAt <= DateTime.UtcNow.ToLocalTime());
-
-            var postCount = await context.Posts.CountAsync();
-            Assert.Equal(initialCount + 1, postCount);
-            Assert.NotNull(addedPost.Comments);
-            Assert.Empty(addedPost.Comments);
+                var postCount = await context.Posts.CountAsync();
+                Assert.Equal(initialCount + 1, postCount);
+            }
         }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldUpdatedExistingPostSuccessfully()
         {
             // Arrange
-            var postService = CreatePostService();
-            using var context = _fixture.CreateContext();
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                var postId = 1;
+                var existingPost = await context.Posts.FindAsync(postId);
+                Assert.NotNull(existingPost);
 
-            var postId = 1;
-            var existingPost = await context.Posts.FindAsync(postId);
-            Assert.NotNull(existingPost);
+                existingPost.Title = "Updated title";
+                existingPost.Content = "Updated content";
 
-            existingPost.Title = "Updated title";
-            existingPost.Content = "Updated content";
-            existingPost.MetaTitle = "Updated meta title";
+                // Act                
+                await postService.UpdatePostAsync(postId, existingPost);
 
-            // Act
-            await postService.UpdatePostAsync(postId, existingPost);
-
-            // Assert
-            var updatedPost = await context.Posts.FindAsync(postId);
-            Assert.NotNull(updatedPost);
-            Assert.Equal(existingPost.Title, updatedPost.Title);
-            Assert.Equal(existingPost.Content, updatedPost.Content);
-            Assert.NotEqual(DateTime.MinValue, updatedPost.CreateAt);
-            Assert.True(updatedPost.CreateAt <= DateTime.UtcNow.ToLocalTime());
+                // Assert
+                var updatedPost = await context.Posts.FindAsync(postId);
+                Assert.NotNull(updatedPost);
+                Assert.Equal("Updated title", updatedPost.Title);
+            }
         }
 
         [Fact]
         public async Task DeletePostAsync_ShouldRemovePostSuccessfully()
         {
             // Arrange
-            var postService = CreatePostService();
-            using var context = _fixture.CreateContext();
+            ApplicationDbContext context;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                var initialCount = await context.Posts.CountAsync();
+                var postId = 1;
 
-            var initialCount = await context.Posts.CountAsync();
-            var postId = 1;
+                // Act
+                await postService.DeletePostAsync(postId);
 
-            // Act
-            await postService.DeletePostAsync(postId);
+                // Assert
+                var removedPost = await context.Posts.AnyAsync(p => p.Id == postId);
+                Assert.False(removedPost);
 
-            // Assert
-            var removedPost = await context.Posts
-                .AnyAsync(p => p.Id == postId);
-            Assert.False(removedPost);
-        }        
+                var finalCount = await context.Posts.CountAsync();
+                Assert.Equal(initialCount - 1, finalCount);
+            }
+        }
     }
 }

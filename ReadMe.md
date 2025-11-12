@@ -235,7 +235,7 @@ json
             "imageUrl": "/images/placeholder.jpg",
             "metaTitle": "Meta title info",
             "metaDescription": "This is meta description",
-            "slug": "http://localhost:4200/first-post",
+            "slug": "first-post",
             "comments": [
                 {
                     "commentId": 2,
@@ -282,7 +282,7 @@ json
         "imageUrl": "/images/placeholder.jpg",
         "metaTitle": "Meta title info",
         "metaDescription": "This is meta description",
-        "slug": "http://localhost:4200/first-post",
+        "slug": "first-post",
         "comments": [
             {
                 "commentId": 2,

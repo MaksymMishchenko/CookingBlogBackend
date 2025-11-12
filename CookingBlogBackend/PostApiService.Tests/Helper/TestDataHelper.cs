@@ -34,14 +34,7 @@ namespace PostApiService.Tests.Helper
 
             return posts;
         }
-
-        public static Post GetPostWithComments(bool useNewSeed = false,
-            bool generateComments = true,
-            int commentCount = 1)
-        {
-            return GetPostsWithComments(1, useNewSeed, generateComments, commentCount)[0];
-        }
-
+       
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
             int commentCount,
@@ -95,11 +88,6 @@ namespace PostApiService.Tests.Helper
             };
         }
 
-        public static List<Post> GetListWithPost()
-        {
-            return new List<Post> { new Post { Id = 1 } };
-        }
-
         public static List<Post> GetEmptyPostList()
         {
             return new List<Post>();
@@ -112,12 +100,7 @@ namespace PostApiService.Tests.Helper
                 new Comment { PostId = 1, Id = 2, UserId = "testUserId", Content = "This is the test comment 2." },
                 new Comment { PostId = 1, Id = 3, UserId = "testUserId", Content = "This is the test comment 3." }
             };
-        }
-
-        public static List<Comment> GetEmptyCommentList()
-        {
-            return new List<Comment>();
-        }        
+        }              
 
         public static List<Post> GetPostsWithComments()
         {

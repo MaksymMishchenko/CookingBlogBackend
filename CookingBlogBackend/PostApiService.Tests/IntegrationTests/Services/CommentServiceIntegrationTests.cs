@@ -23,11 +23,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _authServiceMock.GetCurrentUserAsync().Returns(_testUser);
         }
 
-        private CommentService CreateCommentService()
+        private CommentService CreateCommentServiceAndSeedUniqueDb(out ApplicationDbContext context)
         {
-            var context = _fixture.CreateContext();
+            context = _fixture.CreateUniqueContext();
+
+            var postsToSeed = _fixture.GeneratePosts();
+
+            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+
             var commentRepo = new Repository<Comment>(context);
             var postRepo = new Repository<Post>(context);
+
             return new CommentService(commentRepo, postRepo, _authServiceMock);
         }
 
@@ -35,72 +41,81 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public async Task AddCommentAsync_ShouldAddNewCommentToPostSuccessfully()
         {
             // Arrange
-            var postId = 1;
-            var commentService = CreateCommentService();
-            using var context = _fixture.CreateContext();
-            var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
-
-            var comment = new Comment
+            ApplicationDbContext context;
+            var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
+            using (context)
             {
-                Content = "Test comment from Bob",
-                Author = "Bob"
-            };
+                var postId = 1;
+                var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
 
-            // Act
-            await commentService.AddCommentAsync(postId, comment);
+                var comment = new Comment
+                {
+                    Content = "Test comment from Bob",
+                    Author = "Bob"
+                };
 
-            // Assert
-            var addedComment = await context.Comments
-                .FirstOrDefaultAsync(c => c.Content == comment.Content && c.Author == comment.Author);
+                // Act
+                await commentService.AddCommentAsync(postId, comment);
 
-            Assert.NotNull(addedComment);
-            Assert.Equal(postId, addedComment.PostId);
-            Assert.Equal(_testUser.Id, addedComment.UserId);
-            Assert.Equal(initialCount + 1, await context.Comments.CountAsync(c => c.PostId == postId));
+                // Assert
+                var addedComment = await context.Comments
+                    .FirstOrDefaultAsync(c => c.Content == comment.Content && c.Author == comment.Author);
+
+                Assert.NotNull(addedComment);
+                Assert.Equal(postId, addedComment.PostId);
+                Assert.Equal(_testUser.Id, addedComment.UserId);
+                Assert.Equal(initialCount + 1, await context.Comments.CountAsync(c => c.PostId == postId));
+            }
         }
 
         [Fact]
         public async Task UpdateCommentAsync_ShouldUpdateContentOfExistingComment()
         {
-            // Arrange            
-            using var context = _fixture.CreateContext();
-            var commentService = CreateCommentService();
-
-            int commentId = 2;
-            var comment = new EditCommentModel
+            // Arrange
+            ApplicationDbContext context;
+            var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
+            using (context)
             {
-                Content = "Edited comment content"
-            };
 
-            // Act
-            await commentService.UpdateCommentAsync(commentId, comment);
+                int commentId = 2;
+                var comment = new EditCommentModel
+                {
+                    Content = "Edited comment content"
+                };
 
-            // Assert
-            var editedComment = await context.Comments
-                .FirstOrDefaultAsync(c => c.Id == commentId);
+                // Act
+                await commentService.UpdateCommentAsync(commentId, comment);
 
-            Assert.NotNull(editedComment);
-            Assert.Equal(comment.Content, editedComment.Content);
+                // Assert
+                var editedComment = await context.Comments
+                    .FirstOrDefaultAsync(c => c.Id == commentId);
+
+                Assert.NotNull(editedComment);
+                Assert.Equal(comment.Content, editedComment.Content);
+            }
         }
 
         [Fact]
         public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
         {
             // Arrange
-            using var context = _fixture.CreateContext();
-            var commentService = CreateCommentService();
+            ApplicationDbContext context;
+            var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
+            using (context)
+            {
+                var commentIdToRemove = 1;
+                var initialCount = await context.Comments.CountAsync();
 
-            var commentIdToRemove = 1;
-            var initialCount = await context.Comments.CountAsync();
+                // Act
+                await commentService.DeleteCommentAsync(commentIdToRemove);
 
-            // Act
-            await commentService.DeleteCommentAsync(commentIdToRemove);
-            var finalCount = await context.Comments.CountAsync();
+                // Assert
+                var finalCount = await context.Comments.CountAsync();
 
-            // Assert
-            var removedComment = await context.Comments.FindAsync(commentIdToRemove);
-            Assert.Null(removedComment);
-            Assert.Equal(initialCount - 1, finalCount);
+                var removedComment = await context.Comments.FindAsync(commentIdToRemove);
+                Assert.Null(removedComment);
+                Assert.Equal(initialCount - 1, finalCount);
+            }
         }
     }
 }

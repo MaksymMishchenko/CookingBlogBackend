@@ -18,29 +18,33 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             _mockPostService = Substitute.For<IPostService>();
             _postsController = new PostsController(_mockPostService);
-        }                
+        }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
+        public async Task GetPostsWithTotalAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
         {
             // Arrange
-            var postParameters = new PostQueryParameters();
-            postParameters.PageNumber = 1;
-            postParameters.PageSize = 10;
+            var queryParameters = new PostQueryParameters();
+            queryParameters.PageNumber = 2;
+            queryParameters.PageSize = 10;
 
             var posts = TestDataHelper.GetEmptyPostList();
+            var totalCount = 0;
 
-            _mockPostService.GetAllPostsAsync(
+            _mockPostService.GetPostsWithTotalAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<bool>(),
                 Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(posts));            
+                .Returns(Task.FromResult((
+                    Posts: posts,
+                    TotalCount: totalCount
+                )));
 
             // Act
-            var result = await _postsController.GetAllPostsAsync(postParameters);
+            var result = await _postsController.GetPostsWithTotalAsync(queryParameters);
 
             // Assert
             var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -49,7 +53,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(PostErrorMessages.NoPostsFound, response.Message);
 
             await _mockPostService.Received(1)
-                .GetAllPostsAsync(
+                .GetPostsWithTotalAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
@@ -59,44 +63,56 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetAllPostsAsync_ShouldReturnOk_WhenPostsAreFound()
+        public async Task GetPostsWithTotalAsync_ShouldReturnOk_WhenPostsAreFound()
         {
             // Arrange
-            var postParameters = new PostQueryParameters();
-            postParameters.PageNumber = 1;
-            postParameters.PageSize = 10;
+            const int mockTotalCount = 50;
+            const int expectedPageNumber = 3;
+            const int expectedPageSize = 10;
 
-            var posts = TestDataHelper.GetPostsWithComments(count: 10, generateComments: false);
+            var queryParameters = new PostQueryParameters();
+            queryParameters.PageNumber = expectedPageNumber;
+            queryParameters.PageSize = expectedPageSize;
 
-            _mockPostService.GetAllPostsAsync(
-                Arg.Any<int>(),
-                Arg.Any<int>(),
+            var mockPosts = TestDataHelper.GetPostsWithComments(count: mockTotalCount, generateComments: false);            
+
+            _mockPostService.GetPostsWithTotalAsync(
+                Arg.Is(expectedPageNumber),
+                Arg.Is(expectedPageSize),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<bool>(),
                 Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(posts));
+                .Returns(Task.FromResult((
+                Posts: mockPosts,
+                TotalCount: mockTotalCount
+                )));
 
             // Act
-            var result = await _postsController.GetAllPostsAsync(postParameters);
+            var result = await _postsController.GetPostsWithTotalAsync(queryParameters);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<Post>>(okResult.Value);
+
             Assert.NotNull(response);
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
-            Assert.Equal(10, response.DataList.Count);
+                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);            
+
+            Assert.Equal(expectedPageNumber, response.PageNumber);
+            Assert.Equal(expectedPageSize, response.PageSize);     
+            Assert.Equal(mockTotalCount, response.TotalCount);
 
             await _mockPostService.Received(1)
-                .GetAllPostsAsync(Arg.Any<int>(),
-                Arg.Any<int>(),
+                .GetPostsWithTotalAsync(
+                Arg.Is(expectedPageNumber),
+                Arg.Is(expectedPageSize),
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<bool>(),
-                Arg.Any<CancellationToken>());                
-        }        
+                Arg.Any<CancellationToken>());
+        }
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()
@@ -145,7 +161,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 (PostSuccessMessages.PostAddedSuccessfully, post.Id), response.Message);
 
             await _mockPostService.Received(1).AddPostAsync(post);
-        }        
+        }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
@@ -171,7 +187,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
             await _mockPostService.Received(1).UpdatePostAsync(postId, post);
-        }        
+        }
 
         [Fact]
         public async Task DeletePostAsync_ShouldReturnOk_IfPostRemovedSuccessfully()
