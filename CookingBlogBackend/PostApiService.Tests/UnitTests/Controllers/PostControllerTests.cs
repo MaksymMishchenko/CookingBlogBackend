@@ -74,7 +74,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             queryParameters.PageNumber = expectedPageNumber;
             queryParameters.PageSize = expectedPageSize;
 
-            var mockPosts = TestDataHelper.GetPostsWithComments(count: mockTotalCount, generateComments: false);            
+            var mockPosts = TestDataHelper.GetPostsWithComments(count: mockTotalCount, generateComments: false);
 
             _mockPostService.GetPostsWithTotalAsync(
                 Arg.Is(expectedPageNumber),
@@ -98,10 +98,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.NotNull(response);
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);            
+                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
 
             Assert.Equal(expectedPageNumber, response.PageNumber);
-            Assert.Equal(expectedPageSize, response.PageSize);     
+            Assert.Equal(expectedPageSize, response.PageSize);
             Assert.Equal(mockTotalCount, response.TotalCount);
 
             await _mockPostService.Received(1)
@@ -166,14 +166,28 @@ namespace PostApiService.Tests.UnitTests.Controllers
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
         {
-            // Arrange
-            var postId = 1;
-            var post = TestDataHelper.GetSinglePost();
-            _mockPostService.UpdatePostAsync(postId, post)
-                .Returns(Task.CompletedTask);
+            // Arrange            
+            var originalPost = TestDataHelper.GetSinglePost();
+            int postId = originalPost.Id;
+
+            var inputPostData = new Post
+            {
+                Id = postId,
+                Title = "New Title",
+                Description = originalPost.Description,
+                Content = originalPost.Content,
+                Author = originalPost.Author,
+                ImageUrl = originalPost.ImageUrl,
+                MetaTitle = originalPost.MetaTitle,
+                MetaDescription = originalPost.MetaDescription,
+                Slug = "new-slug-value"
+            };
+
+            _mockPostService.UpdatePostAsync(postId, inputPostData)
+                .Returns(Task.FromResult(inputPostData));
 
             // Act
-            var result = await _postsController.UpdatePostAsync(postId, post);
+            var result = await _postsController.UpdatePostAsync(postId, inputPostData);
 
             // Assert            
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
@@ -182,11 +196,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
                 (PostSuccessMessages.PostUpdatedSuccessfully, postId), actualResponse.Message);
-            Assert.Equal(postId, actualResponse.EntityId);
+            Assert.Equal(postId, actualResponse.Data.Id);
 
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
-            await _mockPostService.Received(1).UpdatePostAsync(postId, post);
+            await _mockPostService.Received(1).UpdatePostAsync(postId, inputPostData);
         }
 
         [Fact]

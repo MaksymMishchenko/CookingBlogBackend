@@ -259,7 +259,7 @@ namespace PostApiService.Tests.IntegrationTests
                 Assert.True(response.Success);
                 Assert.Equal(string.Format
                     (PostSuccessMessages.PostUpdatedSuccessfully, postId), response.Message);
-                Assert.Equal(postId, response.EntityId);
+                Assert.Equal(postId, response.Data.Id);
 
                 dbContext.ChangeTracker.Clear();
 

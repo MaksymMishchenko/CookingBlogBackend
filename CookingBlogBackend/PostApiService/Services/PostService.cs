@@ -120,7 +120,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Updates an existing post with the provided data.        
         /// </summary>        
-        public async Task UpdatePostAsync(int postId, Post post)
+        public async Task<Post> UpdatePostAsync(int postId, Post post)
         {
             var existingPost = await _repository
                 .GetByIdAsync(postId);
@@ -140,7 +140,9 @@ namespace PostApiService.Services
                 existingPost.MetaDescription = post.MetaDescription;
                 existingPost.Slug = post.Slug;
 
-                await _repository.UpdateAsync(existingPost);
+               await _repository.UpdateAsync(existingPost);
+
+                return existingPost;
             }
             catch (DbException ex)
             {

@@ -91,11 +91,11 @@ namespace PostApiService.Controllers
         [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
         public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
         {
-            await _postsService.UpdatePostAsync(postId, post);
+            var updatedPost = await _postsService.UpdatePostAsync(postId, post);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, postId), postId));
+                (PostSuccessMessages.PostUpdatedSuccessfully, postId), updatedPost));
         }
 
         /// <summary>

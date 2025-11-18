@@ -68,7 +68,7 @@ namespace PostApiService.Tests.Fixtures
             postServiceMock.UpdatePostAsync(
                 Arg.Any<int>(),
                 Arg.Any<Post>())
-                .Returns(Task.CompletedTask);
+                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
 
             postServiceMock.DeletePostAsync(
                 Arg.Any<int>())
