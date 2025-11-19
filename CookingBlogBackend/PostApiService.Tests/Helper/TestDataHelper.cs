@@ -70,13 +70,20 @@ namespace PostApiService.Tests.Helper
                         .Generate(commentCount);
                 })
                 .UseSeed(seed);
-        }
+        }        
 
-        public static Post GetSinglePost()
-        {
-            return new Post
+        public static Post GetSinglePost(int? id = 1, bool includeId = true)
+        {           
+            int finalId = 0; 
+
+            if (includeId && id.HasValue)
             {
-                Id = 1,
+                finalId = id.Value;
+            }            
+
+            return new Post
+            {                
+                Id = finalId,
                 Title = "Lorem ipsum dolor sit amet",
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
                 Author = "Test author",

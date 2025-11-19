@@ -348,27 +348,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 case Type t when t == typeof(PostNotFoundException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException(new PostNotFoundException(testPostId)));
+                        .Returns(Task.FromException<Post>(new PostNotFoundException(testPostId)));
                     break;
                 case Type t when t == typeof(UpdatePostFailedException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException(new UpdatePostFailedException(postTitle, null)));
+                        .Returns(Task.FromException<Post>(new UpdatePostFailedException(postTitle, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                        .Returns(Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)));
                     break;
                 case Type t when t == typeof(Exception):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                        .Returns(Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");

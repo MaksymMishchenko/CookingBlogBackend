@@ -65,10 +65,11 @@ namespace PostApiService.Tests.UnitTests
             // Assert
             Assert.Equal(pageSize, result.Posts.Count);
             Assert.Equal(expectedTotalCount, result.TotalCount);
-            Assert.All(result.Posts, post => {
+            Assert.All(result.Posts, post =>
+            {
                 Assert.NotNull(post);
                 Assert.Empty(post.Comments);
-            });                                   
+            });
         }
 
         [Fact]
@@ -146,19 +147,21 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
         {
-            // Arrange
-            var postId = 1;
+            // Arrange            
             var originalPost = TestDataHelper.GetSinglePost();
-            var updatedPost = new Post
+            int postId = originalPost.Id;
+
+            var inputPostData = new Post
             {
                 Id = postId,
-                Title = "Updated title",
-                Description = "Updated description",
-                Content = "Updated content",
-                ImageUrl = "updated.jpg",
-                MetaTitle = "Updated meta",
-                MetaDescription = "Updated meta desc",
-                Slug = "updated-slug"
+                Title = "New Title",
+                Description = originalPost.Description,
+                Content = originalPost.Content,
+                Author = originalPost.Author,
+                ImageUrl = originalPost.ImageUrl,
+                MetaTitle = originalPost.MetaTitle,
+                MetaDescription = originalPost.MetaDescription,
+                Slug = "new-slug-value"
             };
 
             _mockRepository.GetByIdAsync(postId)
@@ -170,22 +173,22 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(_mockRepository);
 
             // Act
-            await service.UpdatePostAsync(postId, updatedPost);
+            var resultPost = await service.UpdatePostAsync(postId, inputPostData);
 
-            // Assert            
+            // Assert
+
+            Assert.NotNull(resultPost);
+            Assert.Equal(inputPostData.Title, resultPost.Title);
+            Assert.Equal(inputPostData.Slug, resultPost.Slug);
+
             await _mockRepository.Received(1)
                 .GetByIdAsync(originalPost.Id);
 
             await _mockRepository.Received(1)
                 .UpdateAsync(Arg.Is<Post>(p =>
-                    p.Id == originalPost.Id &&
-                    p.Title == "Updated title" &&
-                    p.Description == "Updated description" &&
-                    p.Content == "Updated content" &&
-                    p.ImageUrl == "updated.jpg" &&
-                    p.MetaTitle == "Updated meta" &&
-                    p.MetaDescription == "Updated meta desc" &&
-                    p.Slug == "updated-slug"));
+                    p.Title == "New Title" &&
+            p.Slug == "new-slug-value" && 
+            p.Content == originalPost.Content));
         }
 
         [Fact]

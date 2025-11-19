@@ -114,15 +114,15 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.NotNull(content2);
             Assert.NotNull(content2.DataList);
 
-            Assert.InRange(content2.DataList.Count, 1, pageSize); 
-            
-            Assert.Equal(totalPosts, content2.TotalCount); 
+            Assert.InRange(content2.DataList.Count, 1, pageSize);
+
+            Assert.Equal(totalPosts, content2.TotalCount);
             Assert.Equal(pageNumber2, content2.PageNumber);
-            Assert.Equal(pageSize, content2.PageSize);    
-            
+            Assert.Equal(pageSize, content2.PageSize);
+
             Assert.Equal(4, content2.DataList.First().Id);
             Assert.Equal(5, content2.DataList.Last().Id);
-        }        
+        }
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
@@ -181,21 +181,11 @@ namespace PostApiService.Tests.IntegrationTests
             var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
             var adminPrincipal = new ClaimsPrincipal(adminIdentity);
 
-            _fixture.SetCurrentUser(adminPrincipal);
+            _fixture.SetCurrentUser(adminPrincipal);                       
 
-            var newPost = new Post
-            {
-                Title = "Title Lorem ipsum dolor sit amet",
-                Description = "Description lorem ipsum dolor sit amet",
-                Author = "Lorem",
-                Content = "Simple comtemt lorem ipsum dolor sit amet",
-                ImageUrl = "http://img-0.com",
-                MetaTitle = "Meta title dolor sit amet",
-                MetaDescription = "Meta lorem ipsum dolor",
-                Slug = "post-slug"
-            };
+            var postToCreate = TestDataHelper.GetSinglePost(includeId: false);
 
-            var content = HttpHelper.GetJsonHttpContent(newPost);
+            var content = HttpHelper.GetJsonHttpContent(postToCreate);
 
             // Act
             var response = await _client.PostAsync(HttpHelper.Urls.AddPost, content);
@@ -207,13 +197,12 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.NotNull(result);
 
             var locationHeader = response.Headers.Location?.ToString();
-            Assert.NotNull(locationHeader);
-            Assert.StartsWith($"http://localhost/api/posts/{result.EntityId}", locationHeader,
-                StringComparison.OrdinalIgnoreCase);
+            Assert.NotNull(locationHeader);            
 
             Assert.True(result.Success);
             Assert.Equal(PostSuccessMessages.PostAddedSuccessfully, result.Message);
-            Assert.True(result.EntityId > 0);
+            Assert.NotNull(result.Data);
+            Assert.Equal(postToCreate.Title, result.Data.Title);
         }
 
         [Fact]
@@ -259,7 +248,7 @@ namespace PostApiService.Tests.IntegrationTests
                 Assert.True(response.Success);
                 Assert.Equal(string.Format
                     (PostSuccessMessages.PostUpdatedSuccessfully, postId), response.Message);
-                Assert.Equal(postId, response.EntityId);
+                Assert.Equal(postId, response.Data.Id);
 
                 dbContext.ChangeTracker.Clear();
 

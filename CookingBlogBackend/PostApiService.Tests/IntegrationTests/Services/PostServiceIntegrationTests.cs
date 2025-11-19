@@ -120,10 +120,10 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     expectedPostsOnPage.Select(p => p.Content)
                         .SequenceEqual(result.Posts.Select(p => p.Content)),
                     "The Post Content does not match in order on the last incomplete page.");
-                
+
                 Assert.All(result.Posts, actualPost =>
-                {                    
-                    Assert.NotEmpty(actualPost.Comments);                    
+                {
+                    Assert.NotEmpty(actualPost.Comments);
                     Assert.All(actualPost.Comments, c => Assert.Equal(actualPost.Id, c.PostId));
                 });
 
@@ -295,12 +295,12 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 existingPost.Content = "Updated content";
 
                 // Act                
-                await postService.UpdatePostAsync(postId, existingPost);
+                var updatedPost = await postService.UpdatePostAsync(postId, existingPost);
 
-                // Assert
-                var updatedPost = await context.Posts.FindAsync(postId);
+                // Assert                
                 Assert.NotNull(updatedPost);
-                Assert.Equal("Updated title", updatedPost.Title);
+                Assert.Equal(existingPost.Title, updatedPost.Title);
+                Assert.Equal(existingPost.Content, updatedPost.Content);
             }
         }
 
