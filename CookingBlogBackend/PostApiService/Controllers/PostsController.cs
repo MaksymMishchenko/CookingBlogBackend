@@ -80,7 +80,7 @@ namespace PostApiService.Controllers
 
             return CreatedAtAction("GetPostById", new { postId = addedPost.Id },
                 ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost.Id));
+                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost));
         }
 
         /// <summary>
