@@ -12,6 +12,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		Solution Items\CookingBlogBackend.postman_collection.json = Solution Items\CookingBlogBackend.postman_collection.json
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PostApiService.SeedData", "PostApiService.SeedData\PostApiService.SeedData.csproj", "{3CC7949C-900D-4F2F-83E7-A51F0F985F44}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,6 +28,10 @@ Global
 		{CE8D3347-1945-4101-88CF-3EFE311BA760}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CE8D3347-1945-4101-88CF-3EFE311BA760}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CE8D3347-1945-4101-88CF-3EFE311BA760}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3CC7949C-900D-4F2F-83E7-A51F0F985F44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3CC7949C-900D-4F2F-83E7-A51F0F985F44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3CC7949C-900D-4F2F-83E7-A51F0F985F44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3CC7949C-900D-4F2F-83E7-A51F0F985F44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
