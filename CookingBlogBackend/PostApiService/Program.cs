@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using PostApiService.Controllers.Filters;
 using PostApiService.Infrastructure;
 using PostApiService.Middlewares;
 using PostApiService.Models;
@@ -61,14 +60,11 @@ var app = builder.Build();
 app.UseCors("AllowLocalhost");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
 
-if (!app.Environment.IsEnvironment("Testing"))
-{
     await app.SeedDataAsync();
     await app.SeedUserAsync();
 }
