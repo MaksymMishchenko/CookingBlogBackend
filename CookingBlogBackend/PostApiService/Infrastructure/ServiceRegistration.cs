@@ -204,67 +204,22 @@ namespace PostApiService.Infrastructure
                 var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 await cntx.Database.EnsureDeletedAsync();
 
+
                 if (await cntx.Database.EnsureCreatedAsync())
                 {
-                    var posts = new List<Post>
-                    {
-                        new Post
-                        {
-                            Title = "First Post",
-                            Description = "Description for first post",
-                            Content = "This is the content of the first post.",
-                            Author = "Peter Jack",
-                            CreateAt = DateTime.Now,
-                            ImageUrl = "/images/placeholder.jpg",
-                            MetaTitle = "Meta title info",
-                            MetaDescription = "This is meta description",
-                            Slug = "first-post"
-                        },
-                        new Post
-                        {
-                            Title = "Second Post",
-                            Description = "Description for second post",
-                            Content = "This is the content of the second post.",
-                            Author = "Jay Way",
-                            CreateAt = DateTime.Now,
-                            ImageUrl = "/images/placeholder.jpg",
-                            MetaTitle = "Meta title info 2",
-                            MetaDescription = "This is meta description 2",
-                            Slug = "second-post"
-                        }
-                    };
+                    var postsList = SeedData.GetPostsWithComments(count: 150, commentCount: 20);
 
-                    await cntx.Posts.AddRangeAsync(posts);
-                    await cntx.SaveChangesAsync();
+                    await cntx.Posts.AddRangeAsync(postsList);
 
-                    var comments = new List<Comment>
+                    var allComments = postsList
+                        .SelectMany(p => p.Comments)
+                        .ToList();
+
+                    if (allComments.Any())
                     {
-                        new Comment
-                        {
-                            Author = "John Doe",
-                            Content = "Great post!",
-                            CreatedAt = DateTime.Now,
-                            PostId = posts[0].Id,
-                            UserId = "testUserId"
-                        },
-                        new Comment
-                        {
-                            Author = "Jane Doe",
-                            Content = "I totally agree with this!",
-                            CreatedAt = DateTime.Now,
-                            PostId = posts[0].Id,
-                            UserId = "testUserId"
-                        },
-                        new Comment
-                        {
-                            Author = "Alice",
-                            Content = "This is a comment on the second post.",
-                            CreatedAt = DateTime.Now,
-                            PostId = posts[1].Id,
-                            UserId = "testUserId"
-                        }
-                    };
-                    await cntx.Comments.AddRangeAsync(comments);
+                        await cntx.Comments.AddRangeAsync(allComments);
+                    }
+
                     await cntx.SaveChangesAsync();
                 }
             }
