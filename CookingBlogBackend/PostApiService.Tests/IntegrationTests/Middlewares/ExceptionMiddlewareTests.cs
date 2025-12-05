@@ -5,6 +5,7 @@ using NSubstitute;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Authentication;
@@ -138,12 +139,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
-
+       
         [Theory]
         [InlineData(typeof(OperationCanceledException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TimeoutException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(Exception), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
-        public async Task GetPostsWithTotalAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange
@@ -161,14 +162,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     new Exception(ResponseErrorMessages.UnexpectedErrorException),
             };
 
-            var failedTupleTask = Task.FromException<(List<Post> Posts, int TotalCount)>(exceptionToThrow);
+            var failedTupleTask = Task.FromException<(List<PostListDto> Posts, int TotalCount)>(exceptionToThrow);
 
-            postServiceMock?.GetPostsWithTotalAsync
+            postServiceMock?.GetPostsWithTotalPostCountAsync
                (Arg.Any<int>(),
                Arg.Any<int>(),
-               Arg.Any<int>(),
-               Arg.Any<int>(),
-               Arg.Any<bool>(),
                Arg.Any<CancellationToken>())
                .Returns(failedTupleTask);
 

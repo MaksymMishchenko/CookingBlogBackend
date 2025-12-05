@@ -11,6 +11,6 @@ namespace PostApiService.Repositories
         Task DeleteAsync(T entity);
         IQueryable<T> AsQueryable();
         Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
-        Task<int> GetTotalCountAsync();
+        Task<int> GetTotalCountAsync(CancellationToken cancellationToken = default);
     }
 }

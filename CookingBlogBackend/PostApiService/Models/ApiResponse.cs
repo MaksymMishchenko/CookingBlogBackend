@@ -69,7 +69,7 @@ namespace PostApiService.Models
             };
         }
 
-        public static ApiResponse<T> CreateSuccessResponse(
+        public static ApiResponse<T> CreatePaginatedListResponse(
             string message,
             List<T>? dataList = null,
             int pageNumber = 1,

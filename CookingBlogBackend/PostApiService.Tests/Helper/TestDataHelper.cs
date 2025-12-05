@@ -1,4 +1,5 @@
 ﻿using PostApiService.Models;
+using PostApiService.Models.Dto;
 
 namespace PostApiService.Tests.Helper
 {
@@ -34,7 +35,7 @@ namespace PostApiService.Tests.Helper
 
             return posts;
         }
-       
+
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
             int commentCount,
@@ -70,19 +71,52 @@ namespace PostApiService.Tests.Helper
                         .Generate(commentCount);
                 })
                 .UseSeed(seed);
-        }        
+        }
+
+        public static List<PostListDto> GetPostListDtos(int count)
+        {
+            var posts = GetPostsWithComments(count, generateIds: true);
+
+            return posts.Select(p => new PostListDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                Author = p.Author,
+                CreatedAt = p.CreateAt,
+                Description = p.Description,
+                CommentsCount = p.Comments?.Count ?? 0
+            }).ToList();
+        }
+
+        public static List<PostListDto> GetEmptyPostListDtos()
+        {
+            return new List<PostListDto>();
+        }
+
+        public static void AssertPostListDtoMapping(Post expectedPost, PostListDto actualDto, int expectedCommentCount)
+        {
+            Assert.NotNull(actualDto);
+            Assert.Equal(expectedPost.Id, actualDto.Id);
+            Assert.Equal(expectedPost.Title, actualDto.Title);
+            Assert.Equal(expectedPost.Slug, actualDto.Slug);
+            Assert.Equal(expectedPost.Author, actualDto.Author);
+            Assert.Equal(expectedPost.Description, actualDto.Description);
+            Assert.Equal(expectedPost.CreateAt, actualDto.CreatedAt);
+            Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
+        }
 
         public static Post GetSinglePost(int? id = 1, bool includeId = true)
-        {           
-            int finalId = 0; 
+        {
+            int finalId = 0;
 
             if (includeId && id.HasValue)
             {
                 finalId = id.Value;
-            }            
+            }
 
             return new Post
-            {                
+            {
                 Id = finalId,
                 Title = "Lorem ipsum dolor sit amet",
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
@@ -107,7 +141,7 @@ namespace PostApiService.Tests.Helper
                 new Comment { PostId = 1, Id = 2, UserId = "testUserId", Content = "This is the test comment 2." },
                 new Comment { PostId = 1, Id = 3, UserId = "testUserId", Content = "This is the test comment 3." }
             };
-        }              
+        }
 
         public static List<Post> GetPostsWithComments()
         {

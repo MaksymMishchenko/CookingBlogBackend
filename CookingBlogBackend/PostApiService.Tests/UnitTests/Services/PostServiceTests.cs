@@ -17,58 +17,170 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetPostsWithTotalAsync_ShouldReturnPagedPosts()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturn_PagedPostsWithTotalPostsAndCommentsCount()
         {
-            // Arrange
-            const int expectedTotalCount = 25;
-            int pageNumber = 1;
-            int pageSize = 10;
+            // Arrange            
+            const int PageNumber = 1;
+            const int PageSize = 10;
+            const int ExpectedTotalPostCount = 25;
+            const int ExpectedCommentCountPerPost = 11;
 
-
-            var testPosts = TestDataHelper.GetPostsWithComments(count: expectedTotalCount, commentCount: 10);
+            var testPosts = TestDataHelper.GetPostsWithComments
+                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            _mockRepository.GetTotalCountAsync()
-                .Returns(Task.FromResult(expectedTotalCount));
+            _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(ExpectedTotalPostCount));
 
             var service = new PostService(_mockRepository);
 
             // Act
-            var result = await service.GetPostsWithTotalAsync(pageNumber, pageSize);
+            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
             // Assert
-            Assert.Equal(pageSize, result.Posts.Count);
-            Assert.Equal(expectedTotalCount, result.TotalCount);
+            Assert.Equal(PageSize, result.Posts.Count);
+            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+
+            Assert.All(result.Posts, (postDto, index) =>
+            {
+                int expectedIndex = (PageNumber - 1) * PageSize + index;
+                var expectedPost = testPosts[expectedIndex];
+
+                TestDataHelper.AssertPostListDtoMapping
+                (expectedPost, postDto, ExpectedCommentCountPerPost);
+            });
         }
 
         [Fact]
-        public async Task GetPostsWithTotalAsync_ShouldReturnPaginatedPosts_WithoutComments()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnPaginatedPostsWithTotalPostsAndCommentsCount()
         {
             // Arrange
-            const int expectedTotalCount = 23;
-            var pageNumber = 2;
-            var pageSize = 10;
+            const int ExpectedTotalPostCount = 23;
+            const int ExpectedCommentCountPerPost = 7;
+            const int PageNumber = 2;
+            const int PageSize = 10;
 
-            var testPosts = TestDataHelper.GetPostsWithComments(count: expectedTotalCount, generateComments: false);
+            var testPosts = TestDataHelper.GetPostsWithComments
+                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
-            _mockRepository.GetTotalCountAsync().Returns(Task.FromResult(expectedTotalCount));
+            _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(ExpectedTotalPostCount));
 
             var service = new PostService(_mockRepository);
 
             // Act
-            var result = await service.GetPostsWithTotalAsync(pageNumber, pageSize, includeComments: false);
+            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
             // Assert
-            Assert.Equal(pageSize, result.Posts.Count);
-            Assert.Equal(expectedTotalCount, result.TotalCount);
-            Assert.All(result.Posts, post =>
+            Assert.Equal(PageSize, result.Posts.Count);
+            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+
+            Assert.All(result.Posts, (postDto, index) =>
             {
-                Assert.NotNull(post);
-                Assert.Empty(post.Comments);
+                int expectedIndex = (PageNumber - 1) * PageSize + index;
+                var expectedPost = testPosts[expectedIndex];
+
+                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
+            });
+        }
+
+        [Fact]
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnLastPartialPage()
+        {
+            // Arrange
+            const int PageNumber = 3;
+            const int PageSize = 10;
+            const int ExpectedTotalPostCount = 25;
+            const int ExpectedCommentCountPerPost = 5;
+            const int ExpectedCountOnPage = 5;
+
+            var testPosts = TestDataHelper.GetPostsWithComments
+                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost, generateIds: true);
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+
+            _mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(ExpectedTotalPostCount));
+
+            var service = new PostService(_mockRepository);
+
+            // Act
+            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+
+            // Assert            
+            Assert.Equal(ExpectedCountOnPage, result.Posts.Count);
+            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+
+            Assert.All(result.Posts, (postDto, index) =>
+            {
+                int expectedIndex = (PageNumber - 1) * PageSize + index;
+                var expectedPost = testPosts[expectedIndex];
+
+                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
+            });
+        }
+
+        [Fact]
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenPageNumberIsTooLarge()
+        {
+            // Arrange
+            const int PageNumber = 5;
+            const int PageSize = 10;
+            const int ExpectedTotalPostCount = 25;
+            const int ExpectedCommentCountPerPost = 1;
+
+            var testPosts = TestDataHelper.GetPostsWithComments
+                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost, generateIds: true);
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+
+            _mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(ExpectedTotalPostCount));
+
+            var service = new PostService(_mockRepository);
+
+            // Act
+            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+
+            // Assert            
+            Assert.Empty(result.Posts);
+            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+        }
+
+        [Fact]
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnFullPage_WhenTotalCountEqualsPageSize()
+        {
+            // Arrange
+            const int PageNumber = 1;
+            const int PageSize = 15;
+            const int ExpectedTotalPostCount = 15;
+            const int ExpectedCommentCountPerPost = 5;
+
+            var testPosts = TestDataHelper.GetPostsWithComments
+                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost, generateIds: true);
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+
+            _mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(ExpectedTotalPostCount));
+
+            var service = new PostService(_mockRepository);
+
+            // Act
+            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+
+            // Assert           
+            Assert.Equal(ExpectedTotalPostCount, result.Posts.Count);
+            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+
+            Assert.All(result.Posts, (postDto, index) =>
+            {
+                var expectedPost = testPosts[index];
+                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
             });
         }
 
@@ -187,7 +299,7 @@ namespace PostApiService.Tests.UnitTests
             await _mockRepository.Received(1)
                 .UpdateAsync(Arg.Is<Post>(p =>
                     p.Title == "New Title" &&
-            p.Slug == "new-slug-value" && 
+            p.Slug == "new-slug-value" &&
             p.Content == originalPost.Content));
         }
 

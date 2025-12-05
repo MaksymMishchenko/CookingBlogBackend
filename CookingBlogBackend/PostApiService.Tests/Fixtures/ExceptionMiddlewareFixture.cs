@@ -8,6 +8,7 @@ using NSubstitute;
 using PostApiService.Contexts;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -38,23 +39,20 @@ namespace PostApiService.Tests.Fixtures
             services.RemoveAll(typeof(IPostService));
 
             var postServiceMock = Substitute.For<IPostService>();
-            var mockPosts = new List<Post> {
-                new Post { Title = "Mocked Post" }
+            var mockPosts = new List<PostListDto> {
+                new PostListDto { Title = "Mocked Post" }
             };
 
             const int mockTotalCount = 100;
 
-            postServiceMock.GetPostsWithTotalAsync(
+            postServiceMock.GetPostsWithTotalPostCountAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<bool>(),
                 Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult((
-                    Posts: mockPosts,         
+                    Posts: mockPosts,
                     TotalCount: mockTotalCount
-                )));            
+                )));
 
             postServiceMock.GetPostByIdAsync(
                 Arg.Any<int>(),

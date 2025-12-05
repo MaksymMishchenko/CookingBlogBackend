@@ -2,6 +2,7 @@
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto;
 using PostApiService.Repositories;
 using System.Data;
 using System.Data.Common;
@@ -17,58 +18,36 @@ namespace PostApiService.Services
             _repository = repository;
         }
 
-        private void ProcessComments(List<Post> posts, bool includeComments, int commentPageNumber, int commentsPerPage)
-        {
-            if (includeComments)
-            {
-                foreach (var post in posts)
-                {
-                    post.Comments = post.Comments
-                        .OrderBy(c => c.CreatedAt)
-                        .Skip((commentPageNumber - 1) * commentsPerPage)
-                        .Take(commentsPerPage)
-                        .ToList();
-                }
-            }
-            else
-            {
-                foreach (var post in posts)
-                {
-                    post.Comments = new List<Comment>();
-                }
-            }
-        }
-
         /// <summary>
-        /// Retrieves a paginated list of posts and their total count from the database, 
-        /// with optional inclusion and pagination of comments.
+        /// Retrieves a paginated list of posts, including the **aggregated comment count** for each post,
+        /// and the total count of all posts in the database.
         /// </summary>
-        public async Task<(List<Post> Posts, int TotalCount)> GetPostsWithTotalAsync(
+        public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
             int pageNumber = 1,
             int pageSize = 10,
-            int commentPageNumber = 1,
-            int commentsPerPage = 10,
-            bool includeComments = true,
             CancellationToken cancellationToken = default)
         {
-            var query = _repository.AsQueryable();
+            var totalPostCount = await _repository.GetTotalCountAsync(cancellationToken);
 
-            if (includeComments)
-            {
-                query = query.Include(p => p.Comments);
-            }
+            var query = _repository.AsQueryable();
 
             var posts = await query
                 .OrderBy(p => p.Id)
+                .Select(p => new PostListDto
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Slug = p.Slug,
+                    Author = p.Author,
+                    CreatedAt = p.CreateAt,
+                    Description = p.Description,                    
+                    CommentsCount = p.Comments.Count()
+                })
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
-            ProcessComments(posts, includeComments, commentPageNumber, commentsPerPage);
-
-            var totalCount = await _repository.GetTotalCountAsync();
-
-            return (posts, totalCount);
+            return (posts, totalPostCount);
         }
 
         /// <summary>
@@ -140,7 +119,7 @@ namespace PostApiService.Services
                 existingPost.MetaDescription = post.MetaDescription;
                 existingPost.Slug = post.Slug;
 
-               await _repository.UpdateAsync(existingPost);
+                await _repository.UpdateAsync(existingPost);
 
                 return existingPost;
             }
