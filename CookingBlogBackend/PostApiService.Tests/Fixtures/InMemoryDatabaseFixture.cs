@@ -25,6 +25,16 @@ namespace PostApiService.Tests.Fixtures
                 .ToList();
         }
 
+        public List<Post> GeneratePostsWithKeywords(string query, int totalPostCount)
+        {
+            return TestDataHelper.GeneratePostsWithKeyword(query, totalPostCount);
+        }
+
+        public List<Post> GeneratePostsWithKeywords()
+        {
+            return TestDataHelper.GetPostsForOrLogic();
+        }        
+
         public async Task SeedDatabaseAsync(ApplicationDbContext context, List<Post> postsToSeed)
         {
             await context.Database.EnsureDeletedAsync();

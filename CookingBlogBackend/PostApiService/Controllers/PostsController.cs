@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PostApiService.Controllers.Filters;
+using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
@@ -49,6 +50,31 @@ namespace PostApiService.Controllers
                 query.PageNumber,
                 query.PageSize,
                 totalPostCount));
+        }
+
+        /// <summary>
+        /// Searches posts by query string and returns a paginated list of results 
+        /// along with the total count of matched records.                  
+        [HttpGet("search")]
+        [AllowAnonymous]
+        [ValidateSearchQuery]
+        [ValidatePaginationParameters]
+        public async Task<IActionResult> SearchPostsWithTotalCountAsync([FromQuery] SearchPostQueryParameters query,
+        CancellationToken cancellationToken = default)
+        {
+            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync(
+                query.QueryString,
+                query.PageNumber,
+                query.PageSize,
+                cancellationToken);            
+
+            return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
+                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, searchPostList.Count),
+                query.QueryString,
+                searchPostList,
+                query.PageNumber,
+                query.PageSize,
+                searchTotalPosts));
         }
 
         /// <summary>

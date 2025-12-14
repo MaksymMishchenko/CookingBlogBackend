@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using PostApiService.Controllers;
 using PostApiService.Exceptions;
@@ -127,6 +128,111 @@ namespace PostApiService.Tests.UnitTests.Controllers
                     Arg.Any<int>(),
                     Arg.Any<int>(),
                     Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task SearchPosts_ShouldReturnOk_WhenPostsExist()
+        {
+            // Arrange
+            const int ExpectedPageNumber = 1;
+            const int ExpectedPageSize = 3;
+            const int MockSearchedTotalPosts = 3;
+
+            var queryParameters = new SearchPostQueryParameters();
+            queryParameters.PageNumber = ExpectedPageNumber;
+            queryParameters.PageSize = ExpectedPageSize;
+
+            queryParameters.QueryString = "Chili";
+
+            var posts = TestDataHelper.GetSearchedPostListDtos();
+            const int TotalPostCount = 3;
+
+            _mockPostService.SearchPostsWithTotalCountAsync(
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult((
+                    SearchPostList: posts,
+                    SearchTotalPosts: TotalPostCount
+                )));
+
+            // Act
+            var result = await _postsController.SearchPostsWithTotalCountAsync(queryParameters);
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<SearchPostListDto>>(okResult.Value);
+
+            // Assert
+            Assert.NotNull(response);
+            Assert.True(response.Success);
+            Assert.NotNull(response.DataList);
+            Assert.Equal(string.Format
+                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+
+            Assert.Equal(ExpectedPageNumber, response.PageNumber);
+            Assert.Equal(ExpectedPageSize, response.PageSize);
+            Assert.Equal(MockSearchedTotalPosts, response.TotalCount);
+            Assert.Equal("Chili", response.SearchQuery);
+
+            await _mockPostService.Received(1)
+                .SearchPostsWithTotalCountAsync(
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task SearchPosts_ShouldReturnOkWithEmptyList_WhenNoPostsMatch()
+        {
+            // Arrange
+            var query = new SearchPostQueryParameters();
+            query.QueryString = "NonExistent";
+            query.PageNumber = 1;
+            query.PageSize = 10;
+
+            var emptySearchPostList = TestDataHelper.GetEmptySearchPostListDtos();
+
+            _mockPostService.SearchPostsWithTotalCountAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns((emptySearchPostList, 0));
+
+            // Act
+            var result = await _postsController.SearchPostsWithTotalCountAsync(query);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<SearchPostListDto>>(okResult.Value);
+            Assert.Empty(response.DataList);
+            Assert.Equal(0, response.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldPassCancellationTokenToService()
+        {
+            // Arrange
+            var queryParameters = new SearchPostQueryParameters { QueryString = "Chili" };
+
+            using var cts = new CancellationTokenSource();
+            var expectedToken = cts.Token;
+
+            _mockPostService.SearchPostsWithTotalCountAsync(
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                expectedToken)
+                .Returns(Task.FromResult((
+                    searchPostList: new List<SearchPostListDto>(),
+                    searchTotalPosts: 0)));
+
+            // Act            
+            await _postsController.SearchPostsWithTotalCountAsync(queryParameters, expectedToken);
+
+            // Assert           
+            await _mockPostService.Received(1).SearchPostsWithTotalCountAsync(
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                expectedToken);
         }
 
         [Fact]

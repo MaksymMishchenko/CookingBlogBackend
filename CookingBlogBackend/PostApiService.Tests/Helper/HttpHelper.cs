@@ -12,6 +12,7 @@ namespace PostApiService.Tests.Helper
         internal static class Urls
         {            
             public readonly static string PaginatedPostsUrl = "/api/posts?pageNumber={0}&pageSize={1}";
+            public readonly static string SearchPostsUrl = "/api/posts/search?queryString={0}&pageNumber={1}&pageSize={2}";
             public readonly static string GetPostById = "/api/Posts/{0}";
             public readonly static string AddPost = "/api/posts";
             public readonly static string UpdatePost = "/api/posts/2";

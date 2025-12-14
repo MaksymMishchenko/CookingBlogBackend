@@ -145,6 +145,54 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task SearchPostsWithTotalCountAsync_Pagination_ShouldReturnsSuccessAndCorrectData()
+        {
+            // Arrange
+            const int PageNumber = 1;
+            const int PageSize = 3;
+            const int ExpectedTotalPosts = 3;
+            const string Query = "Chili";
+            var url = string.Format(HttpHelper.Urls.SearchPostsUrl, Query, PageNumber, PageSize);
+
+            var posts = TestDataHelper.GetSearchedPostWithoutIds();
+            await SeedDatabaseAsync(posts);
+
+            // Act            
+            var response = await _client.GetAsync(url);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<SearchPostListDto>>();
+
+            response.EnsureSuccessStatusCode();
+
+            // Assert
+            Assert.NotNull(content);
+            Assert.True(content.Success);
+            Assert.Equal(string.Format(PostSuccessMessages.PostsRetrievedSuccessfully,
+                ExpectedTotalPosts), content.Message);
+
+            Assert.NotNull(content.DataList);
+            Assert.Equal(PageSize, content.DataList.Count);
+
+            Assert.Equal(ExpectedTotalPosts, content.TotalCount);
+            Assert.Equal("Chili", content.SearchQuery);
+        }
+
+        [Fact]
+        public async Task Search_ShouldReturnBadRequest_WhenQueryIsTooShort()
+        {
+            // Arrange
+            const int PageNumber = 1;
+            const int PageSize = 3;
+            const string EmptyQuery = " ";
+            var url = string.Format(HttpHelper.Urls.SearchPostsUrl, EmptyQuery, PageNumber, PageSize);
+
+            // Act            
+            var response = await _client.GetAsync(url);
+
+            // Assert            
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
         {
             // Arrange            

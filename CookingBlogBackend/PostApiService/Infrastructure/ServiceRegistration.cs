@@ -33,6 +33,7 @@ namespace PostApiService.Infrastructure
 
             services.AddTransient<IPostService, PostService>();
             services.AddTransient<ICommentService, CommentService>();
+            services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
 
             return services;
         }

@@ -24,7 +24,40 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 
             var repo = new Repository<Post>(context);
-            var service = new PostService(repo);
+            var snippet = new SnippetGeneratorService();
+            var service = new PostService(repo, snippet);
+
+            return (service, postsToSeed);
+        }
+
+        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDbForSearch
+            (out ApplicationDbContext context, string keyword, int totalPostCount = 25)
+        {
+            context = _fixture.CreateUniqueContext();
+
+            var postsToSeed = _fixture.GeneratePostsWithKeywords(keyword, totalPostCount);
+
+            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+
+            var repo = new Repository<Post>(context);
+            var snippet = new SnippetGeneratorService();
+            var service = new PostService(repo, snippet);
+
+            return (service, postsToSeed);
+        }
+
+        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDbForSearch
+            (out ApplicationDbContext context)
+        {
+            context = _fixture.CreateUniqueContext();
+
+            var postsToSeed = _fixture.GeneratePostsWithKeywords();
+
+            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+
+            var repo = new Repository<Post>(context);
+            var snippet = new SnippetGeneratorService();
+            var service = new PostService(repo, snippet);
 
             return (service, postsToSeed);
         }
@@ -133,6 +166,62 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 // Assert                            
                 Assert.Empty(posts);
                 Assert.Equal(ExpectedTotalPosts, totalPostCount);
+            }
+        }
+
+        [Fact]
+        public async Task SearchPosts_ShouldFindQuery_InTitleOrDescriptionOrContent()
+        {
+            // Arrange
+            ApplicationDbContext context;
+            var query = "Chili";
+
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
+                (out context);
+
+            // Act
+            var (result, totalCount) = await postService.SearchPostsWithTotalCountAsync(query);
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Equal(3, result.Count);
+            Assert.All(result, r =>
+            {
+                bool foundInTitle = r.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
+                bool foundInSnippet = r.SearchSnippet.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+                if (r.Id == 2)
+                {
+                    Assert.Empty(r.SearchSnippet);
+                }
+                else
+                {
+                    Assert.True(foundInTitle || foundInSnippet);
+                }
+            });
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturnPagesSearchedPosts_WithTotalCount()
+        {
+            // Arrange
+            ApplicationDbContext context;
+            const int PageNumber = 1;
+            const int PageSize = 10;
+            const int PostsCountToSeed = 10;
+            const string Query = "Chili";            
+
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
+                (out context, Query, PostsCountToSeed);
+
+            using (context)
+            {
+                // Act            
+                var (posts, totalPostCount) = await postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+
+                // Assert                            
+                Assert.NotEmpty(posts);
+                Assert.Equal(PostsCountToSeed, posts.Count);
             }
         }
 

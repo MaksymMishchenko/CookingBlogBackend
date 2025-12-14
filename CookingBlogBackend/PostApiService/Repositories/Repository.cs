@@ -55,5 +55,13 @@ namespace PostApiService.Repositories
                 .AsNoTracking()
                 .CountAsync(cancellationToken);
         }
+
+        public IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate)
+        {            
+            return _dbSet
+                .AsQueryable()
+                .AsNoTracking()
+                .Where(predicate);
+        }
     }
 }

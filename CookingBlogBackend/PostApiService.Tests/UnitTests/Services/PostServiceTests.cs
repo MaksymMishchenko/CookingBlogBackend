@@ -1,5 +1,6 @@
 ﻿using MockQueryable;
 using NSubstitute;
+using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -10,10 +11,12 @@ namespace PostApiService.Tests.UnitTests
     public class PostServiceTests
     {
         private readonly IRepository<Post> _mockRepository;
+        private readonly ISnippetGeneratorService _mockSnippetGenerator;
 
         public PostServiceTests()
         {
             _mockRepository = Substitute.For<IRepository<Post>>();
+            _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
         }
 
         [Fact]
@@ -34,7 +37,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(ExpectedTotalPostCount));
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
@@ -70,7 +73,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(ExpectedTotalPostCount));
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
@@ -106,7 +109,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(ExpectedTotalPostCount));
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
@@ -141,7 +144,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(ExpectedTotalPostCount));
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
@@ -168,7 +171,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(ExpectedTotalPostCount));
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
@@ -185,6 +188,168 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_PagedSearchPosts_WithTotalCount()
+        {
+            // Arrange
+            const string Query = "Chili";
+            const string Expected_Title = "Ultimate Classic Chili Cheeseburger Recipe";
+            const int PageNumber = 2;
+            const int PageSize = 2;
+
+            const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
+            _mockSnippetGenerator
+                .CreateSnippet(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+                .Returns(ExpectedSnippet);
+
+            var allTestPosts = TestDataHelper.GetSearchedPost();
+
+            var filteredPosts = allTestPosts
+                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
+                .ToList();
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            // Act
+            var result = await service.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+
+            // Assert            
+            Assert.Equal(3, result.SearchTotalPosts);
+
+            Assert.Single(result.SearchPostList);
+
+            Assert.Equal(1, result.SearchPostList.First().Id);
+            Assert.Equal(Expected_Title, result.SearchPostList.First().Title);
+
+            Assert.Equal(ExpectedSnippet, result.SearchPostList.First().SearchSnippet);
+
+            var expectedPostModel = allTestPosts.First(p => p.Id == 1);
+            var actualDto = result.SearchPostList.First();
+
+            TestDataHelper.AssertSearchPostsWithTotalCountAsync(expectedPostModel, actualDto);
+
+            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_EmptyPostsList_WithZeroTotalCount()
+        {
+            // Arrange
+            const string Query = "Not Found Query";
+            const int ExpectedPostsCount = 0;
+            const int PageNumber = 2;
+            const int PageSize = 2;
+
+            var allTestPosts = TestDataHelper.GetSearchedPost();
+
+            var filteredPosts = allTestPosts
+                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
+                .ToList();
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            // Act
+            var result = await service.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+
+            // Assert
+            Assert.NotNull(result.SearchPostList);
+            Assert.Empty(result.SearchPostList);
+            Assert.Equal(ExpectedPostsCount, result.SearchTotalPosts);
+
+            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_EmptyList_WhenPageNumberIsOutOfRange()
+        {
+            // Arrange
+            const string Query = "Chili";
+            const int PageNumber = 10;
+            const int PageSize = 2;
+
+            var allTestPosts = TestDataHelper.GetSearchedPost();
+
+            const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
+            _mockSnippetGenerator
+                .CreateSnippet(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+                .Returns(ExpectedSnippet);
+
+            var filteredPosts = allTestPosts
+                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
+                .ToList();
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            // Act
+            var result = await service.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+
+            // Assert
+            Assert.Equal(3, result.SearchTotalPosts);
+            Assert.Empty(result.SearchPostList);
+
+            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_FirstPage_WithDefaultParameters()
+        {
+            // Arrange
+            const string Query = "Chili";
+
+            var allTestPosts = TestDataHelper.GetSearchedPost();
+
+            const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
+            _mockSnippetGenerator
+                .CreateSnippet(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
+                .Returns(ExpectedSnippet);
+
+            var filteredPosts = allTestPosts
+                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
+                .ToList();
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            var expectedSortedPosts = filteredPosts
+                .OrderByDescending(p => p.CreateAt)
+                .ToList();
+
+            // Act
+            var result = await service.SearchPostsWithTotalCountAsync(Query);
+
+            // Assert
+            Assert.Equal(3, result.SearchTotalPosts);
+            Assert.Equal(3, result.SearchPostList.Count);
+            Assert.Equal(2, result.SearchPostList.First().Id);
+
+            Assert.All(result.SearchPostList, (searchPostDto, index) =>
+            {
+                var expectedPost = expectedSortedPosts[index];
+                TestDataHelper.AssertSearchPostsWithTotalCountAsync(expectedPost, searchPostDto);
+
+                Assert.Equal(ExpectedSnippet, searchPostDto.SearchSnippet);
+            });
+
+            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
+
+            _mockSnippetGenerator.Received(3).CreateSnippet(
+                Arg.Any<string>(),
+                Arg.Is(Query),
+                Arg.Is(100)
+            );
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnPost_WithComments()
         {
             // Arrange
@@ -194,7 +359,7 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var post = await service.GetPostByIdAsync(postId, includeComments: true);
@@ -215,7 +380,7 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var post = await service.GetPostByIdAsync(postId, includeComments: false);
@@ -238,7 +403,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.AddAsync(newPost, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(newPost));
 
-            var postService = new PostService(_mockRepository);
+            var postService = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var result = await postService.AddPostAsync(newPost);
@@ -282,7 +447,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.UpdateAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(_mockRepository);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             var resultPost = await service.UpdatePostAsync(postId, inputPostData);
@@ -317,7 +482,7 @@ namespace PostApiService.Tests.UnitTests
             mockRepository.DeleteAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(mockRepository);
+            var service = new PostService(mockRepository, _mockSnippetGenerator);
 
             // Act
             await service.DeletePostAsync(post.Id);

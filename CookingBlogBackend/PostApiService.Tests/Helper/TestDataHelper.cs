@@ -73,6 +73,95 @@ namespace PostApiService.Tests.Helper
                 .UseSeed(seed);
         }
 
+        public static List<Post> GeneratePostsWithKeyword
+            (string keyword, int count, bool generateIds = false)
+        {
+            int postId = 1;
+            var posts = new List<Post>();
+            var faker = new Faker<Post>("en")
+                .RuleFor(p => p.Id, _ => 0)
+                .RuleFor(p => p.CreateAt, f => f.Date.Past(1));
+
+            for (int i = 0; i < count; i++)
+            {
+                var post = faker.Generate();
+
+                if (generateIds)
+                {
+                    post.Id = postId++;
+                }
+
+                post.Title = $"{keyword} Post Title {i}";
+                post.Description = $"A detailed description about {keyword}.";
+                post.Content = $"A detailed content about {keyword}.";
+                post.Author = "Author";
+                post.ImageUrl = "image.jpeg";
+                post.MetaTitle = "Meta title";
+                post.MetaDescription = "Meta description";
+                post.Slug = "post-slug";
+
+                posts.Add(post);
+            }
+            return posts;
+        }
+
+        public static List<Post> GetPostsForOrLogic()
+        {
+            var baseTime = DateTime.UtcNow;
+
+            return new List<Post>
+            {
+                new Post
+                {
+                    Title = "Chili Recipe",
+                    Description = "Simple cooking guide",
+                    Content = "This is a long content about cooking without keywords.",
+                    Author = "Chef John",
+                    CreateAt = baseTime.AddHours(-1),
+                    ImageUrl = "https://example.com/image1.jpg",
+                    MetaTitle = "Chili Recipe Title",
+                    MetaDescription = "Meta description about chili",
+                    Slug = "chili-recipe-title"
+                },
+                new Post
+                {
+                    Title = "Secret Dish",
+                    Description = "The Best Chili ever made in Texas",
+                    Content = "Try to guess what is inside this amazing secret dish.",
+                    Author = "Jane Doe",
+                    CreateAt = baseTime.AddHours(-2),
+                    ImageUrl = "https://example.com/image2.jpg",
+                    MetaTitle = "Secret Dish Meta",
+                    MetaDescription = "Meta description for secret dish",
+                    Slug = "secret-dish-desc"
+                },
+                new Post
+                {
+                    Title = "Spicy Ingredient",
+                    Description = "Information about spices",
+                    Content = "Actually, the secret ingredient is Chili, you should try it.",
+                    Author = "Admin",
+                    CreateAt = baseTime.AddHours(-3),
+                    ImageUrl = "https://example.com/image3.jpg",
+                    MetaTitle = "Ingredient Meta",
+                    MetaDescription = "Meta description for ingredient",
+                    Slug = "spicy-ingredient-content"
+                },
+                new Post
+                {
+                    Title = "Healthy Food",
+                    Description = "Fresh Green Salad",
+                    Content = "No spicy things in this recipe, only vegetables.",
+                    Author = "Healthy Life",
+                    CreateAt = baseTime.AddHours(-4),
+                    ImageUrl = "https://example.com/image4.jpg",
+                    MetaTitle = "Salad Meta",
+                    MetaDescription = "Meta description for salad",
+                    Slug = "healthy-food-salad"
+                }
+            };
+        }
+
         public static List<PostListDto> GetPostListDtos(int count)
         {
             var posts = GetPostsWithComments(count, generateIds: true);
@@ -94,6 +183,11 @@ namespace PostApiService.Tests.Helper
             return new List<PostListDto>();
         }
 
+        public static List<SearchPostListDto> GetEmptySearchPostListDtos()
+        {
+            return new List<SearchPostListDto>();
+        }
+
         public static void AssertPostListDtoMapping(Post expectedPost, PostListDto actualDto, int expectedCommentCount)
         {
             Assert.NotNull(actualDto);
@@ -104,6 +198,136 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Description, actualDto.Description);
             Assert.Equal(expectedPost.CreateAt, actualDto.CreatedAt);
             Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
+        }
+
+        public static void AssertSearchPostsWithTotalCountAsync(Post expectedPost, SearchPostListDto actualDto)
+        {
+            Assert.NotNull(actualDto);
+            Assert.Equal(expectedPost.Id, actualDto.Id);
+            Assert.Equal(expectedPost.Title, actualDto.Title);
+            Assert.Equal(expectedPost.Slug, actualDto.Slug);
+            Assert.Equal(expectedPost.Author, actualDto.Author);
+        }
+
+        public static List<Post> GetSearchedPost()
+        {
+            return new List<Post>
+            {
+                new Post
+                {
+                    Id = 1,
+                    Title = "Ultimate Classic Chili Cheeseburger Recipe",
+                    Slug = "ultimate-chili-cheeseburger",
+                    Description = "How to grill the perfect juicy patty and melt the cheese.",
+                    Content = "Tips for brioche buns, sharp cheddar, and secret sauce.",
+                    CreateAt = DateTime.Now.AddHours(-10),
+                    Author = "Chef Mike"
+                },
+                new Post
+                {
+                    Id = 2,
+                    Title = "Easy Homemade Chili Cheese Dog Sauce",
+                    Slug = "easy-chili-cheese-dog",
+                    Description = "Stretch and fold technique for thin, foldable crust.",
+                    Content = "High-protein flour, proofing secrets, and oven temps.",
+                    CreateAt = DateTime.Now.AddHours(-1),
+                    Author = "Peter"
+                },
+                new Post
+                {
+                    Id = 3,
+                    Title = "Authentic Texas Chili (No Beans)",
+                    Slug = "texas-chili-no-beans",
+                    Description = "The official recipe for rich, smoky, bean-free Texas chili.",
+                    Content = "Using chili powder, beef chuck, and dried peppers for depth.",
+                    CreateAt = DateTime.Now.AddHours(-6),
+                    Author = "Sarah"
+                },
+                new Post
+                {
+                    Id = 4,
+                    Title = "Quick 30-Minute Chicken Tacos",
+                    Slug = "quick-chicken-tacos",
+                    Description = "Simple seasoning mix and fast pan-searing method.",
+                    Content = "Shredded chicken, lime, and fresh cilantro garnish.",
+                    CreateAt = DateTime.Now.AddHours(-4),
+                    Author = "Monika"
+                },
+            };
+        }
+
+        public static List<Post> GetSearchedPostWithoutIds()
+        {
+            return new List<Post>
+            {
+                new Post
+                {
+                    Title = "Ultimate Classic Chili Cheeseburger Recipe",
+                    Slug = "ultimate-chili-cheeseburger",
+                    Description = "How to grill the perfect juicy patty and melt the cheese.",
+                    Content = "Tips for brioche buns, sharp cheddar, and secret sauce.",
+                    CreateAt = DateTime.Now.AddHours(-10),
+                    Author = "Chef Mike",
+                    MetaTitle = "Ultimate Classic Chili",
+                    MetaDescription = "Perfect juicy patty and melt the cheese",
+                    ImageUrl = "image1.jpg",
+                    Comments = new List<Comment>()
+                },
+                new Post
+                {
+                    Title = "Easy Homemade Chili Cheese Dog Sauce",
+                    Slug = "easy-chili-cheese-dog",
+                    Description = "Stretch and fold technique for thin, foldable crust.",
+                    Content = "High-protein flour, proofing secrets, and oven temps.",
+                    CreateAt = DateTime.Now.AddHours(-1),
+                    Author = "Peter",
+                    MetaTitle = "Easy Homemade Chili",
+                    MetaDescription = "High-protein flour",
+                    ImageUrl = "image2.jpg",
+                    Comments = new List<Comment>()
+                },
+                new Post
+                {
+                    Title = "Authentic Texas Chili (No Beans)",
+                    Slug = "texas-chili-no-beans",
+                    Description = "The official recipe for rich, smoky, bean-free Texas chili.",
+                    Content = "Using chili powder, beef chuck, and dried peppers for depth.",
+                    CreateAt = DateTime.Now.AddHours(-6),
+                    Author = "Sarah",
+                    MetaTitle = "Authentic Texas Chili",
+                    MetaDescription = "The official recipe for rich",
+                    ImageUrl = "image3.jpg",
+                    Comments = new List<Comment>()
+                },
+                new Post
+                {
+                    Title = "Quick 30-Minute Chicken Tacos",
+                    Slug = "quick-chicken-tacos",
+                    Description = "Simple seasoning mix and fast pan-searing method.",
+                    Content = "Shredded chicken, lime, and fresh cilantro garnish.",
+                    CreateAt = DateTime.Now.AddHours(-4),
+                    Author = "Monika",
+                    MetaTitle = "Quick 30-Minute Chicken Tacos",
+                    MetaDescription = "Simple seasoning mix",
+                    ImageUrl = "image4.jpg",
+                    Comments = new List<Comment>()
+                },
+            };
+        }
+
+        public static List<SearchPostListDto> GetSearchedPostListDtos()
+        {
+            var posts = GetSearchedPost();
+
+            return posts.Select(p => new SearchPostListDto
+            {
+                Id = p.Id,
+                Title = p.Title,
+                Slug = p.Slug,
+                SearchSnippet = p.Content,
+                Author = p.Author
+
+            }).ToList();
         }
 
         public static Post GetSinglePost(int? id = 1, bool includeId = true)

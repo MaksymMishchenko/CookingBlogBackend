@@ -6,16 +6,20 @@ using PostApiService.Models.Dto;
 using PostApiService.Repositories;
 using System.Data;
 using System.Data.Common;
+using System.Linq.Expressions;
 
 namespace PostApiService.Services
 {
     public class PostService : IPostService
     {
         private readonly IRepository<Post> _repository;
+        private readonly ISnippetGeneratorService _snippetGenerator;
 
-        public PostService(IRepository<Post> repository)
+        public PostService(IRepository<Post> repository,
+            ISnippetGeneratorService snippetGenerator)
         {
             _repository = repository;
+            _snippetGenerator = snippetGenerator;
         }
 
         /// <summary>
@@ -40,7 +44,7 @@ namespace PostApiService.Services
                     Slug = p.Slug,
                     Author = p.Author,
                     CreatedAt = p.CreateAt,
-                    Description = p.Description,                    
+                    Description = p.Description,
                     CommentsCount = p.Comments.Count()
                 })
                 .Skip((pageNumber - 1) * pageSize)
@@ -48,6 +52,58 @@ namespace PostApiService.Services
                 .ToListAsync(cancellationToken);
 
             return (posts, totalPostCount);
+        }
+
+        /// <summary>
+        /// Searches for posts based on a query string matching Title, Description, or Content.
+        /// Results are sorted by creation date (descending) and returned with pagination.
+        /// </summary>
+        public async Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
+            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+        {
+            Expression<Func<Post, bool>> searchPredicate = p =>
+                p.Title.Contains(query) ||
+                p.Description.Contains(query) ||
+                p.Content.Contains(query);
+
+            var queryable = _repository.GetFilteredQueryable(searchPredicate);
+
+            var searchTotalPosts = await queryable.CountAsync(cancellationToken);
+
+            if (searchTotalPosts == 0)
+            {
+                return (new List<SearchPostListDto>(), 0);
+            }
+
+            var postsWithContent = await queryable
+                .OrderByDescending(p => p.CreateAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Title,
+                    p.Slug,
+                    p.Content,
+                    p.Author
+                })
+                .ToListAsync(cancellationToken);
+
+            var searchPostList = postsWithContent.Select(item =>
+            {
+                var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
+
+                return new SearchPostListDto
+                {
+                    Id = item.Id,
+                    Title = item.Title,
+                    Slug = item.Slug,
+                    Author = item.Author,
+                    SearchSnippet = snippet
+                };
+            }).ToList();
+
+            return (searchPostList, searchTotalPosts);
         }
 
         /// <summary>
