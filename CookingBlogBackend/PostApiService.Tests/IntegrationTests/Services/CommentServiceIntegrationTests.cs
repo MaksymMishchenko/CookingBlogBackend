@@ -23,11 +23,12 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _authServiceMock.GetCurrentUserAsync().Returns(_testUser);
         }
 
-        private CommentService CreateCommentServiceAndSeedUniqueDb(out ApplicationDbContext context)
+        private CommentService CreateCommentServiceAndSeedUniqueDb
+            (out ApplicationDbContext context, int totalPostCount = 25, int commentCount = 5)
         {
             context = _fixture.CreateUniqueContext();
 
-            var postsToSeed = _fixture.GeneratePosts();
+            var postsToSeed = _fixture.GeneratePosts(totalPostCount, commentCount);
 
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 

@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PostApiService.Controllers.Filters;
+using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
@@ -23,35 +25,56 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts and the total count of all posts in the database.
-        /// Allows optional inclusion and pagination of comments.
+        /// Retrieves a paginated list of posts and the total count of all posts in the database.        
         /// </summary>           
         [HttpGet]
         [AllowAnonymous]
-        [ValidatePostQueryParameters]
-        public async Task<IActionResult> GetPostsWithTotalAsync([FromQuery] PostQueryParameters query,
+        [ValidatePaginationParameters]
+        public async Task<IActionResult> GetPostsWithTotalPostCountAsync([FromQuery] PostQueryParameters query,
         CancellationToken cancellationToken = default)
         {
-            var (posts, totalCount) = await _postsService.GetPostsWithTotalAsync(
+            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync(
                 query.PageNumber,
                 query.PageSize,
-                query.CommentPageNumber,
-                query.CommentsPerPage,
-                query.IncludeComments,
                 cancellationToken);
 
             if (!posts.Any())
             {
-                return NotFound(ApiResponse<Post>.CreateErrorResponse
+                return NotFound(ApiResponse<PostListDto>.CreateErrorResponse
                     (PostErrorMessages.NoPostsFound));
             }
 
-            return Ok(ApiResponse<Post>.CreateSuccessResponse
+            return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
                 (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count),
                 posts,
                 query.PageNumber,
                 query.PageSize,
-                totalCount));
+                totalPostCount));
+        }
+
+        /// <summary>
+        /// Searches posts by query string and returns a paginated list of results 
+        /// along with the total count of matched records.                  
+        [HttpGet("search")]
+        [AllowAnonymous]
+        [ValidateSearchQuery]
+        [ValidatePaginationParameters]
+        public async Task<IActionResult> SearchPostsWithTotalCountAsync([FromQuery] SearchPostQueryParameters query,
+        CancellationToken cancellationToken = default)
+        {
+            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync(
+                query.QueryString,
+                query.PageNumber,
+                query.PageSize,
+                cancellationToken);            
+
+            return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
+                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, searchPostList.Count),
+                query.QueryString,
+                searchPostList,
+                query.PageNumber,
+                query.PageSize,
+                searchTotalPosts));
         }
 
         /// <summary>

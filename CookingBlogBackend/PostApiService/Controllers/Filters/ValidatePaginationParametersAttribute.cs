@@ -6,7 +6,7 @@ using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Controllers.Filters
 {
-    public class ValidatePostQueryParametersAttribute : ActionFilterAttribute
+    public class ValidatePaginationParametersAttribute : ActionFilterAttribute
     {
         public override void OnActionExecuting(ActionExecutingContext context)
         {
@@ -20,7 +20,7 @@ namespace PostApiService.Controllers.Filters
                     return;
                 }
 
-                if (query.PageSize > 10 || query.CommentsPerPage > 10)
+                if (query.PageSize > 10)
                 {
                     context.Result = new BadRequestObjectResult(ApiResponse<Post>.CreateErrorResponse(
                         PostErrorMessages.PageSizeExceeded));

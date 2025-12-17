@@ -2,73 +2,108 @@
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Dto;
 using PostApiService.Repositories;
 using System.Data;
 using System.Data.Common;
+using System.Linq.Expressions;
 
 namespace PostApiService.Services
 {
     public class PostService : IPostService
     {
         private readonly IRepository<Post> _repository;
+        private readonly ISnippetGeneratorService _snippetGenerator;
 
-        public PostService(IRepository<Post> repository)
+        public PostService(IRepository<Post> repository,
+            ISnippetGeneratorService snippetGenerator)
         {
             _repository = repository;
-        }
-
-        private void ProcessComments(List<Post> posts, bool includeComments, int commentPageNumber, int commentsPerPage)
-        {
-            if (includeComments)
-            {
-                foreach (var post in posts)
-                {
-                    post.Comments = post.Comments
-                        .OrderBy(c => c.CreatedAt)
-                        .Skip((commentPageNumber - 1) * commentsPerPage)
-                        .Take(commentsPerPage)
-                        .ToList();
-                }
-            }
-            else
-            {
-                foreach (var post in posts)
-                {
-                    post.Comments = new List<Comment>();
-                }
-            }
+            _snippetGenerator = snippetGenerator;
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts and their total count from the database, 
-        /// with optional inclusion and pagination of comments.
+        /// Retrieves a paginated list of posts, including the **aggregated comment count** for each post,
+        /// and the total count of all posts in the database.
         /// </summary>
-        public async Task<(List<Post> Posts, int TotalCount)> GetPostsWithTotalAsync(
+        public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
             int pageNumber = 1,
             int pageSize = 10,
-            int commentPageNumber = 1,
-            int commentsPerPage = 10,
-            bool includeComments = true,
             CancellationToken cancellationToken = default)
         {
-            var query = _repository.AsQueryable();
+            var totalPostCount = await _repository.GetTotalCountAsync(cancellationToken);
 
-            if (includeComments)
-            {
-                query = query.Include(p => p.Comments);
-            }
+            var query = _repository.AsQueryable();
 
             var posts = await query
                 .OrderBy(p => p.Id)
+                .Select(p => new PostListDto
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    Slug = p.Slug,
+                    Author = p.Author,
+                    CreatedAt = p.CreateAt,
+                    Description = p.Description,
+                    CommentsCount = p.Comments.Count()
+                })
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
-            ProcessComments(posts, includeComments, commentPageNumber, commentsPerPage);
+            return (posts, totalPostCount);
+        }
 
-            var totalCount = await _repository.GetTotalCountAsync();
+        /// <summary>
+        /// Searches for posts based on a query string matching Title, Description, or Content.
+        /// Results are sorted by creation date (descending) and returned with pagination.
+        /// </summary>
+        public async Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
+            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+        {
+            Expression<Func<Post, bool>> searchPredicate = p =>
+                p.Title.Contains(query) ||
+                p.Description.Contains(query) ||
+                p.Content.Contains(query);
 
-            return (posts, totalCount);
+            var queryable = _repository.GetFilteredQueryable(searchPredicate);
+
+            var searchTotalPosts = await queryable.CountAsync(cancellationToken);
+
+            if (searchTotalPosts == 0)
+            {
+                return (new List<SearchPostListDto>(), 0);
+            }
+
+            var postsWithContent = await queryable
+                .OrderByDescending(p => p.CreateAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.Title,
+                    p.Slug,
+                    p.Content,
+                    p.Author
+                })
+                .ToListAsync(cancellationToken);
+
+            var searchPostList = postsWithContent.Select(item =>
+            {
+                var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
+
+                return new SearchPostListDto
+                {
+                    Id = item.Id,
+                    Title = item.Title,
+                    Slug = item.Slug,
+                    Author = item.Author,
+                    SearchSnippet = snippet
+                };
+            }).ToList();
+
+            return (searchPostList, searchTotalPosts);
         }
 
         /// <summary>
@@ -140,7 +175,7 @@ namespace PostApiService.Services
                 existingPost.MetaDescription = post.MetaDescription;
                 existingPost.Slug = post.Slug;
 
-               await _repository.UpdateAsync(existingPost);
+                await _repository.UpdateAsync(existingPost);
 
                 return existingPost;
             }

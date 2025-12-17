@@ -25,6 +25,9 @@ namespace PostApiService.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public int TotalCount { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public string SearchQuery { get; set; } = string.Empty;
+
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Token { get; set; }
 
@@ -69,7 +72,7 @@ namespace PostApiService.Models
             };
         }
 
-        public static ApiResponse<T> CreateSuccessResponse(
+        public static ApiResponse<T> CreatePaginatedListResponse(
             string message,
             List<T>? dataList = null,
             int pageNumber = 1,
@@ -84,6 +87,26 @@ namespace PostApiService.Models
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalCount = totalCount
+            };
+        }
+
+        public static ApiResponse<T> CreatePaginatedSearchListResponse(            
+            string message,
+            string searchQuery,
+            List<T>? dataList = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            int totalSearchCount = 0)
+        {
+            return new ApiResponse<T>
+            {
+                Success = true,                
+                Message = message,
+                SearchQuery = searchQuery,
+                DataList = dataList ?? new List<T>(),
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                TotalCount = totalSearchCount
             };
         }
 

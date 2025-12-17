@@ -14,45 +14,81 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture = fixture;
         }
 
-        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDb(out ApplicationDbContext context)
+        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDb
+            (out ApplicationDbContext context, int totalPostCount = 25, int commentCount = 5)
         {
             context = _fixture.CreateUniqueContext();
 
-            var postsToSeed = _fixture.GeneratePosts();
+            var postsToSeed = _fixture.GeneratePosts(totalPostCount, commentCount);
 
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 
             var repo = new Repository<Post>(context);
-            var service = new PostService(repo);
+            var snippet = new SnippetGeneratorService();
+            var service = new PostService(repo, snippet);
+
+            return (service, postsToSeed);
+        }
+
+        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDbForSearch
+            (out ApplicationDbContext context, string keyword, int totalPostCount = 25)
+        {
+            context = _fixture.CreateUniqueContext();
+
+            var postsToSeed = _fixture.GeneratePostsWithKeywords(keyword, totalPostCount);
+
+            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+
+            var repo = new Repository<Post>(context);
+            var snippet = new SnippetGeneratorService();
+            var service = new PostService(repo, snippet);
+
+            return (service, postsToSeed);
+        }
+
+        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDbForSearch
+            (out ApplicationDbContext context)
+        {
+            context = _fixture.CreateUniqueContext();
+
+            var postsToSeed = _fixture.GeneratePostsWithKeywords();
+
+            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+
+            var repo = new Repository<Post>(context);
+            var snippet = new SnippetGeneratorService();
+            var service = new PostService(repo, snippet);
 
             return (service, postsToSeed);
         }
 
         [Fact]
-        public async Task GetPostsWithTotalAsync_ReturnsCorrectPageAndCount_WithContentCheck()
+        public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount_WithContentCheck()
         {
             // Arrange
             ApplicationDbContext context;
+
+            const int ExpectedPageNumber = 1;
+            const int ExpectedPageSize = 10;
+            const int ExpectedTotalPostCount = 25;
+            const int ExpectedCommentCountPerPost = 5;
+
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
             using (context)
             {
-                const int expectedTotalCount = 25;
-                int expectedPageNumber = 1;
-                int expectedPageSize = 10;
-
                 var expectedPostsOnPage = seededPosts
                     .OrderBy(p => p.Id)
-                    .Skip((expectedPageNumber - 1) * expectedPageSize)
-                    .Take(expectedPageSize)
+                    .Skip((ExpectedPageNumber - 1) * ExpectedPageSize)
+                    .Take(ExpectedPageSize)
                     .ToList();
 
                 // Act
-                var result = await postService.GetPostsWithTotalAsync
-                    (expectedPageNumber, expectedPageSize, includeComments: true);
+                var result = await postService.GetPostsWithTotalPostCountAsync
+                    (ExpectedPageNumber, ExpectedPageSize);
 
                 // Assert
-                Assert.Equal(expectedTotalCount, result.TotalCount);
-                Assert.Equal(expectedPageSize, result.Posts.Count);
+                Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+                Assert.Equal(ExpectedPageSize, result.Posts.Count);
                 Assert.Equal(1, result.Posts.First().Id);
                 Assert.Equal(10, result.Posts.Last().Id);
 
@@ -61,163 +97,132 @@ namespace PostApiService.Tests.IntegrationTests.Services
                         .SequenceEqual(result.Posts.Select(p => p.Id)),
                     "The order or set of Post IDs on the page does not match the expected.");
 
-                Assert.True(
-                    expectedPostsOnPage.Select(p => p.Title)
-                        .SequenceEqual(result.Posts.Select(p => p.Title)),
-                    "The Post Titles do not match in order.");
-
-                Assert.True(
-                    expectedPostsOnPage.Select(p => p.Content)
-                        .SequenceEqual(result.Posts.Select(p => p.Content)),
-                    "The Post Content does not match in order.");
-
-                for (int i = 0; i < expectedPostsOnPage.Count; i++)
+                Assert.All(result.Posts, (actualDto, index) =>
                 {
-                    var expectedPost = expectedPostsOnPage[i];
-                    var actualPost = result.Posts[i];
+                    var expectedPost = expectedPostsOnPage[index];
 
-                    Assert.Equal(expectedPost.Id, actualPost.Id);
-
-                    Assert.Equal(expectedPost.Comments.Count, actualPost.Comments.Count);
-                }
+                    TestDataHelper.AssertPostListDtoMapping
+                    (expectedPost, actualDto, ExpectedCommentCountPerPost);
+                });
             }
         }
 
         [Fact]
-        public async Task GetPostsWithTotalAsync_ShouldReturnLastIncompletePageRange()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnLastIncompletePageRange()
         {
             // Arrange
             ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            const int PageSize = 10;
+            const int PageNumber = 3;
+            const int ExpectedTotalPostCount = 25;
+            const int ExpectedCommentCountPerPost = 5;
+            const int ExpectedPostsOnLastPage = 5;
+
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb
+                (out context, ExpectedTotalPostCount, ExpectedPostsOnLastPage);
             using (context)
             {
-                const int expectedTotalCount = 25;
-                const int pageSize = 10;
-                const int pageNumber = 3;
-                const int expectedPostsOnLastPage = 5;
-
                 var expectedPostsOnPage = seededPosts
                     .OrderBy(p => p.Id)
-                    .Skip((pageNumber - 1) * pageSize)
-                    .Take(pageSize)
+                    .Skip((PageNumber - 1) * PageSize)
+                    .Take(PageSize)
                     .ToList();
 
                 // Act
-                var result = await postService.GetPostsWithTotalAsync(pageNumber, pageSize);
+                var result = await postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
                 // Assert
-                Assert.Equal(expectedTotalCount, result.TotalCount);
-                Assert.Equal(expectedPostsOnLastPage, result.Posts.Count);
+                Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+                Assert.Equal(ExpectedPostsOnLastPage, result.Posts.Count);
                 Assert.Equal(21, result.Posts.First().Id);
-                Assert.Equal(expectedTotalCount, result.Posts.Last().Id);
+                Assert.Equal(ExpectedTotalPostCount, result.Posts.Last().Id);
 
-                Assert.True(
-                    expectedPostsOnPage.Select(p => p.Title)
-                        .SequenceEqual(result.Posts.Select(p => p.Title)),
-                    "The Post Titles do not match in order on the last incomplete page.");
-
-                Assert.True(
-                    expectedPostsOnPage.Select(p => p.Content)
-                        .SequenceEqual(result.Posts.Select(p => p.Content)),
-                    "The Post Content does not match in order on the last incomplete page.");
-
-                Assert.All(result.Posts, actualPost =>
+                Assert.All(result.Posts, (actualDto, index) =>
                 {
-                    Assert.NotEmpty(actualPost.Comments);
-                    Assert.All(actualPost.Comments, c => Assert.Equal(actualPost.Id, c.PostId));
+                    var expectedPost = expectedPostsOnPage[index];
+                    TestDataHelper.AssertPostListDtoMapping(expectedPost, actualDto, ExpectedCommentCountPerPost);
                 });
-
-                for (int i = 0; i < expectedPostsOnPage.Count; i++)
-                {
-                    var expectedPost = expectedPostsOnPage[i];
-                    var actualPost = result.Posts[i];
-
-                    Assert.Equal(expectedPost.Id, actualPost.Id);
-
-                    Assert.Equal(expectedPost.Comments.Count, actualPost.Comments.Count);
-                }
             }
         }
 
         [Fact]
-        public async Task GetPostsWithTotalAsync_ShouldReturnPostsWithEmptyComments()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyListWhenTotalCountIsZero()
         {
             // Arrange
             ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
-
             const int PageNumber = 1;
             const int PageSize = 5;
-            const int ExpectedTotalPosts = 25;
+            const int ExpectedTotalPosts = 0;
+            const int ExpectedCommentCount = 0;
 
-            // Act            
-            var (posts, totalCount) = await postService.GetPostsWithTotalAsync(
-                pageNumber: PageNumber,
-                pageSize: PageSize,
-                includeComments: false);
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb
+                (out context, ExpectedTotalPosts, ExpectedCommentCount);
 
-            // Assert            
-            Assert.Equal(PageSize, posts.Count);
-
-            Assert.Equal(ExpectedTotalPosts, totalCount);
-
-            Assert.All(posts, post =>
+            using (context)
             {
-                Assert.NotNull(post.Comments);
+                // Act            
+                var (posts, totalPostCount) = await postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
-                Assert.Empty(post.Comments);
+                // Assert                            
+                Assert.Empty(posts);
+                Assert.Equal(ExpectedTotalPosts, totalPostCount);
+            }
+        }
+
+        [Fact]
+        public async Task SearchPosts_ShouldFindQuery_InTitleOrDescriptionOrContent()
+        {
+            // Arrange
+            ApplicationDbContext context;
+            var query = "Chili";
+
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
+                (out context);
+
+            // Act
+            var (result, totalCount) = await postService.SearchPostsWithTotalCountAsync(query);
+
+            // Assert
+            Assert.Equal(3, totalCount);
+            Assert.Equal(3, result.Count);
+            Assert.All(result, r =>
+            {
+                bool foundInTitle = r.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
+                bool foundInSnippet = r.SearchSnippet.Contains(query, StringComparison.OrdinalIgnoreCase);
+
+                if (r.Id == 2)
+                {
+                    Assert.Empty(r.SearchSnippet);
+                }
+                else
+                {
+                    Assert.True(foundInTitle || foundInSnippet);
+                }
             });
         }
 
         [Fact]
-        public async Task GetPostsWithTotalAsync_ShouldPaginateAndSortCommentsCorrectly()
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturnPagesSearchedPosts_WithTotalCount()
         {
             // Arrange
             ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            const int PageNumber = 1;
+            const int PageSize = 10;
+            const int PostsCountToSeed = 10;
+            const string Query = "Chili";            
 
-            const int PostPageSize = 3;
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
+                (out context, Query, PostsCountToSeed);
 
-            const int CommentsPerPage = 2;
-            const int CommentPageNum = 2;
-            const int ExpectedPostsCount = 25;
-
-            const int ExpectedCommentCount = CommentsPerPage;
-
-            var expectedPostsOnPage = seededPosts
-                    .OrderBy(p => p.Id)
-                    .Skip((1 - 1) * PostPageSize)
-                    .Take(PostPageSize)
-                    .ToList();
-
-            // Act
-            var (posts, totalCount) = await postService.GetPostsWithTotalAsync(
-                pageNumber: 1,
-                pageSize: PostPageSize,
-                commentPageNumber: CommentPageNum,
-                commentsPerPage: CommentsPerPage,
-                includeComments: true);
-
-            // Assert            
-            Assert.Equal(PostPageSize, posts.Count);
-            Assert.Equal(ExpectedPostsCount, totalCount);
-
-            Assert.True(
-                expectedPostsOnPage.Select(p => p.Title).SequenceEqual(posts.Select(p => p.Title)),
-                "The Post Titles do not match in order after comment pagination.");
-            Assert.True(
-                expectedPostsOnPage.Select(p => p.Content).SequenceEqual(posts.Select(p => p.Content)),
-                "The Post Content does not match in order after comment pagination.");
-
-            Assert.All(posts, post =>
+            using (context)
             {
-                Assert.Equal(ExpectedCommentCount, post.Comments.Count);
+                // Act            
+                var (posts, totalPostCount) = await postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
 
-                var isSorted = post.Comments.SequenceEqual(post.Comments.OrderBy(c => c.CreatedAt));
-                Assert.True(isSorted);
-
-                Assert.True(post.Comments.Min(c => c.CreatedAt) > DateTime.MinValue);
-            });
+                // Assert                            
+                Assert.NotEmpty(posts);
+                Assert.Equal(PostsCountToSeed, posts.Count);
+            }
         }
 
         [Fact]

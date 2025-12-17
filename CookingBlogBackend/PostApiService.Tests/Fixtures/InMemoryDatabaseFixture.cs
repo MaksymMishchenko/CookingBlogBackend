@@ -5,11 +5,8 @@ namespace PostApiService.Tests.Fixtures
 {
     public class InMemoryDatabaseFixture : IAsyncLifetime
     {
-        private const int DefaultPostCount = 25;
-        private const int DefaultCommentCount = 5;
-
         public ApplicationDbContext CreateUniqueContext()
-        {            
+        {
             var databaseName = Guid.NewGuid().ToString();
 
             var options = new DbContextOptionsBuilder<ApplicationDbContext>()
@@ -19,20 +16,30 @@ namespace PostApiService.Tests.Fixtures
             return new ApplicationDbContext(options);
         }
 
-        public List<Post> GeneratePosts()
-        {            
+        public List<Post> GeneratePosts(int totalPostCount, int commentCount)
+        {
             return TestDataHelper.GetPostsWithComments(
-                DefaultPostCount,
-                commentCount: DefaultCommentCount,
+                totalPostCount,
+                commentCount: commentCount,
                 generateIds: true)
                 .ToList();
         }
 
+        public List<Post> GeneratePostsWithKeywords(string query, int totalPostCount)
+        {
+            return TestDataHelper.GeneratePostsWithKeyword(query, totalPostCount);
+        }
+
+        public List<Post> GeneratePostsWithKeywords()
+        {
+            return TestDataHelper.GetPostsForOrLogic();
+        }        
+
         public async Task SeedDatabaseAsync(ApplicationDbContext context, List<Post> postsToSeed)
-        {           
+        {
             await context.Database.EnsureDeletedAsync();
             await context.Database.EnsureCreatedAsync();
-            
+
             context.Posts.AddRange(postsToSeed);
             await context.SaveChangesAsync();
         }
@@ -40,6 +47,5 @@ namespace PostApiService.Tests.Fixtures
         public Task DisposeAsync() => Task.CompletedTask;
 
         public Task InitializeAsync() => Task.CompletedTask;
-
     }
 }

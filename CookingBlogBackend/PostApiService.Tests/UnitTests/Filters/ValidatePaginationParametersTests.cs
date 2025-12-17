@@ -8,7 +8,7 @@ using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Tests.UnitTests.Filters
 {
-    public class ValidatePostQueryParametersTests
+    public class ValidatePaginationParametersTests
     {
         [Fact]
         public void Sets_BadRequest_When_PageNumber_Less_Than_1()
@@ -16,7 +16,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             // Arrange
             var query = new PostQueryParameters { PageNumber = 0, PageSize = 5 };
             var context = CreateContext(query);
-            var attribute = new ValidatePostQueryParametersAttribute();
+            var attribute = new ValidatePaginationParametersAttribute();
 
             // Act
             attribute.OnActionExecuting(context);
@@ -32,35 +32,21 @@ namespace PostApiService.Tests.UnitTests.Filters
         {
             var query = new PostQueryParameters { PageNumber = 1, PageSize = 11 };
             var context = CreateContext(query);
-            var attribute = new ValidatePostQueryParametersAttribute();
+            var attribute = new ValidatePaginationParametersAttribute();
 
             attribute.OnActionExecuting(context);
 
             Assert.IsType<BadRequestObjectResult>(context.Result);
             var result = context.Result as BadRequestObjectResult;
             Assert.Equal(PostErrorMessages.PageSizeExceeded, ((ApiResponse<Post>)result.Value).Message);
-        }
-
-        [Fact]
-        public void Sets_BadRequest_When_CommentsPerPage_More_Than_10()
-        {
-            var query = new PostQueryParameters { PageNumber = 1, PageSize = 5, CommentsPerPage = 11 };
-            var context = CreateContext(query);
-            var attribute = new ValidatePostQueryParametersAttribute();
-
-            attribute.OnActionExecuting(context);
-
-            Assert.IsType<BadRequestObjectResult>(context.Result);
-            var result = context.Result as BadRequestObjectResult;
-            Assert.Equal(PostErrorMessages.PageSizeExceeded, ((ApiResponse<Post>)result.Value).Message);
-        }
+        }        
 
         [Fact]
         public void Does_Not_Set_Result_When_Parameters_Are_Valid()
         {
-            var query = new PostQueryParameters { PageNumber = 1, PageSize = 5, CommentsPerPage = 5 };
+            var query = new PostQueryParameters { PageNumber = 1, PageSize = 5 };
             var context = CreateContext(query);
-            var attribute = new ValidatePostQueryParametersAttribute();
+            var attribute = new ValidatePaginationParametersAttribute();
 
             attribute.OnActionExecuting(context);
 

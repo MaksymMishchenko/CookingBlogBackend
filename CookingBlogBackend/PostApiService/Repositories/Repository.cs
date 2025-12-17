@@ -49,11 +49,19 @@ namespace PostApiService.Repositories
                 .AnyAsync(predicate, cancellationToken);
         }
 
-        public async Task<int> GetTotalCountAsync()
+        public async Task<int> GetTotalCountAsync(CancellationToken cancellationToken = default)
         {
             return await _dbSet
                 .AsNoTracking()
-                .CountAsync();
+                .CountAsync(cancellationToken);
+        }
+
+        public IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate)
+        {            
+            return _dbSet
+                .AsQueryable()
+                .AsNoTracking()
+                .Where(predicate);
         }
     }
 }
