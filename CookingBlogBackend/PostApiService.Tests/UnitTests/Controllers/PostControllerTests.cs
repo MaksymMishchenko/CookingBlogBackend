@@ -23,7 +23,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnNotFound_WhenPostsAreNotFound()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
             // Arrange
             var queryParameters = new PostQueryParameters();
@@ -45,11 +45,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Act
             var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters);
 
-            // Assert
-            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<PostListDto>>(notFoundObjectResult.Value);
-            Assert.False(response.Success);
-            Assert.Equal(PostErrorMessages.NoPostsFound, response.Message);
+            // Assert           
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<PostListDto>>(okResult.Value);
+            Assert.True(response.Success);
+            Assert.Equal(PostSuccessMessages.NoPostsAvailableYet, response.Message);
 
             await _mockPostService.Received(1)
                 .GetPostsWithTotalPostCountAsync(
@@ -70,7 +70,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             queryParameters.PageNumber = ExpectedPageNumber;
             queryParameters.PageSize = ExpectedPageSize;
 
-            var mockPosts = TestDataHelper.GetPostListDtos(MockTotalPostsCount);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var mockPosts = TestDataHelper.GetPostListDtos(MockTotalPostsCount, categories);
 
             _mockPostService.GetPostsWithTotalPostCountAsync(
                 Arg.Is(ExpectedPageNumber),
@@ -110,13 +111,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var queryParameters = new PostQueryParameters();
+            var categories = TestDataHelper.GetCulinaryCategories();
 
             _mockPostService.GetPostsWithTotalPostCountAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult((
-                    Posts: TestDataHelper.GetPostListDtos(1),
+                    Posts: TestDataHelper.GetPostListDtos(1, categories),
                     TotalPostCount: 1)));
 
             // Act
@@ -144,7 +146,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             queryParameters.QueryString = "Chili";
 
-            var posts = TestDataHelper.GetSearchedPostListDtos();
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var posts = TestDataHelper.GetSearchedPostListDtos(categories);
             const int TotalPostCount = 3;
 
             _mockPostService.SearchPostsWithTotalCountAsync(
@@ -239,7 +243,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()
         {
             // Arrange
-            var expectedPost = TestDataHelper.GetSinglePost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var expectedPost = TestDataHelper.GetSinglePost(categories);
             _mockPostService.GetPostByIdAsync(expectedPost.Id, true)
                 .Returns(expectedPost);
 
@@ -264,7 +269,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task AddPostAsync_ShouldReturn201AndSuccessMessage_WhenPostIsAddedSuccessfully()
         {
             // Arrange
-            var post = TestDataHelper.GetSinglePost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var post = TestDataHelper.GetSinglePost(categories);
 
             _mockPostService.AddPostAsync(post)
                 .Returns(post);
@@ -288,7 +294,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task UpdatePostAsync_ShouldReturnExpectedResult_WhenPostIsUpdated()
         {
             // Arrange            
-            var originalPost = TestDataHelper.GetSinglePost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var originalPost = TestDataHelper.GetSinglePost(categories);
             int postId = originalPost.Id;
 
             var inputPostData = new Post

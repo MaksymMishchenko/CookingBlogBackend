@@ -36,8 +36,9 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             _fixture.SetCurrentUser(contPrincipal);
 
-            var posts = TestDataHelper.GetPostsWithComments();
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             var postId = 1;
             var newComment = new Comment
@@ -89,8 +90,9 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             _fixture.SetCurrentUser(contPrincipal);
 
-            var posts = TestDataHelper.GetPostsWithComments();
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             var commentToBeEdited = new EditCommentModel
             {
@@ -135,8 +137,9 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             _fixture.SetCurrentUser(contPrincipal);
 
-            var posts = TestDataHelper.GetPostsWithComments();
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             int initialCount;
 
@@ -167,7 +170,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             }
         }
 
-        private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
+        private async Task SeedDatabaseAsync(IEnumerable<Post> posts, ICollection<Category> categories)
         {
             using (var scope = _services.CreateScope())
             {
@@ -176,6 +179,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 await dbContext.Database.EnsureDeletedAsync();
                 if (await dbContext.Database.EnsureCreatedAsync())
                 {
+                    await dbContext.Categories.AddRangeAsync(categories);
                     await dbContext.Posts.AddRangeAsync(posts);
                     await dbContext.SaveChangesAsync();
                 }

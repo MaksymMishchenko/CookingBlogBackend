@@ -41,6 +41,16 @@ namespace PostApiService
             int commentCount,
             bool generateIds = false)
         {
+            var culinaryCategories = new[]
+            {
+                new Category { Name = "Breakfast" },
+                new Category { Name = "Main Course" },
+                new Category { Name = "Desserts" },
+                new Category { Name = "Healthy Food" },
+                new Category { Name = "Beverages" },
+                new Category { Name = "Vegetarian" }
+            };
+
             var seed = 0;
             if (useNewSeed)
             {
@@ -52,6 +62,7 @@ namespace PostApiService
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
+                .RuleFor(p => p.Category, f => f.PickRandom(culinaryCategories))
                 .RuleFor(p => p.Author, f => f.Person.FullName)
                 .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))

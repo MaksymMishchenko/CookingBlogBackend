@@ -286,7 +286,8 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             postServiceMock?.AddPostAsync(Arg.Any<Post>())
                 .Returns(failedTask);
 
-            var newPost = TestDataHelper.GetSinglePost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var newPost = TestDataHelper.GetSinglePost(categories);
             var content = HttpHelper.GetJsonHttpContent(newPost);
 
             // Act
@@ -372,7 +373,8 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
             }
 
-            var post = TestDataHelper.GetSinglePost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var post = TestDataHelper.GetSinglePost(categories);
             post.Title = "Updated post title";
 
             var content = HttpHelper.GetJsonHttpContent(post);

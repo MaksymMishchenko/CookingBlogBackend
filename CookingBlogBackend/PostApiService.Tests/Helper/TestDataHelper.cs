@@ -1,4 +1,5 @@
-﻿using PostApiService.Models;
+﻿using Bogus.Extensions;
+using PostApiService.Models;
 using PostApiService.Models.Dto;
 
 namespace PostApiService.Tests.Helper
@@ -6,12 +7,13 @@ namespace PostApiService.Tests.Helper
     internal class TestDataHelper
     {
         public static List<Post> GetPostsWithComments(int count,
+            ICollection<Category>? categories,
             bool useNewSeed = false,
             bool generateComments = true,
             int commentCount = 1,
             bool generateIds = false)
         {
-            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, generateIds).Generate(count);
+            var posts = GetPostFaker(useNewSeed, categories, generateComments, commentCount, generateIds).Generate(count);
 
             if (generateIds)
             {
@@ -37,6 +39,7 @@ namespace PostApiService.Tests.Helper
         }
 
         private static Faker<Post> GetPostFaker(bool useNewSeed,
+            ICollection<Category> categories,
             bool generateComments,
             int commentCount,
             bool generateIds)
@@ -52,10 +55,11 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
+                .RuleFor(p => p.Category, f => f.PickRandom(categories))
                 .RuleFor(p => p.Author, f => f.Person.FullName)
                 .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
-                .RuleFor(p => p.MetaDescription, f => f.Lorem.Paragraph(1))
+                .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
@@ -74,13 +78,21 @@ namespace PostApiService.Tests.Helper
         }
 
         public static List<Post> GeneratePostsWithKeyword
-            (string keyword, int count, bool generateIds = false)
+            (string keyword, ICollection<Category> categories, int count, bool generateIds = false)
         {
             int postId = 1;
             var posts = new List<Post>();
             var faker = new Faker<Post>("en")
                 .RuleFor(p => p.Id, _ => 0)
-                .RuleFor(p => p.CreateAt, f => f.Date.Past(1));
+                .RuleFor(p => p.CreateAt, f => f.Date.Past(1))
+                .RuleFor(p => p.Author, _ => "Author")
+                .RuleFor(p => p.ImageUrl, _ => "image.jpeg")
+                .RuleFor(p => p.MetaTitle, _ => "Meta title")
+                .RuleFor(p => p.MetaDescription, _ => "Meta description")
+                .RuleFor(p => p.Slug, f => f.Lorem.Slug())
+                .RuleFor(p => p.CreateAt, f => f.Date.Past(1))
+                .RuleFor(p => p.Category, f => f.PickRandom(categories))
+                .RuleFor(p => p.CategoryId, (f, p) => p.Category.Id);
 
             for (int i = 0; i < count; i++)
             {
@@ -94,18 +106,13 @@ namespace PostApiService.Tests.Helper
                 post.Title = $"{keyword} Post Title {i}";
                 post.Description = $"A detailed description about {keyword}.";
                 post.Content = $"A detailed content about {keyword}.";
-                post.Author = "Author";
-                post.ImageUrl = "image.jpeg";
-                post.MetaTitle = "Meta title";
-                post.MetaDescription = "Meta description";
-                post.Slug = "post-slug";
 
                 posts.Add(post);
             }
             return posts;
         }
 
-        public static List<Post> GetPostsForOrLogic()
+        public static List<Post> GetPostsForOrLogic(ICollection<Category> categories)
         {
             var baseTime = DateTime.UtcNow;
 
@@ -121,7 +128,8 @@ namespace PostApiService.Tests.Helper
                     ImageUrl = "https://example.com/image1.jpg",
                     MetaTitle = "Chili Recipe Title",
                     MetaDescription = "Meta description about chili",
-                    Slug = "chili-recipe-title"
+                    Slug = "chili-recipe-title",
+                    Category = categories.First(c => c.Name == "Beverages")
                 },
                 new Post
                 {
@@ -133,7 +141,8 @@ namespace PostApiService.Tests.Helper
                     ImageUrl = "https://example.com/image2.jpg",
                     MetaTitle = "Secret Dish Meta",
                     MetaDescription = "Meta description for secret dish",
-                    Slug = "secret-dish-desc"
+                    Slug = "secret-dish-desc",
+                    Category = categories.First(c => c.Name == "Desserts")
                 },
                 new Post
                 {
@@ -145,7 +154,8 @@ namespace PostApiService.Tests.Helper
                     ImageUrl = "https://example.com/image3.jpg",
                     MetaTitle = "Ingredient Meta",
                     MetaDescription = "Meta description for ingredient",
-                    Slug = "spicy-ingredient-content"
+                    Slug = "spicy-ingredient-content",
+                    Category = categories.First(c => c.Name == "Vegetarian")
                 },
                 new Post
                 {
@@ -157,14 +167,15 @@ namespace PostApiService.Tests.Helper
                     ImageUrl = "https://example.com/image4.jpg",
                     MetaTitle = "Salad Meta",
                     MetaDescription = "Meta description for salad",
-                    Slug = "healthy-food-salad"
+                    Slug = "healthy-food-salad",
+                    Category = categories.First(c => c.Name == "Breakfast")
                 }
             };
         }
 
-        public static List<PostListDto> GetPostListDtos(int count)
+        public static List<PostListDto> GetPostListDtos(int count, ICollection<Category> categories)
         {
-            var posts = GetPostsWithComments(count, generateIds: true);
+            var posts = GetPostsWithComments(count, categories, generateIds: true);
 
             return posts.Select(p => new PostListDto
             {
@@ -195,6 +206,7 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Title, actualDto.Title);
             Assert.Equal(expectedPost.Slug, actualDto.Slug);
             Assert.Equal(expectedPost.Author, actualDto.Author);
+            Assert.Equal(expectedPost.Category.Name, actualDto.Category);
             Assert.Equal(expectedPost.Description, actualDto.Description);
             Assert.Equal(expectedPost.CreateAt, actualDto.CreatedAt);
             Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
@@ -207,9 +219,10 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Title, actualDto.Title);
             Assert.Equal(expectedPost.Slug, actualDto.Slug);
             Assert.Equal(expectedPost.Author, actualDto.Author);
+            Assert.Equal(expectedPost.Author, actualDto.Author);
         }
 
-        public static List<Post> GetSearchedPost()
+        public static List<Post> GetSearchedPost(ICollection<Category> categories)
         {
             return new List<Post>
             {
@@ -221,7 +234,8 @@ namespace PostApiService.Tests.Helper
                     Description = "How to grill the perfect juicy patty and melt the cheese.",
                     Content = "Tips for brioche buns, sharp cheddar, and secret sauce.",
                     CreateAt = DateTime.Now.AddHours(-10),
-                    Author = "Chef Mike"
+                    Author = "Chef Mike",
+                    Category = categories.First(c => c.Name == "Breakfast")
                 },
                 new Post
                 {
@@ -231,7 +245,8 @@ namespace PostApiService.Tests.Helper
                     Description = "Stretch and fold technique for thin, foldable crust.",
                     Content = "High-protein flour, proofing secrets, and oven temps.",
                     CreateAt = DateTime.Now.AddHours(-1),
-                    Author = "Peter"
+                    Author = "Peter",
+                    Category = categories.First(c => c.Name == "Healthy Food")
                 },
                 new Post
                 {
@@ -241,7 +256,8 @@ namespace PostApiService.Tests.Helper
                     Description = "The official recipe for rich, smoky, bean-free Texas chili.",
                     Content = "Using chili powder, beef chuck, and dried peppers for depth.",
                     CreateAt = DateTime.Now.AddHours(-6),
-                    Author = "Sarah"
+                    Author = "Sarah",
+                    Category = categories.First(c => c.Name == "Beverages")
                 },
                 new Post
                 {
@@ -251,12 +267,13 @@ namespace PostApiService.Tests.Helper
                     Description = "Simple seasoning mix and fast pan-searing method.",
                     Content = "Shredded chicken, lime, and fresh cilantro garnish.",
                     CreateAt = DateTime.Now.AddHours(-4),
-                    Author = "Monika"
+                    Author = "Monika",
+                    Category = categories.First(c => c.Name == "Vegetarian")
                 },
             };
         }
 
-        public static List<Post> GetSearchedPostWithoutIds()
+        public static List<Post> GetSearchedPostWithoutIds(ICollection<Category> categories)
         {
             return new List<Post>
             {
@@ -271,7 +288,8 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Ultimate Classic Chili",
                     MetaDescription = "Perfect juicy patty and melt the cheese",
                     ImageUrl = "image1.jpg",
-                    Comments = new List<Comment>()
+                    Comments = new List<Comment>(),
+                    Category = categories.First(c=> c.Name == "Main Course")
                 },
                 new Post
                 {
@@ -284,7 +302,8 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Easy Homemade Chili",
                     MetaDescription = "High-protein flour",
                     ImageUrl = "image2.jpg",
-                    Comments = new List<Comment>()
+                    Comments = new List<Comment>(),
+                    Category = categories.First(c=> c.Name == "Breakfast")
                 },
                 new Post
                 {
@@ -297,7 +316,8 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Authentic Texas Chili",
                     MetaDescription = "The official recipe for rich",
                     ImageUrl = "image3.jpg",
-                    Comments = new List<Comment>()
+                    Comments = new List<Comment>(),
+                    Category = categories.First(c=> c.Name == "Vegetarian")
                 },
                 new Post
                 {
@@ -310,14 +330,15 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Quick 30-Minute Chicken Tacos",
                     MetaDescription = "Simple seasoning mix",
                     ImageUrl = "image4.jpg",
-                    Comments = new List<Comment>()
+                    Comments = new List<Comment>(),
+                    Category = categories.First(c=> c.Name == "Beverages")
                 },
             };
         }
 
-        public static List<SearchPostListDto> GetSearchedPostListDtos()
+        public static List<SearchPostListDto> GetSearchedPostListDtos(ICollection<Category> categories)
         {
-            var posts = GetSearchedPost();
+            var posts = GetSearchedPost(categories);
 
             return posts.Select(p => new SearchPostListDto
             {
@@ -325,12 +346,14 @@ namespace PostApiService.Tests.Helper
                 Title = p.Title,
                 Slug = p.Slug,
                 SearchSnippet = p.Content,
-                Author = p.Author
+                Author = p.Author,
+                Category = p.Category.Name
+
 
             }).ToList();
         }
 
-        public static Post GetSinglePost(int? id = 1, bool includeId = true)
+        public static Post GetSinglePost(ICollection<Category> categories, int? id = 1, bool includeId = true)
         {
             int finalId = 0;
 
@@ -338,6 +361,8 @@ namespace PostApiService.Tests.Helper
             {
                 finalId = id.Value;
             }
+
+            var category = categories.First(c => c.Name == "Desserts");
 
             return new Post
             {
@@ -350,6 +375,8 @@ namespace PostApiService.Tests.Helper
                 MetaDescription = "Test meta description",
                 ImageUrl = "http://example.com/img/img.jpg",
                 Slug = "post-slug",
+                CategoryId = category.Id,
+                Category = null!
             };
         }
 
@@ -367,7 +394,7 @@ namespace PostApiService.Tests.Helper
             };
         }
 
-        public static List<Post> GetPostsWithComments()
+        public static List<Post> GetPostsWithComments(ICollection<Category> categories)
         {
             return new List<Post> {
                 new Post {
@@ -379,6 +406,7 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 1",
                     MetaDescription = "Meta lorem ipsum dolor 1",
                     Slug = "post-slug-1",
+                    Category = categories.First(c => c.Name == "Beverages"),
                     Comments = new List<Comment>{
                         new Comment{
                             Content = "Post comment content 1",
@@ -409,6 +437,7 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 2",
                     MetaDescription = "Meta lorem ipsum dolor 2",
                     Slug = "post-slug-2",
+                    Category = categories.First(c => c.Name == "Vegetarian"),
                     Comments = new List<Comment>{
                         new Comment{
                             Content = "Post comment content 1",
@@ -439,6 +468,7 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 3",
                     MetaDescription = "Meta lorem ipsum dolor 3",
                     Slug = "post-slug-3",
+                    Category = categories.First(c => c.Name == "Desserts"),
                     Comments = new List<Comment>{
                         new Comment{
                             Content = "Post comment content 1",
@@ -469,6 +499,7 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 4",
                     MetaDescription = "Meta lorem ipsum dolor 4",
                     Slug = "post-slug-4",
+                    Category = categories.First(c => c.Name == "Breakfast"),
                     Comments = new List<Comment>{
                         new Comment{
                             Content = "Post comment content 1",
@@ -499,6 +530,7 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 5",
                     MetaDescription = "Meta lorem ipsum dolor 5",
                     Slug = "post-slug-5",
+                    Category = categories.First(c => c.Name == "Healthy Food"),
                     Comments = new List<Comment>{
                         new Comment{
                             Content = "Post comment content 1",
@@ -520,6 +552,19 @@ namespace PostApiService.Tests.Helper
                         }
                     }
                 }
+            };
+        }
+
+        public static List<Category> GetCulinaryCategories()
+        {
+            return new List<Category>
+            {
+                new Category { Name = "Breakfast" },
+                new Category { Name = "Main Course" },
+                new Category { Name = "Desserts" },
+                new Category { Name = "Healthy Food" },
+                new Category { Name = "Beverages" },
+                new Category { Name = "Vegetarian" }
             };
         }
     }

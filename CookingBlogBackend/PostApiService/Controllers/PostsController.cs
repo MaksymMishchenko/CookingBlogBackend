@@ -25,8 +25,9 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts and the total count of all posts in the database.        
-        /// </summary>           
+        /// Retrieves a paginated collection of posts and the total record count. 
+        /// Returns a success message with the count or an information message if the database is empty.
+        /// </summary>          
         [HttpGet]
         [AllowAnonymous]
         [ValidatePaginationParameters]
@@ -38,14 +39,10 @@ namespace PostApiService.Controllers
                 query.PageSize,
                 cancellationToken);
 
-            if (!posts.Any())
-            {
-                return NotFound(ApiResponse<PostListDto>.CreateErrorResponse
-                    (PostErrorMessages.NoPostsFound));
-            }
-
             return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
-                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count),
+                (posts.Any()
+                ? string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count)
+                : PostSuccessMessages.NoPostsAvailableYet,
                 posts,
                 query.PageNumber,
                 query.PageSize,
@@ -66,7 +63,7 @@ namespace PostApiService.Controllers
                 query.QueryString,
                 query.PageNumber,
                 query.PageSize,
-                cancellationToken);            
+                cancellationToken);
 
             return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
                 (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, searchPostList.Count),

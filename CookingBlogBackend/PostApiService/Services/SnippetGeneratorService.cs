@@ -47,7 +47,8 @@ namespace PostApiService.Services
                 snippet,
                 Regex.Escape(searchKeyword),
                 match => $"<b>{match.Value}</b>",
-                RegexOptions.IgnoreCase
+                RegexOptions.IgnoreCase,
+                TimeSpan.FromMilliseconds(100)
             );
 
             return prefix + highlightedSnippet + suffix;
