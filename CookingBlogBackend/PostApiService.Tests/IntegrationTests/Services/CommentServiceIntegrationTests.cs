@@ -28,7 +28,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             context = _fixture.CreateUniqueContext();
 
-            var postsToSeed = _fixture.GeneratePosts(totalPostCount, commentCount);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var postsToSeed = _fixture.GeneratePosts(totalPostCount, categories, commentCount);
 
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 

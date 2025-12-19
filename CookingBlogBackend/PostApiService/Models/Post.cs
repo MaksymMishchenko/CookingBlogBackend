@@ -1,4 +1,5 @@
-﻿using PostApiService.Repositories;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -18,7 +19,7 @@ namespace PostApiService.Models
         public string Description { get; set; } = default!;
 
         [Required(ErrorMessage = "Content is required.")]
-        [StringLength(2500, MinimumLength = 20, ErrorMessage = "Content must be between 20 and 500 characters.")]
+        [StringLength(2500, MinimumLength = 20, ErrorMessage = "Content must be between 20 and 2500 characters.")]
         public string Content { get; set; } = default!;
 
         [Required(ErrorMessage = "Author is required.")]
@@ -42,5 +43,10 @@ namespace PostApiService.Models
         public string Slug { get; set; } = default!;
 
         public IList<Comment> Comments { get; set; } = new List<Comment>();
+
+        public int CategoryId { get; set; }
+
+        [ValidateNever]
+        public virtual Category Category { get; set; } = default!;
     }
 }

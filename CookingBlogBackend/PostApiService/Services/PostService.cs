@@ -2,6 +2,7 @@
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
+using PostApiService.Models.Constants;
 using PostApiService.Models.Dto;
 using PostApiService.Repositories;
 using System.Data;
@@ -43,6 +44,7 @@ namespace PostApiService.Services
                     Title = p.Title,
                     Slug = p.Slug,
                     Author = p.Author,
+                    Category = p.Category.Name ?? ContentConstants.DefaultCategory,
                     CreatedAt = p.CreateAt,
                     Description = p.Description,
                     CommentsCount = p.Comments.Count()
@@ -85,12 +87,13 @@ namespace PostApiService.Services
                     p.Title,
                     p.Slug,
                     p.Content,
-                    p.Author
+                    p.Author,
+                    p.Category
                 })
                 .ToListAsync(cancellationToken);
 
             var searchPostList = postsWithContent.Select(item =>
-            {
+            {                
                 var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
 
                 return new SearchPostListDto
@@ -99,7 +102,8 @@ namespace PostApiService.Services
                     Title = item.Title,
                     Slug = item.Slug,
                     Author = item.Author,
-                    SearchSnippet = snippet
+                    SearchSnippet = snippet,
+                    Category = item.Category.Name ?? ContentConstants.DefaultCategory,
                 };
             }).ToList();
 
@@ -113,12 +117,16 @@ namespace PostApiService.Services
         {
             var query = _repository.AsQueryable();
 
+            query = query.Include(p => p.Category);
+
             if (includeComments)
             {
-                query = query.Include(p => p.Comments);
+                query = query                   
+                    .Include(p => p.Comments);
             }
 
-            var post = await query.FirstOrDefaultAsync(p => p.Id == postId);
+            var post = await query                
+                .FirstOrDefaultAsync(p => p.Id == postId);
 
             if (post == null)
             {

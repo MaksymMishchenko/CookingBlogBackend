@@ -21,7 +21,8 @@
 									"});"
 								],
 								"type": "text/javascript",
-								"packages": {}
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -32,7 +33,7 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/posts?pageNumber=1&pageSize=10&commentPageNumber=1&commentsPerPage=10&includeComments=true",
+							"raw": "https://localhost:7030/api/posts?pageNumber=1&pageSize=10",
 							"protocol": "https",
 							"host": [
 								"localhost"
@@ -50,18 +51,41 @@
 								{
 									"key": "pageSize",
 									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SearchPostsWithTotalCountAsync",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "https://localhost:7030/api/posts/search?queryString=lorem&pageNumber=1&pageSize=10",
+							"protocol": "https",
+							"host": [
+								"localhost"
+							],
+							"port": "7030",
+							"path": [
+								"api",
+								"posts",
+								"search"
+							],
+							"query": [
+								{
+									"key": "queryString",
+									"value": "lorem"
 								},
 								{
-									"key": "commentPageNumber",
+									"key": "pageNumber",
 									"value": "1"
 								},
 								{
-									"key": "commentsPerPage",
+									"key": "pageSize",
 									"value": "10"
-								},
-								{
-									"key": "includeComments",
-									"value": "true"
 								}
 							]
 						}

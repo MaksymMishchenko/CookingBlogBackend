@@ -44,7 +44,12 @@ builder.Services.AddApplicationAuthorization();
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+{
+    // Ignores circular references during JSON serialization
+    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+});
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {

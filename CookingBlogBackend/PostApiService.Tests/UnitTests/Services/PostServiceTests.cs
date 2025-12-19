@@ -28,8 +28,10 @@ namespace PostApiService.Tests.UnitTests
             const int ExpectedTotalPostCount = 25;
             const int ExpectedCommentCountPerPost = 11;
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost);
+                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -65,8 +67,10 @@ namespace PostApiService.Tests.UnitTests
             const int PageNumber = 2;
             const int PageSize = 10;
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost);
+                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -101,8 +105,10 @@ namespace PostApiService.Tests.UnitTests
             const int ExpectedCommentCountPerPost = 5;
             const int ExpectedCountOnPage = 5;
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost, generateIds: true);
+                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -136,8 +142,10 @@ namespace PostApiService.Tests.UnitTests
             const int ExpectedTotalPostCount = 25;
             const int ExpectedCommentCountPerPost = 1;
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost, generateIds: true);
+                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -163,8 +171,10 @@ namespace PostApiService.Tests.UnitTests
             const int ExpectedTotalPostCount = 15;
             const int ExpectedCommentCountPerPost = 5;
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, commentCount: ExpectedCommentCountPerPost, generateIds: true);
+                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -201,7 +211,9 @@ namespace PostApiService.Tests.UnitTests
                 .CreateSnippet(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
                 .Returns(ExpectedSnippet);
 
-            var allTestPosts = TestDataHelper.GetSearchedPost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
 
             var filteredPosts = allTestPosts
                 .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
@@ -242,7 +254,8 @@ namespace PostApiService.Tests.UnitTests
             const int PageNumber = 2;
             const int PageSize = 2;
 
-            var allTestPosts = TestDataHelper.GetSearchedPost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
 
             var filteredPosts = allTestPosts
                 .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
@@ -272,7 +285,8 @@ namespace PostApiService.Tests.UnitTests
             const int PageNumber = 10;
             const int PageSize = 2;
 
-            var allTestPosts = TestDataHelper.GetSearchedPost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
 
             const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
             _mockSnippetGenerator
@@ -304,7 +318,8 @@ namespace PostApiService.Tests.UnitTests
             // Arrange
             const string Query = "Chili";
 
-            var allTestPosts = TestDataHelper.GetSearchedPost();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
 
             const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
             _mockSnippetGenerator
@@ -354,7 +369,9 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             var postId = 2;
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, commentCount: 3, generateIds: true);
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, commentCount: 3, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -375,7 +392,8 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             var postId = 2;
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, generateComments: false, generateIds: true);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, generateComments: false, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -394,8 +412,9 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task AddPostAsync_ShouldAddPostSuccessfully_WhenPostIsValid()
         {
-            // Arrange           
-            var newPost = TestDataHelper.GetSinglePost();
+            // Arrange
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var newPost = TestDataHelper.GetSinglePost(categories);
 
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(false);
@@ -424,8 +443,9 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
         {
-            // Arrange            
-            var originalPost = TestDataHelper.GetSinglePost();
+            // Arrange
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var originalPost = TestDataHelper.GetSinglePost(categories);
             int postId = originalPost.Id;
 
             var inputPostData = new Post
@@ -471,8 +491,9 @@ namespace PostApiService.Tests.UnitTests
         [Fact]
         public async Task DeletePostAsync_ShouldDeletePost_WhenSaveChangesSucceeds()
         {
-            // Arrange            
-            var post = TestDataHelper.GetSinglePost();
+            // Arrange
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var post = TestDataHelper.GetSinglePost(categories);
 
             var mockRepository = Substitute.For<IRepository<Post>>();
 

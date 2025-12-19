@@ -32,9 +32,11 @@ namespace PostApiService.Tests.IntegrationTests
             const int ExpectedCommentCountPerPost = 12;
             var url = string.Format(HttpHelper.Urls.PaginatedPostsUrl, PageNumber, PageSize);
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var posts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPosts, commentCount: ExpectedCommentCountPerPost);
-            await SeedDatabaseAsync(posts);
+                (count: ExpectedTotalPosts, categories, commentCount: ExpectedCommentCountPerPost);
+            await SeedDatabaseAsync(posts, categories);
 
             // Act            
             var response = await _client.GetAsync(url);
@@ -72,9 +74,11 @@ namespace PostApiService.Tests.IntegrationTests
             const int TotalPosts = 5;
             var url = string.Format(HttpHelper.Urls.PaginatedPostsUrl, PageNumber1, PageSize);
 
+            var categories = TestDataHelper.GetCulinaryCategories();
+
             var posts = TestDataHelper.GetPostsWithComments(
-                count: TotalPosts, commentCount: ExpectedCommentCountPerPost);
-            await SeedDatabaseAsync(posts);
+                count: TotalPosts, categories, commentCount: ExpectedCommentCountPerPost);
+            await SeedDatabaseAsync(posts, categories);
 
             const int PageNumber2 = 2;
 
@@ -117,31 +121,29 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnNotFound_WhenNoPostsExist()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
-            // Arrange            
-            const int PageNumber = 1;
-            const int PageSize = 10;
-            const int TotalPosts = 0;
+            // Arrange                        
+            const int ExpectedTotalPosts = 0;
 
-            var posts = TestDataHelper.GetPostsWithComments(count: TotalPosts);
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();
 
-            var url = string.Format(HttpHelper.Urls.PaginatedPostsUrl, PageNumber, PageSize);
+            var posts = TestDataHelper.GetPostsWithComments(count: ExpectedTotalPosts, categories);
+            await SeedDatabaseAsync(posts, categories);
+
+            var url = HttpHelper.Urls.PaginatedPostsUrl;
 
             // Act
             var response = await _client.GetAsync(url);
 
-            // Assert
-            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-
+            // Assert            
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();
 
             Assert.NotNull(content);
-            Assert.False(content.Success);
-            Assert.Null(content.DataList);
-            Assert.Equal(string.Format(PostErrorMessages.NoPostsFound), content.Message);
-            Assert.Equal(TotalPosts, content.TotalCount);
+            Assert.True(content.Success);
+            Assert.Empty(content.DataList);
+            Assert.Equal(string.Format(PostSuccessMessages.NoPostsAvailableYet), content.Message);
+            Assert.Equal(ExpectedTotalPosts, content.TotalCount);
         }
 
         [Fact]
@@ -154,8 +156,9 @@ namespace PostApiService.Tests.IntegrationTests
             const string Query = "Chili";
             var url = string.Format(HttpHelper.Urls.SearchPostsUrl, Query, PageNumber, PageSize);
 
-            var posts = TestDataHelper.GetSearchedPostWithoutIds();
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetSearchedPostWithoutIds(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             // Act            
             var response = await _client.GetAsync(url);
@@ -195,9 +198,10 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
         {
-            // Arrange            
-            var posts = TestDataHelper.GetPostsWithComments();
-            await SeedDatabaseAsync(posts);
+            // Arrange
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             var postId = 3;
             var title = "Title Lorem ipsum dolor sit amet 3";
@@ -220,6 +224,7 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(expectedPost.Description, content.Data.Description);
             Assert.Equal(expectedPost.MetaTitle, content.Data.MetaTitle);
             Assert.Equal(expectedPost.Author, content.Data.Author);
+            Assert.Equal(expectedPost.Category.Name, content.Data.Category.Name);
 
             var commentCount = content.Data.Comments.Count;
             Assert.Equal(expectedPost.Comments.Count, commentCount);
@@ -251,7 +256,12 @@ namespace PostApiService.Tests.IntegrationTests
 
             _fixture.SetCurrentUser(adminPrincipal);
 
-            var postToCreate = TestDataHelper.GetSinglePost(includeId: false);
+            var culinaryCategories = TestDataHelper.GetCulinaryCategories();
+            await SeedCategoriesAsync(culinaryCategories);
+
+            var categoryListFromDb = await GetCategoriesFromDbAsync();
+
+            var postToCreate = TestDataHelper.GetSinglePost(categoryListFromDb, includeId: false);
 
             var content = HttpHelper.GetJsonHttpContent(postToCreate);
 
@@ -288,41 +298,45 @@ namespace PostApiService.Tests.IntegrationTests
 
             _fixture.SetCurrentUser(adminPrincipal);
 
-            var posts = TestDataHelper.GetPostsWithComments();
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();           
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             var postId = 2;
-
+            Post postToUpdate;
+            
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var existingPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
+                postToUpdate = await dbContext.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == postId);
+            }
 
-                Assert.NotNull(existingPost);
+            Assert.NotNull(postToUpdate);
+            
+            postToUpdate.Title = "Updated title";
+            postToUpdate.Description = "Updated description";
+            
+            postToUpdate.Category = null!;
+            postToUpdate.Comments = new List<Comment>();
 
-                existingPost.Title = "Updated title";
-                existingPost.Description = "Updated description";
+            var content = HttpHelper.GetJsonHttpContent(postToUpdate);
 
-                var content = HttpHelper.GetJsonHttpContent(existingPost);
+            // Act
+            var response = await _client.PutAsync(HttpHelper.Urls.UpdatePost, content);
+            response.EnsureSuccessStatusCode();
 
-                // Act
-                var request = await _client.PutAsync(HttpHelper.Urls.UpdatePost, content);
-                request.EnsureSuccessStatusCode();
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
 
-                var response = await request.Content.ReadFromJsonAsync<ApiResponse<Post>>();
-
-                // Assert                
-                Assert.NotNull(response);
-                Assert.True(response.Success);
-                Assert.Equal(string.Format
-                    (PostSuccessMessages.PostUpdatedSuccessfully, postId), response.Message);
-                Assert.Equal(postId, response.Data.Id);
-
-                dbContext.ChangeTracker.Clear();
-
-                var updatedPost = await dbContext.Posts.FirstOrDefaultAsync(p => p.Id == postId);
-                Assert.Equal(existingPost.Title, updatedPost.Title);
-                Assert.Equal(existingPost.Description, updatedPost.Description);
+            // Assert                
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(postId, result.Data.Id);
+            
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var updatedInDb = await dbContext.Posts.FindAsync(postId);
+                Assert.Equal("Updated title", updatedInDb.Title);
             }
         }
 
@@ -341,8 +355,10 @@ namespace PostApiService.Tests.IntegrationTests
 
             _fixture.SetCurrentUser(adminPrincipal);
 
-            var posts = TestDataHelper.GetPostsWithComments();
-            await SeedDatabaseAsync(posts);
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await SeedDatabaseAsync(posts, categories);
 
             var postId = 4;
 
@@ -367,7 +383,7 @@ namespace PostApiService.Tests.IntegrationTests
             }
         }
 
-        private async Task SeedDatabaseAsync(IEnumerable<Post> posts)
+        private async Task SeedDatabaseAsync(IEnumerable<Post> posts, IEnumerable<Category> categories)
         {
             using (var scope = _services.CreateScope())
             {
@@ -376,10 +392,35 @@ namespace PostApiService.Tests.IntegrationTests
                 await dbContext.Database.EnsureDeletedAsync();
                 if (await dbContext.Database.EnsureCreatedAsync())
                 {
+                    await dbContext.Categories.AddRangeAsync(categories);
+                    await dbContext.SaveChangesAsync();
+
                     await dbContext.Posts.AddRangeAsync(posts);
                     await dbContext.SaveChangesAsync();
                 }
             }
+        }
+
+        private async Task SeedCategoriesAsync(IEnumerable<Category> categories)
+        {
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                await dbContext.Database.EnsureDeletedAsync();
+                if (await dbContext.Database.EnsureCreatedAsync())
+                {
+                    await dbContext.Categories.AddRangeAsync(categories);
+                    await dbContext.SaveChangesAsync();
+                }
+            }
+        }
+
+        private async Task<List<Category>> GetCategoriesFromDbAsync()
+        {
+            using var scope = _services.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            return await dbContext.Categories.ToListAsync();
         }
     }
 }

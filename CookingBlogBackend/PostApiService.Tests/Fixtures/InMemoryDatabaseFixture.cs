@@ -16,23 +16,24 @@ namespace PostApiService.Tests.Fixtures
             return new ApplicationDbContext(options);
         }
 
-        public List<Post> GeneratePosts(int totalPostCount, int commentCount)
+        public List<Post> GeneratePosts(int totalPostCount, ICollection<Category> categories, int commentCount)
         {
             return TestDataHelper.GetPostsWithComments(
                 totalPostCount,
+                categories,
                 commentCount: commentCount,
                 generateIds: true)
                 .ToList();
         }
 
-        public List<Post> GeneratePostsWithKeywords(string query, int totalPostCount)
+        public List<Post> GeneratePostsWithKeywords(string query, ICollection<Category> categories, int totalPostCount)
         {
-            return TestDataHelper.GeneratePostsWithKeyword(query, totalPostCount);
+            return TestDataHelper.GeneratePostsWithKeyword(query, categories, totalPostCount);
         }
 
-        public List<Post> GeneratePostsWithKeywords()
+        public List<Post> GeneratePostsWithKeywords(ICollection<Category> categories)
         {
-            return TestDataHelper.GetPostsForOrLogic();
+            return TestDataHelper.GetPostsForOrLogic(categories);
         }        
 
         public async Task SeedDatabaseAsync(ApplicationDbContext context, List<Post> postsToSeed)
