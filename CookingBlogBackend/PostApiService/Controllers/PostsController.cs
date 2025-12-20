@@ -75,14 +75,14 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a specific post by its ID. Optionally includes comments if specified.
+        /// Retrieves a post by its unique identifier.
         /// </summary>        
         [HttpGet("{postId}")]
         [AllowAnonymous]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
-        public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
+        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter)]
+        public async Task<IActionResult> GetPostByIdAsync(int postId)
         {
-            var post = await _postsService.GetPostByIdAsync(postId, includeComments);
+            var post = await _postsService.GetPostByIdAsync(postId);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format

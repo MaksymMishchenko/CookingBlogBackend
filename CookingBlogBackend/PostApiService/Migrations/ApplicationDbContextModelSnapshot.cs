@@ -36,7 +36,7 @@ namespace PostApiService.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Category");
+                    b.ToTable("Categories");
                 });
 
             modelBuilder.Entity("PostApiService.Models.Comment", b =>
@@ -96,7 +96,7 @@ namespace PostApiService.Migrations
                         .HasMaxLength(2500)
                         .HasColumnType("nvarchar(2500)");
 
-                    b.Property<DateTime>("CreateAt")
+                    b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")

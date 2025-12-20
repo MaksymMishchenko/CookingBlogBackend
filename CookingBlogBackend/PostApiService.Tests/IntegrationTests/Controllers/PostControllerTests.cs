@@ -196,7 +196,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
+        public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPost()
         {
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
@@ -204,9 +204,8 @@ namespace PostApiService.Tests.IntegrationTests
             await SeedDatabaseAsync(posts, categories);
 
             var postId = 3;
-            var title = "Title Lorem ipsum dolor sit amet 3";
             var expectedPost = posts
-                .FirstOrDefault(p => p.Title == title);
+                .FirstOrDefault(p => p.Id == postId);
 
             // Act
             var response = await _client.GetAsync
@@ -214,31 +213,18 @@ namespace PostApiService.Tests.IntegrationTests
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
             response.EnsureSuccessStatusCode();
 
-            // Assert            
+            // Assert
+            Assert.NotNull(content);
+            var data = content.Data!;
             Assert.True(content.Success);
             Assert.Equal(string.Format(PostSuccessMessages.PostRetrievedSuccessfully,
-                content.Data.Id), content.Message);
+                data.Id), content.Message);
 
-            Assert.Equal(postId, content.Data.Id);
-            Assert.Equal(expectedPost.Title, content.Data.Title);
-            Assert.Equal(expectedPost.Description, content.Data.Description);
-            Assert.Equal(expectedPost.MetaTitle, content.Data.MetaTitle);
-            Assert.Equal(expectedPost.Author, content.Data.Author);
-            Assert.Equal(expectedPost.Category.Name, content.Data.Category.Name);
-
-            var commentCount = content.Data.Comments.Count;
-            Assert.Equal(expectedPost.Comments.Count, commentCount);
-
-            Assert.All(content.Data.Comments, comment =>
-            {
-                var expectedComment = expectedPost.Comments
-                .FirstOrDefault(c => c.Content == comment.Content &&
-                c.Author == comment.Author);
-
-                Assert.NotNull(expectedComment);
-                Assert.Equal(expectedComment.Content, comment.Content);
-                Assert.Equal(expectedComment.Author, comment.Author);
-            });
+            Assert.Equal(expectedPost!.Id, data.Id);
+            Assert.Equal(expectedPost!.Title, data.Title);
+            Assert.Equal(expectedPost!.Description, data.Description);
+            Assert.Equal(expectedPost.MetaTitle, data.MetaTitle);
+            Assert.Equal(expectedPost.Author, data.Author);
         }
 
         [Fact]
@@ -298,13 +284,13 @@ namespace PostApiService.Tests.IntegrationTests
 
             _fixture.SetCurrentUser(adminPrincipal);
 
-            var categories = TestDataHelper.GetCulinaryCategories();           
+            var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
             var postId = 2;
             Post postToUpdate;
-            
+
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -312,10 +298,10 @@ namespace PostApiService.Tests.IntegrationTests
             }
 
             Assert.NotNull(postToUpdate);
-            
+
             postToUpdate.Title = "Updated title";
             postToUpdate.Description = "Updated description";
-            
+
             postToUpdate.Category = null!;
             postToUpdate.Comments = new List<Comment>();
 
@@ -331,7 +317,7 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.NotNull(result);
             Assert.True(result.Success);
             Assert.Equal(postId, result.Data.Id);
-            
+
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

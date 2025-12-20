@@ -7,7 +7,7 @@ namespace PostApiService.Controllers.Filters
 {
     public class ValidateIdAttribute : ActionFilterAttribute
     {
-        public string InvalidIdErrorMessage { get; set; }
+        public string InvalidIdErrorMessage { get; set; } = default!;
         public ResourceType ErrorResponseType { get; set; }
 
         public override void OnActionExecuting(ActionExecutingContext context)
@@ -27,13 +27,8 @@ namespace PostApiService.Controllers.Filters
         }
 
         private object CreateErrorResponse()
-        {
-            return ErrorResponseType switch
-            {
-                ResourceType.Comment => ApiResponse<Comment>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.Post => ApiResponse<Post>.CreateErrorResponse(InvalidIdErrorMessage),
-                _ => ApiResponse<object>.CreateErrorResponse("Invalid ID")
-            };
+        {           
+            return ApiResponse<object>.CreateErrorResponse(InvalidIdErrorMessage);
         }
     }
 }

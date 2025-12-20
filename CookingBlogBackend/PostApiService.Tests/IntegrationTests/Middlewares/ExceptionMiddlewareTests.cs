@@ -216,7 +216,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            postServiceMock?.GetPostByIdAsync(Arg.Any<int>(), Arg.Any<bool>())
+            postServiceMock?.GetPostByIdAsync(Arg.Any<int>())
                 .Returns(failedTask);
 
             // Act

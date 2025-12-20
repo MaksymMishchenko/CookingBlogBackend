@@ -239,17 +239,16 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var postId = 1;
 
                 // Act
-                var existingPost = await postService.GetPostByIdAsync(postId, includeComments: false);
+                var existingPost = await postService.GetPostByIdAsync(postId);
 
                 // Assert
                 Assert.NotNull(existingPost);
 
                 var post = await context.Posts
-                    .FirstOrDefaultAsync(p => p.Id == 1);
+                    .FirstOrDefaultAsync(p => p.Id == postId);
 
                 Assert.NotNull(post);
-                Assert.Equal(post.Title, existingPost.Title);
-                Assert.Empty(existingPost.Comments);
+                Assert.Equal(post.Title, existingPost.Title);                
             }
         }
 

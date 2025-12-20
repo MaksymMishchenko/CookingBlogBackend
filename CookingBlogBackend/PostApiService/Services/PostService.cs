@@ -45,7 +45,7 @@ namespace PostApiService.Services
                     Slug = p.Slug,
                     Author = p.Author,
                     Category = p.Category.Name ?? ContentConstants.DefaultCategory,
-                    CreatedAt = p.CreateAt,
+                    CreatedAt = p.CreatedAt,
                     Description = p.Description,
                     CommentsCount = p.Comments.Count()
                 })
@@ -78,7 +78,7 @@ namespace PostApiService.Services
             }
 
             var postsWithContent = await queryable
-                .OrderByDescending(p => p.CreateAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new
@@ -93,7 +93,7 @@ namespace PostApiService.Services
                 .ToListAsync(cancellationToken);
 
             var searchPostList = postsWithContent.Select(item =>
-            {                
+            {
                 var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
 
                 return new SearchPostListDto
@@ -111,29 +111,13 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a post by its ID from the database, with optional inclusion of comments.
+        /// Retrieves a post by its ID from the database.
         /// </summary>        
-        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
+        public async Task<Post> GetPostByIdAsync(int postId)
         {
-            var query = _repository.AsQueryable();
-
-            query = query.Include(p => p.Category);
-
-            if (includeComments)
-            {
-                query = query                   
-                    .Include(p => p.Comments);
-            }
-
-            var post = await query                
-                .FirstOrDefaultAsync(p => p.Id == postId);
-
-            if (post == null)
-            {
-                throw new PostNotFoundException(postId);
-            }
-
-            return post;
+            return await _repository.AsQueryable()
+                .FirstOrDefaultAsync(p => p.Id == postId)
+                ?? throw new PostNotFoundException(postId);
         }
 
         /// <summary>

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
@@ -245,12 +246,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
             var expectedPost = TestDataHelper.GetSinglePost(categories);
-            _mockPostService.GetPostByIdAsync(expectedPost.Id, true)
+            _mockPostService.GetPostByIdAsync(expectedPost.Id)
                 .Returns(expectedPost);
 
             // Act
             var result = await _postsController.GetPostByIdAsync
-                (expectedPost.Id, true);
+                (expectedPost.Id);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -261,8 +262,24 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 (PostSuccessMessages.PostRetrievedSuccessfully, expectedPost.Id), response.Message);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
+            Assert.Equal(expectedPost.Id, response?.Data?.Id);
+            Assert.Equal(expectedPost.Title, response?.Data?.Title);
+
             await _mockPostService.Received(1)
-                .GetPostByIdAsync(expectedPost.Id, true);
+                .GetPostByIdAsync(expectedPost.Id);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldThrowException_IfPostDoesNotExist()
+        {
+            // Arrange
+            int nonExistentId = 999;
+            _mockPostService.GetPostByIdAsync(nonExistentId)
+                .Throws(new PostNotFoundException(nonExistentId));
+
+            // Act & Assert
+            await Assert.ThrowsAsync<PostNotFoundException>(() =>
+                _postsController.GetPostByIdAsync(nonExistentId));
         }
 
         [Fact]

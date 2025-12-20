@@ -55,8 +55,7 @@ namespace PostApiService.Tests.Fixtures
                 )));
 
             postServiceMock.GetPostByIdAsync(
-                Arg.Any<int>(),
-                Arg.Any<bool>())
+                Arg.Any<int>())
                 .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
 
             postServiceMock.AddPostAsync(

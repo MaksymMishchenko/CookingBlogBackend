@@ -1,5 +1,6 @@
 ﻿using MockQueryable;
 using NSubstitute;
+using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Repositories;
@@ -336,7 +337,7 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             var expectedSortedPosts = filteredPosts
-                .OrderByDescending(p => p.CreateAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .ToList();
 
             // Act
@@ -364,36 +365,37 @@ namespace PostApiService.Tests.UnitTests
             );
         }
 
-        [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnPost_WithComments()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(-1)]
+        [InlineData(999)]
+        public async Task GetPostByIdAsync_ShouldThrowPostNotFoundException_WhenIdIsInvalidOrMissing(int postId)
         {
-            // Arrange
-            var postId = 2;
+            // Arrange            
+            var testPosts = new List<Post>
+            {
+               new Post { Id = 1, Title = "Existing Post" }
+            }.AsQueryable().BuildMock();
 
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, commentCount: 3, generateIds: true);
-            var mockQueryable = testPosts.AsQueryable().BuildMock();
-
-            _mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.AsQueryable().Returns(testPosts);
 
             var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
-            // Act
-            var post = await service.GetPostByIdAsync(postId, includeComments: true);
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<PostNotFoundException>(() =>
+                service.GetPostByIdAsync(postId));
 
-            // Assert
-            Assert.NotNull(post);
-            Assert.NotNull(post.Comments);
-            Assert.NotEmpty(post.Comments);
+            Assert.Equal(postId, exception.PostId);
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnPost_WithoutComments()
+        public async Task GetPostByIdAsync_ShouldReturnPostCorrectly()
         {
             // Arrange
             var postId = 2;
+
             var categories = TestDataHelper.GetCulinaryCategories();
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, generateComments: false, generateIds: true);
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, generateIds: true);
             var mockQueryable = testPosts.AsQueryable().BuildMock();
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -401,12 +403,13 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
-            var post = await service.GetPostByIdAsync(postId, includeComments: false);
+            var post = await service.GetPostByIdAsync(postId);
 
             // Assert
+            var expectedPost = testPosts.First(p => p.Id == postId);
             Assert.NotNull(post);
-            Assert.NotNull(post.Comments);
-            Assert.Empty(post.Comments);
+            Assert.Equal(expectedPost.Id, post.Id);
+            Assert.Equal(expectedPost.Title, post.Title);
         }
 
         [Fact]
