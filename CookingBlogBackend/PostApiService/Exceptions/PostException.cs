@@ -20,10 +20,12 @@ namespace PostApiService.Exceptions
     public class PostAlreadyExistException : PostException
     {
         public string Title { get; }
-        public PostAlreadyExistException(string postTitle)
-             : base(string.Format(PostErrorMessages.PostAlreadyExist, postTitle))
+        public string Slug { get; }
+        public PostAlreadyExistException(string message, string title, string slug)
+             : base(message)
         {
-            Title = postTitle;
+            Title = title;
+            Slug = slug;
         }
     }
 

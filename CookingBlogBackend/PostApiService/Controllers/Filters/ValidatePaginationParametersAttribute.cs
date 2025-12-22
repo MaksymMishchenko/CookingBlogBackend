@@ -8,27 +8,29 @@ namespace PostApiService.Controllers.Filters
 {
     public class ValidatePaginationParametersAttribute : ActionFilterAttribute
     {
+        public string InvalidParametersMessage { get; set; } = PostErrorMessages.InvalidPageParameters;
+        public string SizeExceededMessage { get; set; } = PostErrorMessages.PageSizeExceeded;
+        public int MaxPageSize { get; set; } = 10;
+
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             if (context.ActionArguments.TryGetValue("query", out var value) &&
-                value is PostQueryParameters query)
+                value is PaginationQueryParameters query)
             {
                 if (query.PageNumber < 1 || query.PageSize < 1)
                 {
-                    context.Result = new BadRequestObjectResult(ApiResponse<Post>.CreateErrorResponse(
-                        PostErrorMessages.InvalidPageParameters));
+                    context.Result = new BadRequestObjectResult(ApiResponse.CreateErrorResponse(
+                        InvalidParametersMessage));
                     return;
                 }
 
-                if (query.PageSize > 10)
+                if (query.PageSize > MaxPageSize)
                 {
-                    context.Result = new BadRequestObjectResult(ApiResponse<Post>.CreateErrorResponse(
-                        PostErrorMessages.PageSizeExceeded));
+                    context.Result = new BadRequestObjectResult(ApiResponse.CreateErrorResponse(
+                        string.Format(SizeExceededMessage, MaxPageSize)));
                     return;
                 }
             }
-
-            base.OnActionExecuting(context);
         }
     }
 }

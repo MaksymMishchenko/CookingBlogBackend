@@ -1,14 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using PostApiService.Exceptions;
 using PostApiService.Models;
-using PostApiService.Models.Enums;
 
 namespace PostApiService.Controllers.Filters
 {
     public class ValidateIdAttribute : ActionFilterAttribute
-    {
-        public string InvalidIdErrorMessage { get; set; } = default!;
-        public ResourceType ErrorResponseType { get; set; }
+    {        
+        public string InvalidIdErrorMessage { get; set; } = PostErrorMessages.InvalidPostIdParameter;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
@@ -16,19 +15,12 @@ namespace PostApiService.Controllers.Filters
             {
                 if (argument.Value is int id && id <= 0)
                 {
-                    var errorResponse = CreateErrorResponse();
+                    var errorResponse = ApiResponse.CreateErrorResponse(InvalidIdErrorMessage);
 
                     context.Result = new BadRequestObjectResult(errorResponse);
                     return;
                 }
             }
-
-            base.OnActionExecuting(context);
-        }
-
-        private object CreateErrorResponse()
-        {           
-            return ApiResponse<object>.CreateErrorResponse(InvalidIdErrorMessage);
         }
     }
 }

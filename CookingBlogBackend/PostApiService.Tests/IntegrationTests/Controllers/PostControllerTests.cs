@@ -199,6 +199,17 @@ namespace PostApiService.Tests.IntegrationTests
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPost()
         {
             // Arrange
+            var adminClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _fixture.SetCurrentUser(adminPrincipal);
+
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
@@ -210,7 +221,7 @@ namespace PostApiService.Tests.IntegrationTests
             // Act
             var response = await _client.GetAsync
                 (string.Format(HttpHelper.Urls.GetPostById, postId));
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<PostAdminDetailsDto>>();
             response.EnsureSuccessStatusCode();
 
             // Assert
@@ -225,6 +236,7 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(expectedPost!.Description, data.Description);
             Assert.Equal(expectedPost.MetaTitle, data.MetaTitle);
             Assert.Equal(expectedPost.Author, data.Author);
+            Assert.Equal(expectedPost.CategoryId, data.CategoryId);
         }
 
         [Fact]
@@ -288,7 +300,7 @@ namespace PostApiService.Tests.IntegrationTests
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
-            var postId = 2;
+            var postId = 2;            
             Post postToUpdate;
 
             using (var scope = _services.CreateScope())
@@ -302,7 +314,7 @@ namespace PostApiService.Tests.IntegrationTests
             postToUpdate.Title = "Updated title";
             postToUpdate.Description = "Updated description";
 
-            postToUpdate.Category = null!;
+            postToUpdate.Category = null!;            
             postToUpdate.Comments = new List<Comment>();
 
             var content = HttpHelper.GetJsonHttpContent(postToUpdate);
@@ -323,6 +335,7 @@ namespace PostApiService.Tests.IntegrationTests
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var updatedInDb = await dbContext.Posts.FindAsync(postId);
                 Assert.Equal("Updated title", updatedInDb.Title);
+                Assert.Equal("Updated description", updatedInDb.Description);
             }
         }
 

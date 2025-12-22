@@ -444,28 +444,54 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
+        public async Task AddPostAsync_ShouldThrowPostAlreadyExistException_WhenTitleOrSlugAlreadyExists()
         {
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
-            var originalPost = TestDataHelper.GetSinglePost(categories);
-            int postId = originalPost.Id;
+            var newPost = TestDataHelper.GetSinglePost(categories);
+
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            var postService = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            // Act & Assert            
+            var exception = await Assert.ThrowsAsync<PostAlreadyExistException>(() =>
+                postService.AddPostAsync(newPost));
+
+            Assert.Equal(newPost.Title, exception.Title);
+            Assert.Equal(newPost.Slug, exception.Slug);
+
+            await _mockRepository.DidNotReceive()
+                .AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_WhenPostIsUpdatedSuccessfully()
+        {
+            // Arrange
+            int postId = 1;
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var existingPost = TestDataHelper.GetSinglePost(categories, id: postId);
 
             var inputPostData = new Post
             {
                 Id = postId,
                 Title = "New Title",
-                Description = originalPost.Description,
-                Content = originalPost.Content,
-                Author = originalPost.Author,
-                ImageUrl = originalPost.ImageUrl,
-                MetaTitle = originalPost.MetaTitle,
-                MetaDescription = originalPost.MetaDescription,
+                Description = existingPost.Description,
+                Content = existingPost.Content,
+                Author = existingPost.Author,
+                ImageUrl = existingPost.ImageUrl,
+                MetaTitle = existingPost.MetaTitle,
+                MetaDescription = existingPost.MetaDescription,
                 Slug = "new-slug-value"
             };
 
             _mockRepository.GetByIdAsync(postId)
-                .Returns(Task.FromResult(originalPost));
+                .Returns(Task.FromResult(existingPost));
+
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
 
             _mockRepository.UpdateAsync(Arg.Any<Post>())
                 .Returns(Task.CompletedTask);
@@ -482,13 +508,58 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(inputPostData.Slug, resultPost.Slug);
 
             await _mockRepository.Received(1)
-                .GetByIdAsync(originalPost.Id);
+                .GetByIdAsync(existingPost.Id);
+
+            await _mockRepository.Received(1)
+                .AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>());
 
             await _mockRepository.Received(1)
                 .UpdateAsync(Arg.Is<Post>(p =>
                     p.Title == "New Title" &&
             p.Slug == "new-slug-value" &&
-            p.Content == originalPost.Content));
+            p.Content == existingPost.Content));
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowPostNotFoundException_WhenPostDoesNotExist()
+        {
+            // Arrange
+            int postId = 999;
+            _mockRepository.GetByIdAsync(postId).Returns((Post)null);
+            var postService = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            // Act & Assert
+            await Assert.ThrowsAsync<PostNotFoundException>(() =>
+                postService.UpdatePostAsync(postId, new Post()));
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldThrowPostAlreadyExistException_WhenTitleOrSlugOccupiedByAnotherPost()
+        {
+            // Arrange
+            int postId = 1;
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var existingPost = TestDataHelper.GetSinglePost(categories, id: postId);
+
+            var updateData = new Post { Title = "Occupied Title", Slug = "occupied-slug" };
+
+            _mockRepository.GetByIdAsync(postId).Returns(existingPost);
+            
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            _mockRepository.UpdateAsync(Arg.Any<Post>())
+                .Returns(Task.CompletedTask);
+
+            var postService = new PostService(_mockRepository, _mockSnippetGenerator);
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<PostAlreadyExistException>(() =>
+                postService.UpdatePostAsync(postId, updateData));
+
+            Assert.Equal(updateData.Title, exception.Title);
+            
+            await _mockRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>());
         }
 
         [Fact]

@@ -3,7 +3,7 @@
     public static class PostErrorMessages
     {
         public const string PostNotFound = "Post with ID {0} was not found.";
-        public const string PostAlreadyExist = "Post with title {0} already exists.";
+        public const string PostAlreadyExist = "A post with the same Title '{0}' or Slug '{1}' already exists.";
         public const string AddPostFailed = "Failed to add post with title '{0}'.";
         public const string UpdatePostFailed = "Failed to update post with title '{0}'.";
         public const string DeletePostFailed = "Failed to delete post with title '{0}'.";
@@ -16,6 +16,9 @@
         public const string InvalidPageParameters = "Parameters must be greater than 0.";
         public const string PageSizeExceeded = "Page size or comments per page exceeds the allowed maximum.";
         public const string NoPostsFound = "No posts found for the requested page.";                       
-        public const string InvalidPostIdParameter = "Post ID must be greater than 0.";       
+        public const string InvalidPostIdParameter = "Post ID must be greater than 0.";
+        public const string SearchQueryRequired = "Search query string is required and cannot be empty.";
+        public const string SearchQueryTooShort = "Query string must be at least {0} characters long.";
+        public const string SearchQueryTooLong = "Query string cannot exceed {0} characters.";
     }
 }

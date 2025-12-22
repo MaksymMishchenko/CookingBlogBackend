@@ -86,7 +86,7 @@ namespace PostApiService.Middlewares
                 await HandleExceptionAsync(context,
                     ex.Message,
                     HttpStatusCode.Conflict,
-                    string.Format(PostErrorMessages.PostAlreadyExist, ex.Title));
+                    string.Format(PostErrorMessages.PostAlreadyExist, ex.Title, ex.Slug));
             }
             catch (AddPostFailedException ex)
             {

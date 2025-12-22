@@ -1,42 +1,42 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using PostApiService.Exceptions;
 using PostApiService.Models;
-using PostApiService.Models.Enums;
 
 namespace PostApiService.Controllers.Filters
 {
     public class ValidateModelAttribute : ActionFilterAttribute
     {
-        public string InvalidErrorMessage { get; set; }
-        public ResourceType ErrorResponseType { get; set; }
+        public string InvalidErrorMessage { get; set; } = ResponseErrorMessages.ValidationFailed;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            var bodyArgument = context.ActionArguments.Values.FirstOrDefault();
+
+            if (bodyArgument == null && context.ModelState.IsValid)
+            {
+                context.Result = new BadRequestObjectResult(
+                    ApiResponse.CreateErrorResponse(ResponseErrorMessages.RequestBodyRequired));
+                return;
+            }
+
             if (!context.ModelState.IsValid)
             {
                 var errors = context.ModelState
-                    .Where(ms => ms.Value?.Errors?.Count > 0)
+                    .Where(ms => ms.Value!.Errors.Any())
                     .ToDictionary(
                         ms => ms.Key,
-                        ms => ms.Value.Errors.Select(e => e.ErrorMessage).ToArray()
+                        ms => ms.Value.Errors
+                        .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage)
+                            ? (e.Exception?.Message ?? ResponseErrorMessages.UnexpectedErrorException)
+                            : e.ErrorMessage)
+                        .ToArray()
                     );
 
-                var errorResponse = CreateErrorResponse(errors);
+                var errorResponse = ApiResponse.CreateErrorResponse(InvalidErrorMessage, errors);
                 context.Result = new BadRequestObjectResult(errorResponse);
             }
         }
-
-        private object CreateErrorResponse(Dictionary<string, string[]> errors)
-        {
-            return ErrorResponseType switch
-            {
-                ResourceType.Post => ApiResponse<Post>.CreateErrorResponse(InvalidErrorMessage, errors),
-                ResourceType.Comment => ApiResponse<Comment>.CreateErrorResponse(InvalidErrorMessage, errors),
-                ResourceType.EditComment => ApiResponse<EditCommentModel>.CreateErrorResponse(InvalidErrorMessage, errors),
-                ResourceType.RegisterUser => ApiResponse<RegisterUser>.CreateErrorResponse(InvalidErrorMessage, errors),
-                ResourceType.LoginUser => ApiResponse<LoginUser>.CreateErrorResponse(InvalidErrorMessage, errors),
-                _ => ApiResponse<object>.CreateErrorResponse("Invalid model state")
-            };
-        }
     }
 }
+

@@ -11,9 +11,9 @@ namespace PostApiService.Interfaces
             CancellationToken cancellationToken = default);
         Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default);       
-        Task<Post> GetPostByIdAsync(int postId);
-        Task<Post> AddPostAsync(Post post);
-        Task<Post> UpdatePostAsync(int postId, Post post);
+        Task<PostAdminDetailsDto> GetPostByIdAsync(int postId);
+        Task<PostAdminDetailsDto> AddPostAsync(Post post);
+        Task<PostAdminDetailsDto> UpdatePostAsync(int postId, Post post);
         Task DeletePostAsync(int postId);
     }
 }

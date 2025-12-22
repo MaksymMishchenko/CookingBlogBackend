@@ -1,13 +1,9 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Filters;
 using PostApiService.Controllers.Filters;
+using PostApiService.Exceptions;
 using PostApiService.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using PostApiService.Models.Enums;
 
 namespace PostApiService.Tests.UnitTests.Filters
@@ -21,8 +17,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var context = CreateContextForId(0);
             var attribute = new ValidateIdAttribute
             {
-                InvalidIdErrorMessage = "Invalid post ID.",
-                ErrorResponseType = ResourceType.Post
+                InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter
             };
 
             // Act
@@ -30,8 +25,8 @@ namespace PostApiService.Tests.UnitTests.Filters
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
-            var response = Assert.IsType<ApiResponse<Post>>(badRequestResult.Value);
-            Assert.Equal("Invalid post ID.", response.Message);
+            var response = Assert.IsType<ApiResponse<object>>(badRequestResult.Value);
+            Assert.Equal(PostErrorMessages.InvalidPostIdParameter, response.Message);
         }
 
         [Fact]
@@ -41,8 +36,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var context = CreateContextForId(0);
             var attribute = new ValidateIdAttribute
             {
-                InvalidIdErrorMessage = "Invalid comment ID.",
-                ErrorResponseType = ResourceType.Comment
+                InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter
             };
 
             // Act
@@ -50,9 +44,9 @@ namespace PostApiService.Tests.UnitTests.Filters
 
             // Assert
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
-            var response = Assert.IsType<ApiResponse<Comment>>(badRequestResult.Value);
-            Assert.Equal("Invalid comment ID.", response.Message);
-        }        
+            var response = Assert.IsType<ApiResponse<object>>(badRequestResult.Value);
+            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, response.Message);
+        }
 
         [Fact]
         public void OnActionExecuting_ShouldNotReturnBadRequest_WhenIdIsGreaterThanZero()

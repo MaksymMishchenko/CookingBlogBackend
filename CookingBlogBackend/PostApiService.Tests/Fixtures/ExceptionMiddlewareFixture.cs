@@ -56,16 +56,16 @@ namespace PostApiService.Tests.Fixtures
 
             postServiceMock.GetPostByIdAsync(
                 Arg.Any<int>())
-                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
+                .Returns(Task.FromResult(new PostAdminDetailsDto { Title = "Mocked Post" }));
 
             postServiceMock.AddPostAsync(
                 Arg.Any<Post>())
-                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
+                .Returns(Task.FromResult(new PostAdminDetailsDto { Title = "Mocked Post" }));
 
             postServiceMock.UpdatePostAsync(
                 Arg.Any<int>(),
                 Arg.Any<Post>())
-                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
+                .Returns(Task.FromResult(new PostAdminDetailsDto { Title = "Mocked Post" }));
 
             postServiceMock.DeletePostAsync(
                 Arg.Any<int>())

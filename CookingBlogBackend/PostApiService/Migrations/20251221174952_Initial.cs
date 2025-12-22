@@ -38,7 +38,7 @@ namespace PostApiService.Migrations
                     ImageUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     MetaTitle = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     MetaDescription = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Slug = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Slug = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     CategoryId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
@@ -84,6 +84,12 @@ namespace PostApiService.Migrations
                 name: "IX_Posts_CategoryId",
                 table: "Posts",
                 column: "CategoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Posts_Slug",
+                table: "Posts",
+                column: "Slug",
+                unique: true);
         }
 
         /// <inheritdoc />

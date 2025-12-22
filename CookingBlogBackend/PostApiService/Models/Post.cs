@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using Microsoft.EntityFrameworkCore;
 using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PostApiService.Models
 {
+    [Index(nameof(Slug), IsUnique = true)]
     public class Post : IEntity
     {
         [Column("PostId")]

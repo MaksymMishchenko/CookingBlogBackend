@@ -113,30 +113,50 @@ namespace PostApiService.Services
         /// <summary>
         /// Retrieves a post by its ID from the database.
         /// </summary>        
-        public async Task<Post> GetPostByIdAsync(int postId)
+        public async Task<PostAdminDetailsDto> GetPostByIdAsync(int postId)
         {
-            return await _repository.AsQueryable()
-                .FirstOrDefaultAsync(p => p.Id == postId)
-                ?? throw new PostNotFoundException(postId);
+            var postDto = await _repository.AsQueryable()
+        .Where(p => p.Id == postId)
+        .Select(p => new PostAdminDetailsDto
+        {
+            Id = p.Id,
+            Title = p.Title,
+            Description = p.Description,
+            Content = p.Content,
+            Author = p.Author,
+            ImageUrl = p.ImageUrl,
+            Slug = p.Slug,
+            MetaTitle = p.MetaTitle,
+            MetaDescription = p.MetaDescription,
+            CategoryId = p.CategoryId,
+            CreatedAt = p.CreatedAt
+        })
+        .FirstOrDefaultAsync()
+        ?? throw new PostNotFoundException(postId);
+
+            return postDto;
         }
 
         /// <summary>
         /// Adds a new post to the database.
         /// </summary>        
-        public async Task<Post> AddPostAsync(Post post)
+        public async Task<PostAdminDetailsDto> AddPostAsync(Post post)
         {
-            var existingPost = await _repository
-                .AnyAsync(p => p.Title == post.Title);
+            var alreadyExists = await _repository
+                .AnyAsync(p => p.Title == post.Title || p.Slug == post.Slug);
 
-            if (existingPost)
+            if (alreadyExists)
             {
-                throw new PostAlreadyExistException(post.Title);
+                string fullMessage = string.Format(PostErrorMessages.PostAlreadyExist, post.Title, post.Slug);
+                throw new PostAlreadyExistException
+                    (fullMessage, post.Title, post.Slug);
             }
 
             try
             {
                 Post addedPost = await _repository.AddAsync(post);
-                return addedPost;
+
+                return MapToAdminDto(addedPost);
             }
             catch (DbException ex)
             {
@@ -147,7 +167,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Updates an existing post with the provided data.        
         /// </summary>        
-        public async Task<Post> UpdatePostAsync(int postId, Post post)
+        public async Task<PostAdminDetailsDto> UpdatePostAsync(int postId, Post post)
         {
             var existingPost = await _repository
                 .GetByIdAsync(postId);
@@ -155,6 +175,18 @@ namespace PostApiService.Services
             if (existingPost == null)
             {
                 throw new PostNotFoundException(postId);
+            }
+
+            if (existingPost.Title != post.Title || existingPost.Slug != post.Slug)
+            {
+                var alreadyExists = await _repository.AnyAsync(p =>
+                    p.Id != postId && (p.Title == post.Title || p.Slug == post.Slug));
+
+                if (alreadyExists)
+                {
+                    string fullMessage = string.Format(PostErrorMessages.PostAlreadyExist, post.Title, post.Slug);
+                    throw new PostAlreadyExistException(fullMessage, post.Title, post.Slug);
+                }
             }
 
             try
@@ -166,10 +198,11 @@ namespace PostApiService.Services
                 existingPost.MetaTitle = post.MetaTitle;
                 existingPost.MetaDescription = post.MetaDescription;
                 existingPost.Slug = post.Slug;
+                existingPost.CategoryId = post.CategoryId;
 
                 await _repository.UpdateAsync(existingPost);
 
-                return existingPost;
+                return MapToAdminDto(existingPost);
             }
             catch (DbException ex)
             {
@@ -198,5 +231,20 @@ namespace PostApiService.Services
                 throw new DeletePostFailedException(postId, ex);
             }
         }
+
+        private PostAdminDetailsDto MapToAdminDto(Post p) => new PostAdminDetailsDto
+        {
+            Id = p.Id,
+            Title = p.Title,
+            Description = p.Description,
+            Content = p.Content,
+            Author = p.Author,
+            ImageUrl = p.ImageUrl,
+            Slug = p.Slug,
+            MetaTitle = p.MetaTitle,
+            MetaDescription = p.MetaDescription,
+            CategoryId = p.CategoryId,
+            CreatedAt = p.CreatedAt
+        };
     }
 }

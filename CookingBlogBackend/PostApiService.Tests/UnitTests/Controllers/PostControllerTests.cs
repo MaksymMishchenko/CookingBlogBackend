@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using PostApiService.Controllers;
@@ -245,7 +244,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
-            var expectedPost = TestDataHelper.GetSinglePost(categories);
+            var expectedPost = TestDataHelper.GetPostAdminDetailsDtos(categories);
             _mockPostService.GetPostByIdAsync(expectedPost.Id)
                 .Returns(expectedPost);
 
@@ -255,7 +254,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(okResult.Value);
+            var response = Assert.IsType<ApiResponse<PostAdminDetailsDto>>(okResult.Value);
 
             Assert.True(response.Success);
             Assert.Equal(string.Format
@@ -280,31 +279,44 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Act & Assert
             await Assert.ThrowsAsync<PostNotFoundException>(() =>
                 _postsController.GetPostByIdAsync(nonExistentId));
-        }
+        }        
 
         [Fact]
-        public async Task AddPostAsync_ShouldReturn201AndSuccessMessage_WhenPostIsAddedSuccessfully()
+        public async Task AddPostAsync_ShouldReturnCorrectRouteValues()
         {
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
             var post = TestDataHelper.GetSinglePost(categories);
+            var expectedDto = TestDataHelper.GetPostAdminDetailsDtos(categories); 
+            expectedDto.Id = 99;
 
-            _mockPostService.AddPostAsync(post)
-                .Returns(post);
+            _mockPostService.AddPostAsync(post).Returns(expectedDto);
 
             // Act
             var result = await _postsController.AddPostAsync(post);
 
-            // Assert            
+            // Assert
             var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
-            var response = Assert.IsType<ApiResponse<Post>>(createdAtActionResult.Value);
-
-            Assert.True(response.Success);
-            Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
-            Assert.Equal(string.Format
-                (PostSuccessMessages.PostAddedSuccessfully, post.Id), response.Message);
+            
+            Assert.Equal(expectedDto.Id, createdAtActionResult.RouteValues["postId"]);
+            Assert.Equal(nameof(_postsController.GetPostByIdAsync), createdAtActionResult.ActionName);
 
             await _mockPostService.Received(1).AddPostAsync(post);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldThrowPostAlreadyExistException_WhenServiceThrowsIt()
+        {
+            // Arrange
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var post = TestDataHelper.GetSinglePost(categories);
+           
+            _mockPostService.AddPostAsync(post)
+                .Throws(new PostAlreadyExistException("Error", post.Title, post.Slug));
+
+            // Act & Assert          
+            await Assert.ThrowsAsync<PostAlreadyExistException>(() =>
+                _postsController.AddPostAsync(post));
         }
 
         [Fact]
@@ -314,6 +326,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var categories = TestDataHelper.GetCulinaryCategories();
             var originalPost = TestDataHelper.GetSinglePost(categories);
             int postId = originalPost.Id;
+
+            var expectedDto = TestDataHelper.GetPostAdminDetailsDtos(categories);            
 
             var inputPostData = new Post
             {
@@ -329,14 +343,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             };
 
             _mockPostService.UpdatePostAsync(postId, inputPostData)
-                .Returns(Task.FromResult(inputPostData));
+                .Returns(Task.FromResult(expectedDto));
 
             // Act
             var result = await _postsController.UpdatePostAsync(postId, inputPostData);
 
             // Assert            
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
-            var actualResponse = Assert.IsType<ApiResponse<Post>>(okObjectResult.Value);
+            var actualResponse = Assert.IsType<ApiResponse<PostAdminDetailsDto>>(okObjectResult.Value);
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format

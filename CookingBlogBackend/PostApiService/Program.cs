@@ -44,7 +44,11 @@ builder.Services.AddApplicationAuthorization();
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 
-builder.Services.AddControllers()
+builder.Services.AddControllers(options =>
+{
+    // Allow using full method names with the "Async" suffix in routing.
+    options.SuppressAsyncSuffixInActionNames = false;
+})
     .AddJsonOptions(options =>
 {
     // Ignores circular references during JSON serialization

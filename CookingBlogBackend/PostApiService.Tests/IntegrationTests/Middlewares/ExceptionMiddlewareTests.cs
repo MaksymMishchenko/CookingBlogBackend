@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
@@ -203,16 +204,16 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             postServiceMock.ClearReceivedCalls();
 
-            Task<Post> failedTask = exceptionType switch
+            Task<PostAdminDetailsDto> failedTask = exceptionType switch
             {
                 Type t when t == typeof(PostNotFoundException) =>
-                    Task.FromException<Post>(new PostNotFoundException(invalidPostId)),
+                    Task.FromException<PostAdminDetailsDto>(new PostNotFoundException(invalidPostId)),
                 Type t when t == typeof(OperationCanceledException) =>
-                    Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                    Task.FromException<PostAdminDetailsDto>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
                 Type t when t == typeof(TimeoutException) =>
-                    Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                    Task.FromException<PostAdminDetailsDto>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
+                    Task.FromException<PostAdminDetailsDto>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -261,25 +262,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             _factoryFixture.SetCurrentUser(adminPrincipal);
 
-            var postTitle = "Test title";
+            string postTitle = "Post title";
+            string postSlug = "Post slug";
+            string expectedFullMessage = string.Format(PostErrorMessages.PostAlreadyExist, postTitle, postSlug); ;
             var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
 
             postServiceMock.ClearReceivedCalls();
 
-            Task<Post> failedTask = exceptionType switch
+            Task<PostAdminDetailsDto> failedTask = exceptionType switch
             {
                 Type t when t == typeof(PostAlreadyExistException) =>
-                    Task.FromException<Post>(new PostAlreadyExistException(postTitle)),
+                    Task.FromException<PostAdminDetailsDto>(new PostAlreadyExistException(expectedFullMessage, postTitle, postSlug)),
                 Type t when t == typeof(AddPostFailedException) =>
-                    Task.FromException<Post>(new AddPostFailedException(postTitle, null)),
+                    Task.FromException<PostAdminDetailsDto>(new AddPostFailedException(postTitle, null)),
                 Type t when t == typeof(DbUpdateException) =>
-                    Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)),
+                    Task.FromException<PostAdminDetailsDto>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)),
                 Type t when t == typeof(OperationCanceledException) =>
-                    Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                    Task.FromException<PostAdminDetailsDto>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
                 Type t when t == typeof(TimeoutException) =>
-                    Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                    Task.FromException<PostAdminDetailsDto>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
+                    Task.FromException<PostAdminDetailsDto>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -302,7 +305,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(PostAlreadyExistException) => string.Format
-                (PostErrorMessages.PostAlreadyExist, postTitle),
+                (PostErrorMessages.PostAlreadyExist, postTitle, postSlug),
                 Type t when t == typeof(AddPostFailedException) => string.Format
                 (PostErrorMessages.AddPostFailed, postTitle),
                 Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
@@ -347,27 +350,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 case Type t when t == typeof(PostNotFoundException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new PostNotFoundException(testPostId)));
+                        .Returns(Task.FromException<PostAdminDetailsDto>(new PostNotFoundException(testPostId)));
                     break;
                 case Type t when t == typeof(UpdatePostFailedException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new UpdatePostFailedException(postTitle, null)));
+                        .Returns(Task.FromException<PostAdminDetailsDto>(new UpdatePostFailedException(postTitle, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException<PostAdminDetailsDto>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                        .Returns(Task.FromException<PostAdminDetailsDto>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException<PostAdminDetailsDto>(new TimeoutException(ResponseErrorMessages.TimeoutException)));
                     break;
                 case Type t when t == typeof(Exception):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                        .Returns(Task.FromException<PostAdminDetailsDto>(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");

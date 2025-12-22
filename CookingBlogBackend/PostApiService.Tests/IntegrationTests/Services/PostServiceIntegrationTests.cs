@@ -257,6 +257,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             // Arrange
             ApplicationDbContext context;
+            const int Post_Category_Id = 1;
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
             using (context)
             {
@@ -270,6 +271,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     MetaDescription = "Test meta description",
                     ImageUrl = "http://example.com/img/img.jpg",
                     Slug = "post-slug",
+                    CategoryId = Post_Category_Id
                 };
                 var initialCount = await context.Posts.CountAsync();
 
@@ -283,6 +285,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 var postCount = await context.Posts.CountAsync();
                 Assert.Equal(initialCount + 1, postCount);
+                Assert.Equal(Post_Category_Id, addedPost.CategoryId);
             }
         }
 
@@ -291,6 +294,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             // Arrange
             ApplicationDbContext context;
+            const int Post_Category_Id = 2;
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
             using (context)
             {
@@ -300,6 +304,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 existingPost.Title = "Updated title";
                 existingPost.Content = "Updated content";
+                existingPost.CategoryId = Post_Category_Id;
 
                 // Act                
                 var updatedPost = await postService.UpdatePostAsync(postId, existingPost);
@@ -308,6 +313,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.NotNull(updatedPost);
                 Assert.Equal(existingPost.Title, updatedPost.Title);
                 Assert.Equal(existingPost.Content, updatedPost.Content);
+                Assert.Equal(existingPost.CategoryId, updatedPost.CategoryId);
             }
         }
 

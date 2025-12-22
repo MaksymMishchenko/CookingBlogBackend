@@ -83,7 +83,7 @@ namespace PostApiService.Tests.Helper
             int postId = 1;
             var posts = new List<Post>();
             var faker = new Faker<Post>("en")
-                .RuleFor(p => p.Id, _ => 0)                
+                .RuleFor(p => p.Id, _ => 0)
                 .RuleFor(p => p.Author, _ => "Author")
                 .RuleFor(p => p.ImageUrl, _ => "image.jpeg")
                 .RuleFor(p => p.MetaTitle, _ => "Meta title")
@@ -374,6 +374,26 @@ namespace PostApiService.Tests.Helper
                 Slug = "post-slug",
                 CategoryId = category.Id,
                 Category = null!
+            };
+        }       
+
+        public static PostAdminDetailsDto GetPostAdminDetailsDtos(ICollection<Category> categories)
+        {
+            var post = GetSinglePost(categories);
+
+            return new PostAdminDetailsDto
+            {
+                Id = post.Id,
+                Title = post.Title,
+                Description = post.Description,
+                Content = post.Content,
+                Author = post.Author,
+                ImageUrl = post.ImageUrl,
+                Slug = post.Slug,
+                MetaTitle = post.Title,
+                MetaDescription = post.MetaDescription,
+                CategoryId = 1,
+                CreatedAt = DateTime.Now
             };
         }
 
