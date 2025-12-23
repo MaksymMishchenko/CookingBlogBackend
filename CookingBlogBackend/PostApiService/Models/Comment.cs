@@ -18,12 +18,12 @@ namespace PostApiService.Models
         [StringLength(500, MinimumLength = 10, ErrorMessage = "Content must be between 10 and 500 characters.")]
         public string Content { get; set; }
 
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow.ToLocalTime();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         public int PostId { get; set; }
 
         [ValidateNever]
-        public string UserId { get; set; }
+        public string UserId { get; set; } = default!;
 
         [JsonIgnore]
         public Post? Post { get; set; }

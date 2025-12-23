@@ -33,19 +33,15 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetPostsWithTotalPostCountAsync([FromQuery] PostQueryParameters query,
         CancellationToken cancellationToken = default)
         {
-            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync(
-                query.PageNumber,
-                query.PageSize,
-                cancellationToken);
+            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync
+                (query.PageNumber, query.PageSize, cancellationToken);
+
+            string message = posts.Any()
+                ? string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count)
+                : string.Format(PostSuccessMessages.NoPostsAvailableYet);
 
             return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
-                (posts.Any()
-                ? string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count)
-                : PostSuccessMessages.NoPostsAvailableYet,
-                posts,
-                query.PageNumber,
-                query.PageSize,
-                totalPostCount));
+                (message, posts, query.PageNumber, query.PageSize, totalPostCount));
         }
 
         /// <summary>
@@ -58,19 +54,15 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> SearchPostsWithTotalCountAsync([FromQuery] SearchPostQueryParameters query,
         CancellationToken cancellationToken = default)
         {
-            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync(
-                query.QueryString,
-                query.PageNumber,
-                query.PageSize,
-                cancellationToken);
+            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync
+                (query.QueryString, query.PageNumber, query.PageSize, cancellationToken);
+
+            string message = searchPostList.Any()
+                ? string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, query.PageSize)
+                : string.Format(PostSuccessMessages.NoPostsFound, query.QueryString);
 
             return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
-                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, searchPostList.Count),
-                query.QueryString,
-                searchPostList,
-                query.PageNumber,
-                query.PageSize,
-                searchTotalPosts));
+                (message, query.QueryString, searchPostList, query.PageNumber, query.PageSize, searchTotalPosts));
         }
 
         /// <summary>
@@ -83,8 +75,7 @@ namespace PostApiService.Controllers
             var post = await _postsService.GetPostByIdAsync(postId);
 
             return Ok(ApiResponse<PostAdminDetailsDto>.CreateSingleItemResponse
-                (string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, post.Id), post));
+                (string.Format(PostSuccessMessages.PostRetrievedSuccessfully, post.Id), post));
         }
 
         /// <summary>
@@ -112,8 +103,7 @@ namespace PostApiService.Controllers
             var updatedPost = await _postsService.UpdatePostAsync(postId, post);
 
             return Ok(ApiResponse<PostAdminDetailsDto>.CreateSuccessResponse
-                (string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, postId), updatedPost));
+                (string.Format(PostSuccessMessages.PostUpdatedSuccessfully, postId), updatedPost));
         }
 
         /// <summary>
@@ -126,8 +116,7 @@ namespace PostApiService.Controllers
             await _postsService.DeletePostAsync(postId);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
-                (string.Format
-                (PostSuccessMessages.PostDeletedSuccessfully, postId), postId));
+                (string.Format(PostSuccessMessages.PostDeletedSuccessfully, postId), postId));
         }
     }
 }

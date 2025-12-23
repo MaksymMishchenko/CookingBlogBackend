@@ -1,40 +1,38 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using PostApiService.Exceptions;
+using PostApiService.Infrastructure.Constants;
 using PostApiService.Models;
+using Serilog;
 
 namespace PostApiService.Controllers.Filters
 {
-    public class ValidateModelAttribute : ActionFilterAttribute
+    public class ValidateModelAttribute : BaseValidationAttribute
     {
         public string InvalidErrorMessage { get; set; } = ResponseErrorMessages.ValidationFailed;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            var bodyArgument = context.ActionArguments.Values.FirstOrDefault();
+            HandleInvalidModelState(context,
+                ResponseErrorMessages.ValidationFailed);
 
-            if (bodyArgument == null && context.ModelState.IsValid)
+            if (context.Result != null) return;
+
+            var bodyArgument = context.ActionArguments.Values
+                .FirstOrDefault(arg => arg == null || (!arg.GetType().IsValueType && arg is not string));
+
+            if (bodyArgument == null)
             {
+                var method = context.HttpContext.Request.Method;
+                var path = context.HttpContext.Request.Path;
+                var ip = context.HttpContext.Connection.RemoteIpAddress;
+
+                Log.Warning(LogMessages.MissingRequestBody,
+                    method, path, ip);
+
                 context.Result = new BadRequestObjectResult(
                     ApiResponse.CreateErrorResponse(ResponseErrorMessages.RequestBodyRequired));
                 return;
-            }
-
-            if (!context.ModelState.IsValid)
-            {
-                var errors = context.ModelState
-                    .Where(ms => ms.Value!.Errors.Any())
-                    .ToDictionary(
-                        ms => ms.Key,
-                        ms => ms.Value.Errors
-                        .Select(e => string.IsNullOrWhiteSpace(e.ErrorMessage)
-                            ? (e.Exception?.Message ?? ResponseErrorMessages.UnexpectedErrorException)
-                            : e.ErrorMessage)
-                        .ToArray()
-                    );
-
-                var errorResponse = ApiResponse.CreateErrorResponse(InvalidErrorMessage, errors);
-                context.Result = new BadRequestObjectResult(errorResponse);
             }
         }
     }

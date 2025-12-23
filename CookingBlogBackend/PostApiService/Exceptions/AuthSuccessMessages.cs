@@ -2,6 +2,6 @@
 {
     public class AuthSuccessMessages
     {
-        public const string LoginSuccess = "User with username {0} logged in successfully";
+        public const string LoginSuccess = "User with username '{0}' logged in successfully";
     }
 }

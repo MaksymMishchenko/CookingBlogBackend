@@ -3,9 +3,23 @@ using Microsoft.EntityFrameworkCore;
 using PostApiService.Infrastructure;
 using PostApiService.Middlewares;
 using PostApiService.Models;
+using Serilog;
 
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Налаштування Serilog
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File("logs/api_validation_.txt",
+        rollingInterval: RollingInterval.Day, // Новий файл щодня
+        retainedFileCountLimit: 7)            // Зберігати логи за останній тиждень
+    .CreateLogger();
+
+builder.Host.UseSerilog();
+
+
 
 // Add services to the container.
 
@@ -48,6 +62,9 @@ builder.Services.AddControllers(options =>
 {
     // Allow using full method names with the "Async" suffix in routing.
     options.SuppressAsyncSuffixInActionNames = false;
+
+    // Use EmptyBodyBehavior.Allow as the default behavior for the entire application.
+    options.AllowEmptyInputInBodyModelBinding = true;
 })
     .AddJsonOptions(options =>
 {

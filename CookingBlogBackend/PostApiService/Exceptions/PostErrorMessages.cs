@@ -14,7 +14,7 @@
         public const string DbUpdateException = "Database error occurred while processing data.";
 
         public const string InvalidPageParameters = "Parameters must be greater than 0.";
-        public const string PageSizeExceeded = "Page size or comments per page exceeds the allowed maximum.";
+        public const string PageSizeExceeded = "Posts per page size exceeds the allowed maximum.";
         public const string NoPostsFound = "No posts found for the requested page.";                       
         public const string InvalidPostIdParameter = "Post ID must be greater than 0.";
         public const string SearchQueryRequired = "Search query string is required and cannot be empty.";

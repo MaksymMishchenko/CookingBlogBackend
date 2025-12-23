@@ -26,6 +26,7 @@ namespace PostApiService.Controllers
         [ValidateModel(InvalidErrorMessage = RegisterErrorMessages.InvalidRegistrationData)]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUser user)
         {
+            
             await _authService.RegisterUserAsync(user);
 
             return Ok(ApiResponse<RegisterUser>.CreateSuccessResponse
