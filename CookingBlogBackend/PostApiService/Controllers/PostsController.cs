@@ -5,8 +5,8 @@ using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Responses;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -83,9 +83,9 @@ namespace PostApiService.Controllers
         /// </summary>               
         [HttpPost]
         [ValidateModel]
-        public async Task<IActionResult> AddPostAsync([FromBody] Post post)
+        public async Task<IActionResult> AddPostAsync([FromBody] PostCreateDto postDto)
         {
-            var addedPost = await _postsService.AddPostAsync(post);
+            var addedPost = await _postsService.AddPostAsync(postDto);
 
             return CreatedAtAction(nameof(GetPostByIdAsync), new { postId = addedPost.Id },
                 ApiResponse<PostAdminDetailsDto>.CreateSingleItemResponse

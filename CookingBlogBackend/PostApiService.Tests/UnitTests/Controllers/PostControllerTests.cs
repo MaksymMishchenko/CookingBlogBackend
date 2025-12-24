@@ -5,8 +5,8 @@ using PostApiService.Controllers;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Responses;
 using System.Net;
 
 namespace PostApiService.Tests.UnitTests.Controllers

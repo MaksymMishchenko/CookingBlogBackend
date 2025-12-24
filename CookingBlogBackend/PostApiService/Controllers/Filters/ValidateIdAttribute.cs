@@ -12,13 +12,7 @@ namespace PostApiService.Controllers.Filters
         public string InvalidIdErrorMessage { get; set; } = PostErrorMessages.InvalidPostIdParameter;
 
         public override void OnActionExecuting(ActionExecutingContext context)
-        {
-            HandleInvalidModelState(context,
-                ResponseErrorMessages.ValidationFailed,
-                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
-
-            if (context.Result != null) return;
-
+        {            
             foreach (var argument in context.ActionArguments)
             {
                 if (argument.Key.ToLower().Contains("id") && argument.Value is int id && id <= 0)
@@ -36,6 +30,12 @@ namespace PostApiService.Controllers.Filters
                     return;
                 }
             }
+
+            HandleInvalidModelState(context,
+                ResponseErrorMessages.ValidationFailed,
+                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
+
+            if (context.Result != null) return;
         }
     }
 }

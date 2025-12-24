@@ -16,12 +16,6 @@ namespace PostApiService.Controllers.Filters
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            HandleInvalidModelState(context,
-                ResponseErrorMessages.ValidationFailed,
-                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
-
-            if (context.Result != null) return;
-
             if (context.ActionArguments.TryGetValue("query", out var value) &&
                 value is PaginationQueryParameters query)
             {
@@ -51,6 +45,12 @@ namespace PostApiService.Controllers.Filters
                     return;
                 }
             }
+
+            HandleInvalidModelState(context,
+                ResponseErrorMessages.ValidationFailed,
+                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
+
+            if (context.Result != null) return;
         }
     }
 }

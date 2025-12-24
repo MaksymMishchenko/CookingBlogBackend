@@ -1,6 +1,6 @@
 ﻿using Bogus.Extensions;
 using PostApiService.Models;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Responses;
 
 namespace PostApiService.Tests.Helper
 {

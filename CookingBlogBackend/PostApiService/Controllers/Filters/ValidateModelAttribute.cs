@@ -13,11 +13,6 @@ namespace PostApiService.Controllers.Filters
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
-            HandleInvalidModelState(context,
-                ResponseErrorMessages.ValidationFailed);
-
-            if (context.Result != null) return;
-
             var bodyArgument = context.ActionArguments.Values
                 .FirstOrDefault(arg => arg == null || (!arg.GetType().IsValueType && arg is not string));
 
@@ -34,6 +29,15 @@ namespace PostApiService.Controllers.Filters
                     ApiResponse.CreateErrorResponse(ResponseErrorMessages.RequestBodyRequired));
                 return;
             }
+
+            HandleInvalidModelState(context,
+                ResponseErrorMessages.ValidationFailed);
+
+            if (context.Result != null) return;
+
+
+
+
         }
     }
 }

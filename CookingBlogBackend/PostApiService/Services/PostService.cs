@@ -3,8 +3,10 @@ using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Models.Constants;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Responses;
 using PostApiService.Repositories;
+using Serilog;
 using System.Data;
 using System.Data.Common;
 using System.Linq.Expressions;
@@ -27,10 +29,8 @@ namespace PostApiService.Services
         /// Retrieves a paginated list of posts, including the **aggregated comment count** for each post,
         /// and the total count of all posts in the database.
         /// </summary>
-        public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken cancellationToken = default)
+        public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync
+            (int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default)
         {
             var totalPostCount = await _repository.GetTotalCountAsync(cancellationToken);
 
@@ -140,27 +140,47 @@ namespace PostApiService.Services
         /// <summary>
         /// Adds a new post to the database.
         /// </summary>        
-        public async Task<PostAdminDetailsDto> AddPostAsync(Post post)
+        public async Task<PostAdminDetailsDto> AddPostAsync(PostCreateDto postDto)
         {
             var alreadyExists = await _repository
-                .AnyAsync(p => p.Title == post.Title || p.Slug == post.Slug);
+                .AnyAsync(p => p.Title == postDto.Title || p.Slug == postDto.Slug);
 
             if (alreadyExists)
             {
-                string fullMessage = string.Format(PostErrorMessages.PostAlreadyExist, post.Title, post.Slug);
+                Log.Information("AddPost failed: Title or Slug already exists. Title: {Title}, Slug: {Slug}", postDto.Title, postDto.Slug);
+
+                string fullMessage = string.Format(PostErrorMessages.PostAlreadyExist, postDto.Title, postDto.Slug);
                 throw new PostAlreadyExistException
-                    (fullMessage, post.Title, post.Slug);
+                    (fullMessage, postDto.Title, postDto.Slug);
             }
+
+            var postEntity = new Post
+            {
+                Title = postDto.Title,
+                Description = postDto.Description,
+                Content = postDto.Content,
+                Author = postDto.Author,
+                ImageUrl = postDto.ImageUrl,
+                MetaTitle = postDto.MetaTitle ?? postDto.Title,
+                MetaDescription = postDto.MetaDescription ?? postDto.Description,
+                Slug = postDto.Slug,
+                CategoryId = postDto.CategoryId,
+                CreatedAt = DateTime.UtcNow
+            };
 
             try
             {
-                Post addedPost = await _repository.AddAsync(post);
+                Post addedPost = await _repository.AddAsync(postEntity);
+
+                // також у коснтанти мабуть
+                Log.Information("New post added to DB. ID: {Id}, Title: {Title}", addedPost.Id, addedPost.Title);
 
                 return MapToAdminDto(addedPost);
             }
             catch (DbException ex)
             {
-                throw new AddPostFailedException(post.Title, ex);
+                Log.Error(ex, "Database error occurred while adding post with title: {Title}", postDto.Title);
+                throw new AddPostFailedException(postDto.Title, ex);
             }
         }
 

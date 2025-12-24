@@ -21,7 +21,7 @@ namespace PostApiService.Controllers.Filters
                 var attemptedValue = state.Value.AttemptedValue;
                 if (!string.IsNullOrEmpty(attemptedValue))
                 {
-                    Log.Warning(LogMessages.BindingTypeMismatch, state.Key, attemptedValue));
+                    Log.Warning(LogMessages.BindingTypeMismatch, state.Key, attemptedValue);
                 }
             }
 

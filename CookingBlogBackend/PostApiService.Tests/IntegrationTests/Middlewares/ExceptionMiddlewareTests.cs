@@ -6,7 +6,7 @@ using NSubstitute;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Responses;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Authentication;

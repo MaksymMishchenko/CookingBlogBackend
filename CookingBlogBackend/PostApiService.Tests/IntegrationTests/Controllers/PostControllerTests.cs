@@ -2,7 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Exceptions;
 using PostApiService.Models;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Responses;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;

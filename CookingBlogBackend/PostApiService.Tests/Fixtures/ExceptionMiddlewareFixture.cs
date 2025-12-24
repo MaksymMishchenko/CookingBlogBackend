@@ -8,7 +8,7 @@ using NSubstitute;
 using PostApiService.Contexts;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Responses;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 

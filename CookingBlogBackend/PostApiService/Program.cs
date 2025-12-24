@@ -8,16 +8,30 @@ using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Налаштування Serilog
-Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Information()
-    .WriteTo.Console()
-    .WriteTo.File("logs/api_validation_.txt",
-        rollingInterval: RollingInterval.Day, // Новий файл щодня
-        retainedFileCountLimit: 7)            // Зберігати логи за останній тиждень
-    .CreateLogger();
+// без використання файлу appsettings.json
 
-builder.Host.UseSerilog();
+//// Налаштування Serilog
+//Log.Logger = new LoggerConfiguration()
+//    .MinimumLevel.Information()
+//    .WriteTo.Console()
+//    .WriteTo.File("logs/api_validation_.txt",
+//        rollingInterval: RollingInterval.Day, // Новий файл щодня
+//        retainedFileCountLimit: 7)            // Зберігати логи за останній тиждень
+//    .CreateLogger();
+
+//builder.Host.UseSerilog();
+
+
+// З використанням файлу appsettings.json (рекомендований підхід)
+
+// Налаштування Serilog
+//Log.Logger = new LoggerConfiguration()
+//    .ReadFrom.Configuration(builder.Configuration) // Читаємо все з appsettings.json
+//    .CreateLogger();
+
+//builder.Host.UseSerilog();
+
+
 
 
 

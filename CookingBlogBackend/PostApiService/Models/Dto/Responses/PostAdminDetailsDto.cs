@@ -1,4 +1,4 @@
-﻿namespace PostApiService.Models.Dto
+﻿namespace PostApiService.Models.Dto.Responses
 {
     public class PostAdminDetailsDto
     {
