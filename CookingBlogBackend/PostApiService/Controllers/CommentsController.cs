@@ -24,8 +24,8 @@ namespace PostApiService.Controllers
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
-        [ValidateModel]        
         [ValidateId]
+        [ValidateModel]                
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
             await _commentService.AddCommentAsync(postId, comment);

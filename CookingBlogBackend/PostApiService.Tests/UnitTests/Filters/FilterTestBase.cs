@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Routing;
 using NSubstitute;
 using System.Net;
 
-namespace PostApiService.Tests.Fixtures
+namespace PostApiService.Tests.UnitTests.Filters
 {
     public abstract class FilterTestBase
     {

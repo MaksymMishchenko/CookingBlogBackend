@@ -342,3 +342,7 @@ healthchecksdb
 # Ignore appsettings.json and appsettings.*.json files
 appsettings.json
 appsettings.*.json
+
+# Ignore coverage-report
+**/coverage-report/
+**/TestResults/

@@ -19,8 +19,14 @@ namespace PostApiService.Tests.Helper
             public readonly static string DeletePost = "/api/Posts/{0}";
 
             public readonly static string AddComment = "/api/comments/{0}";
-            public readonly static string UpdateComment = "/api/comments/2";
-            public readonly static string DeleteComment = "/api/comments/3";
+            public readonly static string UpdateComment = "/api/comments/{0}";
+            public readonly static string DeleteComment = "/api/comments/{0}";
+
+            public static class Auth
+            {
+                public const string Login = "/api/auth/login";
+                public const string Register = "/api/auth/register";
+            }
         }
     }
 }

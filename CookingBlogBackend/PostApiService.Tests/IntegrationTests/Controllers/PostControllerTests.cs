@@ -18,8 +18,30 @@ namespace PostApiService.Tests.IntegrationTests
         public PostControllerTests(PostFixture fixture)
         {
             _fixture = fixture;
-            _client = fixture.Client;
-            _services = fixture.Services;
+            _client = fixture.Client!;
+            _services = fixture.Services!;
+        }
+
+        [Fact]
+        public async Task GetPosts_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
+        {
+            // Arrange
+            var pageNumber = 1;
+            var pageSize = 50;
+
+            var url = string.Format(HttpHelper.Urls.PaginatedPostsUrl, pageNumber, pageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(result);
+
+            var expectedMessage = string.Format(PostErrorMessages.PageSizeExceeded, 10);
+            Assert.Equal(expectedMessage, result.Errors!["PageSize"][0]);
         }
 
         [Fact]
@@ -109,7 +131,7 @@ namespace PostApiService.Tests.IntegrationTests
             var content2 = await response2.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();
 
             // Assert
-            Assert.Equal(2, content2.DataList.Count);
+            Assert.Equal(2, content2!.DataList.Count);
             Assert.Equal(TotalPosts, content2.TotalCount);
 
             Assert.All(content2.DataList, (postDto, index) =>
@@ -147,6 +169,34 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Empty(content.DataList);
             Assert.Equal(string.Format(PostSuccessMessages.NoPostsAvailableYet), content.Message);
             Assert.Equal(ExpectedTotalPosts, content.TotalCount);
+        }
+
+        [Fact]
+        public async Task SearchPosts_ShouldReturnBadRequest_WhenQueryIsTooShort()
+        {
+            // Arrange
+            var shortQuery = "ab";
+            var pageNumber = 1;
+            var pageSize = 5;
+
+            var url = string.Format(HttpHelper.Urls.SearchPostsUrl, shortQuery, pageNumber, pageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+
+            Assert.NotNull(result.Errors);
+            Assert.Contains("QueryString", result.Errors.Keys);
+
+            var expectedError = string.Format(PostErrorMessages.SearchQueryTooShort, 3);
+            Assert.Equal(expectedError, result.Errors["QueryString"][0]);
         }
 
         [Fact]
@@ -199,6 +249,31 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task GetPostById_ShouldReturnBadRequest_WhenPostIdIsInvalid()
+        {
+            // Arrange
+            var invalidPostId = 0;
+            var url = string.Format(HttpHelper.Urls.GetPostById, invalidPostId);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert           
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+
+            Assert.Equal(PostErrorMessages.InvalidPostIdParameter, result.Message);
+
+            Assert.NotNull(result.Errors);
+            Assert.True(result.Errors.ContainsKey("postId"));
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Errors["postId"][0]);
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturn200ОК_WithExpectedPostAndComments()
         {
             // Arrange
@@ -218,12 +293,12 @@ namespace PostApiService.Tests.IntegrationTests
             response.EnsureSuccessStatusCode();
 
             // Assert            
-            Assert.True(content.Success);
+            Assert.True(content!.Success);
             Assert.Equal(string.Format(PostSuccessMessages.PostRetrievedSuccessfully,
                 content.Data.Id), content.Message);
 
             Assert.Equal(postId, content.Data.Id);
-            Assert.Equal(expectedPost.Title, content.Data.Title);
+            Assert.Equal(expectedPost!.Title, content.Data.Title);
             Assert.Equal(expectedPost.Description, content.Data.Description);
             Assert.Equal(expectedPost.MetaTitle, content.Data.MetaTitle);
             Assert.Equal(expectedPost.Author, content.Data.Author);
@@ -245,25 +320,45 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task AddPost_ShouldReturnBadRequest_WhenModelIsInvalid()
+        {
+            // Arrange
+            SetupMockUser();            
+
+            var invalidPost = new Post
+            {
+                Title = "",
+                Content = "Valid content",
+                Author = "Valid author"
+            };
+            var content = HttpHelper.GetJsonHttpContent(invalidPost);
+
+            // Act
+            var response = await _client.PostAsync(HttpHelper.Urls.AddPost, content);
+
+            // Assert            
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+
+            Assert.NotNull(result.Errors);
+            Assert.True(result.Errors.Any());
+        }
+
+        [Fact]
         public async Task AddPostAsync_ShouldAddPost_Return201CreatedAtAction()
         {
             // Arrange
-            var adminClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
-                new Claim(ClaimTypes.Name, "admin"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
-            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
-
-            _fixture.SetCurrentUser(adminPrincipal);
+            SetupMockUser();            
 
             var culinaryCategories = TestDataHelper.GetCulinaryCategories();
             await SeedCategoriesAsync(culinaryCategories);
 
             var categoryListFromDb = await GetCategoriesFromDbAsync();
-
             var postToCreate = TestDataHelper.GetSinglePost(categoryListFromDb, includeId: false);
 
             var content = HttpHelper.GetJsonHttpContent(postToCreate);
@@ -287,27 +382,51 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task UpdatePost_ShouldReturnBadRequest_WhenModelIsInvalid()
+        {
+            // Arrange
+            SetupMockUser();           
+
+            var postId = 1;
+            var invalidPost = new Post
+            {
+                Title = "Valid Title",
+                Content = "",
+                Author = "Author"
+            };
+
+            var content = HttpHelper.GetJsonHttpContent(invalidPost);
+            var url = string.Format(HttpHelper.Urls.UpdatePost, postId);
+
+            // Act
+            var response = await _client.PutAsync(url, content);
+
+            // Assert           
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+
+            Assert.NotNull(result.Errors);
+            Assert.True(result.Errors.ContainsKey("Content"));
+        }
+
+        [Fact]
         public async Task UpdatePostAsync_ShouldReturn200Ok_IfPostIsUpdatedSuccessfully()
         {
             // Arrange
-            var adminClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
-                new Claim(ClaimTypes.Name, "admin"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
-            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+            SetupMockUser();           
 
-            _fixture.SetCurrentUser(adminPrincipal);
-
-            var categories = TestDataHelper.GetCulinaryCategories();           
+            var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
             var postId = 2;
-            Post postToUpdate;
-            
+            Post? postToUpdate;
+
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -315,10 +434,10 @@ namespace PostApiService.Tests.IntegrationTests
             }
 
             Assert.NotNull(postToUpdate);
-            
+
             postToUpdate.Title = "Updated title";
             postToUpdate.Description = "Updated description";
-            
+
             postToUpdate.Category = null!;
             postToUpdate.Comments = new List<Comment>();
 
@@ -334,32 +453,49 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.NotNull(result);
             Assert.True(result.Success);
             Assert.Equal(postId, result.Data.Id);
-            
+
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var updatedInDb = await dbContext.Posts.FindAsync(postId);
-                Assert.Equal("Updated title", updatedInDb.Title);
+                Assert.Equal("Updated title", updatedInDb!.Title);
             }
+        }
+
+        [Fact]
+        public async Task DeletePost_ShouldReturnBadRequest_WhenPostIdIsInvalid()
+        {
+            // Arrange
+            SetupMockUser();           
+
+            var invalidPostId = -1;
+            var url = string.Format(HttpHelper.Urls.DeletePost, invalidPostId);
+
+            // Act
+            var response = await _client.DeleteAsync(url);
+
+            // Assert            
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+
+            Assert.Equal(PostErrorMessages.InvalidPostIdParameter, result.Message);
+
+            Assert.NotNull(result.Errors);
+            Assert.Contains("postId", result.Errors.Keys);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Errors["postId"][0]);
         }
 
         [Fact]
         public async Task DeletePostAsync_ShouldReturn200Ok_IfPostIsDeletedSuccessfully()
         {
             // Arrange
-            var adminClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
-                new Claim(ClaimTypes.Name, "admin"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
-            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
-
-            _fixture.SetCurrentUser(adminPrincipal);
+            SetupMockUser();            
 
             var categories = TestDataHelper.GetCulinaryCategories();
-
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
@@ -372,7 +508,7 @@ namespace PostApiService.Tests.IntegrationTests
             var response = await request.Content.ReadFromJsonAsync<ApiResponse<Post>>();
 
             // Assert
-            Assert.True(response.Success);
+            Assert.True(response!.Success);
             Assert.Equal(string.Format
                 (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
             Assert.Equal(postId, response.EntityId);
@@ -424,6 +560,20 @@ namespace PostApiService.Tests.IntegrationTests
             using var scope = _services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             return await dbContext.Categories.ToListAsync();
+        }
+
+        private void SetupMockUser()
+        {
+            var adminClaims = new[]
+                {
+                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
+                new Claim(ClaimTypes.Name, "admin"),
+                new Claim(ClaimTypes.Role, "Admin")
+            };
+            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
+            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
+
+            _fixture.SetCurrentUser(adminPrincipal);
         }
     }
 }

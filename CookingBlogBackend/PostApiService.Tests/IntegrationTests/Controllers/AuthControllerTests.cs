@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Exceptions;
 using PostApiService.Models;
+using System.Net;
 using System.Net.Http.Json;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
@@ -17,20 +18,43 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         }
 
         [Fact]
+        public async Task OnRegister_ShouldReturnBadRequest_WhenDataIsInvalid()
+        {
+            // Arrange
+            var invalidData = new RegisterUser { Email = "not-an-email" };
+
+            var url = HttpHelper.Urls.Auth.Register;
+
+            // Act
+            var response = await _client!.PostAsJsonAsync(url, invalidData);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(content);
+            Assert.False(content.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, content.Message);
+            Assert.NotNull(content.Errors);
+            Assert.True(content.Errors.Any());
+        }
+
+        [Fact]
         public async Task OnRegister_ShouldReturnSuccessResponse_IfUserRegisterSuccessfully()
         {
             // Arrange
             var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe6" };
             var content = HttpHelper.GetJsonHttpContent(newUser);
 
-            // Act            ;
-            var response = await _client!.PostAsync("/api/auth/register", content);
+            var url = HttpHelper.Urls.Auth.Register;
+
+            // Act     
+            var response = await _client!.PostAsync(url, content);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterUser>>();
 
             // Assert
-            Assert.True(result.Success);
+            Assert.True(result!.Success);
             Assert.Equal(string.Format(RegisterSuccessMessages.RegisterOk,
                 newUser.UserName), result.Message);
 
@@ -46,15 +70,35 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         }
 
         [Fact]
+        public async Task OnLogin_ShouldReturnBadRequest_WhenCredentialsAreInvalid()
+        {
+            // Arrange
+            var invalidCreds = new LoginUser { UserName = "" };
+            var url = HttpHelper.Urls.Auth.Login;
+
+            // Act
+            var response = await _client!.PostAsJsonAsync(url, invalidCreds);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.False(content!.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, content.Message);
+            Assert.NotNull(content.Errors);
+            Assert.True(content.Errors.Any());
+        }
+
+        [Fact]
         public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully()
         {
             // Arrange            
             var loginUser = new LoginUser { UserName = "cont", Password = "-Rtyuehe2" };
+            var loginContent = HttpHelper.GetJsonHttpContent(loginUser);
+
+            var url = HttpHelper.Urls.Auth.Login;
 
             // Act
-            var loginContent = HttpHelper.GetJsonHttpContent(loginUser);
-            var loginResponse = await _client!.PostAsync("/api/auth/login", loginContent);
-            loginResponse.EnsureSuccessStatusCode();
+            var loginResponse = await _client!.PostAsync(url, loginContent);
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<ApiResponse<LoginUser>>();
 

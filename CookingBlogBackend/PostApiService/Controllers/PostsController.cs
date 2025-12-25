@@ -106,8 +106,8 @@ namespace PostApiService.Controllers
         /// Updates an existing post.
         /// </summary>               
         [HttpPut("{postId}")]
-        [ValidateModel]
         [ValidateId]
+        [ValidateModel]        
         public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
         {
             var updatedPost = await _postsService.UpdatePostAsync(postId, post);

@@ -1,6 +1,9 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using PostApiService.Exceptions;
 using PostApiService.Models;
+using System.Net;
+using System.Net.Http.Json;
 using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
@@ -14,27 +17,65 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public CommentControllerTests(CommentFixture fixture)
         {
             _fixture = fixture;
-            _client = fixture.Client;
-            _services = fixture.Services;
+            _client = fixture.Client!;
+            _services = fixture.Services!;
+        }
+
+        [Fact]
+        public async Task OnAddComment_ShouldReturnBadRequest_WhenPostIdIsInvalid()
+        {
+            // Arrange
+            SetupMockUser("testContId");
+            var invalidPostId = 0;
+
+            var comment = new Comment { Content = "Valid content", Author = "Author" };
+            var content = HttpHelper.GetJsonHttpContent(comment);
+
+            var url = string.Format(HttpHelper.Urls.AddComment, invalidPostId);
+
+            // Act
+            var response = await _client.PostAsync(url, content);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(PostErrorMessages.InvalidPostIdParameter, result.Message);
+        }
+
+        [Fact]
+        public async Task OnAddComment_ShouldReturnBadRequest_WhenModelIsInvalid()
+        {
+            // Arrange
+            SetupMockUser("testContId");
+            var postId = 1;
+
+            var invalidComment = new Comment { Content = "", Author = "" };
+            var content = HttpHelper.GetJsonHttpContent(invalidComment);
+
+            var url = string.Format(HttpHelper.Urls.AddComment, postId);
+
+            // Act
+            var response = await _client.PostAsync(url, content);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+            Assert.NotNull(result.Errors);
+            Assert.True(result.Errors.Any());
         }
 
         [Fact]
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
         {
             // Arrange
-            var contClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "testContId"),
-                new Claim(ClaimTypes.Name, "cont"),
-                new Claim(ClaimTypes.Role, "Contributor"),
-                new Claim("Comment", "2"),
-                new Claim("Comment", "3"),
-                new Claim("Comment", "4")
-            };
-            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
-            var contPrincipal = new ClaimsPrincipal(contIdentity);
-
-            _fixture.SetCurrentUser(contPrincipal);
+            SetupMockUser("testContId");
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
@@ -73,22 +114,61 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         }
 
         [Fact]
+        public async Task OnUpdateComment_ShouldReturnBadRequest_WhenCommentIdIsInvalid()
+        {
+            // Arrange
+            SetupMockUser();
+            var invalidCommentId = 0;
+
+            var editModel = new EditCommentModel { Content = "Some valid content" };
+            var content = HttpHelper.GetJsonHttpContent(editModel);
+
+            var url = string.Format(HttpHelper.Urls.UpdateComment, invalidCommentId);
+
+            // Act
+            var response = await _client.PutAsync(url, content);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, result.Message);
+        }
+
+        [Fact]
+        public async Task OnUpdateComment_ShouldReturnBadRequest_WhenModelIsInvalid()
+        {
+            // Arrange
+            SetupMockUser();
+            var commentId = 2;
+
+            var invalidModel = new EditCommentModel { Content = "" };
+            var content = HttpHelper.GetJsonHttpContent(invalidModel);
+
+            var url = string.Format(HttpHelper.Urls.UpdateComment, commentId);
+
+            // Act
+            var response = await _client.PutAsync(url, content);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+            Assert.NotNull(result.Errors);
+            Assert.True(result.Errors.Any());
+        }
+
+        [Fact]
         public async Task OnUpdateCommentAsync_ShouldUpdateCommentInDatabaseAndReturn200OkResult()
         {
             // Arrange
-            var contClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "testUserId"),
-                new Claim(ClaimTypes.Name, "cont"),
-                new Claim(ClaimTypes.Role, "Contributor"),
-                new Claim("Comment", "2"),
-                new Claim("Comment", "3"),
-                new Claim("Comment", "4")
-            };
-            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
-            var contPrincipal = new ClaimsPrincipal(contIdentity);
-
-            _fixture.SetCurrentUser(contPrincipal);
+            SetupMockUser();
+            int postId = 1;
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
@@ -100,9 +180,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             };
 
             var content = HttpHelper.GetJsonHttpContent(commentToBeEdited);
+            var url = string.Format(HttpHelper.Urls.UpdateComment, postId);
 
             // Act
-            var response = await _client.PutAsync(HttpHelper.Urls.UpdateComment, content);
+            var response = await _client.PutAsync(url, content);
 
             // Assert
             response.EnsureSuccessStatusCode();
@@ -120,22 +201,33 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         }
 
         [Fact]
+        public async Task OnDeleteComment_ShouldReturnBadRequest_WhenCommentIdIsInvalid()
+        {
+            // Arrange           
+            SetupMockUser();
+            var invalidCommentId = 0;
+
+            var url = string.Format(HttpHelper.Urls.DeleteComment, invalidCommentId);
+
+            // Act
+            var response = await _client.DeleteAsync(url);
+
+            // Assert            
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, result.Message);
+        }
+
+        [Fact]
         public async Task OnDeleteCommentAsync_ShouldRemoveCommentInDatabaseAndReturn200OkResult()
         {
-            // Arrange
-            var contClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "testUserId"),
-                new Claim(ClaimTypes.Name, "cont"),
-                new Claim(ClaimTypes.Role, "Contributor"),
-                new Claim("Comment", "2"),
-                new Claim("Comment", "3"),
-                new Claim("Comment", "4")
-            };
-            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
-            var contPrincipal = new ClaimsPrincipal(contIdentity);
-
-            _fixture.SetCurrentUser(contPrincipal);
+            // Arrange            
+            SetupMockUser();
+            int commentIdToDelete = 3;
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
@@ -150,8 +242,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 initialCount = await dbContext.Comments.CountAsync();
             }
 
+            var url = string.Format(HttpHelper.Urls.DeleteComment, commentIdToDelete);
+
             // Act
-            var response = await _client.DeleteAsync(HttpHelper.Urls.DeleteComment);
+            var response = await _client.DeleteAsync(url);
 
             // Assert
             response.EnsureSuccessStatusCode();
@@ -161,7 +255,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 var removedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.Id == 3);
+                    .FirstOrDefaultAsync(c => c.Id == commentIdToDelete);
 
                 var commentCount = await dbContext.Comments.CountAsync();
 
@@ -184,6 +278,24 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                     await dbContext.SaveChangesAsync();
                 }
             }
+        }
+
+        private void SetupMockUser(string userId = "testUserId")
+        {
+            var contClaims = new[]
+            {
+                new Claim(ClaimTypes.NameIdentifier, userId),
+                new Claim(ClaimTypes.Name, "cont"),
+                new Claim(ClaimTypes.Role, "Contributor"),
+                new Claim("Comment", "2"),
+                new Claim("Comment", "3"),
+                new Claim("Comment", "4")
+            };
+
+            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
+            var contPrincipal = new ClaimsPrincipal(contIdentity);
+
+            _fixture.SetCurrentUser(contPrincipal);
         }
     }
 }
