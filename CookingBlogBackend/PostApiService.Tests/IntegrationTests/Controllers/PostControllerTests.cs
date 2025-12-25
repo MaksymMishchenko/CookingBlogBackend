@@ -123,18 +123,21 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
-            // Arrange                        
+            // Arrange
+            const int PageNumber = 1;
+            const int PageSize = 3;
             const int ExpectedTotalPosts = 0;
-
             var categories = TestDataHelper.GetCulinaryCategories();
 
             var posts = TestDataHelper.GetPostsWithComments(count: ExpectedTotalPosts, categories);
             await SeedDatabaseAsync(posts, categories);
 
-            var url = HttpHelper.Urls.PaginatedPostsUrl;
+            var url = string.Format(HttpHelper.Urls.PaginatedPostsUrl, PageNumber, PageSize);
 
             // Act
             var response = await _client.GetAsync(url);
+
+            response.EnsureSuccessStatusCode();
 
             // Assert            
             var content = await response.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();

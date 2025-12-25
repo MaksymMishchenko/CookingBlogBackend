@@ -4,7 +4,6 @@ using PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.Enums;
 
 namespace PostApiService.Controllers
 {
@@ -24,7 +23,7 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Register")]
-        [ValidateModel(InvalidErrorMessage = RegisterErrorMessages.InvalidRegistrationData, ErrorResponseType = ResourceType.RegisterUser)]
+        [ValidateModel(InvalidErrorMessage = RegisterErrorMessages.InvalidRegistrationData)]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUser user)
         {
             await _authService.RegisterUserAsync(user);
@@ -38,7 +37,7 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Login")]
-        [ValidateModel(InvalidErrorMessage = AuthErrorMessages.InvalidCredentials, ErrorResponseType = ResourceType.LoginUser)]
+        [ValidateModel(InvalidErrorMessage = AuthErrorMessages.InvalidCredentials)]
         public async Task<IActionResult> LoginUserAsync([FromBody] LoginUser credentials)
         {
             var user = await _authService.LoginAsync(credentials);

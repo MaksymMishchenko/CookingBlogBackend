@@ -1,39 +1,41 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
+using PostApiService.Exceptions;
+using PostApiService.Infrastructure.Constants;
 using PostApiService.Models;
-using PostApiService.Models.Enums;
+using Serilog;
 
 namespace PostApiService.Controllers.Filters
 {
-    public class ValidateIdAttribute : ActionFilterAttribute
+    public class ValidateIdAttribute : BaseValidationAttribute
     {
-        public string InvalidIdErrorMessage { get; set; }
-        public ResourceType ErrorResponseType { get; set; }
+        public string InvalidIdErrorMessage { get; set; } = PostErrorMessages.InvalidPostIdParameter;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            HandleInvalidModelState(context,
+                ResponseErrorMessages.ValidationFailed,
+                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
+
+            if (context.Result != null) return;
+
             foreach (var argument in context.ActionArguments)
             {
-                if (argument.Value is int id && id <= 0)
+                if (argument.Key.ToLower().Contains("id") && argument.Value is int id && id <= 0)
                 {
-                    var errorResponse = CreateErrorResponse();
+                    Log.Warning(LogMessages.InvalidIdValue,
+                        argument.Key, id, context.HttpContext.Request.Path);
 
-                    context.Result = new BadRequestObjectResult(errorResponse);
+                    var errors = new Dictionary<string, string[]>
+                    {
+                        { argument.Key, new[] { ResponseErrorMessages.ValidationFailed } }
+                    };
+
+                    context.Result = new BadRequestObjectResult(
+                        ApiResponse.CreateErrorResponse(InvalidIdErrorMessage, errors));
                     return;
                 }
-            }
-
-            base.OnActionExecuting(context);
-        }
-
-        private object CreateErrorResponse()
-        {
-            return ErrorResponseType switch
-            {
-                ResourceType.Comment => ApiResponse<Comment>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.Post => ApiResponse<Post>.CreateErrorResponse(InvalidIdErrorMessage),
-                _ => ApiResponse<object>.CreateErrorResponse("Invalid ID")
-            };
+            }            
         }
     }
 }

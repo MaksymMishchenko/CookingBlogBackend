@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
+﻿using Microsoft.AspNetCore.Mvc;
 using PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Models;
@@ -8,71 +6,94 @@ using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Tests.UnitTests.Filters
 {
-    public class ValidatePaginationParametersTests
+    public class ValidatePaginationParametersTests : FilterTestBase
     {
-        [Fact]
-        public void Sets_BadRequest_When_PageNumber_Less_Than_1()
+        private readonly ValidatePaginationParametersAttribute _filter;
+
+        public ValidatePaginationParametersTests()
+        {
+            _filter = new ValidatePaginationParametersAttribute { MaxPageSize = 10 };
+        }
+
+        [Theory]
+        [InlineData(0, 5)]
+        [InlineData(1, 0)]
+        [InlineData(-1, -1)]
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenParametersAreLessThanOne(int pageNumber, int pageSize)
         {
             // Arrange
-            var query = new PostQueryParameters { PageNumber = 0, PageSize = 5 };
-            var context = CreateContext(query);
-            var attribute = new ValidatePaginationParametersAttribute();
+            var query = new PaginationQueryParameters { PageNumber = pageNumber, PageSize = pageSize };
+            var actionArguments = new Dictionary<string, object?> { { "query", query } };
+            var context = CreateContext(actionArguments);
 
             // Act
-            attribute.OnActionExecuting(context);
+            _filter.OnActionExecuting(context);
 
             // Assert
-            Assert.IsType<BadRequestObjectResult>(context.Result);
-            var result = context.Result as BadRequestObjectResult;
-            Assert.Equal(PostErrorMessages.InvalidPageParameters, ((ApiResponse<Post>)result.Value).Message);
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
+
+            Assert.Equal(ResponseErrorMessages.ValidationFailed, response.Message);
+            Assert.NotNull(response.Errors);
+
+            if (pageNumber < 1) Assert.True(response.Errors.ContainsKey(nameof(query.PageNumber)));
+            if (pageSize < 1) Assert.True(response.Errors.ContainsKey(nameof(query.PageSize)));
         }
 
         [Fact]
-        public void Sets_BadRequest_When_PageSize_More_Than_10()
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenPageSizeExceedsMax()
         {
-            var query = new PostQueryParameters { PageNumber = 1, PageSize = 11 };
-            var context = CreateContext(query);
-            var attribute = new ValidatePaginationParametersAttribute();
+            // Arrange
+            var query = new PaginationQueryParameters { PageNumber = 1, PageSize = 100 }; // 100 > 10
+            var actionArguments = new Dictionary<string, object?> { { "query", query } };
+            var context = CreateContext(actionArguments);
 
-            attribute.OnActionExecuting(context);
+            // Act
+            _filter.OnActionExecuting(context);
 
-            Assert.IsType<BadRequestObjectResult>(context.Result);
-            var result = context.Result as BadRequestObjectResult;
-            Assert.Equal(PostErrorMessages.PageSizeExceeded, ((ApiResponse<Post>)result.Value).Message);
-        }        
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
+
+            var expectedErrorMessage = string.Format(PostErrorMessages.PageSizeExceeded, _filter.MaxPageSize);
+            Assert.Equal(expectedErrorMessage, response.Errors![nameof(query.PageSize)][0]);
+        }
 
         [Fact]
-        public void Does_Not_Set_Result_When_Parameters_Are_Valid()
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenBindingFails()
         {
-            var query = new PostQueryParameters { PageNumber = 1, PageSize = 5 };
-            var context = CreateContext(query);
-            var attribute = new ValidatePaginationParametersAttribute();
+            // Arrange
+            var context = CreateContext(new Dictionary<string, object?>());
+            const string propertyName = "PageNumber";
+            const string attemptedValue = "not-a-number";
 
-            attribute.OnActionExecuting(context);
+            context.ModelState.SetModelValue(propertyName, attemptedValue, attemptedValue);
+            context.ModelState.AddModelError(propertyName, "The value is invalid.");
 
+            // Act
+            _filter.OnActionExecuting(context);
+
+            // Assert
+            var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
+
+            var expectedError = string.Format(ResponseErrorMessages.InvalidNumberFormat, attemptedValue);
+            Assert.Equal(expectedError, response.Errors![propertyName][0]);
+        }
+
+        [Fact]
+        public void OnActionExecuting_ShouldDoNothing_WhenParametersAreValid()
+        {
+            // Arrange
+            var query = new PaginationQueryParameters { PageNumber = 1, PageSize = 10 };
+            var actionArguments = new Dictionary<string, object?> { { "query", query } };
+            var context = CreateContext(actionArguments);
+
+            // Act
+            _filter.OnActionExecuting(context);
+
+            // Assert
             Assert.Null(context.Result);
-        }
-
-        private ActionExecutingContext CreateContext(PostQueryParameters query)
-        {
-            var actionContext = new ActionContext
-            {
-                HttpContext = new DefaultHttpContext(),
-                RouteData = new Microsoft.AspNetCore.Routing.RouteData(),
-                ActionDescriptor = new Microsoft.AspNetCore.Mvc.Controllers.ControllerActionDescriptor()
-            };
-
-            var actionArguments = new Dictionary<string, object>
-            {
-                { "query", query }
-            };
-
-            return new ActionExecutingContext(
-                actionContext,
-                new List<IFilterMetadata>(),
-                actionArguments,
-                controller: null
-            );
         }
     }
 }

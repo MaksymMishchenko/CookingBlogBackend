@@ -7,7 +7,6 @@ using PostApiService.Interfaces;
 using PostApiService.Models;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
-using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -79,7 +78,7 @@ namespace PostApiService.Controllers
         /// </summary>        
         [HttpGet("{postId}")]
         [AllowAnonymous]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
+        [ValidateId]
         public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
         {
             var post = await _postsService.GetPostByIdAsync(postId, includeComments);
@@ -93,7 +92,7 @@ namespace PostApiService.Controllers
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
+        [ValidateModel]
         public async Task<IActionResult> AddPostAsync([FromBody] Post post)
         {
             var addedPost = await _postsService.AddPostAsync(post);
@@ -107,8 +106,8 @@ namespace PostApiService.Controllers
         /// Updates an existing post.
         /// </summary>               
         [HttpPut("{postId}")]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
+        [ValidateModel]
+        [ValidateId]
         public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
         {
             var updatedPost = await _postsService.UpdatePostAsync(postId, post);
@@ -122,7 +121,7 @@ namespace PostApiService.Controllers
         /// Deletes a post by its ID.
         /// </summary>        
         [HttpDelete("{postId}")]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
+        [ValidateId]
         public async Task<IActionResult> DeletePostAsync(int postId)
         {
             await _postsService.DeletePostAsync(postId);

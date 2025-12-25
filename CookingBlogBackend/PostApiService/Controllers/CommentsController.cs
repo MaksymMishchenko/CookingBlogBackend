@@ -4,7 +4,6 @@ using PostApiService.Controllers.Filters;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
 using PostApiService.Models;
-using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -25,8 +24,8 @@ namespace PostApiService.Controllers
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Comment)]        
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
+        [ValidateModel]        
+        [ValidateId]
         public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
         {
             await _commentService.AddCommentAsync(postId, comment);
@@ -39,8 +38,8 @@ namespace PostApiService.Controllers
         /// Updates an existing comment based on the provided comment ID.
         /// </summary>        
         [HttpPut("{commentId}")]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.EditComment)]
-        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
+        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter)]
+        [ValidateModel]
         public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
         {
             await _commentService.UpdateCommentAsync(commentId, comment);
@@ -53,7 +52,7 @@ namespace PostApiService.Controllers
         /// Deletes a comment by its ID.
         /// </summary>        
         [HttpDelete("{commentId}")]
-        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
+        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter)]
         public async Task<IActionResult> DeleteCommentAsync(int commentId)
         {
             await _commentService.DeleteCommentAsync(commentId);
