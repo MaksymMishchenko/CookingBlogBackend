@@ -32,6 +32,7 @@ namespace PostApiService.Infrastructure
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
             services.AddTransient<IPostService, PostService>();
+            services.AddTransient<ICategoryService, CategoryService>();
             services.AddTransient<ICommentService, CommentService>();
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
 

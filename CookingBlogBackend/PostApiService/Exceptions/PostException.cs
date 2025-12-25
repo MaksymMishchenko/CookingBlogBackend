@@ -28,6 +28,25 @@ namespace PostApiService.Exceptions
             Slug = slug;
         }
     }
+    public class ValidationFailedException : PostException
+    {        
+        public IDictionary<string, string[]> Errors { get; }
+
+        public ValidationFailedException(string message, IDictionary<string, string[]> errors)
+            : base(message)
+        {
+            Errors = errors;
+        }
+        
+        public ValidationFailedException(string propertyName, string errorMessage)
+            : base("One or more validation errors occurred.")
+        {
+            Errors = new Dictionary<string, string[]>
+            {
+                { propertyName, new[] { errorMessage } }
+            };
+        }
+    }
 
     public class AddPostFailedException : InvalidOperationException
     {

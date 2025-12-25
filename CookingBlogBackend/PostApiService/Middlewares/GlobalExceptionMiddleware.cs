@@ -88,6 +88,17 @@ namespace PostApiService.Middlewares
                     HttpStatusCode.Conflict,
                     string.Format(PostErrorMessages.PostAlreadyExist, ex.Title, ex.Slug));
             }
+            catch (ValidationFailedException ex)
+            {
+
+                await HandleExceptionAsync(
+                context,
+                ex.ToString(), // Лог для тебе (повний стек)
+                HttpStatusCode.BadRequest,
+                ex.Message,    // Текст повідомлення
+                ex.Errors      // Передаємо словник як окремий аргумент!
+                );
+            }
             catch (AddPostFailedException ex)
             {
                 await HandleExceptionAsync(context,
@@ -136,7 +147,7 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     string.Format(CommentErrorMessages.DeleteCommentFailed, ex.CommentId));
-            }            
+            }
             catch (TimeoutException ex)
             {
                 await HandleExceptionAsync(context,
@@ -150,7 +161,7 @@ namespace PostApiService.Middlewares
                     ex.Message,
                     HttpStatusCode.InternalServerError,
                     ResponseErrorMessages.SqlException);
-            }            
+            }
             catch (DbUpdateException ex)
             {
                 await HandleExceptionAsync(context,
@@ -184,7 +195,8 @@ namespace PostApiService.Middlewares
         private async Task HandleExceptionAsync(HttpContext context,
             string exMsg,
             HttpStatusCode httpStatusCode,
-            string message)
+            string message,
+            IDictionary<string, string[]>? errors = null)
         {
             _logger.LogError(exMsg);
 
@@ -193,7 +205,7 @@ namespace PostApiService.Middlewares
             response.ContentType = "application/json";
             response.StatusCode = (int)httpStatusCode;
 
-            var errorResponse = ApiResponse<object>.CreateErrorResponse(message);
+            var errorResponse = ApiResponse.CreateErrorResponse(message, errors);
 
             await response.WriteAsJsonAsync(errorResponse);
         }

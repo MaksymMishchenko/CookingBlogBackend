@@ -16,12 +16,15 @@ namespace PostApiService.Services
     public class PostService : IPostService
     {
         private readonly IRepository<Post> _repository;
+        private readonly ICategoryService _categoryService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
         public PostService(IRepository<Post> repository,
+            ICategoryService categoryService,
             ISnippetGeneratorService snippetGenerator)
         {
             _repository = repository;
+            _categoryService = categoryService;
             _snippetGenerator = snippetGenerator;
         }
 
@@ -152,6 +155,17 @@ namespace PostApiService.Services
                 string fullMessage = string.Format(PostErrorMessages.PostAlreadyExist, postDto.Title, postDto.Slug);
                 throw new PostAlreadyExistException
                     (fullMessage, postDto.Title, postDto.Slug);
+            }
+            
+            var categoryExists = await _categoryService.ExistsAsync(postDto.CategoryId);
+
+            if (!categoryExists)
+            {
+                Log.Warning("Post creation failed: Category {CategoryId} not found.", postDto.CategoryId);
+                
+                throw new ValidationFailedException(
+                    nameof(postDto.CategoryId),
+                    string.Format(CategoryErrorMessages.CategoryNotFound, postDto.CategoryId));
             }
 
             var postEntity = new Post

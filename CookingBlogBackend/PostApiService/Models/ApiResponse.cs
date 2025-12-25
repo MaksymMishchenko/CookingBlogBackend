@@ -27,9 +27,9 @@ namespace PostApiService.Models
         public string Token { get; set; } = default!;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public Dictionary<string, string[]>? Errors { get; set; }
+        public IDictionary<string, string[]>? Errors { get; set; }
 
-        public static ApiResponse CreateErrorResponse(string message, Dictionary<string, string[]>? errors = null)
+        public static ApiResponse CreateErrorResponse(string message, IDictionary<string, string[]>? errors = null)
         {
             return new ApiResponse
             {

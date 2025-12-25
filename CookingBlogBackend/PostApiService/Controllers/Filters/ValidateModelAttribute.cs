@@ -34,10 +34,6 @@ namespace PostApiService.Controllers.Filters
                 ResponseErrorMessages.ValidationFailed);
 
             if (context.Result != null) return;
-
-
-
-
         }
     }
 }
