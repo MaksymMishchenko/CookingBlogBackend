@@ -11,6 +11,7 @@ using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
+using Serilog;
 using System.Security.Claims;
 using System.Text;
 
@@ -18,6 +19,21 @@ namespace PostApiService.Infrastructure
 {
     public static class ServiceRegistration
     {
+        /// <summary>
+        /// Configures Serilog for file and console logging.
+        /// </summary>
+        public static void AddAppLogging(this IHostBuilder host)
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .WriteTo.File("logs/api_validation_.txt",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 7)
+                .CreateLogger();
+
+            host.UseSerilog();
+        }
         /// <summary>
         /// Registers application-specific services and the database context to the IServiceCollection.
         /// </summary>        

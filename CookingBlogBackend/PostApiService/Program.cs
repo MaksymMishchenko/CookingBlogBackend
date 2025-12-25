@@ -9,6 +9,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Host.AddAppLogging();
+
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
     ("DefaultConnection") ??
@@ -53,6 +55,7 @@ builder.Services.AddControllers()
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
+    // / Hand over validation control to custom Action Filters.
     options.SuppressModelStateInvalidFilter = true;
 });
 
