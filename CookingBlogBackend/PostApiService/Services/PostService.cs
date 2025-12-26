@@ -1,7 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Exceptions;
+﻿using PostApiService.Exceptions;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Constants;
 using PostApiService.Models.Dto;
 using PostApiService.Repositories;
@@ -93,7 +91,7 @@ namespace PostApiService.Services
                 .ToListAsync(cancellationToken);
 
             var searchPostList = postsWithContent.Select(item =>
-            {                
+            {
                 var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
 
                 return new SearchPostListDto
@@ -121,11 +119,11 @@ namespace PostApiService.Services
 
             if (includeComments)
             {
-                query = query                   
+                query = query
                     .Include(p => p.Comments);
             }
 
-            var post = await query                
+            var post = await query
                 .FirstOrDefaultAsync(p => p.Id == postId);
 
             if (post == null)

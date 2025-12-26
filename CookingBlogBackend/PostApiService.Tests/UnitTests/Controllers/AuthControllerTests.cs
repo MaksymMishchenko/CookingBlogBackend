@@ -1,10 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using PostApiService.Controllers;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -17,7 +12,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             _mockAuthService = Substitute.For<IAuthService>();
             _authController = new AuthController(_mockAuthService);
-        }        
+        }
 
         [Fact]
         public async Task OnRegisterUser_ShouldReturnOk_IfUserRegisterSuccessfully()
@@ -39,12 +34,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okRequestResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<RegisterUser>>(okRequestResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(string.Format(RegisterSuccessMessages.RegisterOk, newUser.UserName),
+            Assert.Equal(string.Format(Auth.Registration.Success.RegisterOk, newUser.UserName),
                 response.Message);
 
             await _mockAuthService.Received(1)
                 .RegisterUserAsync(newUser);
-        }        
+        }
 
         [Fact]
         public async Task OnLoginUser_ShouldReturnOk_IfUserLoginSuccessfully()
@@ -68,7 +63,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okRequestResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<LoginUser>>(okRequestResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(string.Format(AuthSuccessMessages.LoginSuccess, newUser.UserName),
+            Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess, newUser.UserName),
                 response.Message);
 
             await _mockAuthService.Received(1)

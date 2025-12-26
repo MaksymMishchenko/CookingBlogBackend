@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Models;
+﻿using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
 using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Tests.UnitTests.Filters
@@ -31,7 +28,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             // Assert
             var result = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(result.Value);
-            Assert.Equal(PostErrorMessages.SearchQueryRequired, response.Errors![nameof(searchParams.QueryString)][0]);
+            Assert.Equal(Global.Validation.SearchQueryRequired, response.Errors![nameof(searchParams.QueryString)][0]);
         }
 
         [Fact]
@@ -47,7 +44,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             // Assert
             var result = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(result.Value);
-            var expected = string.Format(PostErrorMessages.SearchQueryTooShort, _filter.MinQueryLength);
+            var expected = string.Format(Global.Validation.SearchQueryTooShort, _filter.MinQueryLength);
             Assert.Equal(expected, response.Errors![nameof(searchParams.QueryString)][0]);
         }
 
@@ -64,7 +61,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             // Assert
             var result = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(result.Value);
-            Assert.Equal(ResponseErrorMessages.SearchQueryForbiddenCharacters, response.Errors![nameof(searchParams.QueryString)][0]);
+            Assert.Equal(Global.Validation.SearchQueryForbiddenCharacters, response.Errors![nameof(searchParams.QueryString)][0]);
         }
 
         [Fact]
@@ -80,7 +77,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             // Assert
             var result = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(result.Value);
-            Assert.Equal(ResponseErrorMessages.SearchQueryMustContainLetterOrDigit, response.Errors![nameof(searchParams.QueryString)][0]);
+            Assert.Equal(Global.Validation.SearchQueryMustContainLetterOrDigit, response.Errors![nameof(searchParams.QueryString)][0]);
         }
 
         [Theory]

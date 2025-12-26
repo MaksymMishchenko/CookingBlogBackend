@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using PostApiService.Controllers;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -38,7 +34,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert                        
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult);
-            Assert.Equal(CommentSuccessMessages.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
+            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value!).Message);
 
             await _mockCommentService.Received(1)
                 .AddCommentAsync(postId, newComment);
@@ -63,7 +59,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert            
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult);
-            Assert.Equal(CommentSuccessMessages.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
+            Assert.Equal(CommentM.Success.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value!).Message);
 
             await _mockCommentService.Received(1)
                 .UpdateCommentAsync(commentId, updatedComment);
@@ -83,8 +79,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult);
-            Assert.Equal(CommentSuccessMessages.CommentDeletedSuccessfully,
-                ((ApiResponse<Comment>)okResult.Value).Message);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully,
+                ((ApiResponse<Comment>)okResult.Value!).Message);
 
             await _mockCommentService.Received(1)
                 .DeleteCommentAsync(commentId);

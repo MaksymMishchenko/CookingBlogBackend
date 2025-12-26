@@ -1,24 +1,19 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Infrastructure.Constants;
-using PostApiService.Models;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 using PostApiService.Models.Dto.Requests;
-using Serilog;
 
 namespace PostApiService.Controllers.Filters
 {
     public class ValidatePaginationParametersAttribute : BaseValidationAttribute
     {
-        public string InvalidParametersMessage { get; set; } = PostErrorMessages.InvalidPageParameters;
-        public string SizeExceededMessage { get; set; } = PostErrorMessages.PageSizeExceeded;
+        public string InvalidParametersMessage { get; set; } = Global.Validation.InvalidPageParameters;
+        public string SizeExceededMessage { get; set; } = Global.Validation.PageSizeExceeded;
         public int MaxPageSize { get; set; } = 10;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             HandleInvalidModelState(context,
-                ResponseErrorMessages.ValidationFailed,
-                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
+                Global.Validation.ValidationFailed,
+                (val, msg) => string.Format(Global.Validation.InvalidNumberFormat, val));
 
             if (context.Result != null) return;
 
@@ -38,7 +33,7 @@ namespace PostApiService.Controllers.Filters
                 }
                 else if (query.PageSize > MaxPageSize)
                 {
-                    Log.Warning(LogMessages.PaginationLimitExceeded,
+                    Log.Warning(Validation.PaginationLimitExceeded,
                         query.PageSize, MaxPageSize, context.HttpContext.Connection.RemoteIpAddress);
 
                     logicErrors.Add(nameof(query.PageSize), new[] { string.Format(SizeExceededMessage, MaxPageSize) });
@@ -47,10 +42,10 @@ namespace PostApiService.Controllers.Filters
                 if (logicErrors.Any())
                 {
                     context.Result = new BadRequestObjectResult(
-                        ApiResponse.CreateErrorResponse(ResponseErrorMessages.ValidationFailed, logicErrors));
+                        ApiResponse.CreateErrorResponse(Global.Validation.ValidationFailed, logicErrors));
                     return;
                 }
-            }            
+            }
         }
     }
 }

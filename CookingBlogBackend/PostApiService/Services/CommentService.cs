@@ -1,6 +1,5 @@
 ﻿using PostApiService.Exceptions;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Repositories;
 using System.Data.Common;
 

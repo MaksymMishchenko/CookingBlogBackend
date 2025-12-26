@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Models;
+﻿using PostApiService.Controllers.Filters;
 
 namespace PostApiService.Tests.UnitTests.Filters
 {
@@ -29,7 +26,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
 
             Assert.False(response.Success);
-            Assert.Equal(ResponseErrorMessages.RequestBodyRequired, response.Message);
+            Assert.Equal(Global.Validation.RequestBodyRequired, response.Message);
         }
 
         [Fact]
@@ -50,7 +47,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
 
-            Assert.Equal(ResponseErrorMessages.ValidationFailed, response.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, response.Message);
             Assert.NotNull(response.Errors);
             Assert.True(response.Errors.ContainsKey(propertyName));
         }

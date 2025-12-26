@@ -1,8 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
-using NSubstitute;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using System.Security.Claims;
@@ -37,10 +34,10 @@ namespace PostApiService.Tests.UnitTests.Services
             };
 
             _mockAuthRepository.FindByNameAsync(registerUser.UserName)
-            .Returns(Task.FromResult((IdentityUser)null));
+            .Returns(Task.FromResult((IdentityUser)null!));
 
             _mockAuthRepository.FindByEmailAsync(registerUser.Email)
-            .Returns(Task.FromResult((IdentityUser)null));
+            .Returns(Task.FromResult((IdentityUser)null!));
 
             var identityUser = new IdentityUser
             {

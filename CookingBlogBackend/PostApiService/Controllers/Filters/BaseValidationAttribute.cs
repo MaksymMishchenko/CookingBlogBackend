@@ -1,9 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Infrastructure.Constants;
-using PostApiService.Models;
-using Serilog;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace PostApiService.Controllers.Filters
 {
@@ -18,10 +13,10 @@ namespace PostApiService.Controllers.Filters
 
             foreach (var state in context.ModelState.Where(s => s.Value!.Errors.Any()))
             {
-                var attemptedValue = state.Value.AttemptedValue;
+                var attemptedValue = state.Value?.AttemptedValue;
                 if (!string.IsNullOrEmpty(attemptedValue))
                 {
-                    Log.Warning(LogMessages.BindingTypeMismatch, state.Key, attemptedValue);
+                    Log.Warning(Validation.BindingTypeMismatch, state.Key, attemptedValue);
                 }
             }
 
@@ -34,12 +29,12 @@ namespace PostApiService.Controllers.Filters
                         if (formatError != null)
                         {
                             var attemptedValue = context.ModelState[ms.Key]?.AttemptedValue
-                                                 ?? ResponseErrorMessages.UnknownValue;
+                                                 ?? Global.Validation.UnknownValue;
                             return formatError(attemptedValue, e.ErrorMessage);
                         }
 
                         return string.IsNullOrWhiteSpace(e.ErrorMessage)
-                            ? (e.Exception?.Message ?? ResponseErrorMessages.UnexpectedErrorException)
+                            ? (e.Exception?.Message ?? Global.Validation.UnexpectedErrorException)
                             : e.ErrorMessage;
                     }).ToArray()
                 );

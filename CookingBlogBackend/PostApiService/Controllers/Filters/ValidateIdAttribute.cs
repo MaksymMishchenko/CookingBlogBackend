@@ -1,21 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Infrastructure.Constants;
-using PostApiService.Models;
-using Serilog;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace PostApiService.Controllers.Filters
 {
     public class ValidateIdAttribute : BaseValidationAttribute
     {
-        public string InvalidIdErrorMessage { get; set; } = PostErrorMessages.InvalidPostIdParameter;
+        public string InvalidIdErrorMessage { get; set; } = Global.Validation.ValidationFailed;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
             HandleInvalidModelState(context,
-                ResponseErrorMessages.ValidationFailed,
-                (val, msg) => string.Format(ResponseErrorMessages.InvalidNumberFormat, val));
+                Global.Validation.ValidationFailed,
+                (val, msg) => string.Format(Global.Validation.InvalidNumberFormat, val));
 
             if (context.Result != null) return;
 
@@ -23,19 +18,19 @@ namespace PostApiService.Controllers.Filters
             {
                 if (argument.Key.ToLower().Contains("id") && argument.Value is int id && id <= 0)
                 {
-                    Log.Warning(LogMessages.InvalidIdValue,
+                    Log.Warning(Validation.InvalidIdValue,
                         argument.Key, id, context.HttpContext.Request.Path);
 
                     var errors = new Dictionary<string, string[]>
                     {
-                        { argument.Key, new[] { ResponseErrorMessages.ValidationFailed } }
+                        { argument.Key, new[] { Global.Validation.InvalidId } }
                     };
 
                     context.Result = new BadRequestObjectResult(
                         ApiResponse.CreateErrorResponse(InvalidIdErrorMessage, errors));
                     return;
                 }
-            }            
+            }
         }
     }
 }

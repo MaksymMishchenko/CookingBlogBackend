@@ -34,7 +34,7 @@
     public class UserCreationException : UserRegistrationException
     {
         public UserCreationException(string message)
-            : base(string.Format(RegisterErrorMessages.CreationFailed, message))
+            : base(string.Format(Auth.Registration.Errors.CreationFailed, message))
         {
         }
     }

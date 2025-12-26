@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Models;
+﻿using PostApiService.Controllers.Filters;
 using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Tests.UnitTests.Filters
@@ -33,7 +30,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
 
-            Assert.Equal(ResponseErrorMessages.ValidationFailed, response.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, response.Message);
             Assert.NotNull(response.Errors);
 
             if (pageNumber < 1) Assert.True(response.Errors.ContainsKey(nameof(query.PageNumber)));
@@ -55,7 +52,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
 
-            var expectedErrorMessage = string.Format(PostErrorMessages.PageSizeExceeded, _filter.MaxPageSize);
+            var expectedErrorMessage = string.Format(Global.Validation.PageSizeExceeded, _filter.MaxPageSize);
             Assert.Equal(expectedErrorMessage, response.Errors![nameof(query.PageSize)][0]);
         }
 
@@ -77,7 +74,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(badRequestResult.Value);
 
-            var expectedError = string.Format(ResponseErrorMessages.InvalidNumberFormat, attemptedValue);
+            var expectedError = string.Format(Global.Validation.InvalidNumberFormat, attemptedValue);
             Assert.Equal(expectedError, response.Errors![propertyName][0]);
         }
 

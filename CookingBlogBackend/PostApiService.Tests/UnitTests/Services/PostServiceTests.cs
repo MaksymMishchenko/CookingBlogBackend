@@ -1,7 +1,5 @@
 ﻿using MockQueryable;
-using NSubstitute;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Repositories;
 using PostApiService.Services;
 using System.Linq.Expressions;
@@ -461,7 +459,7 @@ namespace PostApiService.Tests.UnitTests
                 Slug = "new-slug-value"
             };
 
-            _mockRepository.GetByIdAsync(postId)
+            _mockRepository.GetByIdAsync(postId)!
                 .Returns(Task.FromResult(originalPost));
 
             _mockRepository.UpdateAsync(Arg.Any<Post>())
@@ -497,7 +495,7 @@ namespace PostApiService.Tests.UnitTests
 
             var mockRepository = Substitute.For<IRepository<Post>>();
 
-            mockRepository.GetByIdAsync(post.Id)
+            mockRepository.GetByIdAsync(post.Id)!
                 .Returns(Task.FromResult(post));
 
             mockRepository.DeleteAsync(Arg.Any<Post>())

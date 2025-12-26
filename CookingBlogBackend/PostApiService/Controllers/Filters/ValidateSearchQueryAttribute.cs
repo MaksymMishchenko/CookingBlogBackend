@@ -1,10 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Infrastructure.Constants;
-using PostApiService.Models;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 using PostApiService.Models.Dto.Requests;
-using Serilog;
 using System.Text.RegularExpressions;
 
 namespace PostApiService.Controllers.Filters
@@ -16,9 +11,9 @@ namespace PostApiService.Controllers.Filters
             public int MinQueryLength { get; set; } = 3;
             public int MaxQueryLength { get; set; } = 100;
 
-            public string RequiredMessage { get; set; } = PostErrorMessages.SearchQueryRequired;
-            public string TooShortMessage { get; set; } = PostErrorMessages.SearchQueryTooShort;
-            public string TooLongMessage { get; set; } = PostErrorMessages.SearchQueryTooLong;
+            public string RequiredMessage { get; set; } = Global.Validation.SearchQueryRequired;
+            public string TooShortMessage { get; set; } = Global.Validation.SearchQueryTooShort;
+            public string TooLongMessage { get; set; } = Global.Validation.SearchQueryTooLong;
 
             private static readonly Regex SafeSearchRegex = new Regex(
                 @"^[a-zA-Z0-9\s\-\.]+$",
@@ -26,7 +21,7 @@ namespace PostApiService.Controllers.Filters
 
             public override void OnActionExecuting(ActionExecutingContext context)
             {
-                HandleInvalidModelState(context, ResponseErrorMessages.ValidationFailed);
+                HandleInvalidModelState(context, Global.Validation.ValidationFailed);
 
                 if (context.Result != null) return;
 
@@ -50,21 +45,21 @@ namespace PostApiService.Controllers.Filters
                     }
                     else if (!queryStr.Any(char.IsLetterOrDigit))
                     {
-                        error = ResponseErrorMessages.SearchQueryMustContainLetterOrDigit;
+                        error = Global.Validation.SearchQueryMustContainLetterOrDigit;
                     }
                     else if (!SafeSearchRegex.IsMatch(queryStr))
                     {
-                        Log.Warning(LogMessages.SecurityForbiddenCharacters,
+                        Log.Warning(Security.SecurityForbiddenCharacters,
                             context.HttpContext.Connection.RemoteIpAddress, queryStr);
 
-                        error = ResponseErrorMessages.SearchQueryForbiddenCharacters;
+                        error = Global.Validation.SearchQueryForbiddenCharacters;
                     }
 
                     if (error != null)
                     {
                         var errors = new Dictionary<string, string[]> { { nameof(searchQuery.QueryString), [error] } };
                         context.Result = new BadRequestObjectResult(
-                            ApiResponse.CreateErrorResponse(ResponseErrorMessages.ValidationFailed, errors));
+                            ApiResponse.CreateErrorResponse(Global.Validation.ValidationFailed, errors));
                         return;
                     }
                 }

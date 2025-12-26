@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Exceptions;
-using PostApiService.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 
@@ -23,7 +20,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             // Arrange
             var invalidData = new RegisterUser { Email = "not-an-email" };
 
-            var url = HttpHelper.Urls.Auth.Register;
+            var url = Authentication.Register;
 
             // Act
             var response = await _client!.PostAsJsonAsync(url, invalidData);
@@ -33,7 +30,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
             Assert.NotNull(content);
             Assert.False(content.Success);
-            Assert.Equal(ResponseErrorMessages.ValidationFailed, content.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, content.Message);
             Assert.NotNull(content.Errors);
             Assert.True(content.Errors.Any());
         }
@@ -45,7 +42,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe6" };
             var content = HttpHelper.GetJsonHttpContent(newUser);
 
-            var url = HttpHelper.Urls.Auth.Register;
+            var url = Authentication.Register;
 
             // Act     
             var response = await _client!.PostAsync(url, content);
@@ -55,7 +52,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             // Assert
             Assert.True(result!.Success);
-            Assert.Equal(string.Format(RegisterSuccessMessages.RegisterOk,
+            Assert.Equal(string.Format(Auth.Registration.Success.RegisterOk,
                 newUser.UserName), result.Message);
 
             using (var scope = _services!.CreateScope())
@@ -74,7 +71,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         {
             // Arrange
             var invalidCreds = new LoginUser { UserName = "" };
-            var url = HttpHelper.Urls.Auth.Login;
+            var url = Authentication.Login;
 
             // Act
             var response = await _client!.PostAsJsonAsync(url, invalidCreds);
@@ -83,7 +80,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
             var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
             Assert.False(content!.Success);
-            Assert.Equal(ResponseErrorMessages.ValidationFailed, content.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, content.Message);
             Assert.NotNull(content.Errors);
             Assert.True(content.Errors.Any());
         }
@@ -95,7 +92,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var loginUser = new LoginUser { UserName = "cont", Password = "-Rtyuehe2" };
             var loginContent = HttpHelper.GetJsonHttpContent(loginUser);
 
-            var url = HttpHelper.Urls.Auth.Login;
+            var url = Authentication.Login;
 
             // Act
             var loginResponse = await _client!.PostAsync(url, loginContent);
@@ -104,7 +101,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             // Assert
             Assert.True(loginResult!.Success);
-            Assert.Equal(string.Format(AuthSuccessMessages.LoginSuccess,
+            Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess,
                 loginUser.UserName), loginResult.Message);
             Assert.NotNull(loginResult.Token);
             Assert.NotEmpty(loginResult.Token);

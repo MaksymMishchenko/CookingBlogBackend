@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 
 namespace PostApiService.Controllers
 {
@@ -23,13 +19,13 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Register")]
-        [ValidateModel(InvalidErrorMessage = RegisterErrorMessages.InvalidRegistrationData)]
+        [ValidateModel(InvalidErrorMessage = Auth.Registration.Errors.InvalidRegistrationData)]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUser user)
         {
             await _authService.RegisterUserAsync(user);
 
             return Ok(ApiResponse<RegisterUser>.CreateSuccessResponse
-               (string.Format(RegisterSuccessMessages.RegisterOk, user.UserName)));
+               (string.Format(Auth.Registration.Success.RegisterOk, user.UserName)));
         }
 
         /// <summary>
@@ -37,7 +33,7 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Login")]
-        [ValidateModel(InvalidErrorMessage = AuthErrorMessages.InvalidCredentials)]
+        [ValidateModel(InvalidErrorMessage = Auth.LoginM.Errors.InvalidCredentials)]
         public async Task<IActionResult> LoginUserAsync([FromBody] LoginUser credentials)
         {
             var user = await _authService.LoginAsync(credentials);
@@ -45,7 +41,7 @@ namespace PostApiService.Controllers
             var token = await _authService.GenerateTokenString(user);
 
             return Ok(ApiResponse<LoginUser>.CreateSuccessResponse
-                (string.Format(AuthSuccessMessages.LoginSuccess, user.UserName), token));
+                (string.Format(Auth.LoginM.Success.LoginSuccess, user.UserName), token));
         }
     }
 }

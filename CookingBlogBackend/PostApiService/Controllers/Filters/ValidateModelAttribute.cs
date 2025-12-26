@@ -1,15 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using PostApiService.Exceptions;
-using PostApiService.Infrastructure.Constants;
-using PostApiService.Models;
-using Serilog;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace PostApiService.Controllers.Filters
 {
     public class ValidateModelAttribute : BaseValidationAttribute
     {
-        public string InvalidErrorMessage { get; set; } = ResponseErrorMessages.ValidationFailed;
+        public string InvalidErrorMessage { get; set; } = Global.Validation.ValidationFailed;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
@@ -22,16 +17,16 @@ namespace PostApiService.Controllers.Filters
                 var path = context.HttpContext.Request.Path;
                 var ip = context.HttpContext.Connection.RemoteIpAddress;
 
-                Log.Warning(LogMessages.MissingRequestBody,
+                Log.Warning(Validation.MissingRequestBody,
                     method, path, ip);
 
                 context.Result = new BadRequestObjectResult(
-                    ApiResponse.CreateErrorResponse(ResponseErrorMessages.RequestBodyRequired));
+                    ApiResponse.CreateErrorResponse(Global.Validation.RequestBodyRequired));
                 return;
             }
 
             HandleInvalidModelState(context,
-                ResponseErrorMessages.ValidationFailed);
+                Global.Validation.ValidationFailed);
 
             if (context.Result != null) return;
         }

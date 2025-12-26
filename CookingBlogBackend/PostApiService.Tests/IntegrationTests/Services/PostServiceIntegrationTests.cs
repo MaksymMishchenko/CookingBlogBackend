@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Models;
-using PostApiService.Repositories;
+﻿using PostApiService.Repositories;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
@@ -36,7 +34,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             context = _fixture.CreateUniqueContext();
 
-            var categories = TestDataHelper.GetCulinaryCategories();           
+            var categories = TestDataHelper.GetCulinaryCategories();
             var postsToSeed = _fixture.GeneratePostsWithKeywords(keyword, categories, totalPostCount);
 
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
@@ -212,7 +210,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             const int PageNumber = 1;
             const int PageSize = 10;
             const int PostsCountToSeed = 10;
-            const string Query = "Chili";            
+            const string Query = "Chili";
 
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
                 (out context, Query, PostsCountToSeed);

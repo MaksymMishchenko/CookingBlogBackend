@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PostApiService.Infrastructure;
+using PostApiService.Infrastructure.Constants;
 using PostApiService.Middlewares;
 using PostApiService.Models;
 
@@ -13,23 +14,23 @@ builder.Host.AddAppLogging();
 
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
-    ("DefaultConnection") ??
+    (ConfigConstants.DefaultConnection) ??
     throw new InvalidOperationException
-        ("Connection string 'DefaultConnection' is not configured.");
+        (string.Format(ConfigConstants.Errors.ConnectionStringNotFound, ConfigConstants.DefaultConnection));
 
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(connectionString);
 
-var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<JwtConfiguration>() ??
-     throw new InvalidOperationException("Jwt configuration is missing in the appsettings.json file.");
+var jwtConfiguration = builder.Configuration.GetSection(ConfigConstants.JwtSection).Get<JwtConfiguration>() ??
+     throw new InvalidOperationException(ConfigConstants.Errors.JwtConfigMissing);
 
-builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection("JwtConfiguration"));
+builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection(ConfigConstants.JwtSection));
 
 // Get an identity connection string from appsettings.json and check for null
 var identityConnectionString = builder.Configuration.GetValue<string>
-    ("ApiPostIdentity:ConnectionString") ??
+    (ConfigConstants.IdentityConnection) ??
     throw new InvalidOperationException
-    ("Connection string 'ApiPostIdentity' is not configured.");
+    (string.Format(ConfigConstants.Errors.ConnectionStringNotFound, ConfigConstants.IdentityConnection));
 
 // Register AddIdentityDbContext service to the IServiceCollection
 builder.Services.AddAppIdentityService(identityConnectionString);

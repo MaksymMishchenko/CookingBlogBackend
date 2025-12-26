@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Exceptions;
-using PostApiService.Models;
+﻿using Microsoft.Extensions.DependencyInjection;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -31,7 +28,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var comment = new Comment { Content = "Valid content", Author = "Author" };
             var content = HttpHelper.GetJsonHttpContent(comment);
 
-            var url = string.Format(HttpHelper.Urls.AddComment, invalidPostId);
+            var url = string.Format(Comments.GetById, invalidPostId);
 
             // Act
             var response = await _client.PostAsync(url, content);
@@ -42,7 +39,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             Assert.NotNull(result);
             Assert.False(result.Success);
-            Assert.Equal(PostErrorMessages.InvalidPostIdParameter, result.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, result.Message);
         }
 
         [Fact]
@@ -55,7 +52,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var invalidComment = new Comment { Content = "", Author = "" };
             var content = HttpHelper.GetJsonHttpContent(invalidComment);
 
-            var url = string.Format(HttpHelper.Urls.AddComment, postId);
+            var url = string.Format(Comments.GetById, postId);
 
             // Act
             var response = await _client.PostAsync(url, content);
@@ -66,7 +63,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             Assert.NotNull(result);
             Assert.False(result.Success);
-            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, result.Message);
             Assert.NotNull(result.Errors);
             Assert.True(result.Errors.Any());
         }
@@ -93,7 +90,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var content = HttpHelper.GetJsonHttpContent(newComment);
 
             // Act
-            var response = await _client.PostAsync(string.Format(HttpHelper.Urls.AddComment, postId), content);
+            var response = await _client.PostAsync(string.Format(Comments.GetById, postId), content);
 
             // Assert
             response.EnsureSuccessStatusCode();
@@ -123,7 +120,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var editModel = new EditCommentModel { Content = "Some valid content" };
             var content = HttpHelper.GetJsonHttpContent(editModel);
 
-            var url = string.Format(HttpHelper.Urls.UpdateComment, invalidCommentId);
+            var url = string.Format(Comments.GetById, invalidCommentId);
 
             // Act
             var response = await _client.PutAsync(url, content);
@@ -134,7 +131,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
             Assert.NotNull(result);
             Assert.False(result.Success);
-            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, result.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, result.Message);
         }
 
         [Fact]
@@ -147,7 +144,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var invalidModel = new EditCommentModel { Content = "" };
             var content = HttpHelper.GetJsonHttpContent(invalidModel);
 
-            var url = string.Format(HttpHelper.Urls.UpdateComment, commentId);
+            var url = string.Format(Comments.GetById, commentId);
 
             // Act
             var response = await _client.PutAsync(url, content);
@@ -158,7 +155,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
             Assert.NotNull(result);
             Assert.False(result.Success);
-            Assert.Equal(ResponseErrorMessages.ValidationFailed, result.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, result.Message);
             Assert.NotNull(result.Errors);
             Assert.True(result.Errors.Any());
         }
@@ -180,7 +177,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             };
 
             var content = HttpHelper.GetJsonHttpContent(commentToBeEdited);
-            var url = string.Format(HttpHelper.Urls.UpdateComment, postId);
+            var url = string.Format(Comments.GetById, postId);
 
             // Act
             var response = await _client.PutAsync(url, content);
@@ -207,7 +204,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             SetupMockUser();
             var invalidCommentId = 0;
 
-            var url = string.Format(HttpHelper.Urls.DeleteComment, invalidCommentId);
+            var url = string.Format(Comments.GetById, invalidCommentId);
 
             // Act
             var response = await _client.DeleteAsync(url);
@@ -219,7 +216,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             Assert.NotNull(result);
             Assert.False(result.Success);
-            Assert.Equal(CommentErrorMessages.InvalidCommentIdParameter, result.Message);
+            Assert.Equal(Global.Validation.ValidationFailed, result.Message);
         }
 
         [Fact]
@@ -242,7 +239,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 initialCount = await dbContext.Comments.CountAsync();
             }
 
-            var url = string.Format(HttpHelper.Urls.DeleteComment, commentIdToDelete);
+            var url = string.Format(Comments.GetById, commentIdToDelete);
 
             // Act
             var response = await _client.DeleteAsync(url);

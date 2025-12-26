@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace PostApiService.Repositories
 {
@@ -57,7 +56,7 @@ namespace PostApiService.Repositories
         }
 
         public IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate)
-        {            
+        {
             return _dbSet
                 .AsQueryable()
                 .AsNoTracking()

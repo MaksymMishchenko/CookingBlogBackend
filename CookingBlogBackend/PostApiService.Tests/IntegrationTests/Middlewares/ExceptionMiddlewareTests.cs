@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
+﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 using System.Net;
 using System.Net.Http.Json;
@@ -15,11 +11,6 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 {
     public class ExceptionMiddlewareTests : IClassFixture<ExceptionMiddlewareFixture>
     {
-        public const string AuthApiEndpoint = "/api/auth/register";
-        public const string LoginApiEndpoint = "/api/auth/login";
-        public const string PostsApiEndpoint = "/api/posts";
-        public const string CommentsApiEndpoint = "/api/comments";
-
         private readonly HttpClient _client;
         private readonly ExceptionMiddlewareFixture _factoryFixture;
 
@@ -30,10 +21,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(UserAlreadyExistsException), AuthApiEndpoint, HttpStatusCode.Conflict)]
-        [InlineData(typeof(EmailAlreadyExistsException), AuthApiEndpoint, HttpStatusCode.Conflict)]
-        [InlineData(typeof(UserClaimException), AuthApiEndpoint, HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(UserCreationException), AuthApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(UserAlreadyExistsException), Authentication.Register, HttpStatusCode.Conflict)]
+        [InlineData(typeof(EmailAlreadyExistsException), Authentication.Register, HttpStatusCode.Conflict)]
+        [InlineData(typeof(UserClaimException), Authentication.Register, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(UserCreationException), Authentication.Register, HttpStatusCode.InternalServerError)]
         public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -46,19 +37,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 case Type t when t == typeof(UserAlreadyExistsException):
                     authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
-                        .Returns(Task.FromException(new UserAlreadyExistsException(RegisterErrorMessages.UsernameAlreadyExists)));
+                        .Returns(Task.FromException(new UserAlreadyExistsException(Auth.Registration.Errors.UsernameAlreadyExists)));
                     break;
                 case Type t when t == typeof(EmailAlreadyExistsException):
                     authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
-                        .Returns(Task.FromException(new EmailAlreadyExistsException(RegisterErrorMessages.EmailAlreadyExists)));
+                        .Returns(Task.FromException(new EmailAlreadyExistsException(Auth.Registration.Errors.EmailAlreadyExists)));
                     break;
                 case Type t when t == typeof(UserClaimException):
                     authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
-                        .Returns(Task.FromException(new UserClaimException(RegisterErrorMessages.CreationFailed)));
+                        .Returns(Task.FromException(new UserClaimException(Auth.Registration.Errors.CreationFailed)));
                     break;
                 case Type t when t == typeof(UserCreationException):
                     authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
-                        .Returns(Task.FromException(new UserCreationException(RegisterErrorMessages.CreationFailed)));
+                        .Returns(Task.FromException(new UserCreationException(Auth.Registration.Errors.CreationFailed)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -79,20 +70,20 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             string expectedMessage = exceptionType switch
             {
-                Type t when t == typeof(UserAlreadyExistsException) => RegisterErrorMessages.UsernameAlreadyExists,
-                Type t when t == typeof(EmailAlreadyExistsException) => RegisterErrorMessages.EmailAlreadyExists,
-                Type t when t == typeof(UserClaimException) => RegisterErrorMessages.CreationFailed,
-                Type t when t == typeof(UserCreationException) => RegisterErrorMessages.CreationFailed
+                Type t when t == typeof(UserAlreadyExistsException) => Auth.Registration.Errors.UsernameAlreadyExists,
+                Type t when t == typeof(EmailAlreadyExistsException) => Auth.Registration.Errors.EmailAlreadyExists,
+                Type t when t == typeof(UserClaimException) => Auth.Registration.Errors.CreationFailed,
+                Type t when t == typeof(UserCreationException) => Auth.Registration.Errors.CreationFailed
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(AuthenticationException), LoginApiEndpoint, HttpStatusCode.Unauthorized)]
-        [InlineData(typeof(UnauthorizedAccessException), LoginApiEndpoint, HttpStatusCode.Unauthorized)]
-        [InlineData(typeof(UserNotFoundException), LoginApiEndpoint, HttpStatusCode.Unauthorized)]
-        [InlineData(typeof(ArgumentException), LoginApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(AuthenticationException), Authentication.Login, HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(UnauthorizedAccessException), Authentication.Login, HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(UserNotFoundException), Authentication.Login, HttpStatusCode.Unauthorized)]
+        [InlineData(typeof(ArgumentException), Authentication.Login, HttpStatusCode.InternalServerError)]
         public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -103,13 +94,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             Task<IdentityUser> failedTask = exceptionType switch
             {
                 Type t when t == typeof(AuthenticationException) =>
-                    Task.FromException<IdentityUser>(new AuthenticationException(AuthErrorMessages.InvalidCredentials)),
+                    Task.FromException<IdentityUser>(new AuthenticationException(Auth.LoginM.Errors.InvalidCredentials)),
                 Type t when t == typeof(UnauthorizedAccessException) =>
-                    Task.FromException<IdentityUser>(new UnauthorizedAccessException(AuthErrorMessages.UnauthorizedAccess)),
+                    Task.FromException<IdentityUser>(new UnauthorizedAccessException(Auth.LoginM.Errors.UnauthorizedAccess)),
                 Type t when t == typeof(UserNotFoundException) =>
-                    Task.FromException<IdentityUser>(new UserNotFoundException(AuthErrorMessages.InvalidCredentials)),
+                    Task.FromException<IdentityUser>(new UserNotFoundException(Auth.LoginM.Errors.InvalidCredentials)),
                 Type t when t == typeof(ArgumentException) =>
-                    Task.FromException<IdentityUser>(new ArgumentException(TokenErrorMessages.GenerationFailed)),
+                    Task.FromException<IdentityUser>(new ArgumentException(Auth.Token.Errors.GenerationFailed)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -130,20 +121,20 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             string expectedMessage = exceptionType switch
             {
-                Type t when t == typeof(AuthenticationException) => AuthErrorMessages.InvalidCredentials,
-                Type t when t == typeof(UnauthorizedAccessException) => AuthErrorMessages.UnauthorizedAccess,
-                Type t when t == typeof(UserNotFoundException) => AuthErrorMessages.InvalidCredentials,
-                Type t when t == typeof(ArgumentException) => TokenErrorMessages.GenerationFailed,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                Type t when t == typeof(AuthenticationException) => Auth.LoginM.Errors.InvalidCredentials,
+                Type t when t == typeof(UnauthorizedAccessException) => Auth.LoginM.Errors.UnauthorizedAccess,
+                Type t when t == typeof(UserNotFoundException) => Auth.LoginM.Errors.InvalidCredentials,
+                Type t when t == typeof(ArgumentException) => Auth.Token.Errors.GenerationFailed,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
-       
+
         [Theory]
-        [InlineData(typeof(OperationCanceledException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), Posts.Base, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), Posts.Base, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), Posts.Base, HttpStatusCode.InternalServerError)]
         public async Task GetPostsWithTotalPostCountAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -155,11 +146,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             Exception exceptionToThrow = exceptionType switch
             {
                 Type t when t == typeof(OperationCanceledException) =>
-                    new OperationCanceledException(ResponseErrorMessages.OperationCanceledException),
+                    new OperationCanceledException(Global.System.RequestCancelled),
                 Type t when t == typeof(TimeoutException) =>
-                    new TimeoutException(ResponseErrorMessages.TimeoutException),
+                    new TimeoutException(Global.System.Timeout),
                 Type t when t == typeof(Exception) =>
-                    new Exception(ResponseErrorMessages.UnexpectedErrorException),
+                    new Exception(Global.Validation.UnexpectedErrorException),
             };
 
             var failedTupleTask = Task.FromException<(List<PostListDto> Posts, int TotalCount)>(exceptionToThrow);
@@ -181,19 +172,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             string expectedMessage = exceptionType switch
             {
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), $"{PostsApiEndpoint}/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(OperationCanceledException), $"{PostsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), $"{PostsApiEndpoint}/2", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), $"{PostsApiEndpoint}/3", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{Posts.Base}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(OperationCanceledException), $"{Posts.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{Posts.Base}/2", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{Posts.Base}/3", HttpStatusCode.InternalServerError)]
         public async Task GetPostByIdAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -208,11 +199,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(PostNotFoundException) =>
                     Task.FromException<Post>(new PostNotFoundException(invalidPostId)),
                 Type t when t == typeof(OperationCanceledException) =>
-                    Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                    Task.FromException<Post>(new OperationCanceledException(Global.System.RequestCancelled)),
                 Type t when t == typeof(TimeoutException) =>
-                    Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                    Task.FromException<Post>(new TimeoutException(Global.System.Timeout)),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
+                    Task.FromException<Post>(new Exception(Global.Validation.UnexpectedErrorException)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -230,22 +221,22 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             string expectedMessage = exceptionType switch
             {
-                Type t when t == typeof(PostNotFoundException) => string.Format(PostErrorMessages.PostNotFound, invalidPostId),
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                Type t when t == typeof(PostNotFoundException) => string.Format(PostM.Errors.PostNotFound, invalidPostId),
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(PostAlreadyExistException), PostsApiEndpoint, HttpStatusCode.Conflict)]
-        [InlineData(typeof(AddPostFailedException), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), PostsApiEndpoint, HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), PostsApiEndpoint, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostAlreadyExistException), Posts.Base, HttpStatusCode.Conflict)]
+        [InlineData(typeof(AddPostFailedException), Posts.Base, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), Posts.Base, HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), Posts.Base, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), Posts.Base, HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), Posts.Base, HttpStatusCode.InternalServerError)]
         public async Task AddPostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -273,13 +264,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(AddPostFailedException) =>
                     Task.FromException<Post>(new AddPostFailedException(postTitle, null)),
                 Type t when t == typeof(DbUpdateException) =>
-                    Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)),
+                    Task.FromException<Post>(new DbUpdateException(Global.System.DbUpdateError)),
                 Type t when t == typeof(OperationCanceledException) =>
-                    Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)),
+                    Task.FromException<Post>(new OperationCanceledException(Global.System.RequestCancelled)),
                 Type t when t == typeof(TimeoutException) =>
-                    Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)),
+                    Task.FromException<Post>(new TimeoutException(Global.System.Timeout)),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)),
+                    Task.FromException<Post>(new Exception(Global.Validation.UnexpectedErrorException)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -302,25 +293,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(PostAlreadyExistException) => string.Format
-                (PostErrorMessages.PostAlreadyExist, postTitle),
+                (PostM.Errors.PostAlreadyExist, postTitle),
                 Type t when t == typeof(AddPostFailedException) => string.Format
-                (PostErrorMessages.AddPostFailed, postTitle),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                (PostM.Errors.AddPostFailed, postTitle),
+                Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), $"{PostsApiEndpoint}/1", HttpStatusCode.NotFound)]
-        [InlineData(typeof(UpdatePostFailedException), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), $"{PostsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), $"{PostsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{Posts.Base}/1", HttpStatusCode.NotFound)]
+        [InlineData(typeof(UpdatePostFailedException), $"{Posts.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{Posts.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{Posts.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{Posts.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{Posts.Base}/1", HttpStatusCode.InternalServerError)]
         public async Task UpdatePostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -355,19 +346,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException<Post>(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                        .Returns(Task.FromException<Post>(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException<Post>(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                        .Returns(Task.FromException<Post>(new Exception(Global.Validation.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -391,25 +382,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(PostNotFoundException) => string.Format
-                (PostErrorMessages.PostNotFound, testPostId),
+                (PostM.Errors.PostNotFound, testPostId),
                 Type t when t == typeof(UpdatePostFailedException) => string.Format
-                (PostErrorMessages.UpdatePostFailed, postTitle),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                (PostM.Errors.UpdatePostFailed, postTitle),
+                Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), $"{PostsApiEndpoint}/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(DeletePostFailedException), $"{PostsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), $"{PostsApiEndpoint}/2", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), $"{PostsApiEndpoint}/3", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), $"{PostsApiEndpoint}/4", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), $"{PostsApiEndpoint}/5", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{Posts.Base}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(DeletePostFailedException), $"{Posts.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{Posts.Base}/2", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{Posts.Base}/3", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{Posts.Base}/4", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{Posts.Base}/5", HttpStatusCode.InternalServerError)]
         public async Task DeletePostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -442,19 +433,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                        .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                        .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -472,25 +463,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(PostNotFoundException) => string.Format
-                (PostErrorMessages.PostNotFound, testPostId),
+                (PostM.Errors.PostNotFound, testPostId),
                 Type t when t == typeof(DeletePostFailedException) => string.Format
-                (PostErrorMessages.DeletePostFailed, testPostId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                (PostM.Errors.DeletePostFailed, testPostId),
+                Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(PostNotFoundException), $"{CommentsApiEndpoint}/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(AddCommentFailedException), $"{CommentsApiEndpoint}/999", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), $"{CommentsApiEndpoint}/999", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), $"{CommentsApiEndpoint}/999", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), $"{CommentsApiEndpoint}/999", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), $"{CommentsApiEndpoint}/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(PostNotFoundException), $"{Comments.Base}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(AddCommentFailedException), $"{Comments.Base}/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{Comments.Base}/999", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{Comments.Base}/999", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{Comments.Base}/999", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{Comments.Base}/999", HttpStatusCode.InternalServerError)]
         public async Task AddCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -526,19 +517,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
-                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
-                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                        .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
-                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
-                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                        .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -559,25 +550,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(PostNotFoundException) => string.Format
-                (PostErrorMessages.PostNotFound, testPostId),
+                (PostM.Errors.PostNotFound, testPostId),
                 Type t when t == typeof(AddCommentFailedException) => string.Format
-                (CommentErrorMessages.AddCommentFailed, testPostId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                (CommentM.Errors.AddCommentFailed, testPostId),
+                Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(CommentNotFoundException), $"{CommentsApiEndpoint}/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(UpdateCommentFailedException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(CommentNotFoundException), $"{Comments.Base}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(UpdateCommentFailedException), $"{Comments.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{Comments.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{Comments.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{Comments.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{Comments.Base}/1", HttpStatusCode.InternalServerError)]
         public async Task UpdateCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -614,19 +605,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
-                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
-                        .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                        .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
-                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
-                        .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                        .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -647,25 +638,25 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(CommentNotFoundException) => string.Format
-                (CommentErrorMessages.CommentNotFound, testCommentId),
+                (CommentM.Errors.CommentNotFound, testCommentId),
                 Type t when t == typeof(UpdateCommentFailedException) => string.Format
-                (CommentErrorMessages.UpdateCommentFailed, testCommentId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                (CommentM.Errors.UpdateCommentFailed, testCommentId),
+                Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
         [Theory]
-        [InlineData(typeof(CommentNotFoundException), $"{CommentsApiEndpoint}/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(DeleteCommentFailedException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(DbUpdateException), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
-        [InlineData(typeof(OperationCanceledException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(TimeoutException), $"{CommentsApiEndpoint}/1", HttpStatusCode.RequestTimeout)]
-        [InlineData(typeof(Exception), $"{CommentsApiEndpoint}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(CommentNotFoundException), $"{Comments.Base}/999", HttpStatusCode.NotFound)]
+        [InlineData(typeof(DeleteCommentFailedException), $"{Comments.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(DbUpdateException), $"{Comments.Base}/1", HttpStatusCode.InternalServerError)]
+        [InlineData(typeof(OperationCanceledException), $"{Comments.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(TimeoutException), $"{Comments.Base}/1", HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(Exception), $"{Comments.Base}/1", HttpStatusCode.InternalServerError)]
         public async Task DeleteCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
@@ -702,19 +693,19 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new DbUpdateException(ResponseErrorMessages.DbUpdateException)));
+                        .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
-                         .Returns(Task.FromException(new OperationCanceledException(ResponseErrorMessages.OperationCanceledException)));
+                         .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new TimeoutException(ResponseErrorMessages.TimeoutException)));
+                        .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
-                         .Returns(Task.FromException(new Exception(ResponseErrorMessages.UnexpectedErrorException)));
+                         .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -735,13 +726,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             string expectedMessage = exceptionType switch
             {
                 Type t when t == typeof(CommentNotFoundException) => string.Format
-                (CommentErrorMessages.CommentNotFound, testCommentId),
+                (CommentM.Errors.CommentNotFound, testCommentId),
                 Type t when t == typeof(DeleteCommentFailedException) => string.Format
-                (CommentErrorMessages.DeleteCommentFailed, testCommentId),
-                Type t when t == typeof(DbUpdateException) => ResponseErrorMessages.DbUpdateException,
-                Type t when t == typeof(OperationCanceledException) => ResponseErrorMessages.OperationCanceledException,
-                Type t when t == typeof(TimeoutException) => ResponseErrorMessages.TimeoutException,
-                Type t when t == typeof(Exception) => ResponseErrorMessages.UnexpectedErrorException
+                (CommentM.Errors.DeleteCommentFailed, testCommentId),
+                Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
+                Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
+                Type t when t == typeof(TimeoutException) => Global.System.Timeout,
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);

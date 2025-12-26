@@ -1,17 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Contexts;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
-using Serilog;
 using System.Security.Claims;
 using System.Text;
 

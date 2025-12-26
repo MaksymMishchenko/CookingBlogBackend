@@ -1,10 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using PostApiService.Controllers;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
 using System.Net;
@@ -49,7 +44,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<PostListDto>>(okResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(PostSuccessMessages.NoPostsAvailableYet, response.Message);
+            Assert.Equal(PostM.Success.NoPostsAvailableYet, response.Message);
 
             await _mockPostService.Received(1)
                 .GetPostsWithTotalPostCountAsync(
@@ -93,7 +88,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.NotNull(response.DataList);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+                (PostM.Success.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
 
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
             Assert.Equal(ExpectedPageSize, response.PageSize);
@@ -171,7 +166,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.NotNull(response.DataList);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+                (PostM.Success.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
 
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
             Assert.Equal(ExpectedPageSize, response.PageSize);
@@ -258,7 +253,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, expectedPost.Id), response.Message);
+                (PostM.Success.PostRetrievedSuccessfully, expectedPost.Id), response.Message);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
             await _mockPostService.Received(1)
@@ -285,7 +280,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostAddedSuccessfully, post.Id), response.Message);
+                (PostM.Success.PostAddedSuccessfully, post.Id), response.Message);
 
             await _mockPostService.Received(1).AddPostAsync(post);
         }
@@ -323,7 +318,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, postId), actualResponse.Message);
+                (PostM.Success.PostUpdatedSuccessfully, postId), actualResponse.Message);
             Assert.Equal(postId, actualResponse.Data.Id);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
@@ -348,7 +343,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
+                (PostM.Success.PostDeletedSuccessfully, postId), response.Message);
 
             await _mockPostService.Received(1).DeletePostAsync(postId);
         }

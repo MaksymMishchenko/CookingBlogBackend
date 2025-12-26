@@ -1,10 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters;
+﻿using PostApiService.Controllers.Filters;
 using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
@@ -40,8 +36,8 @@ namespace PostApiService.Controllers
 
             return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
                 (posts.Any()
-                ? string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count)
-                : PostSuccessMessages.NoPostsAvailableYet,
+                ? string.Format(PostM.Success.PostsRetrievedSuccessfully, posts.Count)
+                : PostM.Success.NoPostsAvailableYet,
                 posts,
                 query.PageNumber,
                 query.PageSize,
@@ -65,7 +61,7 @@ namespace PostApiService.Controllers
                 cancellationToken);
 
             return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
-                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, searchPostList.Count),
+                (string.Format(PostM.Success.PostsRetrievedSuccessfully, searchPostList.Count),
                 query.QueryString,
                 searchPostList,
                 query.PageNumber,
@@ -85,7 +81,7 @@ namespace PostApiService.Controllers
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, post.Id), post));
+                (PostM.Success.PostRetrievedSuccessfully, post.Id), post));
         }
 
         /// <summary>
@@ -99,7 +95,7 @@ namespace PostApiService.Controllers
 
             return CreatedAtAction("GetPostById", new { postId = addedPost.Id },
                 ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost));
+                (string.Format(PostM.Success.PostAddedSuccessfully), addedPost));
         }
 
         /// <summary>
@@ -107,14 +103,14 @@ namespace PostApiService.Controllers
         /// </summary>               
         [HttpPut("{postId}")]
         [ValidateId]
-        [ValidateModel]        
+        [ValidateModel]
         public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
         {
             var updatedPost = await _postsService.UpdatePostAsync(postId, post);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, postId), updatedPost));
+                (PostM.Success.PostUpdatedSuccessfully, postId), updatedPost));
         }
 
         /// <summary>
@@ -128,7 +124,7 @@ namespace PostApiService.Controllers
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostDeletedSuccessfully, postId), postId));
+                (PostM.Success.PostDeletedSuccessfully, postId), postId));
         }
     }
 }

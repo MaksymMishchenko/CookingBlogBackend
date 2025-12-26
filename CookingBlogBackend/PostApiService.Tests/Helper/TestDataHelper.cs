@@ -1,5 +1,4 @@
 ﻿using Bogus.Extensions;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 
 namespace PostApiService.Tests.Helper

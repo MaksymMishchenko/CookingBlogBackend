@@ -1,7 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using NSubstitute;
-using PostApiService.Interfaces;
-using PostApiService.Models;
+﻿using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 using System.Linq.Expressions;
@@ -26,11 +23,11 @@ namespace PostApiService.Tests.UnitTests.Services
             // Arrange            
             var postId = 1;
             var comment = new Comment { Content = "Test comment", Author = "Test author" };
-                        
+
             _mockPostRepo.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(true);
 
-            var testUser = new IdentityUser { Id = "user123" };            
+            var testUser = new IdentityUser { Id = "user123" };
             _mockAuthService.GetCurrentUserAsync().Returns(Task.FromResult(testUser));
 
             var service = new CommentService(_mockCommentRepo, _mockPostRepo, _mockAuthService);
@@ -50,8 +47,8 @@ namespace PostApiService.Tests.UnitTests.Services
             var commentId = 1;
             var existingPost = TestDataHelper.GetListWithComments()
                 .FirstOrDefault(c => c.Id == commentId);
-            
-            _mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(existingPost);            
+
+            _mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(existingPost);
 
             var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
 
@@ -73,8 +70,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             var post = TestDataHelper.GetListWithComments()
                 .FirstOrDefault(c => c.Id == commentId);
-            
-            _mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(post);            
+
+            _mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(post);
 
             var service = new CommentService(_mockCommentRepo, _mockPostRepo, _mockAuthService);
 

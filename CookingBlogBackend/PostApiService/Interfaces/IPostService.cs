@@ -1,5 +1,4 @@
-﻿using PostApiService.Models;
-using PostApiService.Models.Dto;
+﻿using PostApiService.Models.Dto;
 
 namespace PostApiService.Interfaces
 {
