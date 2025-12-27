@@ -29,6 +29,7 @@ namespace PostApiService.Infrastructure
 
             host.UseSerilog();
         }
+
         /// <summary>
         /// Registers application-specific services and the database context to the IServiceCollection.
         /// </summary>        
@@ -39,11 +40,12 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(connectionString);
             });
 
-            services.AddTransient<DbContext, ApplicationDbContext>();
+            services.AddScoped<DbContext, ApplicationDbContext>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-            services.AddTransient<IPostService, PostService>();
-            services.AddTransient<ICommentService, CommentService>();
+            services.AddScoped<IPostService, PostService>();
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<ICommentService, CommentService>();
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
 
             return services;

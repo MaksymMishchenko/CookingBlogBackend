@@ -26,6 +26,22 @@
             }
         }
 
+        public static class CategoryM
+        {
+            public static class Errors
+            {
+                public const string CategoryNotFound = "Category was not found.";
+                public const string CategoryAlreadyExists = "Category with Name '{0}' already exists.";
+                public const string CannotDeleteCategoryWithPosts = "Cannot delete category with posts";
+            }
+
+            public static class Success
+            {
+                public const string CategoryRetrievedSuccessfully = "Category retrieved successfully.";
+                public const string CategoryAddedSuccessfully = "Category added successfully.";
+            }
+        }
+
         public static class CommentM
         {
             public static class Errors
@@ -69,7 +85,7 @@
                     public const string UsernameAlreadyExists = "This username is already taken.";
                     public const string EmailAlreadyExists = "Email already exists.";
                     public const string CreationFailed = "User creation failed. ";
-                    public const string ClaimAssignmentFailed = "Failed to assign claim to user.";                    
+                    public const string ClaimAssignmentFailed = "Failed to assign claim to user.";
                 }
 
                 public static class Success
@@ -83,7 +99,7 @@
                 public static class Errors
                 {
                     public const string SecretKeyNullOrEmpty = "Secret key cannot be null or empty.";
-                    public const string TokenExpirationInvalid = "Token expiration time must be greater than zero.";                    
+                    public const string TokenExpirationInvalid = "Token expiration time must be greater than zero.";
                     public const string TokenGenerationFailed = "An error occurred while generating the token.";
                     public const string GenerationFailed = "An unexpected error occurred.";
                 }
@@ -94,6 +110,8 @@
         {
             public static class Validation
             {
+                public const string Required = "{0} is required.";
+                public const string LengthRange = "{0} must be between {2} and {1} characters.";
                 public const string InvalidId = "The provided identifier must be greater than 0.";
                 public const string InvalidPageParameters = "Parameter must be greater than 0.";
                 public const string PageSizeExceeded = "Items per page size exceeds the allowed maximum.";
@@ -113,10 +131,11 @@
 
             public static class System
             {
+                public const string DatabaseCriticalError = "A technical problem occurred with the data storage. Please try again later.";
                 public const string DbUpdateError = "Database error occurred while processing data.";
                 public const string Timeout = "The request timed out.";
-                public const string DatabaseError = "Database error.";  // SqlException
-                public const string RequestCancelled = "The operation was canceled."; 
+                public const string DatabaseError = "Database error.";
+                public const string RequestCancelled = "The operation was canceled.";
             }
         }
     }

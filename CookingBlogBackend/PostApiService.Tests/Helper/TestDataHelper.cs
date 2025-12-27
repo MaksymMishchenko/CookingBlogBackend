@@ -1,5 +1,6 @@
 ﻿using Bogus.Extensions;
 using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.Helper
 {
@@ -221,6 +222,13 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Author, actualDto.Author);
         }
 
+        public static void AssertCategoryAsync(Category expectedCategory, CategoryDto actualDto)
+        {
+            Assert.NotNull(actualDto);
+            Assert.Equal(expectedCategory.Id, actualDto.Id);
+            Assert.Equal(expectedCategory.Name, actualDto.Name);
+        }
+
         public static List<Post> GetSearchedPost(ICollection<Category> categories)
         {
             return new List<Post>
@@ -377,11 +385,6 @@ namespace PostApiService.Tests.Helper
                 CategoryId = category.Id,
                 Category = null!
             };
-        }
-
-        public static List<Post> GetEmptyPostList()
-        {
-            return new List<Post>();
         }
 
         public static List<Comment> GetListWithComments()

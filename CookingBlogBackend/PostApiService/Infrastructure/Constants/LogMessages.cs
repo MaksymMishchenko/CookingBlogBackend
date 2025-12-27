@@ -22,5 +22,19 @@
             public const string SecurityForbiddenCharacters =
             "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
         }
+
+        public static class System
+        {
+            public const string DatabaseCriticalError = "Database critical failure. Details: {Message}";
+        }
+
+        public static class Categories
+        {
+            public const string CategoryExists = "Add category failed: Name already exists. Name: {Name}";
+            public const string CategoryDoesNotExist =
+                "Update Category Failed: Category with ID {Id} not found in database. Input Name: {Name}";
+            public const string DeleteBlockedByRelatedPosts = "Delete blocked: Category {Name} has active posts";
+
+        }
     }
 }

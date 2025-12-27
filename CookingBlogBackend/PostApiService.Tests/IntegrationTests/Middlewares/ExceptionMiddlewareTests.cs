@@ -150,7 +150,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(TimeoutException) =>
                     new TimeoutException(Global.System.Timeout),
                 Type t when t == typeof(Exception) =>
-                    new Exception(Global.Validation.UnexpectedErrorException),
+                    new Exception(Global.System.DatabaseCriticalError),
             };
 
             var failedTupleTask = Task.FromException<(List<PostListDto> Posts, int TotalCount)>(exceptionToThrow);
@@ -174,7 +174,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             {
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -203,7 +203,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(TimeoutException) =>
                     Task.FromException<Post>(new TimeoutException(Global.System.Timeout)),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<Post>(new Exception(Global.Validation.UnexpectedErrorException)),
+                    Task.FromException<Post>(new Exception(Global.System.DatabaseCriticalError)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -224,7 +224,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(PostNotFoundException) => string.Format(PostM.Errors.PostNotFound, invalidPostId),
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -270,7 +270,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(TimeoutException) =>
                     Task.FromException<Post>(new TimeoutException(Global.System.Timeout)),
                 Type t when t == typeof(Exception) =>
-                    Task.FromException<Post>(new Exception(Global.Validation.UnexpectedErrorException)),
+                    Task.FromException<Post>(new Exception(Global.System.DatabaseCriticalError)),
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
@@ -299,7 +299,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -358,7 +358,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(Exception):
                     postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
-                        .Returns(Task.FromException<Post>(new Exception(Global.Validation.UnexpectedErrorException)));
+                        .Returns(Task.FromException<Post>(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -388,7 +388,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -445,7 +445,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(Exception):
                     postServiceMock?.DeletePostAsync(Arg.Any<int>())
-                        .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
+                        .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -469,7 +469,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -529,7 +529,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(Exception):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
-                        .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
+                        .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -556,7 +556,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -617,7 +617,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(Exception):
                     commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
-                        .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
+                        .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -644,7 +644,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -705,7 +705,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     break;
                 case Type t when t == typeof(Exception):
                     commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
-                         .Returns(Task.FromException(new Exception(Global.Validation.UnexpectedErrorException)));
+                         .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -732,7 +732,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
