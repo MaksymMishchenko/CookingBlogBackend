@@ -48,7 +48,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var existingPost = TestDataHelper.GetListWithComments()
                 .FirstOrDefault(c => c.Id == commentId);
 
-            _mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(existingPost);
+            _mockCommentRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(existingPost);
 
             var updatedComment = new EditCommentModel { Content = "Content edited successfully" };
 
@@ -59,7 +59,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             await _mockCommentRepo.Received(1)
-                .GetByIdAsync(Arg.Any<int>());
+                .GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -71,7 +71,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var post = TestDataHelper.GetListWithComments()
                 .FirstOrDefault(c => c.Id == commentId);
 
-            _mockCommentRepo.GetByIdAsync(Arg.Any<int>()).Returns(post);
+            _mockCommentRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(post);
 
             var service = new CommentService(_mockCommentRepo, _mockPostRepo, _mockAuthService);
 
@@ -80,7 +80,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert            
             await _mockCommentRepo.Received(1)
-                .GetByIdAsync(Arg.Any<int>());
+                .GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
     }
 }

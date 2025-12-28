@@ -28,9 +28,9 @@ namespace PostApiService.Services
         public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
             int pageNumber = 1,
             int pageSize = 10,
-            CancellationToken cancellationToken = default)
+            CancellationToken ct = default)
         {
-            var totalPostCount = await _repository.GetTotalCountAsync(cancellationToken);
+            var totalPostCount = await _repository.GetTotalCountAsync(ct);
 
             var query = _repository.AsQueryable();
 
@@ -49,7 +49,7 @@ namespace PostApiService.Services
                 })
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .ToListAsync(cancellationToken);
+                .ToListAsync(ct);
 
             return (posts, totalPostCount);
         }
@@ -59,7 +59,7 @@ namespace PostApiService.Services
         /// Results are sorted by creation date (descending) and returned with pagination.
         /// </summary>
         public async Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
-            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default)
+            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
         {
             Expression<Func<Post, bool>> searchPredicate = p =>
                 p.Title.Contains(query) ||
@@ -68,7 +68,7 @@ namespace PostApiService.Services
 
             var queryable = _repository.GetFilteredQueryable(searchPredicate);
 
-            var searchTotalPosts = await queryable.CountAsync(cancellationToken);
+            var searchTotalPosts = await queryable.CountAsync(ct);
 
             if (searchTotalPosts == 0)
             {
@@ -88,7 +88,7 @@ namespace PostApiService.Services
                     p.Author,
                     p.Category
                 })
-                .ToListAsync(cancellationToken);
+                .ToListAsync(ct);
 
             var searchPostList = postsWithContent.Select(item =>
             {
@@ -111,7 +111,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Retrieves a post by its ID from the database, with optional inclusion of comments.
         /// </summary>        
-        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true)
+        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true, CancellationToken ct = default)
         {
             var query = _repository.AsQueryable();
 
@@ -124,7 +124,7 @@ namespace PostApiService.Services
             }
 
             var post = await query
-                .FirstOrDefaultAsync(p => p.Id == postId);
+                .FirstOrDefaultAsync(p => p.Id == postId, ct);
 
             if (post == null)
             {
@@ -137,10 +137,10 @@ namespace PostApiService.Services
         /// <summary>
         /// Adds a new post to the database.
         /// </summary>        
-        public async Task<Post> AddPostAsync(Post post)
+        public async Task<Post> AddPostAsync(Post post, CancellationToken ct = default)
         {
             var existingPost = await _repository
-                .AnyAsync(p => p.Title == post.Title);
+                .AnyAsync(p => p.Title == post.Title, ct);
 
             if (existingPost)
             {
@@ -149,8 +149,10 @@ namespace PostApiService.Services
 
             try
             {
-                Post addedPost = await _repository.AddAsync(post);
-                return addedPost;
+                await _repository.AddAsync(post, ct);
+                await _repository.SaveChangesAsync(ct);
+
+                return post;
             }
             catch (DbException ex)
             {
@@ -161,10 +163,10 @@ namespace PostApiService.Services
         /// <summary>
         /// Updates an existing post with the provided data.        
         /// </summary>        
-        public async Task<Post> UpdatePostAsync(int postId, Post post)
+        public async Task<Post> UpdatePostAsync(int postId, Post post, CancellationToken ct = default)
         {
             var existingPost = await _repository
-                .GetByIdAsync(postId);
+                .GetByIdAsync(postId, ct);
 
             if (existingPost == null)
             {
@@ -181,7 +183,8 @@ namespace PostApiService.Services
                 existingPost.MetaDescription = post.MetaDescription;
                 existingPost.Slug = post.Slug;
 
-                await _repository.UpdateAsync(existingPost);
+                await _repository.UpdateAsync(existingPost, ct);
+                await _repository.SaveChangesAsync(ct);
 
                 return existingPost;
             }
@@ -194,9 +197,9 @@ namespace PostApiService.Services
         /// <summary>
         /// Deletes a post from the database by the specified post ID.
         /// </summary>        
-        public async Task DeletePostAsync(int postId)
+        public async Task DeletePostAsync(int postId, CancellationToken ct = default)
         {
-            var existingPost = await _repository.GetByIdAsync(postId);
+            var existingPost = await _repository.GetByIdAsync(postId, ct);
 
             if (existingPost == null)
             {
@@ -205,7 +208,8 @@ namespace PostApiService.Services
 
             try
             {
-                await _repository.DeleteAsync(existingPost);
+                await _repository.DeleteAsync(existingPost, ct);
+                await _repository.SaveChangesAsync(ct);
             }
             catch (DbException ex)
             {

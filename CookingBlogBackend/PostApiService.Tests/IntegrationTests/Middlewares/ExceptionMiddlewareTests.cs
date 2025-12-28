@@ -207,7 +207,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            postServiceMock?.GetPostByIdAsync(Arg.Any<int>(), Arg.Any<bool>())
+            postServiceMock?.GetPostByIdAsync(Arg.Any<int>(), Arg.Any<bool>(), Arg.Any<CancellationToken>())
                 .Returns(failedTask);
 
             // Act
@@ -274,7 +274,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 _ => throw new ArgumentException($"Unsupported exception type: {exceptionType}")
             };
 
-            postServiceMock?.AddPostAsync(Arg.Any<Post>())
+            postServiceMock?.AddPostAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>())
                 .Returns(failedTask);
 
             var categories = TestDataHelper.GetCulinaryCategories();
@@ -337,27 +337,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             switch (exceptionType)
             {
                 case Type t when t == typeof(PostNotFoundException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Post>(new PostNotFoundException(testPostId)));
                     break;
                 case Type t when t == typeof(UpdatePostFailedException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Post>(new UpdatePostFailedException(postTitle, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Post>(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Post>(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Post>(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
-                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>())
+                    postServiceMock?.UpdatePostAsync(Arg.Any<int>(), Arg.Any<Post>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Post>(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
@@ -424,27 +424,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             switch (exceptionType)
             {
                 case Type t when t == typeof(PostNotFoundException):
-                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new PostNotFoundException(testPostId)));
                     break;
                 case Type t when t == typeof(DeletePostFailedException):
-                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new DeletePostFailedException(testPostId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
-                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
-                    postServiceMock?.DeletePostAsync(Arg.Any<int>())
+                    postServiceMock?.DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
@@ -508,27 +508,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             switch (exceptionType)
             {
                 case Type t when t == typeof(PostNotFoundException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new PostNotFoundException(testPostId)));
                     break;
                 case Type t when t == typeof(AddCommentFailedException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new AddCommentFailedException(testPostId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>())
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
@@ -596,27 +596,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             switch (exceptionType)
             {
                 case Type t when t == typeof(CommentNotFoundException):
-                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new CommentNotFoundException(testCommentId)));
                     break;
                 case Type t when t == typeof(UpdateCommentFailedException):
-                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new UpdateCommentFailedException(testCommentId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
-                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
-                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>())
+                    commentServiceMock?.UpdateCommentAsync(Arg.Any<int>(), Arg.Any<EditCommentModel>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
@@ -684,27 +684,27 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             switch (exceptionType)
             {
                 case Type t when t == typeof(CommentNotFoundException):
-                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new CommentNotFoundException(testCommentId)));
                     break;
                 case Type t when t == typeof(DeleteCommentFailedException):
-                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new DeleteCommentFailedException(testCommentId, null)));
                     break;
                 case Type t when t == typeof(DbUpdateException):
-                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                          .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
-                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>())
+                    commentServiceMock?.DeleteCommentAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                          .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
