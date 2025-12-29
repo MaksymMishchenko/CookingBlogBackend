@@ -11,6 +11,12 @@ namespace PostApiService.Tests.Helper
 
         public static class Urls
         {
+            public static class Categories
+            {
+                public const string Base = "/api/category";
+                public const string GetById = "/api/category/{0}";                               
+            }
+
             public static class Posts
             {
                 public const string Base = "/api/posts";

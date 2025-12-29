@@ -189,6 +189,16 @@ namespace PostApiService.Tests.Helper
             }).ToList();
         }
 
+        public static List<CategoryDto> GetCategoryListDtos(ICollection<Category> categories)
+        {
+            return categories.Select(c => new CategoryDto(c.Id, c.Name)).ToList();
+        }
+
+        public static CategoryDto GetCategoryDto(Category category)
+        {
+            return new CategoryDto(category.Id, category.Name);
+        }
+
         public static List<PostListDto> GetEmptyPostListDtos()
         {
             return new List<PostListDto>();

@@ -36,9 +36,10 @@
             }
 
             public static class Success
-            {
-                public const string CategoryRetrievedSuccessfully = "Category retrieved successfully.";
+            {                
                 public const string CategoryAddedSuccessfully = "Category added successfully.";
+                public const string CategoryUpdatedSuccessfully = "Category updated successfully.";
+                public const string CategoryDeletedSuccessfully = "Category deleted successfully.";
             }
         }
 

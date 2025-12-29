@@ -6,7 +6,8 @@ namespace PostApiService.Models
     {
         public bool Success { get; set; }
 
-        public string Message { get; set; } = default!;
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? Message { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? EntityId { get; set; }
@@ -55,7 +56,7 @@ namespace PostApiService.Models
                 Success = true,
                 Message = message
             };
-        }
+        }      
 
         public static ApiResponse<T> CreateSuccessResponse(string message, T? data)
         {
@@ -65,17 +66,7 @@ namespace PostApiService.Models
                 Message = message,
                 Data = data
             };
-        }
-
-        public static ApiResponse<T> CreateSingleItemResponse(string message, T? data)
-        {
-            return new ApiResponse<T>
-            {
-                Success = true,
-                Message = message,
-                Data = data
-            };
-        }
+        }        
 
         public static ApiResponse<T> CreatePaginatedListResponse(
             string message,

@@ -90,7 +90,7 @@ namespace PostApiService.Controllers
         {
             var addedPost = await _postsService.AddPostAsync(post, ct);
 
-            return CreatedAtAction("GetPostById", new { postId = addedPost.Id },
+            return CreatedAtAction(nameof(GetPostByIdAsync), new { postId = addedPost.Id },
                 ApiResponse<Post>.CreateSuccessResponse
                 (string.Format(PostM.Success.PostAddedSuccessfully), addedPost));
         }

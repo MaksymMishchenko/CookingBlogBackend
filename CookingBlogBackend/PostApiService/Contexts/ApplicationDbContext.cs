@@ -13,7 +13,7 @@
 
         modelBuilder.Entity<Category>()
                 .HasIndex(c => c.Name)
-                .IsUnique();       
+                .IsUnique();
 
         modelBuilder.Entity<Post>()
                 .HasOne(p => p.Category)

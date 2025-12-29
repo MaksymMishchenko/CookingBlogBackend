@@ -346,3 +346,7 @@ appsettings.*.json
 # Ignore coverage-report
 **/coverage-report/
 **/TestResults/
+
+# Ignore logs
+/logs/
+

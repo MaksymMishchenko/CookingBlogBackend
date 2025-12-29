@@ -1,7 +1,7 @@
-﻿using PostApiService.Models.Dto.Requests;
+﻿using PostApiService.Infrastructure.Common;
+using PostApiService.Models.Dto.Requests;
 using PostApiService.Repositories;
 using PostApiService.Services;
-using System.Net;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
@@ -46,7 +46,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 // Assert
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
-                Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+                Assert.Equal(ResultStatus.Success, result.Status);
                 Assert.True(result.Value);
             }
         }
@@ -66,7 +66,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 //Assert
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
-                Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+                Assert.Equal(ResultStatus.Success, result.Status);
                 Assert.Equal(seededCategories.Count, result.Value!.Count);
 
                 Assert.All(result.Value!, (actualDto, index) =>
@@ -96,7 +96,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 //Assert
                 Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
-                Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+                Assert.Equal(ResultStatus.Success, result.Status);
                 Assert.Equal(categoryToFind.Id, result.Value!.Id);
                 Assert.Equal(categoryToFind.Name, result.Value!.Name);
             }
@@ -118,9 +118,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 // Assert
                 Assert.True(result.IsSuccess);
-                Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+                Assert.Equal(ResultStatus.Success, result.Status);
                 Assert.NotNull(result.Value);
-                
+
                 var categoryInDb = context.Categories.FirstOrDefault(c => c.Name == dto.Name);
                 Assert.NotNull(categoryInDb);
                 Assert.Equal(dto.Name, categoryInDb.Name);
@@ -144,8 +144,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 // Assert
                 Assert.True(result.IsSuccess);
-                Assert.Equal(HttpStatusCode.OK, result.StatusCode);
-               
+                Assert.Equal(ResultStatus.Success, result.Status);
+
                 var updatedEntity = context.Categories.Find(categoryToUpdate.Id);
                 Assert.NotNull(updatedEntity);
                 Assert.Equal(dto.Name, updatedEntity.Name);
@@ -161,7 +161,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out context);
 
             using (context)
-            {                
+            {
                 var categoryToDelete = seededCategories.Last();
 
                 // Act
@@ -169,8 +169,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 // Assert
                 Assert.True(result.IsSuccess);
-                Assert.Equal(HttpStatusCode.NoContent, result.StatusCode);
-                
+                Assert.Equal(ResultStatus.NoContent, result.Status);
+
                 var categoryInDb = context.Categories.Find(categoryToDelete.Id);
                 Assert.Null(categoryInDb);
             }

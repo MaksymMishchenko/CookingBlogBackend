@@ -5,37 +5,14 @@ namespace PostApiService.Helper
 {
     public static class CategoryMappingExtensions
     {
-        public static CategoryDto ToDto(this Category category)
-        {
-            return new CategoryDto(
-                category.Id,
-                category.Name
-            );
-        }
+        public static CategoryDto ToDto(this Category category) =>
+        new(category.Id, category.Name);
 
-        public static Category ToEntity(this CategoryDto dto)
+        public static Category ToEntity(this CreateCategoryDto dto) =>
+            new() { Name = dto.Name };       
+        public static void UpdateEntity(this UpdateCategoryDto dto, Category existingCategory)
         {
-            return new Category
-            {
-                Id = dto.Id,
-                Name = dto.Name
-            };
-        }
-
-        public static Category ToEntity(this CreateCategoryDto dto)
-        {
-            return new Category
-            {
-                Name = dto.Name               
-            };
-        }
-
-        public static Category ToEntity(this UpdateCategoryDto dto)
-        {
-            return new Category
-            {
-                Name = dto.Name
-            };
+            existingCategory.Name = dto.Name;
         }
     }
 }

@@ -47,12 +47,19 @@ builder.Services.AddApplicationAuthorization();
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+builder.Services.AddControllers(options =>
 {
-    // Ignores circular references during JSON serialization
-    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-});
+    // Allow using full method names with the "Async" suffix in routing.
+    options.SuppressAsyncSuffixInActionNames = false;
+
+    // Use EmptyBodyBehavior.Allow as the default behavior for the entire application.
+    options.AllowEmptyInputInBodyModelBinding = true;
+})
+    .AddJsonOptions(options =>
+    {
+        // Ignores circular references during JSON serialization
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {

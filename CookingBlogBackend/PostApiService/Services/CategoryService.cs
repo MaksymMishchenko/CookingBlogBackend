@@ -1,5 +1,4 @@
 ﻿using PostApiService.Helper;
-using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -29,7 +28,9 @@ namespace PostApiService.Services
         {
             var categories = await _categoryRepository.GetAllAsync(ct);
 
-            var dtos = categories.Select(c => c.ToDto()).ToList();
+            var dtos = categories
+                .OrderBy(c => c.Id)
+                .Select(c => c.ToDto()).ToList();
 
             return Result<List<CategoryDto>>.Success(dtos);
         }
@@ -72,7 +73,8 @@ namespace PostApiService.Services
             return Result<CategoryDto>.Success(responseDto);
         }
 
-        public async Task<Result<CategoryDto>> UpdateCategoryAsync(int categoryId, UpdateCategoryDto categoryDto, CancellationToken ct = default)
+        public async Task<Result<CategoryDto>> UpdateCategoryAsync
+            (int categoryId, UpdateCategoryDto categoryDto, CancellationToken ct = default)
         {
             var category = await _categoryRepository
                 .GetByIdAsync(categoryId, ct);
@@ -95,7 +97,8 @@ namespace PostApiService.Services
                     (string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name));
             }
 
-            category.Name = categoryDto.Name;
+            categoryDto.UpdateEntity(category);
+
             await _categoryRepository.UpdateAsync(category, ct);
             await _categoryRepository.SaveChangesAsync(ct);
 

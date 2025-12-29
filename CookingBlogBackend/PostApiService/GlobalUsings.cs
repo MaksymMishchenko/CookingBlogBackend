@@ -7,6 +7,8 @@ global using Microsoft.EntityFrameworkCore;
 global using Serilog;
 
 global using PostApiService.Models;
+global using PostApiService.Infrastructure.Common;
+global using PostApiService.Extensions;
 
 global using static PostApiService.Infrastructure.Constants.Messages;
 global using static PostApiService.Infrastructure.Constants.LogMessages;

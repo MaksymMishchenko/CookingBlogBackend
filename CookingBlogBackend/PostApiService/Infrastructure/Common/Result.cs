@@ -1,38 +1,23 @@
-﻿using System.Net;
-
-namespace PostApiService.Infrastructure.Common
+﻿namespace PostApiService.Infrastructure.Common
 {
     public class Result<T>
     {
-        public bool IsSuccess { get; }
         public T? Value { get; }
+        public ResultStatus Status { get; }
         public string? ErrorMessage { get; }
-        public HttpStatusCode StatusCode { get; }
+        public bool IsSuccess => Status == ResultStatus.Success || Status == ResultStatus.NoContent;
 
-        private Result(bool isSuccess,
-            T? value,
-            string? errorMessage,
-            HttpStatusCode statusCode)
+        private Result(T value, ResultStatus status, string errorMessage = default!)
         {
-            IsSuccess = isSuccess;
             Value = value;
+            Status = status;
             ErrorMessage = errorMessage;
-            StatusCode = statusCode;
         }
 
-        public static Result<T> Success(T value, HttpStatusCode statusCode = HttpStatusCode.OK)
-            => new(true, value, null, statusCode);
-
-        public static Result<T> NoContent(HttpStatusCode statusCode = HttpStatusCode.NoContent)
-           => new(true, default, null, statusCode);
-
-        public static Result<T> Failure(string errorMessage, HttpStatusCode statusCode = HttpStatusCode.BadRequest)
-            => new(false, default, errorMessage, statusCode);
-
-        public static Result<T> Conflict(string message)
-            => new(false, default, message, HttpStatusCode.Conflict);
-
-        public static Result<T> NotFound(string message)
-            => new(false, default, message, HttpStatusCode.NotFound);
+        public static Result<T> Success(T value) => new(value, ResultStatus.Success);
+        public static Result<T> NoContent() => new(default!, ResultStatus.NoContent);
+        public static Result<T> NotFound(string message) => new(default!, ResultStatus.NotFound, message);
+        public static Result<T> Conflict(string message) => new(default!, ResultStatus.Conflict, message);
+        public static Result<T> Invalid(string message) => new(default!, ResultStatus.Invalid, message);
     }
 }

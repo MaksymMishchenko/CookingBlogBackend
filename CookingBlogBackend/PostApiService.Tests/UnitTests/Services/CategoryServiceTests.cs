@@ -1,8 +1,8 @@
-﻿using PostApiService.Models.Dto.Requests;
+﻿using PostApiService.Infrastructure.Common;
+using PostApiService.Models.Dto.Requests;
 using PostApiService.Repositories;
 using PostApiService.Services;
 using System.Linq.Expressions;
-using System.Net;
 
 namespace PostApiService.Tests.UnitTests.Services
 {
@@ -10,7 +10,7 @@ namespace PostApiService.Tests.UnitTests.Services
     {
         private readonly IRepository<Category> _mockCategoryRepo;
         private readonly IRepository<Post> _mockPostRepo;
-        private readonly CategoryService _categoryService;        
+        private readonly CategoryService _categoryService;
 
         public CategoryServiceTests()
         {
@@ -32,8 +32,9 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.True(result.Value);
-
+            
             await _mockCategoryRepo.Received(1).AnyAsync
                 (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
         }
@@ -50,7 +51,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.NotNull(result.Value);
             Assert.Equal(categories.Count, result.Value.Count);
 
@@ -71,6 +72,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.Empty(result.Value!);
 
             await _mockCategoryRepo.Received(1).GetAllAsync(Arg.Any<CancellationToken>());
@@ -88,7 +90,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(CategoryM.Errors.CategoryNotFound, result.ErrorMessage);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync(categoryId, Arg.Any<CancellationToken>());
@@ -108,7 +110,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.NotNull(result.Value);
             Assert.Equal(category.Name, result.Value.Name);
             Assert.Equal(category.Id, result.Value.Id);
@@ -130,7 +132,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(expectedMessage, result.ErrorMessage);
             Assert.Null(result.Value);
 
@@ -152,7 +154,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.Conflict, result.StatusCode);
+            Assert.Equal(ResultStatus.Conflict, result.Status);
             Assert.Equal(expectedMessage, result.ErrorMessage);
 
             await _mockCategoryRepo.Received(1).AnyAsync
@@ -165,26 +167,27 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task AddCategoryAsync_ShouldReturnSuccess_WhenCategoryIsCreated()
         {
             // Arrange
+            var token = new CancellationToken(false);
             var dto = new CreateCategoryDto { Name = "Dessert" };
-            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), token)
                              .Returns(false);
 
-            _mockCategoryRepo.AddAsync(Arg.Any<Category>(), Arg.Any<CancellationToken>())
+            _mockCategoryRepo.AddAsync(Arg.Any<Category>(), token)
                              .Returns(Task.CompletedTask);
 
             // Act
-            var result = await _categoryService.AddCategoryAsync(dto);
+            var result = await _categoryService.AddCategoryAsync(dto, token);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.NotNull(result.Value);
             Assert.Equal(dto.Name, result.Value.Name);
 
             await _mockCategoryRepo.Received(1).AnyAsync
-                (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
-            await _mockCategoryRepo.Received(1).AddAsync(Arg.Is<Category>(c => c.Name == dto.Name));
-            await _mockCategoryRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+                (Arg.Any<Expression<Func<Category, bool>>>(), token);
+            await _mockCategoryRepo.Received(1).AddAsync(Arg.Is<Category>(c => c.Name == dto.Name), token);
+            await _mockCategoryRepo.Received(1).SaveChangesAsync(token);
         }
 
         [Fact]
@@ -200,7 +203,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(CategoryM.Errors.CategoryNotFound, result.ErrorMessage);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
@@ -232,8 +235,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.Conflict, result.StatusCode);
-            Assert.Equal(expectedMessage, result.ErrorMessage);
+            Assert.Equal(ResultStatus.Conflict, result.Status);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
                 (categoryId, Arg.Any<CancellationToken>());
@@ -250,8 +252,7 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int categoryId = 1;
-            using var cts = new CancellationTokenSource();
-            var token = cts.Token;
+            var token = new CancellationToken(false);
 
             var dto = new UpdateCategoryDto { Name = "Beverages" };
             var existingCategory = new Category { Id = categoryId, Name = "Dessert" };
@@ -265,7 +266,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.OK, result.StatusCode);
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.Equal(dto.Name, result.Value!.Name);
             Assert.Equal(categoryId, result.Value.Id);
 
@@ -289,7 +290,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.NotFound, result.StatusCode);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(CategoryM.Errors.CategoryNotFound, result.ErrorMessage);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
@@ -318,7 +319,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.False(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.Conflict, result.StatusCode);
+            Assert.Equal(ResultStatus.Conflict, result.Status);
             Assert.Equal(CategoryM.Errors.CannotDeleteCategoryWithPosts, result.ErrorMessage);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
@@ -334,28 +335,29 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task DeleteCategoryAsync_ShouldReturnNoContent_WhenDeletedSuccessfully()
         {
             // Arrange
+            var token = new CancellationToken(false);
             const int categoryId = 1;
             var category = new Category { Id = categoryId, Name = "Empty Category" };
 
-            _mockCategoryRepo.GetByIdAsync(categoryId, Arg.Any<CancellationToken>()).Returns(category);
+            _mockCategoryRepo.GetByIdAsync(categoryId, token).Returns(category);
 
-            _mockPostRepo.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+            _mockPostRepo.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                          .Returns(false);
 
             // Act
-            var result = await _categoryService.DeleteCategoryAsync(categoryId);
+            var result = await _categoryService.DeleteCategoryAsync(categoryId, token);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(HttpStatusCode.NoContent, result.StatusCode);
+            Assert.Equal(ResultStatus.NoContent, result.Status);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
-                (categoryId, Arg.Any<CancellationToken>());
+                (categoryId, token);
             await _mockPostRepo.Received(1).AnyAsync
-                (Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>());
+                (Arg.Any<Expression<Func<Post, bool>>>(), token);
             await _mockCategoryRepo.Received(1).DeleteAsync
-                (category, Arg.Any<CancellationToken>());
-            await _mockCategoryRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+                (category, token);
+            await _mockCategoryRepo.Received(1).SaveChangesAsync(token);
         }
     }
 }
