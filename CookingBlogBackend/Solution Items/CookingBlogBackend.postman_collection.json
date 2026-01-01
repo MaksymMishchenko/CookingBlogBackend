@@ -7,8 +7,545 @@
 	},
 	"item": [
 		{
+			"name": "AuthController",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"userName\": \"{{$randomUserName}}\",\r\n  \"email\": \"{{$randomEmail}}\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/Auth/register",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Auth",
+								"register"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"if (pm.response.code === 200) {\r",
+									"    var jsonResponse = pm.response.json();\r",
+									"    // Зберігаємо токен в змінну середовища\r",
+									"    pm.environment.set(\"jwtToken\", jsonResponse.token);\r",
+									"} else {\r",
+									"    console.error(\"Error fetching token: \", pm.response.status);\r",
+									"}\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"-Rtyuehe1\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/Auth/Login",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Auth",
+								"Login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "CategoryController",
+			"item": [
+				{
+					"name": "AddCategoryAsync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json();\r",
+									"\r",
+									"pm.environment.set(\"temp_category_id\", response.data.id);\r",
+									"\r",
+									"pm.test(\"Status code is 201\", function () {\r",
+									"    pm.response.to.have.status(201);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const timestamp = Math.floor(Date.now() / 1000);\r",
+									"const uniqueName = \"Category \" + timestamp;\r",
+									"\r",
+									"pm.variables.set(\"unique_category_name\", uniqueName);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/Category",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Category"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetCategoryByIdAsync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Category/1",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Category",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetAllCategoriesAsync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Category",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Category"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "UpdateCategoryAsync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const timestamp = Math.floor(Date.now() / 1000);\r",
+									"const uniqueName = \"uni \" + timestamp;\r",
+									"\r",
+									"pm.variables.set(\"unique_category_name\", uniqueName);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Category",
+								"{{temp_category_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeleteCategoryAsync",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"\r",
+									"pm.environment.unset(\"temp_category_id\");"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"packages": {},
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Category",
+								"{{temp_category_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
 			"name": "PostsController",
 			"item": [
+				{
+					"name": "AddNewPost",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const jsonData = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Post created and ID saved\", function () {    \r",
+									"    pm.response.to.have.status(201);\r",
+									"    \r",
+									"    const postId = jsonData.data.id;       \r",
+									"    pm.expect(postId).to.not.be.undefined;\r",
+									"    \r",
+									"    pm.environment.set(\"temp_post_id\", postId);\r",
+									"    console.log(\"Captured Post ID:\", postId);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"const timestamp = Math.floor(Date.now() / 1000);\r",
+									"const uniqueTitle = \"Post title \" + timestamp;\r",
+									"\r",
+									"pm.variables.set(\"unique_post_title\", uniqueTitle);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-1\",\r\n    \"categoryId\": 1\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/Posts",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"Posts"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "GetPostById",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);   \r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								"{{temp_post_id}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "SearchPosts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/posts/search?queryString=lorem&pageNumber=10&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"posts",
+								"search"
+							],
+							"query": [
+								{
+									"key": "queryString",
+									"value": "lorem"
+								},
+								{
+									"key": "pageNumber",
+									"value": "10"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						}
+					},
+					"response": []
+				},
 				{
 					"name": "GetPostsWithTotalAsync",
 					"event": [
@@ -33,12 +570,10 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/posts?pageNumber=1&pageSize=10",
-							"protocol": "https",
+							"raw": "{{baseUrl}}/api/posts?pageNumber=10&pageSize=10",
 							"host": [
-								"localhost"
+								"{{baseUrl}}"
 							],
-							"port": "7030",
 							"path": [
 								"api",
 								"posts"
@@ -46,144 +581,12 @@
 							"query": [
 								{
 									"key": "pageNumber",
-									"value": "1"
+									"value": "10"
 								},
 								{
 									"key": "pageSize",
 									"value": "10"
 								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "SearchPostsWithTotalCountAsync",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "https://localhost:7030/api/posts/search?queryString=lorem&pageNumber=1&pageSize=10",
-							"protocol": "https",
-							"host": [
-								"localhost"
-							],
-							"port": "7030",
-							"path": [
-								"api",
-								"posts",
-								"search"
-							],
-							"query": [
-								{
-									"key": "queryString",
-									"value": "lorem"
-								},
-								{
-									"key": "pageNumber",
-									"value": "1"
-								},
-								{
-									"key": "pageSize",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GetPost",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "https://localhost:7030/api/posts/1?includeComments=true",
-							"protocol": "https",
-							"host": [
-								"localhost"
-							],
-							"port": "7030",
-							"path": [
-								"api",
-								"posts",
-								"1"
-							],
-							"query": [
-								{
-									"key": "includeComments",
-									"value": "true"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "AddNewPost",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 201\", function () {\r",
-									"    pm.response.to.have.status(201);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"New test post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-1\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "https://localhost:7030/api/Posts",
-							"protocol": "https",
-							"host": [
-								"localhost"
-							],
-							"port": "7030",
-							"path": [
-								"api",
-								"Posts"
 							]
 						}
 					},
@@ -201,7 +604,19 @@
 									"});"
 								],
 								"type": "text/javascript",
-								"packages": {}
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -220,7 +635,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"Updated post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\"\r\n}",
+							"raw": "{\r\n    \"title\": \"Updated post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\",\r\n    \"categoryId\": 2\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -228,16 +643,14 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/posts/3",
-							"protocol": "https",
+							"raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
 							"host": [
-								"localhost"
+								"{{baseUrl}}"
 							],
-							"port": "7030",
 							"path": [
 								"api",
 								"posts",
-								"3"
+								"{{temp_post_id}}"
 							]
 						}
 					},
@@ -252,10 +665,12 @@
 								"exec": [
 									"pm.test(\"Status code is 200\", function () {\r",
 									"    pm.response.to.have.status(200);\r",
+									"    pm.environment.unset(\"temp_post_id\");\r",
 									"});"
 								],
 								"type": "text/javascript",
-								"packages": {}
+								"packages": {},
+								"requests": {}
 							}
 						}
 					],
@@ -273,16 +688,14 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/posts/3",
-							"protocol": "https",
+							"raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
 							"host": [
-								"localhost"
+								"{{baseUrl}}"
 							],
-							"port": "7030",
 							"path": [
 								"api",
 								"posts",
-								"3"
+								"{{temp_post_id}}"
 							],
 							"query": [
 								{
@@ -334,6 +747,39 @@
 			"item": [
 				{
 					"name": "AddComment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json();\r",
+									"\r",
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"\r",
+									"    const commentId = jsonData.data.id;       \r",
+									"    pm.expect(postId).to.not.be.undefined;\r",
+									"    \r",
+									"    pm.environment.set(\"comment_id_to_delete\", commentId);    \r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -349,7 +795,7 @@
 						"header": [],
 						"body": {
 							"mode": "raw",
-							"raw": "{  \r\n  \"author\": \"Maks\",\r\n  \"content\": \"Content must be at least 10 symbols\"\r\n}",
+							"raw": "{\r\n    \"Author\": \"Maks\",\r\n    \"Content\": \"Some test comment from user Maks\"\r\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -357,16 +803,14 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/Comments/1",
-							"protocol": "https",
+							"raw": "{{baseUrl}}/api/Comments/4",
 							"host": [
-								"localhost"
+								"{{baseUrl}}"
 							],
-							"port": "7030",
 							"path": [
 								"api",
 								"Comments",
-								"1"
+								"4"
 							]
 						}
 					},
@@ -374,6 +818,21 @@
 				},
 				{
 					"name": "UpdateComment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -397,16 +856,14 @@
 							}
 						},
 						"url": {
-							"raw": "https://localhost:7030/api/Comments/3",
-							"protocol": "https",
+							"raw": "{{baseUrl}}/api/Comments/{{comment_id_to_delete}}",
 							"host": [
-								"localhost"
+								"{{baseUrl}}"
 							],
-							"port": "7030",
 							"path": [
 								"api",
 								"Comments",
-								"3"
+								"{{comment_id_to_delete}}"
 							]
 						}
 					},
@@ -414,6 +871,22 @@
 				},
 				{
 					"name": "RemoveComment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"    pm.environment.unset(\"comment_id_to_delete\");\r",
+									"});"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
 					"request": {
 						"auth": {
 							"type": "bearer",
@@ -428,16 +901,14 @@
 						"method": "DELETE",
 						"header": [],
 						"url": {
-							"raw": "https://localhost:7030/api/Comments/1",
-							"protocol": "https",
+							"raw": "{{baseUrl}}/api/Comments/2",
 							"host": [
-								"localhost"
+								"{{baseUrl}}"
 							],
-							"port": "7030",
 							"path": [
 								"api",
 								"Comments",
-								"1"
+								"2"
 							]
 						}
 					},
@@ -474,117 +945,6 @@
 							""
 						]
 					}
-				}
-			]
-		},
-		{
-			"name": "AuthController",
-			"item": [
-				{
-					"name": "Register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"userName\": \"Nick\",\r\n  \"email\": \"nick@mail.ua\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "https://localhost:7030/api/Auth/register",
-							"protocol": "https",
-							"host": [
-								"localhost"
-							],
-							"port": "7030",
-							"path": [
-								"api",
-								"Auth",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {\r",
-									"    var jsonResponse = pm.response.json();\r",
-									"    // Зберігаємо токен в змінну середовища\r",
-									"    pm.environment.set(\"jwtToken\", jsonResponse.token);\r",
-									"} else {\r",
-									"    console.error(\"Error fetching token: \", pm.response.status);\r",
-									"}\r",
-									"\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									""
-								],
-								"type": "text/javascript",
-								"packages": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"-Rtyuehe1\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "https://localhost:7030/api/Auth/Login",
-							"protocol": "https",
-							"host": [
-								"localhost"
-							],
-							"port": "7030",
-							"path": [
-								"api",
-								"Auth",
-								"Login"
-							]
-						}
-					},
-					"response": []
 				}
 			]
 		}

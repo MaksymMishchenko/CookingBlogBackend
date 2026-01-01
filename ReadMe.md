@@ -75,310 +75,28 @@ The frontend interacts with this API to display a list of posts, submit new post
 ### REST API
 The project provides an API for managing resources. Below are examples of key endpoints:
 
-### 1. Register User
-**Endpoint: POST /api/Auth/register**
+### Key Endpoints Summary
 
-**Request body:**
-```
-json
-{
-  "username": "user@example.com",
-  "email": "test@mail.com",
-  "password": "password123"
-}
-```
+| Controller | Method | Endpoint | Description | Auth Required |
+| :--- | :---: | :--- | :--- | :---: |
+| **Auth** | POST | `/api/auth/register` | Register new user | No |
+| **Auth** | POST | `/api/auth/login` | Get JWT Token | No |
+| **Category** | GET | `/api/category` | List all culinary categories | No |
+| **Category** | GET | `/api/category/{id}` | Specific culinary category | Yes (Admin) |
+| **Category** | POST | `/api/category` | Create a new category | Yes (Admin) |
+| **Category** | PUT | `/api/category/{id}` | Update a new category | Yes (Admin) |
+| **Category** | DELETE | `/api/category/{id}` | Delete specific category | Yes (Admin) |
+| **Posts** | GET | `/api/posts?pageNumber={int}&pageSize={int}` | Get paginated list of posts | No |
+| **Posts** | GET | `/api/posts/search?queryString={test}&pageNumber={int}&pageSize={int}` | Get paginated search list & search | No |
+| **Posts** | GET | `/api/posts/{id}` | Get specific post | No |
+| **Posts** | POST | `/api/posts` | Create a new blog post | Yes (Admin) |
+| **Posts** | PUT | `/api/posts/{id}` | Update specific post |  Yes (Admin) |
+| **Posts** | DELETE | `/api/posts/{id}` | Delete specefic post |  Yes (Admin) |
+| **Comments** | POST | `/api/comments/{postid}` | Add a comment to a post |  Yes (Admin) |
+| **Comments** | PUT | `/api/comments/{id}` | Update specific comment |  Yes (Admin) |
+| **Comments** | DELETE | `/api/comments/{id}` | Remove a comment |  Yes (Admin) |
 
-**Response body:**
-```
-json
-{
-    "success": true,
-    "message": "User with username {userName} registered successfully."
-}
-```
-
-### 2. Authentication
-**Endpoint: POST /api/Auth/login**
-
-**Request body:**
-```
-json
-{
-  "username": "user@example.com",
-  "password": "password123"
-}
-```
-
-**Response body:**
-```
-json
-{
-    "success": true,
-    "message": "User with username {username} logged in successfully",
-    "token": "eyJhbGciOiJIU..."
-}
-```
-
-### 3. Comments
-**Endpoint: POST /api/Comments/{postId}**
-
-**Headers:**
-
-`Authorization: Bearer <your_token>`
-
-**Request body:**
-```
-json
-{  
-  "author": "Bob",
-  "content": "Lorem ipsum dolor sit amet"
-}
-```
-
-**Response body:**
-```
-json
-{
-    "success": true,
-    "message": "Comment added successfully."
-}
-```
-**Validation errors**
-
-json
-```
-{
-  "success": false,
-  "message": "Validation errors occurred.",
-  "errors": [
-    { "field": "author", "message": "Author name exceeds maximum length of 50 characters." },
-    { "field": "content", "message": "Content is required." }
-  ]
-}
-```
-
-**Endpoint: PUT /api/Comments/{commentId}**
-
-**Headers:**
-
-`Authorization: Bearer <your_token>`
-
-**Request body:**
-```
-json
-{  
-  "content": "This is a sample comment with enough length."
-}
-```
-
-**Response body:**
-```
-{
-    "success": true,
-    "message": "Comment updated successfully."
-}
-```
-**Validation errors**
-
-json
-```
-{
-    "success": false,
-    "message": "Validation failed.",
-    "errors": [
-        "Content must be between 10 and 500 characters."
-    ]
-}
-```
-
-**Endpoint: DELETE /api/Comments/{commentId}**
-
-**Headers:**
-
-`Authorization: Bearer <your_token>`
-
-**Request body:**
-`json
-{}`
-
-**Response body:**
-json
-```
-{
-    "success": true,
-    "message": "Comment deleted successfully."
-}
-```
-
-### 4. Posts
-
-**Endpoint: GET /api/posts?pageNumber=1&pageSize=10&commentPageNumber=1&commentsPerPage=10&includeComments=true**
-
-**Request body:**
-`json
-{}`
-
-**Response body:**
-```
-json
-{
-    "success": true,
-    "message": "Successfully retrieved 2 posts.",
-    "dataList": [
-        {
-            "postId": 1,
-            "title": "First Post",
-            "description": "Description for first post",
-            "content": "This is the content of the first post.",
-            "author": "Peter Jack",
-            "createAt": "2025-03-31T18:22:44.1494039",
-            "imageUrl": "/images/placeholder.jpg",
-            "metaTitle": "Meta title info",
-            "metaDescription": "This is meta description",
-            "slug": "first-post",
-            "comments": [
-                {
-                    "commentId": 2,
-                    "author": "Jane Doe",
-                    "content": "I totally agree with this!",
-                    "createdAt": "2025-03-31T18:22:44.954684",
-                    "postId": 1,
-                    "userId": "testUserId"
-                },
-                {
-                    "commentId": 4,
-                    "author": "Maks",
-                    "content": "Content must be at least 10 symbols",
-                    "createdAt": "2025-03-31T18:27:00.9048119",
-                    "postId": 1,
-                    "userId": "f1b207f3-1a6a-4862-b377-4089fb59d803"
-                }
-            ]
-        },
-        ...
-    ]
-}
-```
-
-**Endpoint: GET /api/posts/1?includeComments=true**
-
-**Request body:**
-`json
-{}`
-
-**Response body:**
-```
-json
-{
-    "success": true,
-    "message": "Post with ID 1 retrieved successfully.",
-    "data": {
-        "postId": 1,
-        "title": "First Post",
-        "description": "Description for first post",
-        "content": "This is the content of the first post.",
-        "author": "Peter Jack",
-        "createAt": "2025-03-31T18:22:44.1494039",
-        "imageUrl": "/images/placeholder.jpg",
-        "metaTitle": "Meta title info",
-        "metaDescription": "This is meta description",
-        "slug": "first-post",
-        "comments": [
-            {
-                "commentId": 2,
-                "author": "Jane Doe",
-                "content": "I totally agree with this!",
-                "createdAt": "2025-03-31T18:22:44.954684",
-                "postId": 1,
-                "userId": "testUserId"
-            },
-            ...
-        ]
-    }
-}
-```
-
-**Endpoint: POST /api/Posts**
-
-**Headers:**
-
-`Authorization: Bearer <your_token>`
-
-**Request body:**
-```
-json
-{
-    "title": "New test post title",
-    "description": "This is a sample description for the post.",
-    "content": "This is the detailed content of the post. It provides in-depth information about the topic.",
-    "author": "Peter",
-    "imageUrl": "https://example.com/sample-image.jpg",
-    "metaTitle": "Sample Meta Title",
-    "metaDescription": "This is a sample meta description for SEO purposes.",
-    "slug": "sample-post-title-1"
-}
-```
-
-**Response body**
-```
-json
-{
-    "success": true,
-    "message": "Post added successfully.",
-    "entityId": 3
-}
-```
-
-**Endpoint: PUT api/posts**
-
-**Headers:**
-
-`Authorization: Bearer <your_token>`
-
-**Request body:**
-```
-json
-{
-    "postId": 2,
-    "title": "Updated post title",
-    "description": "This is a sample description for the post.",
-    "content": "This is the detailed content of the post. It provides in-depth information about the topic.",
-    "author": "John Doe",
-    "imageUrl": "https://example.com/changed-image.jpg",
-    "metaTitle": "Sample changed Meta Title",
-    "metaDescription": "This is a changed sample meta description for SEO purposes.",
-    "slug": "sample-post-title-changed"
-}
-```
-
-**Response body:**
-```
-json
-{
-    "success": true,
-    "message": "Post with ID 2 updated successfully.",
-    "entityId": 2
-}
-```
-
-**Endpoint: DELETE /api/Posts/{Id}**
-
-**Headers:**
-
-`Authorization: Bearer <your_token>`
-
-**Request body:**
-`json
-{}`
-
-**Response body:**
-```
-{
-    "success": true,
-    "message": "Post with ID 2 deleted successfully.",
-    "entityId": 2
-}
-```
+> **Note:** For all protected endpoints, include the header `Authorization: Bearer <your_jwt_token>`.
 
 ## Project Structure
 
@@ -393,6 +111,7 @@ Solution PostApiService/
 │   ├── Contexts/                      // Contains Entity Framework database context for managing database interactions
 │   ├── Controllers/                   // API controllers handling HTTP requests and routing
 │   ├── Exceptions/                    // Handling exceptions and error responses in API controllers
+│   ├── Extensions/                    // Result extensions etc
 │   ├── Helper/                        // Utility classes or methods to support business logic
 │   ├── Images/                        // Directory for storing images related to posts or other resources
 │   ├── Infrastructure/                // Core infrastructure-related code (e.g., dependency injection setup, configurations)
@@ -400,9 +119,12 @@ Solution PostApiService/
 │   ├── Middlewares/                   // Implementations of middlewares for handling HTTP requests and responses
 │   ├── Migrations/                    // Database migrations created via Entity Framework for schema evolution
 │   ├── Models/                        // Data models representing entities and request/response DTOs
+│   ├── Repositories/                  // Data access layer implementation (Direct database operations)
 │   ├── Services/                      // Business logic implementation for handling operations
 │   ├── appsettings.json               // Configuration file for app settings, including connection strings and other configurations
+│   ├── GlobalUsings.cs                // Centralized global using directives to keep code files clean
 │   ├── Program.cs                     // Entry point for the application, setting up middleware, services, and configurations
+│   ├── SeedData.cs                    // Initial database population with sample categories, posts, and users
                                            
 
 ```
@@ -413,15 +135,17 @@ Solution PostApiService/
 ```
 Solution PostApiService/
 │
-├── PostApiService.Tests/                     // Testing project
-│   ├── coverage-report/                      // Test coverage reports                               
+├── PostApiService.Tests/                     // Testing project                              
 │   ├── Fixtures/                             // Test fixtures
 │   ├── Helper/                               // Test utilities
 │   ├── IntegrationTests/                     // Integration tests
 │   │   ├── Controllers/                      // Integration tests for API controllers
+│   │   ├── Middlewares/                      // Integration tests for middlewares
 │   │   ├── Services/                         // Integration tests for services
 │   ├── UnitTests/                            // Unit tests
 │   │   ├── Controllers/                      // Unit tests for API controllers
+│   │   ├── Extensions/                       // Unit tests for Result extension
+│   │   ├── Filters/                          // Unit tests for endpoint filters
 │   │   ├── Services/                         // Unit tests for services
 │   ├── Usings.cs                             // Global using directives for tests
                          
@@ -483,8 +207,10 @@ To use the collection:
 
 This provides an alternative testing method for verifying API functionality.
 
-## To-Do
-- **Docker** (for containerization)
+## To-Do 
+- **Architecture Refactoring (PostService):** Implement the **Result Pattern** (`Result<T>`) to improve error handling, decouple business logic from HTTP responses, and ensure consistent API outcomes.
+- **Docker:** Containerize the application using multi-stage builds for easier deployment.
+- **Redis:** Implement caching for popular posts to improve performance.
 
 ## Contact
 - Author: [Maksym Mishchenko](https://github.com/MaksymMishchenko)

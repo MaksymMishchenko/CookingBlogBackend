@@ -348,5 +348,6 @@ appsettings.*.json
 **/TestResults/
 
 # Ignore logs
-/logs/
+PostApiService/logs/
+*.txt
 
