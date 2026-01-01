@@ -1,52 +1,52 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PostApiService.Models
 {
     public class Post : IEntity
     {
-        [Column("PostId")]
+        [Required]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Title is required.")]
-        [StringLength(200, MinimumLength = 10, ErrorMessage = "Title must be between 10 and 200 characters.")]
+        [Required]
+        [MaxLength(200)]
         public string Title { get; set; } = default!;
 
-        [Required(ErrorMessage = "Description is required.")]
-        [StringLength(250, MinimumLength = 10, ErrorMessage = "Description must be between 10 and 250 characters.")]
+        [Required]
+        [MaxLength(250)]
         public string Description { get; set; } = default!;
 
-        [Required(ErrorMessage = "Content is required.")]
-        [StringLength(2500, MinimumLength = 20, ErrorMessage = "Content must be between 20 and 2500 characters.")]
+        [Required]
+        [MaxLength(2500)]
         public string Content { get; set; } = default!;
 
-        [Required(ErrorMessage = "Author is required.")]
-        [StringLength(50, MinimumLength = 3, ErrorMessage = "Author must be between 3 and 50 characters.")]
+        [Required]
+        [MaxLength(50)]
         public string Author { get; set; } = default!;
 
-        public DateTime CreateAt { get; set; } = DateTime.UtcNow.ToLocalTime();
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [Required(ErrorMessage = "Image URL is required.")]
-        [Url(ErrorMessage = "Invalid URL format.")]
+        [Required]
         public string ImageUrl { get; set; } = default!;
 
-        [MaxLength(100, ErrorMessage = "Meta title cannot exceed 100 characters.")]
-        public string MetaTitle { get; set; } = default!;
+        [MaxLength(100)]
+        public string? MetaTitle { get; set; }
 
-        [StringLength(200, ErrorMessage = "Meta description cannot exceed 200 characters.")]
-        public string MetaDescription { get; set; } = default!;
+        [MaxLength(200)]
+        public string? MetaDescription { get; set; }
 
-        [Required(ErrorMessage = "Slug is required.")]
-        [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$", ErrorMessage = "Slug must only contain lowercase letters, numbers, and hyphens.")]
+        [Required]
+        [MaxLength(200)]
         public string Slug { get; set; } = default!;
-
-        public IList<Comment> Comments { get; set; } = new List<Comment>();
 
         public int CategoryId { get; set; }
 
         [ValidateNever]
         public virtual Category Category { get; set; } = default!;
+
+        public ICollection<Comment> Comments { get; set; } = new List<Comment>();
+
+        public bool IsActive { get; set; } = true;
     }
 }

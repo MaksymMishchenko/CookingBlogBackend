@@ -1,6 +1,7 @@
 ﻿using PostApiService.Controllers;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
+using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 

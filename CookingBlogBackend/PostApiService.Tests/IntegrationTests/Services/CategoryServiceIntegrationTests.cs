@@ -32,9 +32,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
         [Fact]
         public async Task ExistAsync_ShouldReturnTrue_IfCategoryExists()
         {
-            // Arrange
-            ApplicationDbContext context;
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out context);
+            // Arrange            
+            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out var context);
 
             using (context)
             {
@@ -43,12 +42,22 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 // Act              
                 var result = await categoryService.ExistsAsync(categoryToFind.Id);
 
-                // Assert
-                Assert.NotNull(result);
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.True(result.Value);
+                Assert.True(result);
             }
+        }
+
+        [Fact]
+        public async Task ExistsAsync_ShouldReturnFalse_IfCategoryDoesNotExist()
+        {
+            // Arrange
+            var (categoryService, _) = CreateCategoryServiceAndSeedUniqueDb(out var context);
+            var nonExistentId = 99999;
+
+            // Act
+            var result = await categoryService.ExistsAsync(nonExistentId);
+
+            // Assert
+            Assert.False(result);
         }
 
         [Fact]

@@ -1,23 +1,25 @@
-﻿using PostApiService.Exceptions;
+﻿using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models.Constants;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using System.Data;
-using System.Data.Common;
-using System.Linq.Expressions;
 
 namespace PostApiService.Services
 {
     public class PostService : IPostService
     {
         private readonly IRepository<Post> _repository;
+        private readonly ICategoryService _categoryService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
         public PostService(IRepository<Post> repository,
+            ICategoryService categoryService,
             ISnippetGeneratorService snippetGenerator)
         {
             _repository = repository;
+            _categoryService = categoryService;
             _snippetGenerator = snippetGenerator;
         }
 
@@ -25,58 +27,52 @@ namespace PostApiService.Services
         /// Retrieves a paginated list of posts, including the **aggregated comment count** for each post,
         /// and the total count of all posts in the database.
         /// </summary>
-        public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
+        public async Task<Result<PagedResult<PostListDto>>> GetPostsWithTotalPostCountAsync(
             int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default)
         {
             var totalPostCount = await _repository.GetTotalCountAsync(ct);
 
-            var query = _repository.AsQueryable();
-
-            var posts = await query
-                .OrderBy(p => p.Id)
-                .Select(p => new PostListDto
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Author = p.Author,
-                    Category = p.Category.Name ?? ContentConstants.DefaultCategory,
-                    CreatedAt = p.CreateAt,
-                    Description = p.Description,
-                    CommentsCount = p.Comments.Count()
-                })
+            var posts = await _repository.AsQueryable()
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .Select(PostMappingExtensions.ToDtoExpression)
                 .ToListAsync(ct);
 
-            return (posts, totalPostCount);
+            var pagedData = new PagedResult<PostListDto>(posts, totalPostCount, pageNumber, pageSize);
+
+            return Result<PagedResult<PostListDto>>.Success(pagedData);
         }
 
         /// <summary>
         /// Searches for posts based on a query string matching Title, Description, or Content.
         /// Results are sorted by creation date (descending) and returned with pagination.
         /// </summary>
-        public async Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
+        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsWithTotalCountAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
         {
-            Expression<Func<Post, bool>> searchPredicate = p =>
+            var queryable = _repository.GetFilteredQueryable(p =>
                 p.Title.Contains(query) ||
                 p.Description.Contains(query) ||
-                p.Content.Contains(query);
-
-            var queryable = _repository.GetFilteredQueryable(searchPredicate);
+                p.Content.Contains(query)
+            );
 
             var searchTotalPosts = await queryable.CountAsync(ct);
 
+            var message = searchTotalPosts == 0
+                ? string.Format(PostM.Success.SearchNoResults, query)
+                : string.Format(PostM.Success.SearchResultsFound, query, searchTotalPosts);
+
             if (searchTotalPosts == 0)
             {
-                return (new List<SearchPostListDto>(), 0);
+                return Result<PagedSearchResult<SearchPostListDto>>.Success(new PagedSearchResult<SearchPostListDto>
+                    (query, new List<SearchPostListDto>(), searchTotalPosts, pageNumber, pageSize, message));
             }
 
             var postsWithContent = await queryable
-                .OrderByDescending(p => p.CreateAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new
@@ -86,7 +82,7 @@ namespace PostApiService.Services
                     p.Slug,
                     p.Content,
                     p.Author,
-                    p.Category
+                    CategoryName = p.Category.Name
                 })
                 .ToListAsync(ct);
 
@@ -94,127 +90,138 @@ namespace PostApiService.Services
             {
                 var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
 
-                return new SearchPostListDto
-                {
-                    Id = item.Id,
-                    Title = item.Title,
-                    Slug = item.Slug,
-                    Author = item.Author,
-                    SearchSnippet = snippet,
-                    Category = item.Category.Name ?? ContentConstants.DefaultCategory,
-                };
+                return new SearchPostListDto(
+                   item.Id,
+                   item.Title,
+                   item.Slug,
+                   snippet,
+                   item.Author,
+                   item.CategoryName ?? ContentConstants.DefaultCategory
+                   );
+
             }).ToList();
 
-            return (searchPostList, searchTotalPosts);
+            return Result<PagedSearchResult<SearchPostListDto>>.Success(new PagedSearchResult<SearchPostListDto>
+                (query, searchPostList, searchTotalPosts, pageNumber, pageSize, message));
         }
 
         /// <summary>
-        /// Retrieves a post by its ID from the database, with optional inclusion of comments.
-        /// </summary>        
-        public async Task<Post> GetPostByIdAsync(int postId, bool includeComments = true, CancellationToken ct = default)
+        /// Retrieves detailed information for a specific post by its identifier for administrative use.
+        /// </summary>       
+        public async Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default)
         {
-            var query = _repository.AsQueryable();
+            var postDto = await _repository.AsQueryable()
+            .Where(p => p.Id == postId)
+            .Select(PostMappingExtensions.ToAdminDetailsDto)
+            .FirstOrDefaultAsync();
 
-            query = query.Include(p => p.Category);
-
-            if (includeComments)
+            if (postDto == null)
             {
-                query = query
-                    .Include(p => p.Comments);
+                Log.Warning(Posts.NotFound, postId);
+                return Result<PostAdminDetailsDto>.NotFound
+                    (PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
-            var post = await query
-                .FirstOrDefaultAsync(p => p.Id == postId, ct);
-
-            if (post == null)
-            {
-                throw new PostNotFoundException(postId);
-            }
-
-            return post;
+            return Result<PostAdminDetailsDto>.Success(postDto);
         }
 
         /// <summary>
         /// Adds a new post to the database.
         /// </summary>        
-        public async Task<Post> AddPostAsync(Post post, CancellationToken ct = default)
+        public async Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default)
         {
-            var existingPost = await _repository
-                .AnyAsync(p => p.Title == post.Title, ct);
+            var alreadyExists = await _repository
+               .AnyAsync(p => p.Title == postDto.Title || p.Slug == postDto.Slug, ct);
 
-            if (existingPost)
+            if (alreadyExists)
             {
-                throw new PostAlreadyExistException(post.Title);
+                return Result<PostAdminDetailsDto>.Conflict
+                    (string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist, postDto.Title, postDto.Slug), PostM.Errors.PostAlreadyExistCode);
             }
 
-            try
-            {
-                await _repository.AddAsync(post, ct);
-                await _repository.SaveChangesAsync(ct);
+            var categoryExists = await _categoryService.ExistsAsync(postDto.CategoryId, ct);
 
-                return post;
-            }
-            catch (DbException ex)
+            if (!categoryExists)
             {
-                throw new AddPostFailedException(post.Title, ex);
+                Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
+
+                return Result<PostAdminDetailsDto>.NotFound
+                    (string.Format(CategoryM.Errors.CategoryNotFound), PostM.Errors.CategoryNotFoundCode);
             }
+
+            var postEntity = postDto.ToEntity();
+
+            await _repository.AddAsync(postEntity, ct);
+            await _repository.SaveChangesAsync(ct);
+
+            Log.Information(Posts.Created, postEntity.Title, postEntity.Id);
+
+            var responseDto = postEntity.MapToAdminDto();
+            var successMessage = string.Format(PostM.Success.PostAddedSuccessfully);
+
+            return Result<PostAdminDetailsDto>.Success(responseDto, successMessage);
         }
 
         /// <summary>
         /// Updates an existing post with the provided data.        
         /// </summary>        
-        public async Task<Post> UpdatePostAsync(int postId, Post post, CancellationToken ct = default)
+        public async Task<Result<PostAdminDetailsDto>> UpdatePostAsync
+            (int postId, PostUpdateDto postDto, CancellationToken ct = default)
         {
-            var existingPost = await _repository
+            var postEntity = await _repository
                 .GetByIdAsync(postId, ct);
 
-            if (existingPost == null)
+            if (postEntity == null)
             {
-                throw new PostNotFoundException(postId);
+                Log.Warning(Posts.NotFound, postId);
+
+                return Result<PostAdminDetailsDto>.NotFound(string.Format
+                    (PostM.Errors.PostNotFound, postDto.Title), PostM.Errors.PostNotFoundCode);
             }
 
-            try
-            {
-                existingPost.Title = post.Title;
-                existingPost.Description = post.Description;
-                existingPost.Content = post.Content;
-                existingPost.ImageUrl = post.ImageUrl;
-                existingPost.MetaTitle = post.MetaTitle;
-                existingPost.MetaDescription = post.MetaDescription;
-                existingPost.Slug = post.Slug;
+            var alreadyExists = await _repository
+                .AnyAsync(p => p.Title == postDto.Title && p.Id != postId, ct);
 
-                await _repository.UpdateAsync(existingPost, ct);
-                await _repository.SaveChangesAsync(ct);
-
-                return existingPost;
-            }
-            catch (DbException ex)
+            if (alreadyExists)
             {
-                throw new UpdatePostFailedException(post.Title, ex);
+                Log.Information(Posts.AlreadyExists, postDto.Title, postDto.Slug);
+
+                return Result<PostAdminDetailsDto>.Conflict(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
+                    postDto.Title, postDto.Slug), PostM.Errors.PostAlreadyExistCode);
             }
+
+            postDto.UpdateEntity(postEntity);
+
+            await _repository.UpdateAsync(postEntity, ct);
+            await _repository.SaveChangesAsync(ct);
+
+            Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
+
+            var responseDto = postEntity.ToDto();
+            var successMessage = string.Format(PostM.Success.PostUpdatedSuccessfully);
+
+            return Result<PostAdminDetailsDto>.Success
+                (responseDto, successMessage);
         }
 
         /// <summary>
         /// Deletes a post from the database by the specified post ID.
         /// </summary>        
-        public async Task DeletePostAsync(int postId, CancellationToken ct = default)
+        public async Task<Result<bool>> DeletePostAsync(int postId, CancellationToken ct = default)
         {
             var existingPost = await _repository.GetByIdAsync(postId, ct);
 
             if (existingPost == null)
             {
-                throw new PostNotFoundException(postId);
+                return Result<bool>.NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
-            try
-            {
-                await _repository.DeleteAsync(existingPost, ct);
-                await _repository.SaveChangesAsync(ct);
-            }
-            catch (DbException ex)
-            {
-                throw new DeletePostFailedException(postId, ex);
-            }
+            await _repository.DeleteAsync(existingPost, ct);
+            await _repository.SaveChangesAsync(ct);
+
+            Log.Information(Posts.Deleted, postId);
+
+            return Result<bool>.Success(true, PostM.Success.PostDeletedSuccessfully);
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using PostApiService.Controllers.Filters;
+using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Tests.UnitTests.Filters

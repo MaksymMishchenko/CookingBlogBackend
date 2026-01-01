@@ -6,23 +6,22 @@
         {
             public static class Errors
             {
-                public const string PostNotFound = "Post with ID {0} was not found.";
-                public const string PostAlreadyExist = "A post with the same Title '{0}' already exists.";
-                public const string AddPostFailed = "Failed to add post with title '{0}'.";
-                public const string UpdatePostFailed = "Failed to update post with title '{0}'.";
-                public const string DeletePostFailed = "Failed to delete post with title '{0}'.";
+                public const string PostNotFound = "Post not found.";                
+                public const string PostNotFoundCode = "POST_NOT_FOUND";
+                public const string PostTitleOrSlugAlreadyExist = "A post with the same Title '{0}' or Slug {1} already exists.";
+                public const string PostAlreadyExistCode = "POST_OR_SLUG_ALREADY_EXISTS";
+                public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
+                public const string AddPostFailed = "Failed to add post with title '{0}'.";                                
                 public const string NoPostsFound = "No posts found for the requested page.";
             }
 
             public static class Success
-            {
-                public const string PostRetrievedSuccessfully = "Post with ID {0} retrieved successfully.";
-                public const string NoPostsAvailableYet = "No posts available yet";
-                public const string NoPostsFound = "No posts found matching your search: '{0}'.";
-                public const string PostsRetrievedSuccessfully = "Successfully retrieved {0} posts.";
+            {                
+                public const string SearchResultsFound = "Found {1} posts matching your search '{0}'.";
+                public const string SearchNoResults = "No posts found matching your search '{0}'.";
                 public const string PostAddedSuccessfully = "Post added successfully.";
-                public const string PostUpdatedSuccessfully = "Post with ID {0} updated successfully.";
-                public const string PostDeletedSuccessfully = "Post with ID {0} deleted successfully.";
+                public const string PostUpdatedSuccessfully = "Post updated successfully.";
+                public const string PostDeletedSuccessfully = "Post deleted successfully.";
             }
         }
 
@@ -36,7 +35,7 @@
             }
 
             public static class Success
-            {                
+            {
                 public const string CategoryAddedSuccessfully = "Category added successfully.";
                 public const string CategoryUpdatedSuccessfully = "Category updated successfully.";
                 public const string CategoryDeletedSuccessfully = "Category deleted successfully.";
@@ -113,10 +112,15 @@
             {
                 public const string Required = "{0} is required.";
                 public const string LengthRange = "{0} must be between {2} and {1} characters.";
+                public const string MaxLength = "{0} cannot exceed {1} characters.";
+                public const string InvalidUrl = "Invalid URL format.";
+                public const string SlugFormat = "Slug must only contain lowercase letters, numbers, and hyphens.";
+                public const string InvalidCategory = "Please select a valid category.";
                 public const string InvalidId = "The provided identifier must be greater than 0.";
                 public const string InvalidPageParameters = "Parameter must be greater than 0.";
                 public const string PageSizeExceeded = "Items per page size exceeds the allowed maximum.";
                 public const string ValidationFailed = "Validation Failed.";
+                
                 public const string InvalidNumberFormat = "The value '{0}' is not a valid number.";
                 public const string SearchQueryForbiddenCharacters =
                     "Search query contains forbidden characters. Use only letters, numbers, spaces, dots or hyphens.";

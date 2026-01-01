@@ -1,5 +1,6 @@
 ﻿using PostApiService.Controllers;
 using PostApiService.Interfaces;
+using PostApiService.Models.Common;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {

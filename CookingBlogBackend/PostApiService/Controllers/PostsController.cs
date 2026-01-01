@@ -1,7 +1,6 @@
 ﻿using PostApiService.Controllers.Filters;
 using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -29,17 +28,10 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetPostsWithTotalPostCountAsync
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync
+            var result = await _postsService.GetPostsWithTotalPostCountAsync
                 (query.PageNumber, query.PageSize, ct);
 
-            return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
-                (posts.Any()
-                ? string.Format(PostM.Success.PostsRetrievedSuccessfully, posts.Count)
-                : PostM.Success.NoPostsAvailableYet,
-                posts,
-                query.PageNumber,
-                query.PageSize,
-                totalPostCount));
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -52,32 +44,23 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> SearchPostsWithTotalCountAsync
             ([FromQuery] SearchPostQueryParameters query, CancellationToken ct = default)
         {
-            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync
+            var result = await _postsService.SearchPostsWithTotalCountAsync
                 (query.QueryString, query.PageNumber, query.PageSize, ct);
 
-            return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
-                (string.Format(PostM.Success.PostsRetrievedSuccessfully, searchPostList.Count),
-                query.QueryString,
-                searchPostList,
-                query.PageNumber,
-                query.PageSize,
-                searchTotalPosts));
+            return result.ToActionResult();
         }
 
         /// <summary>
-        /// Retrieves a specific post by its ID. Optionally includes comments if specified.
+        /// Retrieves a specific post by its ID.
         /// </summary>        
-        [HttpGet("{postId}")]
-        [AllowAnonymous]
+        [HttpGet("{id}")]
         [ValidateId]
         public async Task<IActionResult> GetPostByIdAsync
-            (int postId, [FromQuery] bool includeComments = true, CancellationToken ct = default)
+            (int id, CancellationToken ct = default)
         {
-            var post = await _postsService.GetPostByIdAsync(postId, includeComments, ct);
+            var result = await _postsService.GetPostByIdAsync(id, ct);
 
-            return Ok(ApiResponse<Post>.CreateSuccessResponse
-                (string.Format
-                (PostM.Success.PostRetrievedSuccessfully, post.Id), post));
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -86,13 +69,12 @@ namespace PostApiService.Controllers
         [HttpPost]
         [ValidateModel]
         public async Task<IActionResult> AddPostAsync
-            ([FromBody] Post post, CancellationToken ct = default)
+            ([FromBody] PostCreateDto dto, CancellationToken ct = default)
         {
-            var addedPost = await _postsService.AddPostAsync(post, ct);
+            var result = await _postsService.AddPostAsync(dto, ct);
 
-            return CreatedAtAction(nameof(GetPostByIdAsync), new { postId = addedPost.Id },
-                ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(PostM.Success.PostAddedSuccessfully), addedPost));
+            return result.ToCreatedResult(nameof(GetPostByIdAsync),
+                new { id = result.Value?.Id });
         }
 
         /// <summary>
@@ -102,13 +84,11 @@ namespace PostApiService.Controllers
         [ValidateId]
         [ValidateModel]
         public async Task<IActionResult> UpdatePostAsync
-            (int postId, [FromBody] Post post, CancellationToken ct = default)
+            (int postId, [FromBody] PostUpdateDto postDto, CancellationToken ct = default)
         {
-            var updatedPost = await _postsService.UpdatePostAsync(postId, post, ct);
+            var result = await _postsService.UpdatePostAsync(postId, postDto, ct);
 
-            return Ok(ApiResponse<Post>.CreateSuccessResponse
-                (string.Format
-                (PostM.Success.PostUpdatedSuccessfully, postId), updatedPost));
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -119,11 +99,9 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> DeletePostAsync
             (int postId, CancellationToken ct = default)
         {
-            await _postsService.DeletePostAsync(postId, ct);
+            var result = await _postsService.DeletePostAsync(postId, ct);
 
-            return Ok(ApiResponse<Post>.CreateSuccessResponse
-                (string.Format
-                (PostM.Success.PostDeletedSuccessfully, postId), postId));
+            return result.ToActionResult();
         }
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace PostApiService.Models
+namespace PostApiService.Models.Common
 {
     public class ApiResponse
     {
@@ -13,10 +13,10 @@ namespace PostApiService.Models
         public int? EntityId { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int? PageSize { get; set; }
+        public int? PageNumber { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public int? PageNumber { get; set; }
+        public int? PageSize { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? TotalCount { get; set; }
@@ -30,13 +30,18 @@ namespace PostApiService.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public IDictionary<string, string[]>? Errors { get; set; }
 
-        public static ApiResponse CreateErrorResponse(string message, IDictionary<string, string[]>? errors = null)
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? ErrorCode { get; set; }
+
+        public static ApiResponse CreateErrorResponse
+            (string message, IDictionary<string, string[]>? errors = null, string? errorCode = null)
         {
             return new ApiResponse
             {
                 Success = false,
                 Message = message,
-                Errors = errors
+                Errors = errors,
+                ErrorCode = errorCode                
             };
         }
     }
@@ -46,9 +51,6 @@ namespace PostApiService.Models
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public T Data { get; set; } = default!;
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public List<T> DataList { get; set; } = default!;
-
         public static ApiResponse<T> CreateSuccessResponse(string message)
         {
             return new ApiResponse<T>
@@ -56,7 +58,7 @@ namespace PostApiService.Models
                 Success = true,
                 Message = message
             };
-        }      
+        }
 
         public static ApiResponse<T> CreateSuccessResponse(string message, T? data)
         {
@@ -66,43 +68,25 @@ namespace PostApiService.Models
                 Message = message,
                 Data = data
             };
-        }        
-
-        public static ApiResponse<T> CreatePaginatedListResponse(
-            string message,
-            List<T>? dataList = null,
-            int? pageNumber = 1,
-            int? pageSize = 10,
-            int? totalCount = 0)
-        {
-            return new ApiResponse<T>
-            {
-                Success = true,
-                Message = message,
-                DataList = dataList ?? new List<T>(),
-                PageNumber = pageNumber,
-                PageSize = pageSize,
-                TotalCount = totalCount
-            };
         }
 
-        public static ApiResponse<T> CreatePaginatedSearchListResponse(
-            string message,
-            string searchQuery,
-            List<T>? dataList = null,
-            int? pageNumber = 1,
-            int? pageSize = 10,
-            int? totalSearchCount = 0)
+        public static ApiResponse<IEnumerable<TData>> CreatePaginatedResponse<TData>(
+            IEnumerable<TData> data,
+            int pageNumber,
+            int pageSize,
+            int totalCount,
+            string? message = null,
+            string? searchQuery = null)
         {
-            return new ApiResponse<T>
+            return new ApiResponse<IEnumerable<TData>>
             {
                 Success = true,
                 Message = message,
                 SearchQuery = searchQuery,
-                DataList = dataList ?? new List<T>(),
+                Data = data,
                 PageNumber = pageNumber,
                 PageSize = pageSize,
-                TotalCount = totalSearchCount
+                TotalCount = totalCount
             };
         }
 

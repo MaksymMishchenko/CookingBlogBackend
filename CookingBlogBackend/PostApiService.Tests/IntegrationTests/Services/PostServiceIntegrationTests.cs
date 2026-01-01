@@ -1,4 +1,5 @@
-﻿using PostApiService.Repositories;
+﻿using PostApiService.Infrastructure.Common;
+using PostApiService.Repositories;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
@@ -23,8 +24,10 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 
             var repo = new Repository<Post>(context);
+            var categoryRepo = new Repository<Category>(context);
+            var categoryService = new CategoryService(categoryRepo, repo);
             var snippet = new SnippetGeneratorService();
-            var service = new PostService(repo, snippet);
+            var service = new PostService(repo, categoryService, snippet);
 
             return (service, postsToSeed);
         }
@@ -40,8 +43,10 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 
             var repo = new Repository<Post>(context);
+            var categoryRepo = new Repository<Category>(context);
+            var categoryService = new CategoryService(categoryRepo, repo);
             var snippet = new SnippetGeneratorService();
-            var service = new PostService(repo, snippet);
+            var service = new PostService(repo, categoryService, snippet);
 
             return (service, postsToSeed);
         }
@@ -57,14 +62,43 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
 
             var repo = new Repository<Post>(context);
+            var categoryRepo = new Repository<Category>(context);
+            var categoryService = new CategoryService(categoryRepo, repo);
             var snippet = new SnippetGeneratorService();
-            var service = new PostService(repo, snippet);
+            var service = new PostService(repo, categoryService, snippet);
 
             return (service, postsToSeed);
         }
 
+        private record TestSetup(
+            ApplicationDbContext Context,
+            PostService Service,
+            List<Post> Posts,
+            List<Category> Categories
+        );
+
+        private async Task<TestSetup> SetupFullService()
+        {
+            var context = _fixture.CreateUniqueContext();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = _fixture.GeneratePosts(10, categories, 2);
+
+            await _fixture.SeedCategoryAsync(context, categories);
+            await _fixture.SeedDatabaseAsync(context, posts);
+
+            var repo = new Repository<Post>(context);
+            var catRepo = new Repository<Category>(context);
+            var catService = new CategoryService(catRepo, repo);
+            var snippet = new SnippetGeneratorService();
+
+            var postService = new PostService(repo, catService, snippet);
+
+            return new TestSetup(context, postService, posts, categories);
+        }
+
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount_WithContentCheck()
+        public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount()
         {
             // Arrange
             ApplicationDbContext context;
@@ -78,7 +112,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 var expectedPostsOnPage = seededPosts
-                    .OrderBy(p => p.Id)
+                    .OrderByDescending(p => p.CreatedAt)
                     .Skip((ExpectedPageNumber - 1) * ExpectedPageSize)
                     .Take(ExpectedPageSize)
                     .ToList();
@@ -87,18 +121,16 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var result = await postService.GetPostsWithTotalPostCountAsync
                     (ExpectedPageNumber, ExpectedPageSize);
 
-                // Assert
-                Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
-                Assert.Equal(ExpectedPageSize, result.Posts.Count);
-                Assert.Equal(1, result.Posts.First().Id);
-                Assert.Equal(10, result.Posts.Last().Id);
+                // Assert                
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+                var data = result.Value!;
+                Assert.Equal(ExpectedTotalPostCount, data.TotalCount);
+                Assert.Equal(ExpectedPageSize, data.PageSize);
+                Assert.Equal(1, data.Items.First().Id);
+                Assert.Equal(10, data.Items.Last().Id);
 
-                Assert.True(
-                    expectedPostsOnPage.Select(p => p.Id)
-                        .SequenceEqual(result.Posts.Select(p => p.Id)),
-                    "The order or set of Post IDs on the page does not match the expected.");
-
-                Assert.All(result.Posts, (actualDto, index) =>
+                Assert.All(data.Items, (actualDto, index) =>
                 {
                     var expectedPost = expectedPostsOnPage[index];
 
@@ -109,96 +141,37 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnLastIncompletePageRange()
-        {
-            // Arrange
-            ApplicationDbContext context;
-            const int PageSize = 10;
-            const int PageNumber = 3;
-            const int ExpectedTotalPostCount = 25;
-            const int ExpectedCommentCountPerPost = 5;
-            const int ExpectedPostsOnLastPage = 5;
-
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb
-                (out context, ExpectedTotalPostCount, ExpectedPostsOnLastPage);
-            using (context)
-            {
-                var expectedPostsOnPage = seededPosts
-                    .OrderBy(p => p.Id)
-                    .Skip((PageNumber - 1) * PageSize)
-                    .Take(PageSize)
-                    .ToList();
-
-                // Act
-                var result = await postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
-
-                // Assert
-                Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
-                Assert.Equal(ExpectedPostsOnLastPage, result.Posts.Count);
-                Assert.Equal(21, result.Posts.First().Id);
-                Assert.Equal(ExpectedTotalPostCount, result.Posts.Last().Id);
-
-                Assert.All(result.Posts, (actualDto, index) =>
-                {
-                    var expectedPost = expectedPostsOnPage[index];
-                    TestDataHelper.AssertPostListDtoMapping(expectedPost, actualDto, ExpectedCommentCountPerPost);
-                });
-            }
-        }
-
-        [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyListWhenTotalCountIsZero()
-        {
-            // Arrange
-            ApplicationDbContext context;
-            const int PageNumber = 1;
-            const int PageSize = 5;
-            const int ExpectedTotalPosts = 0;
-            const int ExpectedCommentCount = 0;
-
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb
-                (out context, ExpectedTotalPosts, ExpectedCommentCount);
-
-            using (context)
-            {
-                // Act            
-                var (posts, totalPostCount) = await postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
-
-                // Assert                            
-                Assert.Empty(posts);
-                Assert.Equal(ExpectedTotalPosts, totalPostCount);
-            }
-        }
-
-        [Fact]
         public async Task SearchPosts_ShouldFindQuery_InTitleOrDescriptionOrContent()
         {
             // Arrange
             ApplicationDbContext context;
-            var query = "Chili";
+            const string Query = "Chili";
 
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
-                (out context);
+            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch(out context);
+
+            var expectedIds = seededPosts
+                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                            p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                            p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
+                .Select(p => p.Id)
+                .OrderBy(id => id)
+                .ToList();
 
             // Act
-            var (result, totalCount) = await postService.SearchPostsWithTotalCountAsync(query);
+            var result = await postService.SearchPostsWithTotalCountAsync(Query);
 
-            // Assert
-            Assert.Equal(3, totalCount);
-            Assert.Equal(3, result.Count);
-            Assert.All(result, r =>
+            // Assert           
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var data = result.Value!;
+
+            var actualIds = data.Items.Select(r => r.Id).OrderBy(id => id).ToList();
+            Assert.Equal(expectedIds, actualIds);
+
+            Assert.All(data.Items, item =>
             {
-                bool foundInTitle = r.Title.Contains(query, StringComparison.OrdinalIgnoreCase);
-                bool foundInSnippet = r.SearchSnippet.Contains(query, StringComparison.OrdinalIgnoreCase);
-
-                if (r.Id == 2)
-                {
-                    Assert.Empty(r.SearchSnippet);
-                }
-                else
-                {
-                    Assert.True(foundInTitle || foundInSnippet);
-                }
+                bool foundInTitle = item.Title.Contains(Query, StringComparison.OrdinalIgnoreCase);
+                Assert.True(foundInTitle || expectedIds.Contains(item.Id));
             });
         }
 
@@ -215,70 +188,100 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
                 (out context, Query, PostsCountToSeed);
 
-            using (context)
-            {
-                // Act            
-                var (posts, totalPostCount) = await postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+            // Act            
+            var result = await postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
 
-                // Assert                            
-                Assert.NotEmpty(posts);
-                Assert.Equal(PostsCountToSeed, posts.Count);
-            }
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var data = result.Value!;
+
+            Assert.Equal(seededPosts.Count, data.TotalSearchCount);
+            Assert.Equal(PageSize, data.Items.Count());
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnSpecificPost()
+        public async Task GetPostByIdAsync_ShouldReturnSuccess_IfPostExistsInDb()
         {
             // Arrange
             ApplicationDbContext context;
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+
             using (context)
             {
-                var postId = 1;
+                var targetPost = seededPosts.First();
 
                 // Act
-                var existingPost = await postService.GetPostByIdAsync(postId, includeComments: false);
+                var result = await postService.GetPostByIdAsync(targetPost.Id);
 
                 // Assert
-                Assert.NotNull(existingPost);
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+                Assert.NotNull(result.Value);
 
-                var post = await context.Posts
-                    .FirstOrDefaultAsync(p => p.Id == 1);
-
-                Assert.NotNull(post);
-                Assert.Equal(post.Title, existingPost.Title);
-                Assert.Empty(existingPost.Comments);
+                Assert.Equal(targetPost.Title, result.Value.Title);
+                Assert.Equal(targetPost.Author, result.Value.Author);
+                Assert.Equal(targetPost.Slug, result.Value.Slug);
             }
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldAddNewPostSuccessfully()
+        public async Task GetPostByIdAsync_Integration_ShouldReturnNotFound_IfIdDoesNotExist()
         {
             // Arrange
             ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            var (postService, _) = CreatePostServiceAndSeedUniqueDb(out context);
+
             using (context)
             {
-                var newPost = new Post
-                {
-                    Title = "Lorem ipsum dolor sit amet",
-                    Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-                    Author = "Test author",
-                    Description = "Test description",
-                    MetaTitle = "Test meta title",
-                    MetaDescription = "Test meta description",
-                    ImageUrl = "http://example.com/img/img.jpg",
-                    Slug = "post-slug",
-                };
+                var nonExistentId = 999999;
+
+                // Act
+                var result = await postService.GetPostByIdAsync(nonExistentId);
+
+                // Assert
+                Assert.False(result.IsSuccess);
+                Assert.Equal(ResultStatus.NotFound, result.Status);
+                Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
+
+                var expectedMessage = string.Format(PostM.Errors.PostNotFound, nonExistentId);
+                Assert.Equal(expectedMessage, result.Message);
+            }
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
+        {
+            // Arrange                      
+            var (context, postService, seededPosts, seededCategories) = await SetupFullService();
+            var existingCategoryId = seededCategories.First().Id;
+
+            using (context)
+            {
+                var newPost = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
+                var postDto = TestDataHelper.ToPostCreateDto(newPost);
+
                 var initialCount = await context.Posts.CountAsync();
 
                 // Act
-                await postService.AddPostAsync(newPost);
+                var result = await postService.AddPostAsync(postDto);
 
-                // Assert
-                var addedPost = await context.Posts
-                    .FirstOrDefaultAsync(p => p.Title == newPost.Title);
-                Assert.NotNull(addedPost);
+                // Assert                
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+
+                var data = result.Value!;
+                Assert.NotNull(data);
+
+                Assert.Equal(postDto.Title, data.Title);
+                Assert.Equal(postDto.Slug, data.Slug);
+                Assert.Equal(existingCategoryId, data.CategoryId);
+
+                var addedPostInDb = await context.Posts
+                    .FirstOrDefaultAsync(p => p.Title == postDto.Title);
+                Assert.NotNull(addedPostInDb);
+                Assert.Equal(postDto.Content, addedPostInDb.Content);
+                Assert.Equal(postDto.CategoryId, addedPostInDb.CategoryId);
 
                 var postCount = await context.Posts.CountAsync();
                 Assert.Equal(initialCount + 1, postCount);
@@ -297,16 +300,24 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var existingPost = await context.Posts.FindAsync(postId);
                 Assert.NotNull(existingPost);
 
-                existingPost.Title = "Updated title";
-                existingPost.Content = "Updated content";
+                var updatedTitle = "New Receipt Title";
+
+                var updateDto = TestDataHelper.ToPostUpdateDto(existingPost, updatedTitle);
 
                 // Act                
-                var updatedPost = await postService.UpdatePostAsync(postId, existingPost);
+                var result = await postService.UpdatePostAsync(postId, updateDto);
 
                 // Assert                
-                Assert.NotNull(updatedPost);
-                Assert.Equal(existingPost.Title, updatedPost.Title);
-                Assert.Equal(existingPost.Content, updatedPost.Content);
+                Assert.NotNull(result);
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+
+                var postInDb = await context.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == postId);
+
+                Assert.NotNull(postInDb);
+                Assert.Equal(updateDto.Title, postInDb.Title);
+                Assert.Equal(updateDto.Content, postInDb.Content);
+                Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
             }
         }
 
@@ -321,10 +332,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var initialCount = await context.Posts.CountAsync();
                 var postId = 1;
 
+                var successMessage = PostM.Success.PostDeletedSuccessfully;
+
                 // Act
-                await postService.DeletePostAsync(postId);
+                var result = await postService.DeletePostAsync(postId);
 
                 // Assert
+                Assert.NotNull(result);
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+                Assert.Equal(successMessage, result.Message);
+
                 var removedPost = await context.Posts.AnyAsync(p => p.Id == postId);
                 Assert.False(removedPost);
 

@@ -7,6 +7,23 @@ namespace PostApiService.Services
 {
     public class SnippetGeneratorService : ISnippetGeneratorService
     {
+        private string GetStartOfText(string text, int length)
+        {
+            if (text.Length <= length) return text;
+            return text.Substring(0, length).Trim() + "...";
+        }
+
+        private string StripHtml(string html)
+        {
+            if (string.IsNullOrEmpty(html)) return string.Empty;
+
+            var htmlDoc = new HtmlDocument();
+            htmlDoc.LoadHtml(html);
+
+            string result = htmlDoc.DocumentNode.InnerText;
+            return WebUtility.HtmlDecode(result);
+        }
+
         public string CreateSnippet(string content, string searchKeyword, int contextLength = 200)
         {
             if (string.IsNullOrWhiteSpace(content) || string.IsNullOrWhiteSpace(searchKeyword))
@@ -20,7 +37,7 @@ namespace PostApiService.Services
 
             if (keywordIndex == -1)
             {
-                return string.Empty;
+                return GetStartOfText(plainText, contextLength);
             }
 
             int halfContext = contextLength / 2;
@@ -52,17 +69,6 @@ namespace PostApiService.Services
             );
 
             return prefix + highlightedSnippet + suffix;
-        }
-
-        private string StripHtml(string html)
-        {
-            if (string.IsNullOrEmpty(html)) return string.Empty;
-
-            var htmlDoc = new HtmlDocument();
-            htmlDoc.LoadHtml(html);
-
-            string result = htmlDoc.DocumentNode.InnerText;
-            return WebUtility.HtmlDecode(result);
         }
     }
 }

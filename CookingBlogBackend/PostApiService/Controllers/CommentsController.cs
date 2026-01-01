@@ -1,5 +1,6 @@
 ﻿using PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
+using PostApiService.Models.Common;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers

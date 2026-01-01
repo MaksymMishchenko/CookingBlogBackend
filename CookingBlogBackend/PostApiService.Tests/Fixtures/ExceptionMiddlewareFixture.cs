@@ -4,8 +4,10 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using PostApiService.Contexts;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -35,39 +37,42 @@ namespace PostApiService.Tests.Fixtures
 
             services.RemoveAll(typeof(IPostService));
 
-            var postServiceMock = Substitute.For<IPostService>();
-            var mockPosts = new List<PostListDto> {
-                new PostListDto { Title = "Mocked Post" }
+            var mockPosts = new List<PostListDto>
+            {
+                new PostListDto(1, "Mocked Post", "slug", "Author", "Category", DateTime.UtcNow, "Desc", 0)
             };
 
             const int mockTotalCount = 100;
+            const int mockPageNumber = 1;
+            const int mockPageSize = 10;
+
+            var pagedResult = new PagedResult<PostListDto>(mockPosts, mockTotalCount, mockPageNumber, mockPageSize);
+            var expectedResult = Result<PagedResult<PostListDto>>.Success(pagedResult);
+
+            var postServiceMock = Substitute.For<IPostService>();
 
             postServiceMock.GetPostsWithTotalPostCountAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult((
-                    Posts: mockPosts,
-                    TotalCount: mockTotalCount
-                )));
+                .Returns(expectedResult);
 
-            postServiceMock.GetPostByIdAsync(
-                Arg.Any<int>(),
-                Arg.Any<bool>())
-                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
+            var mockSearchPosts = new List<SearchPostListDto>
+            {
+                new SearchPostListDto(1, "Mocked Post", "slug", "Search snippet", "Author", "Category")
+            };
+
+            var pagedSearchResult = new PagedSearchResult<SearchPostListDto>(
+                    "Chili", mockSearchPosts, mockTotalCount, mockPageNumber, mockPageSize, "Found 100 posts"
+            );
+
+            var expectedSearchResult = Result<PagedSearchResult<SearchPostListDto>>.Success(pagedSearchResult);
 
             postServiceMock.AddPostAsync(
-                Arg.Any<Post>())
-                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
-
-            postServiceMock.UpdatePostAsync(
-                Arg.Any<int>(),
-                Arg.Any<Post>())
-                .Returns(Task.FromResult(new Post { Title = "Mocked Post" }));
-
-            postServiceMock.DeletePostAsync(
-                Arg.Any<int>())
-                .Returns(Task.CompletedTask);
+                Arg.Any<PostCreateDto>())
+                .Returns(Task.FromResult(Result<PostAdminDetailsDto>.Success(new PostAdminDetailsDto(
+                    1, "Mocked Post", "Mock Desc", "Content", "Author", "ImageUrl", "Slug", "Meta Title",
+                    "Meta Desc", 1, DateTime.UtcNow))));
 
             services.AddScoped(_ => postServiceMock);
 
@@ -77,15 +82,6 @@ namespace PostApiService.Tests.Fixtures
             commentServiceMock.AddCommentAsync(
                 Arg.Any<int>(),
                 Arg.Any<Comment>())
-                .Returns(Task.CompletedTask);
-
-            commentServiceMock.UpdateCommentAsync(
-                Arg.Any<int>(),
-                Arg.Any<EditCommentModel>())
-                .Returns(Task.CompletedTask);
-
-            commentServiceMock.DeleteCommentAsync(
-                Arg.Any<int>())
                 .Returns(Task.CompletedTask);
 
             services.AddScoped(_ => commentServiceMock);

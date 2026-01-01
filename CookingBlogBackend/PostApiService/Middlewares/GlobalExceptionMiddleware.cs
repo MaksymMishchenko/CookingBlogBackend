@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using PostApiService.Exceptions;
 using PostApiService.Infrastructure.Constants;
+using PostApiService.Models.Common;
 using System.Net;
 using System.Security.Authentication;
 
@@ -74,37 +75,9 @@ namespace PostApiService.Middlewares
             catch (PostNotFoundException ex)
             {
                 await HandleExceptionAsync(context,
-                    ex,
+                    null,
                     HttpStatusCode.NotFound,
                     string.Format(PostM.Errors.PostNotFound, ex.PostId));
-            }
-            catch (PostAlreadyExistException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex,
-                    HttpStatusCode.Conflict,
-                    string.Format(PostM.Errors.PostAlreadyExist, ex.Title));
-            }
-            catch (AddPostFailedException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex,
-                    HttpStatusCode.InternalServerError,
-                    string.Format(PostM.Errors.AddPostFailed, ex.Title));
-            }
-            catch (UpdatePostFailedException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex,
-                    HttpStatusCode.InternalServerError,
-                    string.Format(PostM.Errors.UpdatePostFailed, ex.Title));
-            }
-            catch (DeletePostFailedException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex,
-                    HttpStatusCode.InternalServerError,
-                    string.Format(PostM.Errors.DeletePostFailed, ex.PostId));
             }
             catch (CommentNotFoundException ex)
             {
@@ -198,6 +171,6 @@ namespace PostApiService.Middlewares
 
             var errorResponse = ApiResponse.CreateErrorResponse(message);
             await context.Response.WriteAsJsonAsync(errorResponse);
-        }        
+        }
     }
 }

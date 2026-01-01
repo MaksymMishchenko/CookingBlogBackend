@@ -52,7 +52,7 @@ namespace PostApiService.Controllers
             var result = await _categoryService.AddCategoryAsync(categoryDto, ct);
 
             return result.ToCreatedResult(nameof(GetCategoryByIdAsync),
-                new { id = result.Value?.Id }, CategoryM.Success.CategoryAddedSuccessfully);
+                new { id = result.Value?.Id });
         }
 
         /// <summary>

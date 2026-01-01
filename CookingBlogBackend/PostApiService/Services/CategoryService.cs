@@ -17,11 +17,9 @@ namespace PostApiService.Services
             _postRepository = postRepository;
         }
 
-        public async Task<Result<bool>> ExistsAsync(int id, CancellationToken ct = default)
+        public async Task<bool> ExistsAsync(int id, CancellationToken ct = default)
         {
-            var exists = await _categoryRepository.AnyAsync(c => c.Id == id, ct);
-
-            return Result<bool>.Success(exists);
+            return await _categoryRepository.AnyAsync(c => c.Id == id, ct);            
         }
 
         public async Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default)
@@ -70,7 +68,7 @@ namespace PostApiService.Services
 
             var responseDto = categoryEntity.ToDto();
 
-            return Result<CategoryDto>.Success(responseDto);
+            return Result<CategoryDto>.Success(responseDto, CategoryM.Success.CategoryAddedSuccessfully);
         }
 
         public async Task<Result<CategoryDto>> UpdateCategoryAsync
