@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-
-namespace PostApiService.Contexts
+﻿namespace PostApiService.Contexts
 {
     public class AppIdentityDbContext : IdentityDbContext<IdentityUser>
     {

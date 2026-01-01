@@ -1,7 +1,5 @@
 ﻿using MockQueryable;
-using NSubstitute;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Repositories;
 using PostApiService.Services;
 using System.Linq.Expressions;
@@ -56,6 +54,8 @@ namespace PostApiService.Tests.UnitTests
                 TestDataHelper.AssertPostListDtoMapping
                 (expectedPost, postDto, ExpectedCommentCountPerPost);
             });
+
+            await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -93,6 +93,8 @@ namespace PostApiService.Tests.UnitTests
 
                 TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
             });
+
+            await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -131,6 +133,8 @@ namespace PostApiService.Tests.UnitTests
 
                 TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
             });
+
+            await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -160,6 +164,8 @@ namespace PostApiService.Tests.UnitTests
             // Assert            
             Assert.Empty(result.Posts);
             Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+
+            await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -195,6 +201,8 @@ namespace PostApiService.Tests.UnitTests
                 var expectedPost = testPosts[index];
                 TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
             });
+
+            await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -436,8 +444,9 @@ namespace PostApiService.Tests.UnitTests
                 .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
                     p.Compile()(newPost)), Arg.Any<CancellationToken>());
 
-            await _mockRepository.Received(1)
-                .AddAsync(newPost, Arg.Any<CancellationToken>());
+            await _mockRepository.Received(1).AddAsync(newPost, Arg.Any<CancellationToken>());
+
+            await _mockRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -447,6 +456,9 @@ namespace PostApiService.Tests.UnitTests
             var categories = TestDataHelper.GetCulinaryCategories();
             var originalPost = TestDataHelper.GetSinglePost(categories);
             int postId = originalPost.Id;
+
+            using var cts = new CancellationTokenSource();
+            var token = cts.Token;
 
             var inputPostData = new Post
             {
@@ -461,16 +473,16 @@ namespace PostApiService.Tests.UnitTests
                 Slug = "new-slug-value"
             };
 
-            _mockRepository.GetByIdAsync(postId)
+            _mockRepository.GetByIdAsync(postId, token)!
                 .Returns(Task.FromResult(originalPost));
 
-            _mockRepository.UpdateAsync(Arg.Any<Post>())
+            _mockRepository.UpdateAsync(Arg.Any<Post>(), token)
                 .Returns(Task.CompletedTask);
 
             var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
-            var resultPost = await service.UpdatePostAsync(postId, inputPostData);
+            var resultPost = await service.UpdatePostAsync(postId, inputPostData, token);
 
             // Assert
 
@@ -479,13 +491,16 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(inputPostData.Slug, resultPost.Slug);
 
             await _mockRepository.Received(1)
-                .GetByIdAsync(originalPost.Id);
+                .GetByIdAsync(originalPost.Id, token);
 
             await _mockRepository.Received(1)
                 .UpdateAsync(Arg.Is<Post>(p =>
                     p.Title == "New Title" &&
             p.Slug == "new-slug-value" &&
-            p.Content == originalPost.Content));
+            p.Content == originalPost.Content), token);
+
+            await _mockRepository.Received(1)
+                .SaveChangesAsync(token);
         }
 
         [Fact]
@@ -495,26 +510,22 @@ namespace PostApiService.Tests.UnitTests
             var categories = TestDataHelper.GetCulinaryCategories();
             var post = TestDataHelper.GetSinglePost(categories);
 
-            var mockRepository = Substitute.For<IRepository<Post>>();
-
-            mockRepository.GetByIdAsync(post.Id)
+            _mockRepository.GetByIdAsync(post.Id, Arg.Any<CancellationToken>())!
                 .Returns(Task.FromResult(post));
 
-            mockRepository.DeleteAsync(Arg.Any<Post>())
+            _mockRepository.DeleteAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(mockRepository, _mockSnippetGenerator);
+            var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             // Act
             await service.DeletePostAsync(post.Id);
 
             // Assert
-            await mockRepository.Received(1)
-                .GetByIdAsync(post.Id);
+            await _mockRepository.Received(1).GetByIdAsync(post.Id, Arg.Any<CancellationToken>());
 
-            await mockRepository.Received(1)
-                .DeleteAsync(Arg.Is<Post>(p =>
-                    p.Id == post.Id));
+            await _mockRepository.Received(1).DeleteAsync(Arg.Is<Post>(p =>
+                    p.Id == post.Id), Arg.Any<CancellationToken>());
         }
     }
 }

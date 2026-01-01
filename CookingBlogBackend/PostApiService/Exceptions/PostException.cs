@@ -11,7 +11,7 @@ namespace PostApiService.Exceptions
     {
         public int PostId { get; }
         public PostNotFoundException(int postId)
-            : base(string.Format(PostErrorMessages.PostNotFound, postId))
+            : base(string.Format(PostM.Errors.PostNotFound, postId))
         {
             PostId = postId;
         }
@@ -21,7 +21,7 @@ namespace PostApiService.Exceptions
     {
         public string Title { get; }
         public PostAlreadyExistException(string postTitle)
-             : base(string.Format(PostErrorMessages.PostAlreadyExist, postTitle))
+             : base(string.Format(PostM.Errors.PostAlreadyExist, postTitle))
         {
             Title = postTitle;
         }
@@ -31,7 +31,7 @@ namespace PostApiService.Exceptions
     {
         public string Title { get; }
         public AddPostFailedException(string postTitle, DbException ex)
-            : base(string.Format(PostErrorMessages.AddPostFailed, postTitle), ex)
+            : base(string.Format(PostM.Errors.AddPostFailed, postTitle), ex)
         {
             Title = postTitle;
         }
@@ -41,7 +41,7 @@ namespace PostApiService.Exceptions
     {
         public string Title { get; }
         public UpdatePostFailedException(string postTitle, DbException ex)
-            : base(string.Format(PostErrorMessages.UpdatePostFailed, postTitle), ex)
+            : base(string.Format(PostM.Errors.UpdatePostFailed, postTitle), ex)
         {
             Title = postTitle;
         }
@@ -51,7 +51,7 @@ namespace PostApiService.Exceptions
     {
         public int PostId { get; }
         public DeletePostFailedException(int postId, DbException ex)
-            : base(string.Format(PostErrorMessages.DeletePostFailed, postId), ex)
+            : base(string.Format(PostM.Errors.DeletePostFailed, postId), ex)
         {
             PostId = postId;
         }

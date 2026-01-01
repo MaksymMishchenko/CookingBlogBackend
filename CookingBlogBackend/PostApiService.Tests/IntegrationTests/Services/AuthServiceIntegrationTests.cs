@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Contexts;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Repositories;
 using PostApiService.Services;
 

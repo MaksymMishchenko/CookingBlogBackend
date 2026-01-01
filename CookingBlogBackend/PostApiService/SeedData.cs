@@ -1,5 +1,4 @@
 ﻿using Bogus;
-using PostApiService.Models;
 
 namespace PostApiService
 {

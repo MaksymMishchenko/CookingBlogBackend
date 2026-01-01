@@ -85,6 +85,7 @@ namespace PostApiService.Tests.Fixtures
 
                 var ticket = new AuthenticationTicket(CurrentPrincipal, "DynamicScheme");
                 return Task.FromResult(AuthenticateResult.Success(ticket));
+
             }
         }
     }

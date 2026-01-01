@@ -1,13 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters;
+﻿using PostApiService.Controllers.Filters;
 using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
-using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -31,18 +26,16 @@ namespace PostApiService.Controllers
         [HttpGet]
         [AllowAnonymous]
         [ValidatePaginationParameters]
-        public async Task<IActionResult> GetPostsWithTotalPostCountAsync([FromQuery] PostQueryParameters query,
-        CancellationToken cancellationToken = default)
+        public async Task<IActionResult> GetPostsWithTotalPostCountAsync
+            ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync(
-                query.PageNumber,
-                query.PageSize,
-                cancellationToken);
+            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync
+                (query.PageNumber, query.PageSize, ct);
 
             return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
                 (posts.Any()
-                ? string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, posts.Count)
-                : PostSuccessMessages.NoPostsAvailableYet,
+                ? string.Format(PostM.Success.PostsRetrievedSuccessfully, posts.Count)
+                : PostM.Success.NoPostsAvailableYet,
                 posts,
                 query.PageNumber,
                 query.PageSize,
@@ -56,17 +49,14 @@ namespace PostApiService.Controllers
         [AllowAnonymous]
         [ValidateSearchQuery]
         [ValidatePaginationParameters]
-        public async Task<IActionResult> SearchPostsWithTotalCountAsync([FromQuery] SearchPostQueryParameters query,
-        CancellationToken cancellationToken = default)
+        public async Task<IActionResult> SearchPostsWithTotalCountAsync
+            ([FromQuery] SearchPostQueryParameters query, CancellationToken ct = default)
         {
-            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync(
-                query.QueryString,
-                query.PageNumber,
-                query.PageSize,
-                cancellationToken);
+            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync
+                (query.QueryString, query.PageNumber, query.PageSize, ct);
 
             return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
-                (string.Format(PostSuccessMessages.PostsRetrievedSuccessfully, searchPostList.Count),
+                (string.Format(PostM.Success.PostsRetrievedSuccessfully, searchPostList.Count),
                 query.QueryString,
                 searchPostList,
                 query.PageNumber,
@@ -79,57 +69,61 @@ namespace PostApiService.Controllers
         /// </summary>        
         [HttpGet("{postId}")]
         [AllowAnonymous]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
-        public async Task<IActionResult> GetPostByIdAsync(int postId, [FromQuery] bool includeComments = true)
+        [ValidateId]
+        public async Task<IActionResult> GetPostByIdAsync
+            (int postId, [FromQuery] bool includeComments = true, CancellationToken ct = default)
         {
-            var post = await _postsService.GetPostByIdAsync(postId, includeComments);
+            var post = await _postsService.GetPostByIdAsync(postId, includeComments, ct);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, post.Id), post));
+                (PostM.Success.PostRetrievedSuccessfully, post.Id), post));
         }
 
         /// <summary>
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
-        public async Task<IActionResult> AddPostAsync([FromBody] Post post)
+        [ValidateModel]
+        public async Task<IActionResult> AddPostAsync
+            ([FromBody] Post post, CancellationToken ct = default)
         {
-            var addedPost = await _postsService.AddPostAsync(post);
+            var addedPost = await _postsService.AddPostAsync(post, ct);
 
-            return CreatedAtAction("GetPostById", new { postId = addedPost.Id },
+            return CreatedAtAction(nameof(GetPostByIdAsync), new { postId = addedPost.Id },
                 ApiResponse<Post>.CreateSuccessResponse
-                (string.Format(PostSuccessMessages.PostAddedSuccessfully), addedPost));
+                (string.Format(PostM.Success.PostAddedSuccessfully), addedPost));
         }
 
         /// <summary>
         /// Updates an existing post.
         /// </summary>               
         [HttpPut("{postId}")]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Post)]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
-        public async Task<IActionResult> UpdatePostAsync(int postId, [FromBody] Post post)
+        [ValidateId]
+        [ValidateModel]
+        public async Task<IActionResult> UpdatePostAsync
+            (int postId, [FromBody] Post post, CancellationToken ct = default)
         {
-            var updatedPost = await _postsService.UpdatePostAsync(postId, post);
+            var updatedPost = await _postsService.UpdatePostAsync(postId, post, ct);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, postId), updatedPost));
+                (PostM.Success.PostUpdatedSuccessfully, postId), updatedPost));
         }
 
         /// <summary>
         /// Deletes a post by its ID.
         /// </summary>        
         [HttpDelete("{postId}")]
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
-        public async Task<IActionResult> DeletePostAsync(int postId)
+        [ValidateId]
+        public async Task<IActionResult> DeletePostAsync
+            (int postId, CancellationToken ct = default)
         {
-            await _postsService.DeletePostAsync(postId);
+            await _postsService.DeletePostAsync(postId, ct);
 
             return Ok(ApiResponse<Post>.CreateSuccessResponse
                 (string.Format
-                (PostSuccessMessages.PostDeletedSuccessfully, postId), postId));
+                (PostM.Success.PostDeletedSuccessfully, postId), postId));
         }
     }
 }

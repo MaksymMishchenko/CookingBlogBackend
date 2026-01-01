@@ -1,6 +1,6 @@
 ﻿using Bogus.Extensions;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.Helper
 {
@@ -189,6 +189,16 @@ namespace PostApiService.Tests.Helper
             }).ToList();
         }
 
+        public static List<CategoryDto> GetCategoryListDtos(ICollection<Category> categories)
+        {
+            return categories.Select(c => new CategoryDto(c.Id, c.Name)).ToList();
+        }
+
+        public static CategoryDto GetCategoryDto(Category category)
+        {
+            return new CategoryDto(category.Id, category.Name);
+        }
+
         public static List<PostListDto> GetEmptyPostListDtos()
         {
             return new List<PostListDto>();
@@ -220,6 +230,13 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Slug, actualDto.Slug);
             Assert.Equal(expectedPost.Author, actualDto.Author);
             Assert.Equal(expectedPost.Author, actualDto.Author);
+        }
+
+        public static void AssertCategoryAsync(Category expectedCategory, CategoryDto actualDto)
+        {
+            Assert.NotNull(actualDto);
+            Assert.Equal(expectedCategory.Id, actualDto.Id);
+            Assert.Equal(expectedCategory.Name, actualDto.Name);
         }
 
         public static List<Post> GetSearchedPost(ICollection<Category> categories)
@@ -378,11 +395,6 @@ namespace PostApiService.Tests.Helper
                 CategoryId = category.Id,
                 Category = null!
             };
-        }
-
-        public static List<Post> GetEmptyPostList()
-        {
-            return new List<Post>();
         }
 
         public static List<Comment> GetListWithComments()

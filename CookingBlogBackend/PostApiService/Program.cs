@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PostApiService.Infrastructure;
+using PostApiService.Infrastructure.Constants;
 using PostApiService.Middlewares;
 using PostApiService.Models;
 
@@ -9,25 +10,27 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
+builder.Host.AddAppLogging();
+
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
-    ("DefaultConnection") ??
+    (ConfigConstants.DefaultConnection) ??
     throw new InvalidOperationException
-        ("Connection string 'DefaultConnection' is not configured.");
+        (string.Format(ConfigConstants.Errors.ConnectionStringNotFound, ConfigConstants.DefaultConnection));
 
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(connectionString);
 
-var jwtConfiguration = builder.Configuration.GetSection("JwtConfiguration").Get<JwtConfiguration>() ??
-     throw new InvalidOperationException("Jwt configuration is missing in the appsettings.json file.");
+var jwtConfiguration = builder.Configuration.GetSection(ConfigConstants.JwtSection).Get<JwtConfiguration>() ??
+     throw new InvalidOperationException(ConfigConstants.Errors.JwtConfigMissing);
 
-builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection("JwtConfiguration"));
+builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection(ConfigConstants.JwtSection));
 
 // Get an identity connection string from appsettings.json and check for null
 var identityConnectionString = builder.Configuration.GetValue<string>
-    ("ApiPostIdentity:ConnectionString") ??
+    (ConfigConstants.IdentityConnection) ??
     throw new InvalidOperationException
-    ("Connection string 'ApiPostIdentity' is not configured.");
+    (string.Format(ConfigConstants.Errors.ConnectionStringNotFound, ConfigConstants.IdentityConnection));
 
 // Register AddIdentityDbContext service to the IServiceCollection
 builder.Services.AddAppIdentityService(identityConnectionString);
@@ -44,15 +47,23 @@ builder.Services.AddApplicationAuthorization();
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
 builder.Services.AddAppCors();
 
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
+builder.Services.AddControllers(options =>
 {
-    // Ignores circular references during JSON serialization
-    options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
-});
+    // Allow using full method names with the "Async" suffix in routing.
+    options.SuppressAsyncSuffixInActionNames = false;
+
+    // Use EmptyBodyBehavior.Allow as the default behavior for the entire application.
+    options.AllowEmptyInputInBodyModelBinding = true;
+})
+    .AddJsonOptions(options =>
+    {
+        // Ignores circular references during JSON serialization
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    });
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
+    // / Hand over validation control to custom Action Filters.
     options.SuppressModelStateInvalidFilter = true;
 });
 

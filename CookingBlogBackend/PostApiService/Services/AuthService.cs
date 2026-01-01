@@ -1,8 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
-using PostApiService.Exceptions;
+﻿using PostApiService.Exceptions;
 using PostApiService.Helper;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using System.Security.Authentication;
@@ -38,7 +36,7 @@ namespace PostApiService.Services
 
             if (user == null)
             {
-                throw new UserNotFoundException(AuthErrorMessages.UserNotFound);
+                throw new UserNotFoundException(Auth.LoginM.Errors.UserNotFound);
             }
 
             var claims = new List<Claim>
@@ -86,14 +84,14 @@ namespace PostApiService.Services
             if (existingUser != null)
             {
                 throw new UserAlreadyExistsException
-                    (RegisterErrorMessages.UsernameAlreadyExists);
+                    (Auth.Registration.Errors.UsernameAlreadyExists);
             }
 
             var existingUserByEmail = await _authRepository.FindByEmailAsync(user.Email);
             if (existingUserByEmail != null)
             {
                 throw new EmailAlreadyExistsException
-                    (RegisterErrorMessages.EmailAlreadyExists);
+                    (Auth.Registration.Errors.EmailAlreadyExists);
             }
 
             var identityUser = new IdentityUser
@@ -116,7 +114,7 @@ namespace PostApiService.Services
             if (!identityResult.Succeeded)
             {
                 throw new UserClaimException
-                    (RegisterErrorMessages.ClaimAssignmentFailed);
+                    (Auth.Registration.Errors.ClaimAssignmentFailed);
             }
         }
 
@@ -126,14 +124,14 @@ namespace PostApiService.Services
         public async Task<IdentityUser> LoginAsync(LoginUser credentials)
         {
             var user = await _authRepository.FindByNameAsync(credentials.UserName)
-                 ?? throw new AuthenticationException(AuthErrorMessages.InvalidCredentials);
+                 ?? throw new AuthenticationException(Auth.LoginM.Errors.InvalidCredentials);
 
             var isPasswordValid = await _authRepository.CheckPasswordAsync(user, credentials.Password);
 
             if (!isPasswordValid)
             {
                 throw new AuthenticationException
-                    (AuthErrorMessages.InvalidCredentials);
+                    (Auth.LoginM.Errors.InvalidCredentials);
             }
 
             return user;
@@ -149,7 +147,7 @@ namespace PostApiService.Services
             if (user == null)
             {
                 throw new UnauthorizedAccessException
-                    (AuthErrorMessages.UnauthorizedAccess);
+                    (Auth.LoginM.Errors.UnauthorizedAccess);
             }
 
             return user;

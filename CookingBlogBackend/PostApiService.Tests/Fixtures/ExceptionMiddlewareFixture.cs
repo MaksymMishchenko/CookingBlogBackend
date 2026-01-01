@@ -1,13 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NSubstitute;
 using PostApiService.Contexts;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 using System.Security.Claims;
 using System.Text.Encodings.Web;

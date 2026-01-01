@@ -7,8 +7,7 @@ namespace PostApiService.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Category is required.")] 
-        [StringLength(20, MinimumLength = 3, ErrorMessage = "Category must be between 3 and 20 characters.")]
+        [MaxLength(20)]
         public string Name { get; set; } = default!;
 
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();

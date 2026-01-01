@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-namespace PostApiService.Models.Dto.Requests
+﻿namespace PostApiService.Models.Dto.Requests
 {
     public class SearchPostQueryParameters : PaginationQueryParameters
     {

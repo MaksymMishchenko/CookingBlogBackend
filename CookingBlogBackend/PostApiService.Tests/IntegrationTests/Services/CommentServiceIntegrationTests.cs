@@ -1,8 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using NSubstitute;
-using PostApiService.Interfaces;
-using PostApiService.Models;
+﻿using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 

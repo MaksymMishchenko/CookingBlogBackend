@@ -1,9 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using PostApiService.Controllers;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -29,19 +25,22 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
             };
 
-            _mockCommentService.AddCommentAsync(postId, newComment)
+            using var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            _mockCommentService.AddCommentAsync(postId, newComment, token)
                 .Returns(Task.CompletedTask);
 
             // Act
-            var result = await _commentController.AddCommentAsync(postId, newComment);
+            var result = await _commentController.AddCommentAsync(postId, newComment, token);
 
             // Assert                        
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult);
-            Assert.Equal(CommentSuccessMessages.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
+            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value!).Message);
 
             await _mockCommentService.Received(1)
-                .AddCommentAsync(postId, newComment);
+                .AddCommentAsync(postId, newComment, token);
         }
 
         [Fact]
@@ -54,19 +53,22 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Content = "It is a long established fact that a reader will be distracted."
             };
 
-            _mockCommentService.UpdateCommentAsync(commentId, updatedComment)
+            using var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            _mockCommentService.UpdateCommentAsync(commentId, updatedComment, token)
                 .Returns(Task.CompletedTask);
 
             // Act
-            var result = await _commentController.UpdateCommentAsync(commentId, updatedComment);
+            var result = await _commentController.UpdateCommentAsync(commentId, updatedComment, token);
 
             // Assert            
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult);
-            Assert.Equal(CommentSuccessMessages.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value).Message);
+            Assert.Equal(CommentM.Success.CommentUpdatedSuccessfully, ((ApiResponse<Comment>)okResult.Value!).Message);
 
             await _mockCommentService.Received(1)
-                .UpdateCommentAsync(commentId, updatedComment);
+                .UpdateCommentAsync(commentId, updatedComment, token);
         }
 
         [Fact]
@@ -74,20 +76,23 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var commentId = 1;
-            _mockCommentService.DeleteCommentAsync(commentId)
+            using var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            _mockCommentService.DeleteCommentAsync(commentId, token)
                 .Returns(Task.CompletedTask);
 
             // Act
-            var result = await _commentController.DeleteCommentAsync(commentId);
+            var result = await _commentController.DeleteCommentAsync(commentId, token);
 
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
             Assert.NotNull(okResult);
-            Assert.Equal(CommentSuccessMessages.CommentDeletedSuccessfully,
-                ((ApiResponse<Comment>)okResult.Value).Message);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully,
+                ((ApiResponse<Comment>)okResult.Value!).Message);
 
             await _mockCommentService.Received(1)
-                .DeleteCommentAsync(commentId);
+                .DeleteCommentAsync(commentId, token);
         }
     }
 }

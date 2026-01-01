@@ -1,5 +1,4 @@
-﻿using PostApiService.Models;
-using PostApiService.Models.Dto;
+﻿using PostApiService.Models.Dto;
 
 namespace PostApiService.Interfaces
 {
@@ -8,12 +7,12 @@ namespace PostApiService.Interfaces
         Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
             int pageNumber,
             int pageSize,
-            CancellationToken cancellationToken = default);
+            CancellationToken ct = default);
         Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
-            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken cancellationToken = default);
-        Task<Post> GetPostByIdAsync(int postId, bool includeComments = true);
-        Task<Post> AddPostAsync(Post post);
-        Task<Post> UpdatePostAsync(int postId, Post post);
-        Task DeletePostAsync(int postId);
+            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default);
+        Task<Post> GetPostByIdAsync(int postId, bool includeComments = true, CancellationToken ct = default);
+        Task<Post> AddPostAsync(Post post, CancellationToken ct = default);
+        Task<Post> UpdatePostAsync(int postId, Post post, CancellationToken ct = default);
+        Task DeletePostAsync(int postId, CancellationToken ct = default);
     }
 }

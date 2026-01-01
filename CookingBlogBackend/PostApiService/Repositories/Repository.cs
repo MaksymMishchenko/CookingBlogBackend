@@ -1,5 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 
 namespace PostApiService.Repositories
 {
@@ -14,54 +13,60 @@ namespace PostApiService.Repositories
             _dbSet = _context.Set<T>();
         }
 
-        public async Task<List<T>> GetAllAsync() => await _dbSet.ToListAsync();
-
-        public async Task<T> AddAsync(T entity, CancellationToken token = default)
+        public async Task<List<T>> GetAllAsync
+            (CancellationToken ct = default) => await _dbSet.AsNoTracking().ToListAsync(ct);
+        public async Task<int> GetTotalCountAsync(CancellationToken ct = default)
         {
-            await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
+            return await _dbSet
+                .AsNoTracking()
+                .CountAsync(ct);
+        }       
 
-            return entity;
+        public async Task<T?> GetByIdAsync
+            (int id, CancellationToken ct = default) => await _dbSet.FindAsync(id, ct);
+
+        public async Task<bool> AnyAsync
+            (Expression<Func<T, bool>> predicate, CancellationToken ct = default)
+        {
+            return await _dbSet
+                .AsQueryable()
+                .AsNoTracking()
+                .AnyAsync(predicate, ct);
+        }
+
+        public Task AddAsync(T entity, CancellationToken ct = default)
+        {
+            _context.Entry(entity).State = EntityState.Added;
+
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(T entity, CancellationToken ct = default)
+        {
+            _context.Entry(entity).State = EntityState.Modified;
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(T entity, CancellationToken ct = default)
+        {
+            _context.Entry(entity).State = EntityState.Deleted;
+
+            return Task.CompletedTask;
         }
 
         public IQueryable<T> AsQueryable() => _dbSet.AsQueryable().AsNoTracking();
 
-        public async Task DeleteAsync(T entity)
-        {
-            _context.Entry(entity).State = EntityState.Deleted;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<T?> GetByIdAsync(int id) => await _dbSet.FindAsync(id);
-
-        public async Task UpdateAsync(T entity)
-        {
-            _context.Entry(entity).State = EntityState.Modified;
-            await _context.SaveChangesAsync();
-        }
-
-        public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate,
-                                   CancellationToken cancellationToken = default)
-        {
-            return await _dbSet
-                .AsQueryable()
-                .AsNoTracking()
-                .AnyAsync(predicate, cancellationToken);
-        }
-
-        public async Task<int> GetTotalCountAsync(CancellationToken cancellationToken = default)
-        {
-            return await _dbSet
-                .AsNoTracking()
-                .CountAsync(cancellationToken);
-        }
-
         public IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate)
-        {            
+        {
             return _dbSet
                 .AsQueryable()
                 .AsNoTracking()
                 .Where(predicate);
+        }
+
+        public async Task<int> SaveChangesAsync(CancellationToken ct = default)
+        {
+            return await _context.SaveChangesAsync(ct);
         }
     }
 }

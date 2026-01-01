@@ -1,39 +1,36 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Filters;
-using PostApiService.Models;
-using PostApiService.Models.Enums;
+﻿using Microsoft.AspNetCore.Mvc.Filters;
 
 namespace PostApiService.Controllers.Filters
 {
-    public class ValidateIdAttribute : ActionFilterAttribute
+    public class ValidateIdAttribute : BaseValidationAttribute
     {
-        public string InvalidIdErrorMessage { get; set; }
-        public ResourceType ErrorResponseType { get; set; }
+        public string InvalidIdErrorMessage { get; set; } = Global.Validation.ValidationFailed;
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
+            HandleInvalidModelState(context,
+                Global.Validation.ValidationFailed,
+                (val, msg) => string.Format(Global.Validation.InvalidNumberFormat, val));
+
+            if (context.Result != null) return;
+
             foreach (var argument in context.ActionArguments)
             {
-                if (argument.Value is int id && id <= 0)
+                if (argument.Key.ToLower().Contains("id") && argument.Value is int id && id <= 0)
                 {
-                    var errorResponse = CreateErrorResponse();
+                    Log.Warning(Validation.InvalidIdValue,
+                        argument.Key, id, context.HttpContext.Request.Path);
 
-                    context.Result = new BadRequestObjectResult(errorResponse);
+                    var errors = new Dictionary<string, string[]>
+                    {
+                        { argument.Key, new[] { Global.Validation.InvalidId } }
+                    };
+
+                    context.Result = new BadRequestObjectResult(
+                        ApiResponse.CreateErrorResponse(InvalidIdErrorMessage, errors));
                     return;
                 }
             }
-
-            base.OnActionExecuting(context);
-        }
-
-        private object CreateErrorResponse()
-        {
-            return ErrorResponseType switch
-            {
-                ResourceType.Comment => ApiResponse<Comment>.CreateErrorResponse(InvalidIdErrorMessage),
-                ResourceType.Post => ApiResponse<Post>.CreateErrorResponse(InvalidIdErrorMessage),
-                _ => ApiResponse<object>.CreateErrorResponse("Invalid ID")
-            };
         }
     }
 }

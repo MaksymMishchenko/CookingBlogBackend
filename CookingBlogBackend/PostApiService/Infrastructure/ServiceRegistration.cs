@@ -1,13 +1,9 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Contexts;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -19,6 +15,22 @@ namespace PostApiService.Infrastructure
     public static class ServiceRegistration
     {
         /// <summary>
+        /// Configures Serilog for file and console logging.
+        /// </summary>
+        public static void AddAppLogging(this IHostBuilder host)
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Information()
+                .WriteTo.Console()
+                .WriteTo.File("logs/api_validation_.txt",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 7)
+                .CreateLogger();
+
+            host.UseSerilog();
+        }
+
+        /// <summary>
         /// Registers application-specific services and the database context to the IServiceCollection.
         /// </summary>        
         public static IServiceCollection AddApplicationService(this IServiceCollection services, string connectionString)
@@ -28,11 +40,12 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(connectionString);
             });
 
-            services.AddTransient<DbContext, ApplicationDbContext>();
+            services.AddScoped<DbContext, ApplicationDbContext>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-            services.AddTransient<IPostService, PostService>();
-            services.AddTransient<ICommentService, CommentService>();
+            services.AddScoped<IPostService, PostService>();
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<ICommentService, CommentService>();
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
 
             return services;

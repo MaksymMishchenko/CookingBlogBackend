@@ -2,7 +2,6 @@
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Exceptions;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
@@ -27,12 +26,12 @@ namespace PostApiService.Services
             {
                 if (string.IsNullOrWhiteSpace(_config.SecretKey))
                 {
-                    throw new ArgumentException(TokenErrorMessages.SecretKeyNullOrEmpty);
+                    throw new ArgumentException(Auth.Token.Errors.SecretKeyNullOrEmpty);
                 }
 
                 if (_config.TokenExpirationMinutes <= 0)
                 {
-                    throw new ArgumentException(TokenErrorMessages.TokenExpirationInvalid);
+                    throw new ArgumentException(Auth.Token.Errors.TokenExpirationInvalid);
                 }
 
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.SecretKey));
@@ -51,7 +50,7 @@ namespace PostApiService.Services
             }
             catch (Exception ex)
             {
-                throw new TokenGenerationException(TokenErrorMessages.TokenGenerationFailed, ex);
+                throw new TokenGenerationException(Auth.Token.Errors.TokenGenerationFailed, ex);
             }
         }
     }

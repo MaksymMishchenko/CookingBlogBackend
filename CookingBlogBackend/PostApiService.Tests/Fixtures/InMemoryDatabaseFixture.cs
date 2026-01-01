@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PostApiService.Models;
-
-namespace PostApiService.Tests.Fixtures
+﻿namespace PostApiService.Tests.Fixtures
 {
     public class InMemoryDatabaseFixture : IAsyncLifetime
     {
@@ -34,14 +31,21 @@ namespace PostApiService.Tests.Fixtures
         public List<Post> GeneratePostsWithKeywords(ICollection<Category> categories)
         {
             return TestDataHelper.GetPostsForOrLogic(categories);
-        }        
+        }
 
         public async Task SeedDatabaseAsync(ApplicationDbContext context, List<Post> postsToSeed)
-        {
-            await context.Database.EnsureDeletedAsync();
+        {           
             await context.Database.EnsureCreatedAsync();
 
             context.Posts.AddRange(postsToSeed);
+            await context.SaveChangesAsync();
+        }
+
+        public async Task SeedCategoryAsync(ApplicationDbContext context, List<Category> categoryToSeed)
+        {            
+            await context.Database.EnsureCreatedAsync();
+
+            context.Categories.AddRange(categoryToSeed);
             await context.SaveChangesAsync();
         }
 

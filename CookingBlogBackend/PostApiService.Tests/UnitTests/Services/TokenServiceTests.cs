@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Options;
-using Moq;
-using PostApiService.Models;
 using PostApiService.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -18,12 +16,14 @@ namespace PostApiService.Tests.UnitTests.Services
         };
 
         [Fact]
-        public async Task GenerateTokenString_ValidClaims_ReturnToken()
+        public void GenerateTokenString_ValidClaims_ReturnToken()
         {
-            // Arrange
-            var mock = new Mock<IOptions<JwtConfiguration>>();
-            mock.Setup(v => v.Value).Returns(_validConfig);
-            var service = new TokenService(mock.Object);
+            // Arrange           
+            var mockOptions = Substitute.For<IOptions<JwtConfiguration>>();
+            
+            mockOptions.Value.Returns(_validConfig);
+
+            var service = new TokenService(mockOptions);
 
             var claims = new List<Claim> { new Claim(ClaimTypes.Name, "TestUser") };
 

@@ -1,10 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using PostApiService.Controllers.Filters;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models;
-using PostApiService.Models.Enums;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -25,41 +20,44 @@ namespace PostApiService.Controllers
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.Comment)]        
-        [ValidateId(InvalidIdErrorMessage = PostErrorMessages.InvalidPostIdParameter, ErrorResponseType = ResourceType.Post)]
-        public async Task<IActionResult> AddCommentAsync(int postId, [FromBody] Comment comment)
+        [ValidateId]
+        [ValidateModel]
+        public async Task<IActionResult> AddCommentAsync
+            (int postId, [FromBody] Comment comment, CancellationToken ct = default)
         {
-            await _commentService.AddCommentAsync(postId, comment);
+            await _commentService.AddCommentAsync(postId, comment, ct);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentSuccessMessages.CommentAddedSuccessfully));
+                (CommentM.Success.CommentAddedSuccessfully));
         }
 
         /// <summary>
         /// Updates an existing comment based on the provided comment ID.
         /// </summary>        
         [HttpPut("{commentId}")]
-        [ValidateModel(InvalidErrorMessage = ResponseErrorMessages.ValidationFailed, ErrorResponseType = ResourceType.EditComment)]
-        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
-        public async Task<IActionResult> UpdateCommentAsync(int commentId, [FromBody] EditCommentModel comment)
+        [ValidateId]
+        [ValidateModel]
+        public async Task<IActionResult> UpdateCommentAsync
+            (int commentId, [FromBody] EditCommentModel comment, CancellationToken ct = default)
         {
-            await _commentService.UpdateCommentAsync(commentId, comment);
+            await _commentService.UpdateCommentAsync(commentId, comment, ct);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentSuccessMessages.CommentUpdatedSuccessfully));
+                (CommentM.Success.CommentUpdatedSuccessfully));
         }
 
         /// <summary>
         /// Deletes a comment by its ID.
         /// </summary>        
         [HttpDelete("{commentId}")]
-        [ValidateId(InvalidIdErrorMessage = CommentErrorMessages.InvalidCommentIdParameter, ErrorResponseType = ResourceType.Comment)]
-        public async Task<IActionResult> DeleteCommentAsync(int commentId)
+        [ValidateId]
+        public async Task<IActionResult> DeleteCommentAsync
+            (int commentId, CancellationToken ct = default)
         {
-            await _commentService.DeleteCommentAsync(commentId);
+            await _commentService.DeleteCommentAsync(commentId, ct);
 
             return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentSuccessMessages.CommentDeletedSuccessfully));
+                (CommentM.Success.CommentDeletedSuccessfully));
         }
     }
 }

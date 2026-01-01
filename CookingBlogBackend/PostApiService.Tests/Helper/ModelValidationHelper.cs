@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using PostApiService.Models;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using DataAnnotationsValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
 namespace PostApiService.Tests.Helper
@@ -20,6 +18,6 @@ namespace PostApiService.Tests.Helper
                     controller.ModelState.AddModelError(string.Join(",", validationResult.MemberNames), validationResult.ErrorMessage);
                 }
             }
-        }       
+        }
     }
 }

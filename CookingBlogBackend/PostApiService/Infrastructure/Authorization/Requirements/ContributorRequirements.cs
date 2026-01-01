@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using PostApiService.Models.TypeSafe;
+﻿using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Infrastructure.Authorization.Requirements
 {

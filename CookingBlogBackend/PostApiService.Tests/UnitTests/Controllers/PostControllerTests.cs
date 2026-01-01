@@ -1,13 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using NSubstitute;
-using PostApiService.Controllers;
-using PostApiService.Exceptions;
+﻿using PostApiService.Controllers;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
 using System.Net;
+using static PostApiService.Tests.Helper.HttpHelper.Urls;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -49,7 +45,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<PostListDto>>(okResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(PostSuccessMessages.NoPostsAvailableYet, response.Message);
+            Assert.Equal(PostM.Success.NoPostsAvailableYet, response.Message);
 
             await _mockPostService.Received(1)
                 .GetPostsWithTotalPostCountAsync(
@@ -93,7 +89,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.NotNull(response.DataList);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+                (PostM.Success.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
 
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
             Assert.Equal(ExpectedPageSize, response.PageSize);
@@ -171,7 +167,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.NotNull(response.DataList);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+                (PostM.Success.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
 
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
             Assert.Equal(ExpectedPageSize, response.PageSize);
@@ -197,8 +193,15 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var emptySearchPostList = TestDataHelper.GetEmptySearchPostListDtos();
 
-            _mockPostService.SearchPostsWithTotalCountAsync(Arg.Any<string>(), Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
-                .Returns((emptySearchPostList, 0));
+            _mockPostService.SearchPostsWithTotalCountAsync(
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>()
+                ).Returns(Task.FromResult((
+                    SearchPostList: emptySearchPostList,
+                    SearchTotalPosts: 0
+                )));
 
             // Act
             var result = await _postsController.SearchPostsWithTotalCountAsync(query);
@@ -208,6 +211,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<ApiResponse<SearchPostListDto>>(okResult.Value);
             Assert.Empty(response.DataList);
             Assert.Equal(0, response.TotalCount);
+
+            await _mockPostService.Received(1)
+                .SearchPostsWithTotalCountAsync(
+                Arg.Any<string>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -245,8 +255,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
             var expectedPost = TestDataHelper.GetSinglePost(categories);
-            _mockPostService.GetPostByIdAsync(expectedPost.Id, true)
-                .Returns(expectedPost);
+            _mockPostService.GetPostByIdAsync(expectedPost.Id, true, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(expectedPost));
 
             // Act
             var result = await _postsController.GetPostByIdAsync
@@ -258,11 +268,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(response.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostRetrievedSuccessfully, expectedPost.Id), response.Message);
+                (PostM.Success.PostRetrievedSuccessfully, expectedPost.Id), response.Message);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
             await _mockPostService.Received(1)
-                .GetPostByIdAsync(expectedPost.Id, true);
+                .GetPostByIdAsync(expectedPost.Id, true, Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -272,11 +282,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var categories = TestDataHelper.GetCulinaryCategories();
             var post = TestDataHelper.GetSinglePost(categories);
 
-            _mockPostService.AddPostAsync(post)
-                .Returns(post);
+            using var cts = new CancellationTokenSource();
+            var token = cts.Token;
+
+            _mockPostService.AddPostAsync(post, token)
+                .Returns(Task.FromResult(post));
 
             // Act
-            var result = await _postsController.AddPostAsync(post);
+            var result = await _postsController.AddPostAsync(post, token);
 
             // Assert            
             var createdAtActionResult = Assert.IsType<CreatedAtActionResult>(result);
@@ -285,9 +298,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.Created, createdAtActionResult.StatusCode);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostAddedSuccessfully, post.Id), response.Message);
+                (PostM.Success.PostAddedSuccessfully, post.Id), response.Message);
 
-            await _mockPostService.Received(1).AddPostAsync(post);
+            await _mockPostService.Received(1).AddPostAsync(post, token);
         }
 
         [Fact]
@@ -311,7 +324,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 Slug = "new-slug-value"
             };
 
-            _mockPostService.UpdatePostAsync(postId, inputPostData)
+            _mockPostService.UpdatePostAsync(postId, inputPostData, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(inputPostData));
 
             // Act
@@ -323,11 +336,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.True(actualResponse.Success);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostUpdatedSuccessfully, postId), actualResponse.Message);
+                (PostM.Success.PostUpdatedSuccessfully, postId), actualResponse.Message);
             Assert.Equal(postId, actualResponse.Data.Id);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
 
-            await _mockPostService.Received(1).UpdatePostAsync(postId, inputPostData);
+            await _mockPostService.Received(1).UpdatePostAsync
+                (postId, inputPostData, Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -335,7 +349,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var postId = 1;
-            _mockPostService.DeletePostAsync(postId)
+            _mockPostService.DeletePostAsync(postId, Arg.Any<CancellationToken>())
                  .Returns(Task.CompletedTask);
 
             // Act
@@ -348,9 +362,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
             Assert.Equal(string.Format
-                (PostSuccessMessages.PostDeletedSuccessfully, postId), response.Message);
+                (PostM.Success.PostDeletedSuccessfully, postId), response.Message);
 
-            await _mockPostService.Received(1).DeletePostAsync(postId);
+            await _mockPostService.Received(1).DeletePostAsync(postId, Arg.Any<CancellationToken>());
         }
     }
 }
