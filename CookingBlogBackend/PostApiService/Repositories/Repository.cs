@@ -15,6 +15,7 @@ namespace PostApiService.Repositories
 
         public async Task<List<T>> GetAllAsync
             (CancellationToken ct = default) => await _dbSet.AsNoTracking().ToListAsync(ct);
+
         public async Task<int> GetTotalCountAsync(CancellationToken ct = default)
         {
             return await _dbSet

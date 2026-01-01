@@ -1,10 +1,11 @@
 ﻿using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Interfaces
 {
     public interface IPostService
     {
-        Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
+        Task<Result<PagedResult<PostListDto>>> GetPostsWithTotalPostCountAsync(
             int pageNumber,
             int pageSize,
             CancellationToken ct = default);

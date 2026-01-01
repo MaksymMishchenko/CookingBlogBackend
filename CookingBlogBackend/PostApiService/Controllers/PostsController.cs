@@ -29,17 +29,10 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetPostsWithTotalPostCountAsync
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var (posts, totalPostCount) = await _postsService.GetPostsWithTotalPostCountAsync
+            var result = await _postsService.GetPostsWithTotalPostCountAsync
                 (query.PageNumber, query.PageSize, ct);
 
-            return Ok(ApiResponse<PostListDto>.CreatePaginatedListResponse
-                (posts.Any()
-                ? string.Format(PostM.Success.PostsRetrievedSuccessfully, posts.Count)
-                : PostM.Success.NoPostsAvailableYet,
-                posts,
-                query.PageNumber,
-                query.PageSize,
-                totalPostCount));
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -56,7 +49,7 @@ namespace PostApiService.Controllers
                 (query.QueryString, query.PageNumber, query.PageSize, ct);
 
             return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
-                (string.Format(PostM.Success.PostsRetrievedSuccessfully, searchPostList.Count),
+                (string.Format(PostM.Success.NoPostsFound, searchPostList.Count),
                 query.QueryString,
                 searchPostList,
                 query.PageNumber,

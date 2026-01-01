@@ -27,7 +27,7 @@ namespace PostApiService.Models
         [MaxLength(50)]
         public string Author { get; set; } = default!;
 
-        public DateTime CreateAt { get; set; } = DateTime.UtcNow;
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         [Required]        
         public string ImageUrl { get; set; } = default!;

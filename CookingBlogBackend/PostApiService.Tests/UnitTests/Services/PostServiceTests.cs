@@ -344,7 +344,7 @@ namespace PostApiService.Tests.UnitTests
             var service = new PostService(_mockRepository, _mockSnippetGenerator);
 
             var expectedSortedPosts = filteredPosts
-                .OrderByDescending(p => p.CreateAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .ToList();
 
             // Act

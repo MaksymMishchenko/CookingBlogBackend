@@ -1,7 +1,9 @@
 ﻿using PostApiService.Exceptions;
+using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models.Constants;
 using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using System.Data;
 using System.Data.Common;
@@ -25,33 +27,23 @@ namespace PostApiService.Services
         /// Retrieves a paginated list of posts, including the **aggregated comment count** for each post,
         /// and the total count of all posts in the database.
         /// </summary>
-        public async Task<(List<PostListDto> Posts, int TotalPostCount)> GetPostsWithTotalPostCountAsync(
+        public async Task<Result<PagedResult<PostListDto>>> GetPostsWithTotalPostCountAsync(
             int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default)
         {
             var totalPostCount = await _repository.GetTotalCountAsync(ct);
 
-            var query = _repository.AsQueryable();
-
-            var posts = await query
+            var posts = await _repository.AsQueryable()
                 .OrderBy(p => p.Id)
-                .Select(p => new PostListDto
-                {
-                    Id = p.Id,
-                    Title = p.Title,
-                    Slug = p.Slug,
-                    Author = p.Author,
-                    Category = p.Category.Name ?? ContentConstants.DefaultCategory,
-                    CreatedAt = p.CreateAt,
-                    Description = p.Description,
-                    CommentsCount = p.Comments.Count()
-                })
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
+                .Select(PostMappingExtensions.ToDtoExpression)
                 .ToListAsync(ct);
 
-            return (posts, totalPostCount);
+            var pagedData = new PagedResult<PostListDto>(posts, totalPostCount, pageNumber, pageSize);
+
+            return Result<PagedResult<PostListDto>>.Success(pagedData);
         }
 
         /// <summary>
@@ -76,7 +68,7 @@ namespace PostApiService.Services
             }
 
             var postsWithContent = await queryable
-                .OrderByDescending(p => p.CreateAt)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(p => new
