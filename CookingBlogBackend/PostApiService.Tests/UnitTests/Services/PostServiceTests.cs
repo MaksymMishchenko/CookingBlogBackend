@@ -1,4 +1,5 @@
 ﻿using MockQueryable;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -10,15 +11,17 @@ namespace PostApiService.Tests.UnitTests
     {
         private readonly IRepository<Post> _mockRepository;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
+        private readonly PostService _postService;
 
         public PostServiceTests()
         {
             _mockRepository = Substitute.For<IRepository<Post>>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
+            _postService = new PostService(_mockRepository, _mockSnippetGenerator);
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturn_PagedPostsWithTotalPostsAndCommentsCount()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnCorrectPageSortedByDateDescending()
         {
             // Arrange            
             const int PageNumber = 1;
@@ -26,40 +29,49 @@ namespace PostApiService.Tests.UnitTests
             const int ExpectedTotalPostCount = 25;
             const int ExpectedCommentCountPerPost = 11;
 
-            var categories = TestDataHelper.GetCulinaryCategories();
+            var token = CancellationToken.None;
 
+            var categories = TestDataHelper.GetCulinaryCategories();
             var testPosts = TestDataHelper.GetPostsWithComments
                 (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost);
-            var mockQueryable = testPosts.AsQueryable().BuildMock();
 
+            _mockRepository.GetTotalCountAsync(token)
+                .Returns(ExpectedTotalPostCount);
+
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(ExpectedTotalPostCount));
-
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize, token);
 
             // Assert
-            Assert.Equal(PageSize, result.Posts.Count);
-            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var pagedData = result.Value!;
 
-            Assert.All(result.Posts, (postDto, index) =>
+            Assert.Equal(PageSize, pagedData.Items.Count);
+            Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
+
+            var expectedPosts = testPosts
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            Assert.All(pagedData.Items, (postDto, index) =>
             {
                 int expectedIndex = (PageNumber - 1) * PageSize + index;
-                var expectedPost = testPosts[expectedIndex];
+                var expectedPost = expectedPosts[expectedIndex];
 
                 TestDataHelper.AssertPostListDtoMapping
                 (expectedPost, postDto, ExpectedCommentCountPerPost);
             });
 
-            await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
+            await _mockRepository.Received(1).GetTotalCountAsync(token);
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnPaginatedPostsWithTotalPostsAndCommentsCount()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnSecondPage_WhenMultiplePagesExist()
         {
             // Arrange
             const int ExpectedTotalPostCount = 23;
@@ -70,29 +82,37 @@ namespace PostApiService.Tests.UnitTests
             var categories = TestDataHelper.GetCulinaryCategories();
 
             var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost);
-            var mockQueryable = testPosts.AsQueryable().BuildMock();
+                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
 
-            _mockRepository.AsQueryable().Returns(mockQueryable);
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(ExpectedTotalPostCount));
+               .Returns(ExpectedTotalPostCount);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+            _mockRepository.AsQueryable().Returns(mockQueryable);
 
             // Act
-            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
             // Assert
-            Assert.Equal(PageSize, result.Posts.Count);
-            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var pagedData = result.Value!;
 
-            Assert.All(result.Posts, (postDto, index) =>
-            {
-                int expectedIndex = (PageNumber - 1) * PageSize + index;
-                var expectedPost = testPosts[expectedIndex];
+            Assert.Equal(PageSize, pagedData.Items.Count);
+            Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
-            });
+            var expectedFirstPostOnSecondPage = testPosts
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip(PageSize)
+                .First();
+
+            Assert.Equal(expectedFirstPostOnSecondPage.Id, pagedData.Items.First().Id);
+
+            var unexpectedPostFromFirstPage = testPosts
+                .OrderByDescending(p => p.CreatedAt)
+                .First();
+
+            Assert.NotEqual(unexpectedPostFromFirstPage.Id, pagedData.Items.First().Id);
 
             await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
@@ -115,24 +135,32 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(ExpectedTotalPostCount));
-
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+                .Returns(ExpectedTotalPostCount);
 
             // Act
-            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
-            // Assert            
-            Assert.Equal(ExpectedCountOnPage, result.Posts.Count);
-            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var pagedData = result.Value!;
 
-            Assert.All(result.Posts, (postDto, index) =>
-            {
-                int expectedIndex = (PageNumber - 1) * PageSize + index;
-                var expectedPost = testPosts[expectedIndex];
+            Assert.Equal(ExpectedCountOnPage, pagedData.Items.Count);
+            Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
-            });
+            var expectedPostsOnPage = testPosts
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((PageNumber - 1) * PageSize)
+                .Take(PageSize)
+                .ToList();
+
+            Assert.Equal(expectedPostsOnPage.First().Id, pagedData.Items.First().Id);
+            Assert.Equal(expectedPostsOnPage.Last().Id, pagedData.Items.Last().Id);
+
+            Assert.Equal(
+                expectedPostsOnPage.Select(p => p.Id),
+                pagedData.Items.Select(p => p.Id)
+            );
 
             await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
@@ -154,16 +182,18 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(ExpectedTotalPostCount));
-
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+                .Returns(ExpectedTotalPostCount);
 
             // Act
-            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
-            // Assert            
-            Assert.Empty(result.Posts);
-            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var pagedData = result.Value!;
+
+            Assert.Empty(pagedData.Items);
+            Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
             await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
@@ -185,22 +215,22 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
             _mockRepository.GetTotalCountAsync(Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult(ExpectedTotalPostCount));
-
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
+                .Returns(ExpectedTotalPostCount);
 
             // Act
-            var result = await service.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
 
-            // Assert           
-            Assert.Equal(ExpectedTotalPostCount, result.Posts.Count);
-            Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            var pagedData = result.Value!;
 
-            Assert.All(result.Posts, (postDto, index) =>
-            {
-                var expectedPost = testPosts[index];
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
-            });
+            Assert.Equal(ExpectedTotalPostCount, pagedData.Items.Count);
+            Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
+
+            var expectedSortedPosts = testPosts.OrderByDescending(p => p.CreatedAt).ToList();
+            Assert.Equal(expectedSortedPosts.First().Id, pagedData.Items.First().Id);
+            Assert.Equal(expectedSortedPosts.Last().Id, pagedData.Items.Last().Id);
 
             await _mockRepository.Received(1).GetTotalCountAsync(Arg.Any<CancellationToken>());
         }
@@ -230,10 +260,8 @@ namespace PostApiService.Tests.UnitTests
             var mockQueryable = filteredPosts.AsQueryable().BuildMock();
             _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var result = await service.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
 
             // Assert            
             Assert.Equal(3, result.SearchTotalPosts);
@@ -272,10 +300,8 @@ namespace PostApiService.Tests.UnitTests
             var mockQueryable = filteredPosts.AsQueryable().BuildMock();
             _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var result = await service.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
 
             // Assert
             Assert.NotNull(result.SearchPostList);
@@ -308,10 +334,8 @@ namespace PostApiService.Tests.UnitTests
             var mockQueryable = filteredPosts.AsQueryable().BuildMock();
             _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var result = await service.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
 
             // Assert
             Assert.Equal(3, result.SearchTotalPosts);
@@ -341,14 +365,12 @@ namespace PostApiService.Tests.UnitTests
             var mockQueryable = filteredPosts.AsQueryable().BuildMock();
             _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             var expectedSortedPosts = filteredPosts
                 .OrderByDescending(p => p.CreatedAt)
                 .ToList();
 
             // Act
-            var result = await service.SearchPostsWithTotalCountAsync(Query);
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query);
 
             // Assert
             Assert.Equal(3, result.SearchTotalPosts);
@@ -384,10 +406,8 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var post = await service.GetPostByIdAsync(postId, includeComments: true);
+            var post = await _postService.GetPostByIdAsync(postId, includeComments: true);
 
             // Assert
             Assert.NotNull(post);
@@ -406,10 +426,8 @@ namespace PostApiService.Tests.UnitTests
 
             _mockRepository.AsQueryable().Returns(mockQueryable);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var post = await service.GetPostByIdAsync(postId, includeComments: false);
+            var post = await _postService.GetPostByIdAsync(postId, includeComments: false);
 
             // Assert
             Assert.NotNull(post);
@@ -430,10 +448,8 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.AddAsync(newPost, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(newPost));
 
-            var postService = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var result = await postService.AddPostAsync(newPost);
+            var result = await _postService.AddPostAsync(newPost);
 
             // Assert
             Assert.NotNull(result);
@@ -474,15 +490,13 @@ namespace PostApiService.Tests.UnitTests
             };
 
             _mockRepository.GetByIdAsync(postId, token)!
-                .Returns(Task.FromResult(originalPost));
+                .Returns(originalPost);
 
             _mockRepository.UpdateAsync(Arg.Any<Post>(), token)
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            var resultPost = await service.UpdatePostAsync(postId, inputPostData, token);
+            var resultPost = await _postService.UpdatePostAsync(postId, inputPostData, token);
 
             // Assert
 
@@ -511,15 +525,13 @@ namespace PostApiService.Tests.UnitTests
             var post = TestDataHelper.GetSinglePost(categories);
 
             _mockRepository.GetByIdAsync(post.Id, Arg.Any<CancellationToken>())!
-                .Returns(Task.FromResult(post));
+                .Returns(post);
 
             _mockRepository.DeleteAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>())
                 .Returns(Task.CompletedTask);
 
-            var service = new PostService(_mockRepository, _mockSnippetGenerator);
-
             // Act
-            await service.DeletePostAsync(post.Id);
+            await _postService.DeletePostAsync(post.Id);
 
             // Assert
             await _mockRepository.Received(1).GetByIdAsync(post.Id, Arg.Any<CancellationToken>());

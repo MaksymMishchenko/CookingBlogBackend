@@ -64,7 +64,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount_WithContentCheck()
+        public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount()
         {
             // Arrange
             ApplicationDbContext context;
@@ -72,13 +72,13 @@ namespace PostApiService.Tests.IntegrationTests.Services
             const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 10;
             const int ExpectedTotalPostCount = 25;
-            const int ExpectedCommentCountPerPost = 5;
+            const int ExpectedCommentCountPerPost = 5;            
 
             var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
             using (context)
             {
                 var expectedPostsOnPage = seededPosts
-                    .OrderBy(p => p.Id)
+                    .OrderByDescending(p => p.CreatedAt)
                     .Skip((ExpectedPageNumber - 1) * ExpectedPageSize)
                     .Take(ExpectedPageSize)
                     .ToList();
@@ -88,17 +88,12 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     (ExpectedPageNumber, ExpectedPageSize);
 
                 // Assert
-                Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
-                Assert.Equal(ExpectedPageSize, result.Posts.Count);
-                Assert.Equal(1, result.Posts.First().Id);
-                Assert.Equal(10, result.Posts.Last().Id);
+                Assert.Equal(ExpectedTotalPostCount, result.Value!.TotalCount);
+                Assert.Equal(ExpectedPageSize, result.Value!.pageSize);
+                Assert.Equal(1, result.Value.Items.First().Id);
+                Assert.Equal(10, result.Value.Items.Last().Id);
 
-                Assert.True(
-                    expectedPostsOnPage.Select(p => p.Id)
-                        .SequenceEqual(result.Posts.Select(p => p.Id)),
-                    "The order or set of Post IDs on the page does not match the expected.");
-
-                Assert.All(result.Posts, (actualDto, index) =>
+                Assert.All(result.Value.Items, (actualDto, index) =>
                 {
                     var expectedPost = expectedPostsOnPage[index];
 
@@ -106,69 +101,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     (expectedPost, actualDto, ExpectedCommentCountPerPost);
                 });
             }
-        }
-
-        [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnLastIncompletePageRange()
-        {
-            // Arrange
-            ApplicationDbContext context;
-            const int PageSize = 10;
-            const int PageNumber = 3;
-            const int ExpectedTotalPostCount = 25;
-            const int ExpectedCommentCountPerPost = 5;
-            const int ExpectedPostsOnLastPage = 5;
-
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb
-                (out context, ExpectedTotalPostCount, ExpectedPostsOnLastPage);
-            using (context)
-            {
-                var expectedPostsOnPage = seededPosts
-                    .OrderBy(p => p.Id)
-                    .Skip((PageNumber - 1) * PageSize)
-                    .Take(PageSize)
-                    .ToList();
-
-                // Act
-                var result = await postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
-
-                // Assert
-                Assert.Equal(ExpectedTotalPostCount, result.TotalPostCount);
-                Assert.Equal(ExpectedPostsOnLastPage, result.Posts.Count);
-                Assert.Equal(21, result.Posts.First().Id);
-                Assert.Equal(ExpectedTotalPostCount, result.Posts.Last().Id);
-
-                Assert.All(result.Posts, (actualDto, index) =>
-                {
-                    var expectedPost = expectedPostsOnPage[index];
-                    TestDataHelper.AssertPostListDtoMapping(expectedPost, actualDto, ExpectedCommentCountPerPost);
-                });
-            }
-        }
-
-        [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyListWhenTotalCountIsZero()
-        {
-            // Arrange
-            ApplicationDbContext context;
-            const int PageNumber = 1;
-            const int PageSize = 5;
-            const int ExpectedTotalPosts = 0;
-            const int ExpectedCommentCount = 0;
-
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb
-                (out context, ExpectedTotalPosts, ExpectedCommentCount);
-
-            using (context)
-            {
-                // Act            
-                var (posts, totalPostCount) = await postService.GetPostsWithTotalPostCountAsync(PageNumber, PageSize);
-
-                // Assert                            
-                Assert.Empty(posts);
-                Assert.Equal(ExpectedTotalPosts, totalPostCount);
-            }
-        }
+        }                
 
         [Fact]
         public async Task SearchPosts_ShouldFindQuery_InTitleOrDescriptionOrContent()

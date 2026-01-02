@@ -1,4 +1,5 @@
 ﻿using Bogus.Extensions;
+using PostApiService.Helper;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Response;
 
@@ -19,10 +20,12 @@ namespace PostApiService.Tests.Helper
             {
                 int postId = 1;
                 int commentId = 1;
+                var baseTime = DateTime.UtcNow;
 
                 foreach (var post in posts)
                 {
                     post.Id = postId++;
+                    post.CreatedAt = baseTime.AddMinutes(-post.Id);
 
                     if (post.Comments != null)
                     {
@@ -83,7 +86,7 @@ namespace PostApiService.Tests.Helper
             int postId = 1;
             var posts = new List<Post>();
             var faker = new Faker<Post>("en")
-                .RuleFor(p => p.Id, _ => 0)                
+                .RuleFor(p => p.Id, _ => 0)
                 .RuleFor(p => p.Author, _ => "Author")
                 .RuleFor(p => p.ImageUrl, _ => "image.jpeg")
                 .RuleFor(p => p.MetaTitle, _ => "Meta title")
@@ -175,17 +178,9 @@ namespace PostApiService.Tests.Helper
         public static List<PostListDto> GetPostListDtos(int count, ICollection<Category> categories)
         {
             var posts = GetPostsWithComments(count, categories, generateIds: true);
+            var mapper = PostMappingExtensions.ToDtoExpression.Compile();
 
-            return posts.Select(p => new PostListDto
-            {
-                Id = p.Id,
-                Title = p.Title,
-                Slug = p.Slug,
-                Author = p.Author,
-                CreatedAt = p.CreatedAt,
-                Description = p.Description,
-                CommentsCount = p.Comments?.Count ?? 0
-            }).ToList();
+            return posts.Select(mapper).ToList();
         }
 
         public static List<CategoryDto> GetCategoryListDtos(ICollection<Category> categories)

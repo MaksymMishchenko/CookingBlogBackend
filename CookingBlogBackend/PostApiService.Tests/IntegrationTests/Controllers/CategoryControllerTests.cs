@@ -63,7 +63,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             // Assert           
             Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
 
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<CategoryDto>>>();
 
             Assert.NotNull(result);
             Assert.False(result.Success);

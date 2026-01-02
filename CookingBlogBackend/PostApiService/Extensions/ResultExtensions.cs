@@ -1,4 +1,6 @@
-﻿namespace PostApiService.Extensions
+﻿using PostApiService.Models.Dto.Response;
+
+namespace PostApiService.Extensions
 {
     public static class ResultExtensions
     {
@@ -20,6 +22,23 @@
 
                 _ => new StatusCodeResult(500)
             };
+        }
+
+        public static IActionResult ToActionResult<T>(this Result<PagedResult<T>> result)
+        {
+            if (!result.IsSuccess)
+            {
+                return new BadRequestObjectResult(ApiResponse.CreateErrorResponse(result.ErrorMessage));
+            }
+
+            var pagedData = result.Value;            
+            
+            return new OkObjectResult(ApiResponse<T>.CreatePaginatedListResponse(                
+                pagedData.Items,
+                pagedData.pageNumber,
+                pagedData.pageSize,
+                pagedData.TotalCount
+            ));
         }
 
         public static IActionResult ToCreatedResult<T>(

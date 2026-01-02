@@ -1,7 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Exceptions;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Authentication;
@@ -153,13 +155,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     new Exception(Global.System.DatabaseCriticalError),
             };
 
-            var failedTupleTask = Task.FromException<(List<PostListDto> Posts, int TotalCount)>(exceptionToThrow);
+            var failedTask = Task.FromException<Result<PagedResult<PostListDto>>>(exceptionToThrow);            
 
             postServiceMock?.GetPostsWithTotalPostCountAsync
                (Arg.Any<int>(),
                Arg.Any<int>(),
                Arg.Any<CancellationToken>())
-               .Returns(failedTupleTask);
+               .Returns(failedTask);
 
             // Act
             var response = await _client.GetAsync(url);

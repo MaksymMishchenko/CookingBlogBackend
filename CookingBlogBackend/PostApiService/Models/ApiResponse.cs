@@ -56,7 +56,7 @@ namespace PostApiService.Models
                 Success = true,
                 Message = message
             };
-        }      
+        }
 
         public static ApiResponse<T> CreateSuccessResponse(string message, T? data)
         {
@@ -66,20 +66,18 @@ namespace PostApiService.Models
                 Message = message,
                 Data = data
             };
-        }        
+        }
 
-        public static ApiResponse<T> CreatePaginatedListResponse(
-            string message,
-            List<T>? dataList = null,
+        public static ApiResponse<List<T>> CreatePaginatedListResponse(
+            List<T>? data = null,
             int? pageNumber = 1,
             int? pageSize = 10,
             int? totalCount = 0)
         {
-            return new ApiResponse<T>
+            return new ApiResponse<List<T>>
             {
                 Success = true,
-                Message = message,
-                DataList = dataList ?? new List<T>(),
+                Data = data,
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalCount = totalCount

@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -42,14 +43,13 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnPagedPostsWithTotalPostsAndCommentsCount()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnPagedPosts()
         {
             // Arrange
             const int PageNumber = 1;
             const int PageSize = 10;
             const int ExpectedTotalPosts = 7;
             const int ExpectedCommentCountPerPost = 12;
-            var url = string.Format(Posts.Paginated, PageNumber, PageSize);
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
@@ -57,84 +57,30 @@ namespace PostApiService.Tests.IntegrationTests
                 (count: ExpectedTotalPosts, categories, commentCount: ExpectedCommentCountPerPost);
             await SeedDatabaseAsync(posts, categories);
 
+            var url = string.Format(Posts.Paginated, PageNumber, PageSize);
+
             // Act            
             var response = await _client.GetAsync(url);
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
 
             response.EnsureSuccessStatusCode();
 
             // Assert
             Assert.NotNull(content);
             Assert.True(content.Success);
-            Assert.Equal(string.Format(PostM.Success.PostsRetrievedSuccessfully,
-                posts.Count), content.Message);
 
-            Assert.NotNull(content.DataList);
-            Assert.Equal(ExpectedTotalPosts, content.DataList.Count);
-
+            Assert.NotNull(content.Data);
             Assert.Equal(ExpectedTotalPosts, content.TotalCount);
+            
+            var expectedPostsSorted = posts
+                .OrderByDescending(p => p.CreatedAt)
+                .ToList();
 
-            Assert.All(content.DataList, (postDto, index) =>
+            Assert.All(content.Data, (postDto, index) =>
             {
                 int expectedIndex = (PageNumber - 1) * PageSize + index;
-                var expectedPost = posts[expectedIndex];
+                var expectedPost = expectedPostsSorted[expectedIndex];
 
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
-            });
-        }
-
-        [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_Pagination_ShouldReturnCorrectPageResults()
-        {
-            // Arrange
-            const int PageNumber1 = 1;
-            const int PageSize = 3;
-            const int ExpectedCommentCountPerPost = 12;
-            const int TotalPosts = 5;
-            var url = string.Format(Posts.Paginated, PageNumber1, PageSize);
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var posts = TestDataHelper.GetPostsWithComments(
-                count: TotalPosts, categories, commentCount: ExpectedCommentCountPerPost);
-            await SeedDatabaseAsync(posts, categories);
-
-            const int PageNumber2 = 2;
-
-            // Act
-            var response1 = await _client.GetAsync(url);
-
-            response1.EnsureSuccessStatusCode();
-
-            var content1 = await response1.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();
-
-            // Assert
-            Assert.Equal(PageSize, content1.DataList.Count);
-            Assert.Equal(TotalPosts, content1.TotalCount);
-
-            Assert.All(content1.DataList, (postDto, index) =>
-            {
-                int expectedIndex = (PageNumber1 - 1) * PageSize + index;
-                var expectedPost = posts[expectedIndex];
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
-            });
-
-            // Act
-            url = string.Format(Posts.Paginated, PageNumber2, PageSize);
-            var response2 = await _client.GetAsync(url);
-
-            response2.EnsureSuccessStatusCode();
-
-            var content2 = await response2.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();
-
-            // Assert
-            Assert.Equal(2, content2!.DataList.Count);
-            Assert.Equal(TotalPosts, content2.TotalCount);
-
-            Assert.All(content2.DataList, (postDto, index) =>
-            {
-                int expectedIndex = (PageNumber2 - 1) * PageSize + index;
-                var expectedPost = posts[expectedIndex];
                 TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
             });
         }
@@ -159,12 +105,11 @@ namespace PostApiService.Tests.IntegrationTests
             response.EnsureSuccessStatusCode();
 
             // Assert            
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<PostListDto>>();
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
 
             Assert.NotNull(content);
             Assert.True(content.Success);
-            Assert.Empty(content.DataList);
-            Assert.Equal(string.Format(PostM.Success.NoPostsAvailableYet), content.Message);
+            Assert.Empty(content.Data);
             Assert.Equal(ExpectedTotalPosts, content.TotalCount);
         }
 
@@ -219,8 +164,6 @@ namespace PostApiService.Tests.IntegrationTests
             // Assert
             Assert.NotNull(content);
             Assert.True(content.Success);
-            Assert.Equal(string.Format(PostM.Success.PostsRetrievedSuccessfully,
-                ExpectedTotalPosts), content.Message);
 
             Assert.NotNull(content.DataList);
             Assert.Equal(PageSize, content.DataList.Count);

@@ -35,7 +35,7 @@ namespace PostApiService.Services
             var totalPostCount = await _repository.GetTotalCountAsync(ct);
 
             var posts = await _repository.AsQueryable()
-                .OrderBy(p => p.Id)
+                .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(PostMappingExtensions.ToDtoExpression)

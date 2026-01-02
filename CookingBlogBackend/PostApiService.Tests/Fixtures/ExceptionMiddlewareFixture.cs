@@ -3,9 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using NSubstitute;
 using PostApiService.Contexts;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto;
+using PostApiService.Models.Dto.Response;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -35,21 +38,25 @@ namespace PostApiService.Tests.Fixtures
 
             services.RemoveAll(typeof(IPostService));
 
-            var postServiceMock = Substitute.For<IPostService>();
-            var mockPosts = new List<PostListDto> {
-                new PostListDto { Title = "Mocked Post" }
+            var mockPosts = new List<PostListDto>
+            {
+                new PostListDto(1, "Mocked Post", "slug", "Author", "Category", DateTime.UtcNow, "Desc", 0)
             };
 
             const int mockTotalCount = 100;
+            const int mockPageNumber = 1;
+            const int mockPageSize = 10;
+
+            var pagedResult = new PagedResult<PostListDto>(mockPosts, mockTotalCount, mockPageNumber, mockPageSize);
+            var expectedResult = Result<PagedResult<PostListDto>>.Success(pagedResult);
+
+            var postServiceMock = Substitute.For<IPostService>();
 
             postServiceMock.GetPostsWithTotalPostCountAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult((
-                    Posts: mockPosts,
-                    TotalCount: mockTotalCount
-                )));
+                .Returns(expectedResult);
 
             postServiceMock.GetPostByIdAsync(
                 Arg.Any<int>(),

@@ -1,9 +1,10 @@
 ﻿using PostApiService.Controllers;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
 using System.Net;
-using static PostApiService.Tests.Helper.HttpHelper.Urls;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -22,30 +23,32 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
             // Arrange
-            var queryParameters = new PostQueryParameters();
-            queryParameters.PageNumber = 2;
-            queryParameters.PageSize = 10;
+            const int TotalPostCount = 0;
+            var queryParameters = new PostQueryParameters { PageNumber = 2, PageSize = 10 };
 
             var posts = TestDataHelper.GetEmptyPostListDtos();
-            const int TotalPostCount = 0;
+
+            var pagedData = new PagedResult<PostListDto>(
+                posts,
+                TotalPostCount,
+                queryParameters.PageNumber,
+                queryParameters.PageSize);
+
+            var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
 
             _mockPostService.GetPostsWithTotalPostCountAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult((
-                    Posts: posts,
-                    TotalPostCount
-                )));
+                .Returns(pagedResult);
 
             // Act
             var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters);
 
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<PostListDto>>(okResult.Value);
+            var response = Assert.IsType<ApiResponse<List<PostListDto>>>(okResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(PostM.Success.NoPostsAvailableYet, response.Message);
 
             await _mockPostService.Received(1)
                 .GetPostsWithTotalPostCountAsync(
@@ -55,41 +58,45 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnOk_WhenPostsAreFound()
+        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnOk_WhenPostsExist()
         {
             // Arrange
             const int MockTotalPostsCount = 50;
             const int ExpectedPageNumber = 3;
             const int ExpectedPageSize = 10;
 
-            var queryParameters = new PostQueryParameters();
-            queryParameters.PageNumber = ExpectedPageNumber;
-            queryParameters.PageSize = ExpectedPageSize;
+            var token = CancellationToken.None;
+
+            var queryParameters = new PostQueryParameters { PageNumber = ExpectedPageNumber, PageSize = ExpectedPageSize };
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var mockPosts = TestDataHelper.GetPostListDtos(MockTotalPostsCount, categories);
 
+            var pagedData = new PagedResult<PostListDto>(
+                mockPosts,
+                MockTotalPostsCount,
+                queryParameters.PageNumber,
+                queryParameters.PageSize);
+
+            var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
+
             _mockPostService.GetPostsWithTotalPostCountAsync(
                 Arg.Is(ExpectedPageNumber),
                 Arg.Is(ExpectedPageSize),
-                Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult((
-                Posts: mockPosts,
-                MockTotalPostsCount
-                )));
+                token)
+                .Returns(pagedResult);
 
             // Act
-            var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters);
-
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<PostListDto>>(okResult.Value);
+            var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters, token);
 
             // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<List<PostListDto>>>(okResult.Value);
+
+
             Assert.NotNull(response);
             Assert.True(response.Success);
-            Assert.NotNull(response.DataList);
-            Assert.Equal(string.Format
-                (PostM.Success.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+            Assert.NotNull(response.Data);
 
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
             Assert.Equal(ExpectedPageSize, response.PageSize);
@@ -99,33 +106,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .GetPostsWithTotalPostCountAsync(
                 Arg.Is(ExpectedPageNumber),
                 Arg.Is(ExpectedPageSize),
-                Arg.Any<CancellationToken>());
-        }
-
-        [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldPassCancellationTokenToService()
-        {
-            // Arrange
-            var queryParameters = new PostQueryParameters();
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            _mockPostService.GetPostsWithTotalPostCountAsync(
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>())
-                .Returns(Task.FromResult((
-                    Posts: TestDataHelper.GetPostListDtos(1, categories),
-                    TotalPostCount: 1)));
-
-            // Act
-            var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters);
-
-            // Assert           
-            await _mockPostService.Received(1)
-                .GetPostsWithTotalPostCountAsync(
-                    Arg.Any<int>(),
-                    Arg.Any<int>(),
-                    Arg.Any<CancellationToken>());
+                token);
         }
 
         [Fact]
@@ -167,7 +148,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.NotNull(response.DataList);
             Assert.Equal(string.Format
-                (PostM.Success.PostsRetrievedSuccessfully, response.DataList.Count), response.Message);
+                (PostM.Success.NoPostsFound, response.DataList.Count), response.Message);
 
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
             Assert.Equal(ExpectedPageSize, response.PageSize);
