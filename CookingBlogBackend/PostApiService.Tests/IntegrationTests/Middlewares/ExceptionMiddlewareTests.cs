@@ -2,6 +2,7 @@
 using PostApiService.Exceptions;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
+using PostApiService.Models.Common;
 using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Response;
 using System.Net;

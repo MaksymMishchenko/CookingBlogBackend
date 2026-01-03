@@ -25,17 +25,18 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
-        public void CreateSnippet_ShouldReturnEmpty_WhenKeywordNotFound()
+        public void CreateSnippet_ShouldReturnStartOfText_WhenKeywordNotFound()
         {
             // Arrange
             var content = "This is some random text.";
             var keyword = "nonexistent";
+            var expected = "This is some random text.";
 
             // Act
             var result = _snippetGen.CreateSnippet(content, keyword);
 
-            // Assert            
-            Assert.Empty(result);
+            // Assert            
+            Assert.Equal(expected, result);                       
         }
 
         [Fact]

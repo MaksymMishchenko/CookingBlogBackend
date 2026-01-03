@@ -1,6 +1,5 @@
 ﻿using Bogus.Extensions;
 using PostApiService.Helper;
-using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.Helper
@@ -351,17 +350,15 @@ namespace PostApiService.Tests.Helper
         {
             var posts = GetSearchedPost(categories);
 
-            return posts.Select(p => new SearchPostListDto
-            {
-                Id = p.Id,
-                Title = p.Title,
-                Slug = p.Slug,
-                SearchSnippet = p.Content,
-                Author = p.Author,
-                Category = p.Category.Name
-
-
-            }).ToList();
+            return posts.Select(p => new SearchPostListDto(
+                p.Id,
+                p.Title,
+                p.Slug,
+                p.Content,
+                p.Author,
+                p.Category.Name
+                ))
+                 .ToList();
         }
 
         public static Post GetSinglePost(ICollection<Category> categories, int? id = 1, bool includeId = true)

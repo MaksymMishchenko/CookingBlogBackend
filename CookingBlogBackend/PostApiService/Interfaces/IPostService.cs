@@ -1,5 +1,4 @@
-﻿using PostApiService.Models.Dto;
-using PostApiService.Models.Dto.Response;
+﻿using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Interfaces
 {
@@ -9,7 +8,7 @@ namespace PostApiService.Interfaces
             int pageNumber,
             int pageSize,
             CancellationToken ct = default);
-        Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
+        Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsWithTotalCountAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default);
         Task<Post> GetPostByIdAsync(int postId, bool includeComments = true, CancellationToken ct = default);
         Task<Post> AddPostAsync(Post post, CancellationToken ct = default);

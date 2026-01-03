@@ -2,12 +2,10 @@
 using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models.Constants;
-using PostApiService.Models.Dto;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using System.Data;
 using System.Data.Common;
-using System.Linq.Expressions;
 
 namespace PostApiService.Services
 {
@@ -50,21 +48,25 @@ namespace PostApiService.Services
         /// Searches for posts based on a query string matching Title, Description, or Content.
         /// Results are sorted by creation date (descending) and returned with pagination.
         /// </summary>
-        public async Task<(List<SearchPostListDto> SearchPostList, int SearchTotalPosts)> SearchPostsWithTotalCountAsync
+        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsWithTotalCountAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
         {
-            Expression<Func<Post, bool>> searchPredicate = p =>
+            var queryable = _repository.GetFilteredQueryable(p =>
                 p.Title.Contains(query) ||
                 p.Description.Contains(query) ||
-                p.Content.Contains(query);
-
-            var queryable = _repository.GetFilteredQueryable(searchPredicate);
+                p.Content.Contains(query)
+            );
 
             var searchTotalPosts = await queryable.CountAsync(ct);
 
+            var message = searchTotalPosts == 0
+                ? string.Format(PostM.Success.SearchNoResults, query)
+                : string.Format(PostM.Success.SearchResultsFound, query, searchTotalPosts);
+
             if (searchTotalPosts == 0)
             {
-                return (new List<SearchPostListDto>(), 0);
+                return Result<PagedSearchResult<SearchPostListDto>>.Success(new PagedSearchResult<SearchPostListDto>
+                    (query, new List<SearchPostListDto>(), searchTotalPosts, pageNumber, pageSize, message));
             }
 
             var postsWithContent = await queryable
@@ -78,7 +80,7 @@ namespace PostApiService.Services
                     p.Slug,
                     p.Content,
                     p.Author,
-                    p.Category
+                    CategoryName = p.Category.Name
                 })
                 .ToListAsync(ct);
 
@@ -86,18 +88,19 @@ namespace PostApiService.Services
             {
                 var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
 
-                return new SearchPostListDto
-                {
-                    Id = item.Id,
-                    Title = item.Title,
-                    Slug = item.Slug,
-                    Author = item.Author,
-                    SearchSnippet = snippet,
-                    Category = item.Category.Name ?? ContentConstants.DefaultCategory,
-                };
+                return new SearchPostListDto(
+                   item.Id,
+                   item.Title,
+                   item.Slug,
+                   snippet,
+                   item.Author,
+                   item.CategoryName ?? ContentConstants.DefaultCategory
+                   );
+
             }).ToList();
 
-            return (searchPostList, searchTotalPosts);
+            return Result<PagedSearchResult<SearchPostListDto>>.Success(new PagedSearchResult<SearchPostListDto>
+                (query, searchPostList, searchTotalPosts, pageNumber, pageSize, message));
         }
 
         /// <summary>

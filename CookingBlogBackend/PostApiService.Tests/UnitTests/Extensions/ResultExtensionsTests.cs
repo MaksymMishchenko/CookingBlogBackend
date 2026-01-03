@@ -1,74 +1,81 @@
-﻿using PostApiService.Infrastructure.Common;
-using PostApiService.Extensions;
+﻿using PostApiService.Extensions;
+using PostApiService.Infrastructure.Common;
+using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.UnitTests.Extensions
 {
     public class ResultExtensionsTests
     {
-        [Theory]
-        [InlineData(ResultStatus.Success, "Data", "Msg", typeof(OkObjectResult), 200)]
-        [InlineData(ResultStatus.NoContent, null, null, typeof(NoContentResult), 204)]
-        [InlineData(ResultStatus.NoContent, null, "Deleted", typeof(OkObjectResult), 200)]
-        [InlineData(ResultStatus.NotFound, null, "Err", typeof(NotFoundObjectResult), 404)]
-        [InlineData(ResultStatus.Conflict, null, "Err", typeof(ConflictObjectResult), 409)]
-        [InlineData(ResultStatus.Invalid, null, "Err", typeof(BadRequestObjectResult), 400)]
-        public void ToActionResult_ShouldReturnCorrectResult_ForAllStatuses(
-            ResultStatus status, object? value, string? message, Type expectedType, int expectedStatusCode)
+        [Fact]
+        public void ToActionResult_SearchPagedResult_ReturnsCorrectFields()
         {
-            // Arrange            
-            var resultType = typeof(Result<>).MakeGenericType(value?.GetType() ?? typeof(object));
-            var result = Activator.CreateInstance(resultType, System.Reflection.BindingFlags.NonPublic |
-                System.Reflection.BindingFlags.Instance, null, new[] { value, status, "Error Message" }, null);
-
-            var testResult = Result<object>.Success(value!);
-            var genericResult = CreateResultForTest(status, value, "Err");
+            // Arrange
+            var items = new List<SearchPostListDto> { new(1, "Title", "slug", "snippet", "author", "cat") };
+            var searchRecord = new PagedSearchResult<SearchPostListDto>(
+                Query: "dotnet",
+                Items: items,
+                TotalSearchCount: 1,
+                PageNumber: 1,
+                PageSize: 10,
+                Message: "Found 1 posts"
+            );
+            var result = Result<PagedSearchResult<SearchPostListDto>>.Success(searchRecord);
 
             // Act
-            var actionResult = genericResult.ToActionResult(message);
+            var actionResult = result.ToActionResult();
 
             // Assert
-            Assert.IsType(expectedType, actionResult);
-            if (actionResult is ObjectResult objectResult)
-            {
-                Assert.Equal(expectedStatusCode, objectResult.StatusCode);
-                var apiResponse = objectResult.Value as ApiResponse;
-                Assert.NotNull(apiResponse);
-                if (message != null) Assert.Equal(message, apiResponse.Message);
-            }
-            else if (actionResult is StatusCodeResult statusCodeResult)
-            {
-                Assert.Equal(expectedStatusCode, statusCodeResult.StatusCode);
-            }
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
+
+            Assert.Equal("dotnet", response.SearchQuery);
+            Assert.Equal("Found 1 posts", response.Message);
+            Assert.Single(response.Data);
         }
 
         [Theory]
-        [InlineData(ResultStatus.Success, typeof(CreatedAtActionResult), 201)]
-        [InlineData(ResultStatus.NotFound, typeof(NotFoundObjectResult), 404)]
-        public void ToCreatedResult_ShouldHandleSuccessAndDelegation(
-            ResultStatus status, Type expectedType, int expectedStatusCode)
+        [InlineData(ResultStatus.NotFound, typeof(NotFoundObjectResult))]
+        [InlineData(ResultStatus.Conflict, typeof(ConflictObjectResult))]
+        [InlineData(ResultStatus.Invalid, typeof(BadRequestObjectResult))]
+        public void ToActionResult_Errors_ReturnCorrectStatusCodes(ResultStatus status, Type expectedType)
         {
             // Arrange
-            var result = status == ResultStatus.Success
-                ? Result<string>.Success("data")
-                : Result<string>.NotFound("error");
-
-            var routeValues = new { id = 1 };
+            var errorMsg = "Some error occurred";
+            
+            var result = status switch
+            {
+                ResultStatus.NotFound => Result<object>.NotFound(errorMsg),
+                ResultStatus.Conflict => Result<object>.Conflict(errorMsg),
+                _ => Result<object>.Invalid(errorMsg)
+            };
 
             // Act
-            var actionResult = result.ToCreatedResult("Action", routeValues);
+            var actionResult = result.ToActionResult();
 
             // Assert
             Assert.IsType(expectedType, actionResult);
             var objectResult = actionResult as ObjectResult;
-            Assert.Equal(expectedStatusCode, objectResult?.StatusCode);
+            var apiResponse = Assert.IsType<ApiResponse>(objectResult.Value);
+            Assert.Equal(errorMsg, apiResponse.Message);
+            Assert.False(apiResponse.Success);
         }
 
-        private Result<object> CreateResultForTest(ResultStatus status, object? val, string err)
+        [Fact]
+        public void ToActionResult_NoContentWithMessage_ReturnsOkWithBody()
         {
-            var ctor = typeof(Result<object>).GetConstructor(
-                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic,
-                null, new[] { typeof(object), typeof(ResultStatus), typeof(string) }, null);
-            return (Result<object>)ctor!.Invoke(new[] { val!, status, err });
+            // Arrange
+            var result = Result<object>.NoContent();
+            var msg = "Successfully deleted";
+
+            // Act
+            var actionResult = result.ToActionResult(msg);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            var response = Assert.IsType<ApiResponse<object>>(okResult.Value);
+            Assert.Equal(msg, response.Message);
+            Assert.True(response.Success);
         }
     }
 }

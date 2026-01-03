@@ -16,8 +16,9 @@
 
             public static class Success
             {
-                public const string PostRetrievedSuccessfully = "Post with ID {0} retrieved successfully.";                
-                public const string NoPostsFound = "No posts found matching your search: '{0}'.";                
+                public const string PostRetrievedSuccessfully = "Post with ID {0} retrieved successfully.";
+                public const string SearchResultsFound = "Found {1} posts matching your search '{0}'.";
+                public const string SearchNoResults = "No posts found matching your search '{0}'.";
                 public const string PostAddedSuccessfully = "Post added successfully.";
                 public const string PostUpdatedSuccessfully = "Post with ID {0} updated successfully.";
                 public const string PostDeletedSuccessfully = "Post with ID {0} deleted successfully.";
@@ -34,7 +35,7 @@
             }
 
             public static class Success
-            {                
+            {
                 public const string CategoryAddedSuccessfully = "Category added successfully.";
                 public const string CategoryUpdatedSuccessfully = "Category updated successfully.";
                 public const string CategoryDeletedSuccessfully = "Category deleted successfully.";

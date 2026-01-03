@@ -49,7 +49,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(ResultStatus.Success, result.Status);
             var pagedData = result.Value!;
 
-            Assert.Equal(PageSize, pagedData.Items.Count);
+            Assert.Equal(PageSize, pagedData.Items.Count());
             Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
             var expectedPosts = testPosts
@@ -98,7 +98,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(ResultStatus.Success, result.Status);
             var pagedData = result.Value!;
 
-            Assert.Equal(PageSize, pagedData.Items.Count);
+            Assert.Equal(PageSize, pagedData.Items.Count());
             Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
             var expectedFirstPostOnSecondPage = testPosts
@@ -145,7 +145,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(ResultStatus.Success, result.Status);
             var pagedData = result.Value!;
 
-            Assert.Equal(ExpectedCountOnPage, pagedData.Items.Count);
+            Assert.Equal(ExpectedCountOnPage, pagedData.Items.Count());
             Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
             var expectedPostsOnPage = testPosts
@@ -225,7 +225,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(ResultStatus.Success, result.Status);
             var pagedData = result.Value!;
 
-            Assert.Equal(ExpectedTotalPostCount, pagedData.Items.Count);
+            Assert.Equal(ExpectedTotalPostCount, pagedData.Items.Count());
             Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
 
             var expectedSortedPosts = testPosts.OrderByDescending(p => p.CreatedAt).ToList();
@@ -240,108 +240,60 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string Query = "Chili";
-            const string Expected_Title = "Ultimate Classic Chili Cheeseburger Recipe";
             const int PageNumber = 2;
             const int PageSize = 2;
+
+            var token = CancellationToken.None;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
+
+            var filteredPosts = allTestPosts
+                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                        p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                        p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
+                .OrderByDescending(p => p.CreatedAt)
+                .ToList();
+
+            int expectedTotalCount = filteredPosts.Count;
+            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, expectedTotalCount);
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
 
             const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
             _mockSnippetGenerator
                 .CreateSnippet(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
                 .Returns(ExpectedSnippet);
 
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-
-            var filteredPosts = allTestPosts
-                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
-                .ToList();
-
-            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
-            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
-
             // Act
-            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize, token);
 
-            // Assert            
-            Assert.Equal(3, result.SearchTotalPosts);
+            // Assert
+            Assert.True(result.IsSuccess);
+            var data = result.Value!;
 
-            Assert.Single(result.SearchPostList);
+            Assert.Equal(expectedTotalCount, data.TotalSearchCount);
+            Assert.Equal(expectedMessage, data.Message);
+            Assert.Equal(Query, data.Query);
 
-            Assert.Equal(1, result.SearchPostList.First().Id);
-            Assert.Equal(Expected_Title, result.SearchPostList.First().Title);
+            Assert.Single(data.Items);
 
-            Assert.Equal(ExpectedSnippet, result.SearchPostList.First().SearchSnippet);
+            var expectedPostModel = filteredPosts.Last();
+            var actualDto = data.Items.First();
 
-            var expectedPostModel = allTestPosts.First(p => p.Id == 1);
-            var actualDto = result.SearchPostList.First();
+            Assert.Equal(expectedPostModel.Id, actualDto.Id);
+            Assert.Equal(ExpectedSnippet, actualDto.SearchSnippet);
 
             TestDataHelper.AssertSearchPostsWithTotalCountAsync(expectedPostModel, actualDto);
 
             _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
-        }
 
-        [Fact]
-        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_EmptyPostsList_WithZeroTotalCount()
-        {
-            // Arrange
-            const string Query = "Not Found Query";
-            const int ExpectedPostsCount = 0;
-            const int PageNumber = 2;
-            const int PageSize = 2;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-
-            var filteredPosts = allTestPosts
-                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
-                .ToList();
-
-            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
-            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
-
-            // Act
-            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
-
-            // Assert
-            Assert.NotNull(result.SearchPostList);
-            Assert.Empty(result.SearchPostList);
-            Assert.Equal(ExpectedPostsCount, result.SearchTotalPosts);
-
-            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
-        }
-
-        [Fact]
-        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_EmptyList_WhenPageNumberIsOutOfRange()
-        {
-            // Arrange
-            const string Query = "Chili";
-            const int PageNumber = 10;
-            const int PageSize = 2;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-
-            const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
-            _mockSnippetGenerator
-                .CreateSnippet(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>())
-                .Returns(ExpectedSnippet);
-
-            var filteredPosts = allTestPosts
-                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
-                .ToList();
-
-            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
-            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
-
-            // Act
-            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
-
-            // Assert
-            Assert.Equal(3, result.SearchTotalPosts);
-            Assert.Empty(result.SearchPostList);
-
-            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
+            _mockSnippetGenerator.Received(1).CreateSnippet(
+                Arg.Any<string>(),
+                Arg.Is(Query),
+                Arg.Is(100)
+            );
         }
 
         [Fact]
@@ -349,6 +301,9 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string Query = "Chili";
+            const int ExpectedTotalCount = 3;
+
+            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, ExpectedTotalCount);
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var allTestPosts = TestDataHelper.GetSearchedPost(categories);
@@ -359,25 +314,32 @@ namespace PostApiService.Tests.UnitTests
                 .Returns(ExpectedSnippet);
 
             var filteredPosts = allTestPosts
-                .Where(p => p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query))
+                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase)
+                         || p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase)
+                         || p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
                 .ToList();
-
-            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
-            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
 
             var expectedSortedPosts = filteredPosts
                 .OrderByDescending(p => p.CreatedAt)
                 .ToList();
 
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
             // Act
             var result = await _postService.SearchPostsWithTotalCountAsync(Query);
 
             // Assert
-            Assert.Equal(3, result.SearchTotalPosts);
-            Assert.Equal(3, result.SearchPostList.Count);
-            Assert.Equal(2, result.SearchPostList.First().Id);
+            Assert.True(result.IsSuccess);
+            var data = result.Value!;
 
-            Assert.All(result.SearchPostList, (searchPostDto, index) =>
+            Assert.Equal(ExpectedTotalCount, data.TotalSearchCount);
+            Assert.Equal(expectedMessage, data.Message);
+            Assert.Equal(Query, data.Query);
+            Assert.Equal(ExpectedTotalCount, data.Items.Count());
+            Assert.Equal(expectedSortedPosts.First().Id, data.Items.First().Id);
+
+            Assert.All(data.Items, (searchPostDto, index) =>
             {
                 var expectedPost = expectedSortedPosts[index];
                 TestDataHelper.AssertSearchPostsWithTotalCountAsync(expectedPost, searchPostDto);
@@ -392,6 +354,82 @@ namespace PostApiService.Tests.UnitTests
                 Arg.Is(Query),
                 Arg.Is(100)
             );
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_EmptyPostsList_WithZeroTotalCount()
+        {
+            // Arrange
+            const string Query = "Not Found Query";
+            const int ExpectedTotalCount = 0;
+            const int PageNumber = 1;
+            const int PageSize = 10;
+
+            var expectedMessage = string.Format(PostM.Success.SearchNoResults, Query);
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
+
+            var filteredPosts = allTestPosts
+                    .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                            p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                            p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
+            // Act
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+
+            // Assert
+            var data = result.Value!;
+            Assert.NotNull(data);
+            Assert.Empty(data.Items);
+
+            Assert.Equal(ExpectedTotalCount, data.TotalSearchCount);
+            Assert.Equal(expectedMessage, data.Message);
+            Assert.Equal(Query, data.Query);
+
+            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
+        }
+
+        [Fact]
+        public async Task SearchPostsWithTotalCountAsync_ShouldReturn_EmptyList_WhenPageNumberIsOutOfRange()
+        {
+            // Arrange
+            const string Query = "Chili";
+            const int PageNumber = 10;
+            const int PageSize = 2;
+            const int ExpectedTotalCount = 3;
+
+            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, ExpectedTotalCount);
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
+
+            var filteredPosts = allTestPosts
+                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase)
+                         || p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase)
+                         || p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var mockQueryable = filteredPosts.AsQueryable().BuildMock();
+            _mockRepository.GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>()).Returns(mockQueryable);
+
+            // Act
+            var result = await _postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            var data = result.Value!;
+
+            Assert.Empty(data.Items);
+            Assert.Equal(ExpectedTotalCount, data.TotalSearchCount);
+            Assert.Equal(expectedMessage, data.Message);
+            Assert.Equal(Query, data.Query);
+
+            _mockRepository.Received(1).GetFilteredQueryable(Arg.Any<Expression<Func<Post, bool>>>());
         }
 
         [Fact]

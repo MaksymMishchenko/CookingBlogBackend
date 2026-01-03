@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
@@ -157,7 +157,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             // Act            
             var response = await _client.GetAsync(url);
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<SearchPostListDto>>();
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<SearchPostListDto>>>();
 
             response.EnsureSuccessStatusCode();
 
@@ -165,8 +165,8 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.NotNull(content);
             Assert.True(content.Success);
 
-            Assert.NotNull(content.DataList);
-            Assert.Equal(PageSize, content.DataList.Count);
+            Assert.NotNull(content.Data);
+            Assert.Equal(PageSize, content.PageSize);
 
             Assert.Equal(ExpectedTotalPosts, content.TotalCount);
             Assert.Equal("Chili", content.SearchQuery);

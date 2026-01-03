@@ -1,7 +1,7 @@
 ﻿using PostApiService.Controllers.Filters;
 using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models.Dto;
+using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -45,16 +45,10 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> SearchPostsWithTotalCountAsync
             ([FromQuery] SearchPostQueryParameters query, CancellationToken ct = default)
         {
-            var (searchPostList, searchTotalPosts) = await _postsService.SearchPostsWithTotalCountAsync
+            var result = await _postsService.SearchPostsWithTotalCountAsync
                 (query.QueryString, query.PageNumber, query.PageSize, ct);
 
-            return Ok(ApiResponse<SearchPostListDto>.CreatePaginatedSearchListResponse
-                (string.Format(PostM.Success.NoPostsFound, searchPostList.Count),
-                query.QueryString,
-                searchPostList,
-                query.PageNumber,
-                query.PageSize,
-                searchTotalPosts));
+            return result.ToActionResult();
         }
 
         /// <summary>

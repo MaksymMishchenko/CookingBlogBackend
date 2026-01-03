@@ -1,6 +1,7 @@
 ﻿using Microsoft.Data.SqlClient;
 using PostApiService.Exceptions;
 using PostApiService.Infrastructure.Constants;
+using PostApiService.Models.Common;
 using System.Net;
 using System.Security.Authentication;
 
