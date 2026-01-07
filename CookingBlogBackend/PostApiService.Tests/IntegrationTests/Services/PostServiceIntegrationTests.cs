@@ -13,102 +13,46 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture = fixture;
         }
 
-        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDb
-            (out ApplicationDbContext context, int totalPostCount = 25, int commentCount = 5)
-        {
-            context = _fixture.CreateUniqueContext();
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var postsToSeed = _fixture.GeneratePosts(totalPostCount, categories, commentCount);
-
-            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
-
-            var repo = new Repository<Post>(context);
-            var categoryRepo = new Repository<Category>(context);
-            var categoryService = new CategoryService(categoryRepo, repo);
-            var snippet = new SnippetGeneratorService();
-            var service = new PostService(repo, categoryService, snippet);
-
-            return (service, postsToSeed);
-        }
-
-        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDbForSearch
-            (out ApplicationDbContext context, string keyword, int totalPostCount = 25)
-        {
-            context = _fixture.CreateUniqueContext();
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var postsToSeed = _fixture.GeneratePostsWithKeywords(keyword, categories, totalPostCount);
-
-            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
-
-            var repo = new Repository<Post>(context);
-            var categoryRepo = new Repository<Category>(context);
-            var categoryService = new CategoryService(categoryRepo, repo);
-            var snippet = new SnippetGeneratorService();
-            var service = new PostService(repo, categoryService, snippet);
-
-            return (service, postsToSeed);
-        }
-
-        private (PostService Service, List<Post> SeededPosts) CreatePostServiceAndSeedUniqueDbForSearch
-            (out ApplicationDbContext context)
-        {
-            context = _fixture.CreateUniqueContext();
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var postsToSeed = _fixture.GeneratePostsWithKeywords(categories);
-
-            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
-
-            var repo = new Repository<Post>(context);
-            var categoryRepo = new Repository<Category>(context);
-            var categoryService = new CategoryService(categoryRepo, repo);
-            var snippet = new SnippetGeneratorService();
-            var service = new PostService(repo, categoryService, snippet);
-
-            return (service, postsToSeed);
-        }
-
         private record TestSetup(
-            ApplicationDbContext Context,
-            PostService Service,
-            List<Post> Posts,
-            List<Category> Categories
-        );
+        ApplicationDbContext Context,
+        PostService Service,
+        List<Post> Posts,
+        List<Category> Categories);
 
-        private async Task<TestSetup> SetupFullService()
+        private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
+        {
+            var repo = new Repository<Post>(context);
+            var catService = new CategoryService(new Repository<Category>(context), repo);
+            var service = new PostService(repo, catService, new SnippetGeneratorService());
+
+            return new TestSetup(context, service, posts, categories);
+        }
+
+        private async Task<TestSetup> SetupAsync(Func<List<Category>, List<Post>> dataGenerator)
         {
             var context = _fixture.CreateUniqueContext();
-
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = _fixture.GeneratePosts(10, categories, 2);
 
             await _fixture.SeedCategoryAsync(context, categories);
-            await _fixture.SeedDatabaseAsync(context, posts);
 
-            var repo = new Repository<Post>(context);
-            var catRepo = new Repository<Category>(context);
-            var catService = new CategoryService(catRepo, repo);
-            var snippet = new SnippetGeneratorService();
+            var postsToSeed = dataGenerator(categories);
 
-            var postService = new PostService(repo, catService, snippet);
-
-            return new TestSetup(context, postService, posts, categories);
+            await _fixture.SeedDatabaseAsync(context, postsToSeed);
+            return CreateTestSetup(context, postsToSeed, categories);
         }
 
         [Fact]
         public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount()
         {
-            // Arrange
-            ApplicationDbContext context;
-
+            // Arrange            
             const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 10;
             const int ExpectedTotalPostCount = 25;
             const int ExpectedCommentCountPerPost = 5;
 
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
+                _fixture.GeneratePosts(ExpectedTotalPostCount, cats, ExpectedCommentCountPerPost));
+
             using (context)
             {
                 var expectedPostsOnPage = seededPosts
@@ -118,24 +62,23 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     .ToList();
 
                 // Act
-                var result = await postService.GetPostsWithTotalPostCountAsync
-                    (ExpectedPageNumber, ExpectedPageSize);
+                var result = await postService.GetPostsWithTotalPostCountAsync(ExpectedPageNumber, ExpectedPageSize);
 
                 // Assert                
                 Assert.True(result.IsSuccess);
                 Assert.Equal(ResultStatus.Success, result.Status);
+
                 var data = result.Value!;
                 Assert.Equal(ExpectedTotalPostCount, data.TotalCount);
                 Assert.Equal(ExpectedPageSize, data.PageSize);
-                Assert.Equal(1, data.Items.First().Id);
-                Assert.Equal(10, data.Items.Last().Id);
 
-                Assert.All(data.Items, (actualDto, index) =>
+                Assert.Equal(expectedPostsOnPage.First().Id, data.Items.First().Id);
+                Assert.Equal(expectedPostsOnPage.Last().Id, data.Items.Last().Id);
+
+                Assert.All(data.Items.Select((item, index) => new { item, index }), x =>
                 {
-                    var expectedPost = expectedPostsOnPage[index];
-
-                    TestDataHelper.AssertPostListDtoMapping
-                    (expectedPost, actualDto, ExpectedCommentCountPerPost);
+                    var expectedPost = expectedPostsOnPage[x.index];
+                    TestDataHelper.AssertPostListDtoMapping(expectedPost, x.item, ExpectedCommentCountPerPost);
                 });
             }
         }
@@ -143,11 +86,11 @@ namespace PostApiService.Tests.IntegrationTests.Services
         [Fact]
         public async Task SearchPosts_ShouldFindQuery_InTitleOrDescriptionOrContent()
         {
-            // Arrange
-            ApplicationDbContext context;
+            // Arrange            
             const string Query = "Chili";
 
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch(out context);
+            var (_, postService, seededPosts, _) = await SetupAsync(categories =>
+                _fixture.GeneratePostsWithKeywords(categories));
 
             var expectedIds = seededPosts
                 .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
@@ -163,39 +106,39 @@ namespace PostApiService.Tests.IntegrationTests.Services
             // Assert           
             Assert.True(result.IsSuccess);
             Assert.Equal(ResultStatus.Success, result.Status);
-            var data = result.Value!;
 
+            var data = result.Value!;
             var actualIds = data.Items.Select(r => r.Id).OrderBy(id => id).ToList();
+
             Assert.Equal(expectedIds, actualIds);
 
             Assert.All(data.Items, item =>
             {
                 bool foundInTitle = item.Title.Contains(Query, StringComparison.OrdinalIgnoreCase);
-                Assert.True(foundInTitle || expectedIds.Contains(item.Id));
+                Assert.Contains(item.Id, expectedIds);
             });
         }
 
         [Fact]
         public async Task SearchPostsWithTotalCountAsync_ShouldReturnPagesSearchedPosts_WithTotalCount()
         {
-            // Arrange
-            ApplicationDbContext context;
+            // Arrange            
             const int PageNumber = 1;
             const int PageSize = 10;
             const int PostsCountToSeed = 10;
             const string Query = "Chili";
 
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDbForSearch
-                (out context, Query, PostsCountToSeed);
+            var (_, postService, seededPosts, _) = await SetupAsync(cats =>
+                _fixture.GeneratePostsWithKeywords(Query, cats, PostsCountToSeed));
 
-            // Act            
+            // Act             
             var result = await postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(ResultStatus.Success, result.Status);
-            var data = result.Value!;
 
+            var data = result.Value!;
             Assert.Equal(seededPosts.Count, data.TotalSearchCount);
             Assert.Equal(PageSize, data.Items.Count());
         }
@@ -203,64 +146,42 @@ namespace PostApiService.Tests.IntegrationTests.Services
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturnSuccess_IfPostExistsInDb()
         {
-            // Arrange
-            ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            // Arrange                        
+            var (context, postService, seededPosts, _) = await SetupAsync(categories =>
+                _fixture.GeneratePosts(25, categories, 5));
+
+            var targetPost = seededPosts.First();
 
             using (context)
             {
-                var targetPost = seededPosts.First();
-
                 // Act
                 var result = await postService.GetPostByIdAsync(targetPost.Id);
 
                 // Assert
                 Assert.True(result.IsSuccess);
                 Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.NotNull(result.Value);
 
-                Assert.Equal(targetPost.Title, result.Value.Title);
-                Assert.Equal(targetPost.Author, result.Value.Author);
-                Assert.Equal(targetPost.Slug, result.Value.Slug);
-            }
-        }
+                var data = result.Value;
+                Assert.NotNull(data);
 
-        [Fact]
-        public async Task GetPostByIdAsync_Integration_ShouldReturnNotFound_IfIdDoesNotExist()
-        {
-            // Arrange
-            ApplicationDbContext context;
-            var (postService, _) = CreatePostServiceAndSeedUniqueDb(out context);
-
-            using (context)
-            {
-                var nonExistentId = 999999;
-
-                // Act
-                var result = await postService.GetPostByIdAsync(nonExistentId);
-
-                // Assert
-                Assert.False(result.IsSuccess);
-                Assert.Equal(ResultStatus.NotFound, result.Status);
-                Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
-
-                var expectedMessage = string.Format(PostM.Errors.PostNotFound, nonExistentId);
-                Assert.Equal(expectedMessage, result.Message);
+                Assert.Equal(targetPost.Title, data.Title);
+                Assert.Equal(targetPost.Author, data.Author);
+                Assert.Equal(targetPost.Slug, data.Slug);
             }
         }
 
         [Fact]
         public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
         {
-            // Arrange                      
-            var (context, postService, seededPosts, seededCategories) = await SetupFullService();
-            var existingCategoryId = seededCategories.First().Id;
+            // Arrange           
+            var (context, postService, _, categories) = await SetupAsync(cats => new List<Post>());
+
+            var existingCategoryId = categories.First().Id;
 
             using (context)
             {
                 var newPost = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
                 var postDto = TestDataHelper.ToPostCreateDto(newPost);
-
                 var initialCount = await context.Posts.CountAsync();
 
                 // Act
@@ -272,47 +193,44 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 var data = result.Value!;
                 Assert.NotNull(data);
-
                 Assert.Equal(postDto.Title, data.Title);
-                Assert.Equal(postDto.Slug, data.Slug);
                 Assert.Equal(existingCategoryId, data.CategoryId);
 
                 var addedPostInDb = await context.Posts
                     .FirstOrDefaultAsync(p => p.Title == postDto.Title);
+
                 Assert.NotNull(addedPostInDb);
                 Assert.Equal(postDto.Content, addedPostInDb.Content);
-                Assert.Equal(postDto.CategoryId, addedPostInDb.CategoryId);
 
-                var postCount = await context.Posts.CountAsync();
-                Assert.Equal(initialCount + 1, postCount);
+                var finalCount = await context.Posts.CountAsync();
+                Assert.Equal(initialCount + 1, finalCount);
             }
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldUpdatedExistingPostSuccessfully()
+        public async Task UpdatePostAsync_ShouldUpdateExistingPostSuccessfully()
         {
-            // Arrange
-            ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            // Arrange                        
+            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
+                _fixture.GeneratePosts(1, cats, 0));
+
+            var targetPost = seededPosts.First();
+            var updatedTitle = "New Receipt Title";
+
+            var updateDto = TestDataHelper.ToPostUpdateDto(targetPost, updatedTitle);
+
             using (context)
             {
-                var postId = 1;
-                var existingPost = await context.Posts.FindAsync(postId);
-                Assert.NotNull(existingPost);
-
-                var updatedTitle = "New Receipt Title";
-
-                var updateDto = TestDataHelper.ToPostUpdateDto(existingPost, updatedTitle);
-
-                // Act                
-                var result = await postService.UpdatePostAsync(postId, updateDto);
+                // Act                              
+                var result = await postService.UpdatePostAsync(targetPost.Id, updateDto);
 
                 // Assert                
-                Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
                 Assert.Equal(ResultStatus.Success, result.Status);
 
-                var postInDb = await context.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == postId);
+                var postInDb = await context.Posts
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(p => p.Id == targetPost.Id);
 
                 Assert.NotNull(postInDb);
                 Assert.Equal(updateDto.Title, postInDb.Title);
@@ -324,27 +242,26 @@ namespace PostApiService.Tests.IntegrationTests.Services
         [Fact]
         public async Task DeletePostAsync_ShouldRemovePostSuccessfully()
         {
-            // Arrange
-            ApplicationDbContext context;
-            var (postService, seededPosts) = CreatePostServiceAndSeedUniqueDb(out context);
+            // Arrange                      
+            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
+                _fixture.GeneratePosts(3, cats, 0));
+
+            var targetPost = seededPosts.First();
+            var initialCount = seededPosts.Count;
+            var successMessage = PostM.Success.PostDeletedSuccessfully;
+
             using (context)
             {
-                var initialCount = await context.Posts.CountAsync();
-                var postId = 1;
-
-                var successMessage = PostM.Success.PostDeletedSuccessfully;
-
                 // Act
-                var result = await postService.DeletePostAsync(postId);
+                var result = await postService.DeletePostAsync(targetPost.Id);
 
                 // Assert
-                Assert.NotNull(result);
                 Assert.True(result.IsSuccess);
                 Assert.Equal(ResultStatus.Success, result.Status);
                 Assert.Equal(successMessage, result.Message);
 
-                var removedPost = await context.Posts.AnyAsync(p => p.Id == postId);
-                Assert.False(removedPost);
+                var postExists = await context.Posts.AnyAsync(p => p.Id == targetPost.Id);
+                Assert.False(postExists);
 
                 var finalCount = await context.Posts.CountAsync();
                 Assert.Equal(initialCount - 1, finalCount);

@@ -36,38 +36,8 @@ namespace PostApiService.Tests.Fixtures
             });
 
             services.RemoveAll(typeof(IPostService));
-
-            var mockPosts = new List<PostListDto>
-            {
-                new PostListDto(1, "Mocked Post", "slug", "Author", "Category", DateTime.UtcNow, "Desc", 0)
-            };
-
-            const int mockTotalCount = 100;
-            const int mockPageNumber = 1;
-            const int mockPageSize = 10;
-
-            var pagedResult = new PagedResult<PostListDto>(mockPosts, mockTotalCount, mockPageNumber, mockPageSize);
-            var expectedResult = Result<PagedResult<PostListDto>>.Success(pagedResult);
-
+            
             var postServiceMock = Substitute.For<IPostService>();
-
-            postServiceMock.GetPostsWithTotalPostCountAsync(
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>())
-                .Returns(expectedResult);
-
-            var mockSearchPosts = new List<SearchPostListDto>
-            {
-                new SearchPostListDto(1, "Mocked Post", "slug", "Search snippet", "Author", "Category")
-            };
-
-            var pagedSearchResult = new PagedSearchResult<SearchPostListDto>(
-                    "Chili", mockSearchPosts, mockTotalCount, mockPageNumber, mockPageSize, "Found 100 posts"
-            );
-
-            var expectedSearchResult = Result<PagedSearchResult<SearchPostListDto>>.Success(pagedSearchResult);
-
             postServiceMock.AddPostAsync(
                 Arg.Any<PostCreateDto>())
                 .Returns(Task.FromResult(Result<PostAdminDetailsDto>.Success(new PostAdminDetailsDto(
