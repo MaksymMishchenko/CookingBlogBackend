@@ -15,6 +15,6 @@ namespace PostApiService.Interfaces
         Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default);
         Task<Result<PostAdminDetailsDto>> UpdatePostAsync
             (int postId, PostUpdateDto postDto, CancellationToken ct = default);
-        Task<Result<bool>> DeletePostAsync(int postId, CancellationToken ct = default);
+        Task<Result> DeletePostAsync(int postId, CancellationToken ct = default);
     }
 }

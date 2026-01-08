@@ -2,12 +2,14 @@
 {
     public enum ResultStatus
     {
-        Success,
+        Success, 
+        Created, 
+        NoContent,
         NotFound,
         Conflict,
         Unauthorized,
         Forbidden,
         Invalid,
-        NoContent
+        Error
     }
 }

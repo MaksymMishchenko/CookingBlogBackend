@@ -66,7 +66,7 @@ namespace PostApiService.Controllers
         {
             var result = await _categoryService.UpdateCategoryAsync(id, categoryDto, ct);
 
-            return result.ToActionResult(CategoryM.Success.CategoryUpdatedSuccessfully);
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace PostApiService.Controllers
         {
             var result = await _categoryService.DeleteCategoryAsync(id, ct);
 
-            return result.ToActionResult(CategoryM.Success.CategoryDeletedSuccessfully);
+            return result.ToActionResult();
         }
     }
 }

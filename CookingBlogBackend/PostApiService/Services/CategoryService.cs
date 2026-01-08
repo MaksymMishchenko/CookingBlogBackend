@@ -102,10 +102,10 @@ namespace PostApiService.Services
 
             var responseDto = category.ToDto();
 
-            return Result<CategoryDto>.Success(responseDto);
+            return Result<CategoryDto>.Success(responseDto, CategoryM.Success.CategoryUpdatedSuccessfully);
         }
 
-        public async Task<Result<bool>> DeleteCategoryAsync(int id, CancellationToken ct = default)
+        public async Task<Result> DeleteCategoryAsync(int id, CancellationToken ct = default)
         {
             var category = await _categoryRepository.GetByIdAsync(id, ct);
 
@@ -121,13 +121,13 @@ namespace PostApiService.Services
             if (hasPosts)
             {
                 Log.Information(Categories.DeleteBlockedByRelatedPosts, category.Name);
-                return Result<bool>.Conflict(CategoryM.Errors.CannotDeleteCategoryWithPosts);
+                return Result.Conflict(CategoryM.Errors.CannotDeleteCategoryWithPosts);
             }
 
             await _categoryRepository.DeleteAsync(category, ct);
             await _categoryRepository.SaveChangesAsync(ct);
 
-            return Result<bool>.NoContent();
+            return Result.Success(CategoryM.Success.CategoryDeletedSuccessfully);
         }
     }
 }

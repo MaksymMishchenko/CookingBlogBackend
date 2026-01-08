@@ -347,7 +347,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.NoContent, result.Status);
+            Assert.Equal(ResultStatus.Success, result.Status);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
                 (categoryId, token);

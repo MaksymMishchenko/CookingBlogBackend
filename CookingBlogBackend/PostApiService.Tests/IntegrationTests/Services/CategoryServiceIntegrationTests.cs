@@ -178,7 +178,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 // Assert
                 Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.NoContent, result.Status);
+                Assert.Equal(ResultStatus.Success, result.Status);
 
                 var categoryInDb = context.Categories.Find(categoryToDelete.Id);
                 Assert.Null(categoryInDb);

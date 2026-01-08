@@ -33,6 +33,15 @@ namespace PostApiService.Models.Common
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ErrorCode { get; set; }
 
+        public static ApiResponse CreateSuccessResponse(string message)
+        {
+            return new ApiResponse
+            {
+                Success = true,
+                Message = message
+            };
+        }
+
         public static ApiResponse CreateErrorResponse
             (string message, IDictionary<string, string[]>? errors = null, string? errorCode = null)
         {
@@ -41,7 +50,7 @@ namespace PostApiService.Models.Common
                 Success = false,
                 Message = message,
                 Errors = errors,
-                ErrorCode = errorCode                
+                ErrorCode = errorCode
             };
         }
     }

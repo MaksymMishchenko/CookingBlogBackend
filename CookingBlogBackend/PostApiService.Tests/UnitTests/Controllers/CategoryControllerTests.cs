@@ -215,7 +215,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var token = new CancellationToken(false);
             const int categoryId = 1;
             var successMessage = CategoryM.Success.CategoryDeletedSuccessfully;
-            var expectedResult = Result<bool>.NoContent();
+            var expectedResult = Result.Success(successMessage);
 
             _mockCategoryService.DeleteCategoryAsync(categoryId, token)
                 .Returns(expectedResult);
@@ -225,7 +225,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert            
             var okResult = Assert.IsType<OkObjectResult>(result);
-            var apiResponse = Assert.IsType<ApiResponse<bool>>(okResult.Value);
+            var apiResponse = Assert.IsType<ApiResponse>(okResult.Value);
             Assert.Equal(successMessage, apiResponse.Message);
 
             await _mockCategoryService.Received(1).DeleteCategoryAsync(categoryId, token);

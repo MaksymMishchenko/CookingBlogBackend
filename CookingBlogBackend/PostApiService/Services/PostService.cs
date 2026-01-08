@@ -207,7 +207,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Deletes a post from the database by the specified post ID.
         /// </summary>        
-        public async Task<Result<bool>> DeletePostAsync(int postId, CancellationToken ct = default)
+        public async Task<Result> DeletePostAsync(int postId, CancellationToken ct = default)
         {
             var existingPost = await _repository.GetByIdAsync(postId, ct);
 
@@ -221,7 +221,7 @@ namespace PostApiService.Services
 
             Log.Information(Posts.Deleted, postId);
 
-            return Result<bool>.Success(true, PostM.Success.PostDeletedSuccessfully);
+            return Result.Success(PostM.Success.PostDeletedSuccessfully);
         }
     }
 }

@@ -5,26 +5,35 @@ namespace PostApiService.Extensions
 {
     public static class ResultExtensions
     {
-        private static IActionResult MapErrorResult<T>(Result<T> result)
+        private static IActionResult MapErrorResult(Result result)
         {
+            var errorResponse = ApiResponse.CreateErrorResponse(result.Message, errorCode: result.ErrorCode);
+
             return result.Status switch
             {
-                ResultStatus.NotFound => new NotFoundObjectResult(ApiResponse.CreateErrorResponse(result.Message, errorCode: result.ErrorCode)),
-                ResultStatus.Conflict => new ConflictObjectResult(ApiResponse.CreateErrorResponse(result.Message, errorCode: result.ErrorCode)),
-                ResultStatus.Invalid => new BadRequestObjectResult(ApiResponse.CreateErrorResponse(result.Message)),
-                ResultStatus.Unauthorized => new UnauthorizedObjectResult(ApiResponse.CreateErrorResponse(result.Message ?? "Unauthorized")),
-                _ => new StatusCodeResult(500)
+                ResultStatus.NotFound => new NotFoundObjectResult(errorResponse),
+                ResultStatus.Conflict => new ConflictObjectResult(errorResponse),
+                ResultStatus.Invalid => new BadRequestObjectResult(errorResponse),
+                ResultStatus.Unauthorized => new UnauthorizedObjectResult(errorResponse),
+                ResultStatus.Forbidden => new ObjectResult(errorResponse) { StatusCode = 403 },
+                ResultStatus.Error => new ObjectResult(errorResponse) { StatusCode = 500 },
+                _ => new ObjectResult(errorResponse) { StatusCode = 500 }
             };
         }
 
-        public static IActionResult ToActionResult<T>(this Result<T> result, string? message = null)
+        public static IActionResult ToActionResult(this Result result)
         {
             if (!result.IsSuccess) return MapErrorResult(result);
 
-            if (result.Status == ResultStatus.NoContent && message == null)
-            {
+            if (result.Status == ResultStatus.NoContent)
                 return new NoContentResult();
-            }
+
+            return new OkObjectResult(ApiResponse.CreateSuccessResponse(result.Message));
+        }
+
+        public static IActionResult ToActionResult<T>(this Result<T> result)
+        {
+            if (!result.IsSuccess) return MapErrorResult(result);
 
             if (result.Value is IPagedResult pageData)
             {
@@ -48,32 +57,32 @@ namespace PostApiService.Extensions
                     pageData.TotalCount));
             }
 
-            var finalMessage = message ?? result.Message;
-
-            return new OkObjectResult(ApiResponse<T>.CreateSuccessResponse(finalMessage, result.Value));
+            return new OkObjectResult(ApiResponse<T>.CreateSuccessResponse(result.Message, result.Value));
         }
 
         public static IActionResult ToCreatedResult<T>(
             this Result<T> result,
             string actionName,
-            object routeValues,
-            string? message = null)
+            object routeValues)
         {
             if (!result.IsSuccess)
             {
                 return MapErrorResult(result);
             }
 
-            var finalMessage = message ?? result.Message;
+            if (result.Status == ResultStatus.NoContent)
+            {
+                return new NoContentResult();
+            }               
 
             return result.Status switch
             {
-                ResultStatus.Success => new CreatedAtActionResult(
+                ResultStatus.Created or ResultStatus.Success => new CreatedAtActionResult(
                     actionName,
                     null,
                     routeValues,
-                    ApiResponse<T>.CreateSuccessResponse(finalMessage, result.Value)),
-
+                    ApiResponse<T>.CreateSuccessResponse(result.Message, result.Value)),
+                
                 _ => result.ToActionResult()
             };
         }

@@ -13,6 +13,6 @@ namespace PostApiService.Interfaces
             (CreateCategoryDto categoryDto, CancellationToken ct = default);
         public Task<Result<CategoryDto>> UpdateCategoryAsync
             (int categoryId, UpdateCategoryDto categoryDto, CancellationToken ct = default);
-        public Task<Result<bool>> DeleteCategoryAsync(int id, CancellationToken ct = default);
+        public Task<Result> DeleteCategoryAsync(int id, CancellationToken ct = default);
     }
 }

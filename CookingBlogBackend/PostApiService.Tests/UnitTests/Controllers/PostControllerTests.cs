@@ -520,7 +520,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okObjectResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<bool>>(okObjectResult.Value);
+            var response = Assert.IsType<ApiResponse>(okObjectResult.Value);
 
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
