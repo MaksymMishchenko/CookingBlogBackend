@@ -21,8 +21,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var postId = 1;
             var newComment = new Comment
-            {
-                Author = "Brian",
+            {                
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
             };
 

@@ -2,8 +2,7 @@
 {
     public static class ConfigConstants
     {
-        public const string DefaultConnection = "DefaultConnection";
-        public const string IdentityConnection = "ApiPostIdentity:ConnectionString";
+        public const string DefaultConnection = "DefaultConnection";        
         public const string JwtSection = "JwtConfiguration";
 
         public static class Errors

@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using PostApiService.Contexts;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
 using PostApiService.Interfaces;
@@ -40,32 +39,17 @@ namespace PostApiService.Infrastructure
                 options.UseSqlServer(connectionString);
             });
 
-            services.AddScoped<DbContext, ApplicationDbContext>();
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
-            services.AddScoped<IPostService, PostService>();
-            services.AddScoped<ICategoryService, CategoryService>();
-            services.AddScoped<ICommentService, CommentService>();
-            services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
-
-            return services;
-        }
-
-        /// <summary>
-        /// Configures identity services for the application, including database context,
-        /// identity management, and dependency injection for authentication and token services.
-        /// </summary>        
-        public static IServiceCollection AddAppIdentityService(this IServiceCollection services, string identityConnectionString)
-        {
-            services.AddDbContext<AppIdentityDbContext>(options =>
-            {
-                options.UseSqlServer(identityConnectionString);
-            });
 
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddHttpContextAccessor();
+
+            services.AddScoped<IPostService, PostService>();
+            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<ICommentService, CommentService>();
+            services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
 
             return services;
         }
@@ -92,7 +76,7 @@ namespace PostApiService.Infrastructure
                     "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
                 options.User.RequireUniqueEmail = true;
             })
-                .AddEntityFrameworkStores<AppIdentityDbContext>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
         }
 
@@ -150,7 +134,7 @@ namespace PostApiService.Infrastructure
         {
             using (var scope = app.Services.CreateScope())
             {
-                var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
@@ -216,26 +200,23 @@ namespace PostApiService.Infrastructure
             using (var scope = app.Services.CreateScope())
             {
                 var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                await cntx.Database.EnsureDeletedAsync();
 
+                if (await cntx.Posts.AnyAsync()) return app;
 
-                if (await cntx.Database.EnsureCreatedAsync())
+                var userIds = await cntx.Users
+                    .Select(u => u.Id)
+                    .ToArrayAsync();
+
+                if (userIds.Length == 0)
                 {
-                    var postsList = SeedData.GetPostsWithComments(count: 150, commentCount: 20);
-
-                    await cntx.Posts.AddRangeAsync(postsList);
-
-                    var allComments = postsList
-                        .SelectMany(p => p.Comments)
-                        .ToList();
-
-                    if (allComments.Any())
-                    {
-                        await cntx.Comments.AddRangeAsync(allComments);
-                    }
-
-                    await cntx.SaveChangesAsync();
+                    throw new Exception("SeedData: No users found in database. Seed users first!");
                 }
+
+                var postsList = SeedData.GetPostsWithComments
+                    (count: 150, commentCount: 20, userIds: userIds);
+
+                await cntx.Posts.AddRangeAsync(postsList);
+                await cntx.SaveChangesAsync();
             }
             return app;
         }

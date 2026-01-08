@@ -22,7 +22,7 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange            
             var postId = 1;
-            var comment = new Comment { Content = "Test comment", Author = "Test author" };
+            var comment = new Comment { Content = "Test comment" };
 
             _mockPostRepo.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(true);

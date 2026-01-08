@@ -49,7 +49,6 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var comment = new Comment
                 {
                     Content = "Test comment from Bob",
-                    Author = "Bob"
                 };
 
                 // Act
@@ -57,7 +56,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 // Assert
                 var addedComment = await context.Comments
-                    .FirstOrDefaultAsync(c => c.Content == comment.Content && c.Author == comment.Author);
+                    .FirstOrDefaultAsync(c => c.Content == comment.Content);
 
                 Assert.NotNull(addedComment);
                 Assert.Equal(postId, addedComment.PostId);

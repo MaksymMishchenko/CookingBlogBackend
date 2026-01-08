@@ -1,4 +1,4 @@
-﻿public class ApplicationDbContext : DbContext
+﻿public class ApplicationDbContext : IdentityDbContext<IdentityUser>
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
 
@@ -25,10 +25,17 @@
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
-        modelBuilder.Entity<Comment>()
-                .HasOne(c => c.Post)
+        modelBuilder.Entity<Comment>(entity =>
+        {
+            entity.HasOne(c => c.Post)
                 .WithMany(p => p.Comments)
                 .HasForeignKey(c => c.PostId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(c => c.User)
+                .WithMany()
+                .HasForeignKey(c => c.UserId)
+                .OnDelete(DeleteBehavior.NoAction);
+        });
     }
 }

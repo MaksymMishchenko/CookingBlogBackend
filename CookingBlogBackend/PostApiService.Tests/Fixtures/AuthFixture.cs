@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Contexts;
 
 namespace PostApiService.Tests.Fixtures
 {
@@ -13,7 +12,7 @@ namespace PostApiService.Tests.Fixtures
         public override async Task DisposeAsync()
         {
             using var scope = Services.CreateScope();
-            var cntx = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+            var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             await cntx.Database.EnsureDeletedAsync();
 

@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using PostApiService.Contexts;
 using PostApiService.Helper;
 using PostApiService.Models.TypeSafe;
 using System.Security.Claims;
@@ -45,8 +44,8 @@ namespace PostApiService.Tests.Fixtures
                         });
                     }
 
-                    services.RemoveAll(typeof(DbContextOptions<AppIdentityDbContext>));
-                    services.AddDbContext<AppIdentityDbContext>(options =>
+                    services.RemoveAll(typeof(DbContextOptions<ApplicationDbContext>));
+                    services.AddDbContext<ApplicationDbContext>(options =>
                     {
                         options.UseSqlServer(_identityConnectionString);
                     });
@@ -67,7 +66,7 @@ namespace PostApiService.Tests.Fixtures
         {
             using (var scope = Services?.CreateScope())
             {
-                var cntx = scope!.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+                var cntx = scope!.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 

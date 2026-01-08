@@ -493,16 +493,26 @@ namespace PostApiService.Tests.IntegrationTests
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 await dbContext.Database.EnsureDeletedAsync();
-                if (await dbContext.Database.EnsureCreatedAsync())
-                {
-                    await dbContext.Categories.AddRangeAsync(categories);
-                    await dbContext.SaveChangesAsync();
+                await dbContext.Database.EnsureCreatedAsync();
 
-                    await dbContext.Posts.AddRangeAsync(posts);
-                    await dbContext.SaveChangesAsync();
-                }
+                var testUser = new IdentityUser
+                {
+                    Id = "testContId",
+                    UserName = "testCont",
+                    Email = "test@test.com",
+                    NormalizedUserName = "TESTCONT"
+                };
+
+                await dbContext.Users.AddAsync(testUser);
+                await dbContext.SaveChangesAsync();
+
+                await dbContext.Categories.AddRangeAsync(categories);
+                await dbContext.SaveChangesAsync();
+
+                await dbContext.Posts.AddRangeAsync(posts);
+                await dbContext.SaveChangesAsync();
             }
-        }
+        }        
 
         private async Task SeedCategoriesAsync(IEnumerable<Category> categories)
         {

@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PostApiService.Contexts;
 using System.Security.Claims;
 using System.Text.Encodings.Web;
 
@@ -57,7 +56,7 @@ namespace PostApiService.Tests.Fixtures
 
             await context.Database.EnsureDeletedAsync();
 
-            var identityContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+            var identityContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             await identityContext.Database.EnsureDeletedAsync();
 

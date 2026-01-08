@@ -8,9 +8,10 @@ namespace PostApiService
             bool useNewSeed = false,
             bool generateComments = true,
             int commentCount = 1,
+            string[] userIds = null,
             bool generateIds = false)
         {
-            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, generateIds).Generate(count);
+            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, userIds, generateIds).Generate(count);
 
             if (generateIds)
             {
@@ -38,6 +39,7 @@ namespace PostApiService
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
             int commentCount,
+            string[] userIds = null,
             bool generateIds = false)
         {
             var culinaryCategories = new[]
@@ -74,10 +76,9 @@ namespace PostApiService
 
                     return new Faker<Comment>()
                         .RuleFor(c => c.Id, _ => 0)
-                        .RuleFor(c => c.PostId, _ => post.Id)
-                        .RuleFor(c => c.Author, fc => fc.Person.FullName)
+                        .RuleFor(c => c.PostId, _ => post.Id)                        
                         .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
-                        .RuleFor(c => c.UserId, _ => "testUserId")
+                        .RuleFor(c => c.UserId, f => userIds != null ? f.PickRandom(userIds) : "adminId")
                         .Generate(commentCount);
                 })
                 .UseSeed(seed);

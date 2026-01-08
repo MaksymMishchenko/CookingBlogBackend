@@ -3,7 +3,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using PostApiService.Contexts;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
@@ -91,7 +90,7 @@ namespace PostApiService.Tests.Fixtures
         public override async Task DisposeAsync()
         {
             using var scope = Services.CreateScope();
-            var identityContext = scope.ServiceProvider.GetRequiredService<AppIdentityDbContext>();
+            var identityContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             await identityContext.Database.EnsureDeletedAsync();
 

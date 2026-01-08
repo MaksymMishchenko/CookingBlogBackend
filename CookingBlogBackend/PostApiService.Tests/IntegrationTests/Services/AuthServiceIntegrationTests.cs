@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Contexts;
 using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -16,11 +15,11 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var dbName = Guid.NewGuid().ToString();
 
-            services.AddDbContext<AppIdentityDbContext>(options =>
+            services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseInMemoryDatabase(dbName));
 
             services.AddIdentity<IdentityUser, IdentityRole>()
-                .AddEntityFrameworkStores<AppIdentityDbContext>()
+                .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
 
             services.AddLogging();

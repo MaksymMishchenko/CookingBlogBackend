@@ -267,7 +267,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
             }
 
-            var comment = new Comment { PostId = testPostId, Content = "Test comment" };
+            var comment = new Comment { PostId = testPostId, Content = "Test comment", UserId = "testUserId" };
             var content = HttpHelper.GetJsonHttpContent(comment);
 
             // Act

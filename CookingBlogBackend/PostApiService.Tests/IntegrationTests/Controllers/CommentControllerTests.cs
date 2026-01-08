@@ -22,11 +22,11 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnAddComment_ShouldReturnBadRequest_WhenPostIdIsInvalid()
         {
-            // Arrange
-            SetupMockUser("testContId");
+            // Arrange            
+            SetupMockUser();
             var invalidPostId = 0;
 
-            var comment = new Comment { Content = "Valid content", Author = "Author" };
+            var comment = new Comment { Content = "Valid content" };
             var content = HttpHelper.GetJsonHttpContent(comment);
 
             var url = string.Format(Comments.GetById, invalidPostId);
@@ -46,11 +46,11 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnAddComment_ShouldReturnBadRequest_WhenModelIsInvalid()
         {
-            // Arrange
-            SetupMockUser("testContId");
+            // Arrange            
+            SetupMockUser();
             var postId = 1;
 
-            var invalidComment = new Comment { Content = "", Author = "" };
+            var invalidComment = new Comment { Content = "" };
             var content = HttpHelper.GetJsonHttpContent(invalidComment);
 
             var url = string.Format(Comments.GetById, postId);
@@ -72,8 +72,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
         {
-            // Arrange
-            SetupMockUser("testContId");
+            // Arrange            
+            SetupMockUser();
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
@@ -83,7 +83,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var newComment = new Comment
             {
                 Content = "Lorem ipsum dolor sit amet.",
-                Author = "Jane",
                 PostId = 1,
                 UserId = "testContId"
             };
@@ -101,12 +100,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var addedComment = await dbContext.Comments
                     .FirstOrDefaultAsync(c => c.Content == newComment.Content &&
-                                              c.Author == newComment.Author &&
                                               c.PostId == newComment.PostId);
 
                 Assert.NotNull(addedComment);
                 Assert.Equal(newComment.Content, addedComment.Content);
-                Assert.Equal(newComment.Author, addedComment.Author);
                 Assert.Equal(newComment.PostId, addedComment.PostId);
             }
         }
@@ -269,16 +266,26 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
                 await dbContext.Database.EnsureDeletedAsync();
-                if (await dbContext.Database.EnsureCreatedAsync())
+                await dbContext.Database.EnsureCreatedAsync();
+
+                var testUser = new IdentityUser
                 {
-                    await dbContext.Categories.AddRangeAsync(categories);
-                    await dbContext.Posts.AddRangeAsync(posts);
-                    await dbContext.SaveChangesAsync();
-                }
+                    Id = "testContId",
+                    UserName = "testCont",
+                    Email = "test@test.com",
+                    NormalizedUserName = "TESTCONT"
+                };
+
+                await dbContext.Users.AddAsync(testUser);
+                await dbContext.SaveChangesAsync();
+
+                await dbContext.Categories.AddRangeAsync(categories);
+                await dbContext.Posts.AddRangeAsync(posts);
+                await dbContext.SaveChangesAsync();
             }
         }
 
-        private void SetupMockUser(string userId = "testUserId")
+        private void SetupMockUser(string userId = "testContId")
         {
             var contClaims = new[]
             {
