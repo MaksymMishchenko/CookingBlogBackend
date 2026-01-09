@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -24,10 +25,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         {
             // Arrange            
             SetupMockUser();
-            var invalidPostId = 0;
 
-            var comment = new Comment { Content = "Valid content" };
-            var content = HttpHelper.GetJsonHttpContent(comment);
+            var invalidPostId = 0;
+            var createDto = TestDataHelper.CreateCommentRequest("Valid content");
+            var content = HttpHelper.GetJsonHttpContent(createDto);
 
             var url = string.Format(Comments.GetById, invalidPostId);
 
@@ -41,6 +42,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(result);
             Assert.False(result.Success);
             Assert.Equal(Global.Validation.ValidationFailed, result.Message);
+            Assert.NotNull(result.Errors);
+            Assert.True(result.Errors.Any());
         }
 
         [Fact]
@@ -48,10 +51,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         {
             // Arrange            
             SetupMockUser();
-            var postId = 1;
 
-            var invalidComment = new Comment { Content = "" };
-            var content = HttpHelper.GetJsonHttpContent(invalidComment);
+            var postId = 1;
+            var invalidCommentDto = TestDataHelper.CreateCommentRequest("");
+            var content = HttpHelper.GetJsonHttpContent(invalidCommentDto);
 
             var url = string.Format(Comments.GetById, postId);
 
@@ -73,39 +76,43 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
         {
             // Arrange            
-            SetupMockUser();
+            const string userId = "testContId";
+            SetupMockUser(userId);
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
-            var postId = 1;
-            var newComment = new Comment
-            {
-                Content = "Lorem ipsum dolor sit amet.",
-                PostId = 1,
-                UserId = "testContId"
-            };
+            var postId = posts.First().Id;
 
-            var content = HttpHelper.GetJsonHttpContent(newComment);
+            var createDto = TestDataHelper.CreateCommentRequest("Test comment content");
+            var content = HttpHelper.GetJsonHttpContent(createDto);
+
+            var url = string.Format(Comments.GetById, postId);
 
             // Act
-            var response = await _client.PostAsync(string.Format(Comments.GetById, postId), content);
+            var response = await _client.PostAsync(url, content);
 
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var addedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.Content == newComment.Content &&
-                                              c.PostId == newComment.PostId);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                Assert.NotNull(addedComment);
-                Assert.Equal(newComment.Content, addedComment.Content);
-                Assert.Equal(newComment.PostId, addedComment.PostId);
-            }
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<CommentDto>>();
+
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, result.Message);
+            Assert.NotNull(result.Data);
+
+            var data = result.Data!;
+            Assert.Equal(createDto.Content, data.Content);
+
+            Assert.Equal(userId, data.UserId);
+
+            Assert.True(data.Id > 0);
+            Assert.NotEqual(default, data.CreatedAt);
+            Assert.NotNull(data.Author);
         }
 
         [Fact]

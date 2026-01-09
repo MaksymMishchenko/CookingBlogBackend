@@ -15,17 +15,7 @@ namespace PostApiService.Exceptions
     public class CommentException : InvalidOperationException
     {
         public CommentException(string message, DbException ex) : base(message, ex) { }
-    }
-
-    public class AddCommentFailedException : CommentException
-    {
-        public int PostId { get; }
-        public AddCommentFailedException(int postId, DbException ex)
-            : base(string.Format(CommentM.Errors.AddCommentFailed, postId), ex)
-        {
-            PostId = postId;
-        }
-    }
+    }   
 
     public class UpdateCommentFailedException : CommentException
     {

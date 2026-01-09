@@ -1,6 +1,9 @@
 ﻿using PostApiService.Controllers;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Response;
+using System.Net;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -16,31 +19,66 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task OnAddCommentAsync_ShouldReturnSuccessResponse_WhenCommentIsAddedSuccessfully()
+        public async Task AddCommentAsync_ShouldReturnNotFoundResponse_IfPostDoesNotExist()
         {
             // Arrange
             var postId = 1;
-            var newComment = new Comment
-            {                
-                Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry."
-            };
+            var newComment = TestDataHelper.CreateCommentRequest("Test comment");
+            var errorMessage = PostM.Errors.PostTitleOrSlugAlreadyExist;
+            var errorCode = PostM.Errors.PostAlreadyExistCode;
 
-            using var cts = new CancellationTokenSource();
-            var token = cts.Token;
+            var serviceResult = Result<CommentDto>.NotFound(errorMessage, errorCode);
+            _mockCommentService.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
 
-            _mockCommentService.AddCommentAsync(postId, newComment, token)
-                .Returns(Task.CompletedTask);
+            // Act
+            var result = await _commentController.AddCommentAsync(postId, newComment);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(errorMessage, response.Message);
+            Assert.Equal(errorCode, response.ErrorCode);
+            Assert.Equal((int)HttpStatusCode.NotFound, notFoundResult.StatusCode);
+
+            await _mockCommentService.Received(1)
+                .AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_ShouldReturnSuccessResponse_IfCommentAddedSuccessfully()
+        {
+            // Arrange
+            var postId = 1;
+            var newComment = TestDataHelper.CreateCommentRequest("Test comment");
+            var responseDto = TestDataHelper.CreateCommentResponse();
+            var token = CancellationToken.None;
+            string successMessage = CommentM.Success.CommentAddedSuccessfully;
+
+            var serviceResult = Result<CommentDto>.Created(responseDto, successMessage);
+            _mockCommentService.AddCommentAsync(postId, newComment.Content, token)
+                .Returns(serviceResult);
 
             // Act
             var result = await _commentController.AddCommentAsync(postId, newComment, token);
 
-            // Assert                        
+            // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult);
-            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, ((ApiResponse<Comment>)okResult.Value!).Message);
+            var response = Assert.IsType<ApiResponse<CommentDto>>(okResult.Value);
 
-            await _mockCommentService.Received(1)
-                .AddCommentAsync(postId, newComment, token);
+            Assert.True(response.Success);
+            Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
+            Assert.Equal(successMessage, response.Message);
+            Assert.NotNull(response.Data);
+
+            var data = response.Data;
+            Assert.Equal(responseDto.Content, data.Content);
+            Assert.Equal(responseDto.Author, data.Author);
+            Assert.Equal(responseDto.UserId, data.UserId);
+
+            await _mockCommentService.Received(1).AddCommentAsync(postId, newComment.Content, token);
         }
 
         [Fact]

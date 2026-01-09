@@ -1,5 +1,7 @@
 ﻿using PostApiService.Exceptions;
+using PostApiService.Helper;
 using PostApiService.Interfaces;
+using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using System.Data.Common;
 
@@ -23,28 +25,33 @@ namespace PostApiService.Services
         /// <summary>
         /// Adds a new comment to a post with the given post ID.
         /// </summary>        
-        public async Task AddCommentAsync(int postId, Comment comment, CancellationToken ct = default)
+        public async Task<Result<CommentDto>> AddCommentAsync
+            (int postId, string content, CancellationToken ct = default)
         {
             var postExists = await _postRepository.AnyAsync(p => p.Id == postId, ct);
+
             if (!postExists)
             {
-                throw new PostNotFoundException(postId);
+                Log.Warning(Posts.NotFound, postId);
+                return Result<CommentDto>.NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
             var user = await _authService.GetCurrentUserAsync();
 
-            comment.PostId = postId;
-            comment.UserId = user.Id;
+            var comment = new Comment
+            {
+                Content = content,
+                PostId = postId,
+                UserId = user.Id,
+                CreatedAt = DateTime.UtcNow
+            };
 
-            try
-            {
-                await _commentRepository.AddAsync(comment, ct);
-                await _commentRepository.SaveChangesAsync(ct);
-            }
-            catch (DbException ex)
-            {
-                throw new AddCommentFailedException(postId, ex);
-            }
+            await _commentRepository.AddAsync(comment, ct);
+            await _commentRepository.SaveChangesAsync(ct);
+
+            var commentDto = comment.ToDto(user.UserName!);
+
+            return Result<CommentDto>.Success(commentDto, CommentM.Success.CommentAddedSuccessfully);
         }
 
         /// <summary>
