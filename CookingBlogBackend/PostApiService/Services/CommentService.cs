@@ -1,9 +1,7 @@
-﻿using PostApiService.Exceptions;
-using PostApiService.Helper;
+﻿using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
-using System.Data.Common;
 
 namespace PostApiService.Services
 {
@@ -91,26 +89,34 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Asynchronously deletes a comment identified by the specified comment ID.
-        /// </summary>        
-        public async Task DeleteCommentAsync(int commentId, CancellationToken ct = default)
+        /// Deletes a comment by its ID after verifying ownership.
+        /// </summary>       
+        public async Task<Result> DeleteCommentAsync(int commentId, CancellationToken ct = default)
         {
             var existingComment = await _commentRepository.GetByIdAsync(commentId, ct);
 
-            //if (existingComment == null)
-            //{
-            //    throw new CommentNotFoundException(commentId);
-            //}
+            if (existingComment == null)
+            {
+                Log.Warning(Comments.NotFound, commentId);
+                return Result.NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
+            }
 
-            try
+            var user = await _authService.GetCurrentUserAsync();
+
+            if (existingComment.UserId != user.Id)
             {
-                await _commentRepository.DeleteAsync(existingComment, ct);
-                await _commentRepository.SaveChangesAsync(ct);
+                var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+
+                Log.Warning(Security.AccessDenied, user.Id, "Delete", "Comment", commentId, existingComment.UserId, ip
+                );
+
+                return Result.Forbidden(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
             }
-            catch (DbException ex)
-            {
-                throw new DeleteCommentFailedException(commentId, ex);
-            }
+
+            await _commentRepository.DeleteAsync(existingComment, ct);
+            await _commentRepository.SaveChangesAsync(ct);
+
+            return Result.Success(CommentM.Success.CommentDeletedSuccessfully);
         }
     }
 }

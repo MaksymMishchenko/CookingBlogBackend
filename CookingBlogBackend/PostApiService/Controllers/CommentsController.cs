@@ -1,6 +1,5 @@
 ﻿using PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -54,10 +53,9 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> DeleteCommentAsync
             (int commentId, CancellationToken ct = default)
         {
-            await _commentService.DeleteCommentAsync(commentId, ct);
+            var result = await _commentService.DeleteCommentAsync(commentId, ct);
 
-            return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentM.Success.CommentDeletedSuccessfully));
+            return result.ToActionResult();
         }
     }
 }

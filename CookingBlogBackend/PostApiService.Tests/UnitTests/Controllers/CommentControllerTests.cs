@@ -174,24 +174,83 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task OnDeleteCommentAsync_ShouldHandleSuccessAndFailureCorrectly()
+        public async Task DeleteCommentAsync_ShouldReturnNotFound_IfCommentDoesNotExist()
+        {
+            // Arrange
+            int commentId = 99999;
+            var errorMessage = CommentM.Errors.NotFound;
+            var errorCode = CommentM.Errors.NotFoundCode;
+
+            var serviceResult = Result.NotFound(errorMessage, errorCode);
+            _mockCommentService.DeleteCommentAsync(commentId, Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _commentController.DeleteCommentAsync(commentId);
+
+            // Assert            
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal((int)HttpStatusCode.NotFound, notFoundResult.StatusCode);
+            Assert.Equal(errorMessage, response.Message);
+            Assert.Equal(errorCode, response.ErrorCode);
+
+            await _mockCommentService.Received(1).DeleteCommentAsync(commentId);
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldReturnForbidden_WhenUserIsNotOwner()
+        {
+            // Arrange
+            int commentId = 1;
+            var errorMessage = CommentM.Errors.AccessDenied;
+            var errorCode = CommentM.Errors.AccessDeniedCode;
+
+            var serviceResult = Result.Forbidden(errorMessage, errorCode);
+            _mockCommentService.DeleteCommentAsync(commentId, Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _commentController.DeleteCommentAsync(commentId);
+
+            // Assert            
+            var forbiddenResult = Assert.IsType<ObjectResult>(result);
+            Assert.Equal((int)HttpStatusCode.Forbidden, forbiddenResult.StatusCode);
+
+            var response = Assert.IsType<ApiResponse>(forbiddenResult.Value);
+            Assert.False(response.Success);
+            Assert.Equal(errorMessage, response.Message);
+            Assert.Equal(errorCode, response.ErrorCode);
+
+            await _mockCommentService.Received(1).DeleteCommentAsync(commentId);
+        }
+
+
+        [Fact]
+        public async Task OnDeleteComment_ShouldReturnOk_WhenCommentIsDeletedSuccessfully()
         {
             // Arrange
             var commentId = 1;
-            using var cts = new CancellationTokenSource();
-            var token = cts.Token;
+            string successMessage = CommentM.Success.CommentDeletedSuccessfully;
+            var token = CancellationToken.None;
 
+            var serviceResult = Result.Success(successMessage);
             _mockCommentService.DeleteCommentAsync(commentId, token)
-                .Returns(Task.CompletedTask);
+                .Returns(serviceResult);
 
             // Act
             var result = await _commentController.DeleteCommentAsync(commentId, token);
 
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
-            Assert.NotNull(okResult);
-            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully,
-                ((ApiResponse<Comment>)okResult.Value!).Message);
+            Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
+
+            var response = Assert.IsType<ApiResponse>(okResult.Value);
+            Assert.True(response.Success);
+
+            Assert.Equal(successMessage, response.Message);
 
             await _mockCommentService.Received(1)
                 .DeleteCommentAsync(commentId, token);

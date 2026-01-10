@@ -6,17 +6,17 @@
         {
             public static class Errors
             {
-                public const string PostNotFound = "Post not found.";                
+                public const string PostNotFound = "Post not found.";
                 public const string PostNotFoundCode = "POST_NOT_FOUND";
                 public const string PostTitleOrSlugAlreadyExist = "A post with the same Title '{0}' or Slug {1} already exists.";
                 public const string PostAlreadyExistCode = "POST_OR_SLUG_ALREADY_EXISTS";
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
-                public const string AddPostFailed = "Failed to add post with title '{0}'.";                                
+                public const string AddPostFailed = "Failed to add post with title '{0}'.";
                 public const string NoPostsFound = "No posts found for the requested page.";
             }
 
             public static class Success
-            {                
+            {
                 public const string SearchResultsFound = "Found {1} posts matching your search '{0}'.";
                 public const string SearchNoResults = "No posts found matching your search '{0}'.";
                 public const string PostAddedSuccessfully = "Post added successfully.";
@@ -48,9 +48,8 @@
             {
                 public const string NotFound = "Comment not found.";
                 public const string NotFoundCode = "COMMENT_NOT_FOUND";
-                public const string AccessDenied = "You do not have permission to modify this comment.";
-                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";                
-                public const string DeleteCommentFailed = "Failed to delete the comment with ID {0}.";
+                public const string AccessDenied = "You do not have permission to manage this comment.";
+                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";
             }
 
             public static class Success
@@ -121,7 +120,7 @@
                 public const string InvalidPageParameters = "Parameter must be greater than 0.";
                 public const string PageSizeExceeded = "Items per page size exceeds the allowed maximum.";
                 public const string ValidationFailed = "Validation Failed.";
-                
+
                 public const string InvalidNumberFormat = "The value '{0}' is not a valid number.";
                 public const string SearchQueryForbiddenCharacters =
                     "Search query contains forbidden characters. Use only letters, numbers, spaces, dots or hyphens.";

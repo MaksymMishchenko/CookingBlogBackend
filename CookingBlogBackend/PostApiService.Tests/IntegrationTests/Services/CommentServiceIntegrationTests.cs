@@ -117,28 +117,36 @@ namespace PostApiService.Tests.IntegrationTests.Services
             }
         }
 
-        //[Fact]
-        //public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
-        //{
-        //    // Arrange
-        //    ApplicationDbContext context;
-        //    var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
-        //    using (context)
-        //    {
-        //        var commentIdToRemove = 1;
-        //        var initialCount = await context.Comments.CountAsync();
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
+        {
+            // Arrange
+            const int postCount = 1;
+            const int commentCount = 1;
+            var commentIdToRemove = 1;
 
-        //        // Act
-        //        await commentService.DeleteCommentAsync(commentIdToRemove);
+            var (context, _, commentService, _, _) = await SetupAsync(categories =>
+                 _fixture.GeneratePosts(postCount, categories, commentCount));
 
-        //        // Assert
-        //        var finalCount = await context.Comments.CountAsync();
+            using (context)
+            {
+                var commentBeforeDelete = await context.Comments.FindAsync(commentIdToRemove);
+                Assert.NotNull(commentBeforeDelete);
+                Assert.Equal(_testUser.Id, commentBeforeDelete.UserId);
 
-        //        var removedComment = await context.Comments.FindAsync(commentIdToRemove);
-        //        Assert.Null(removedComment);
-        //        Assert.Equal(initialCount - 1, finalCount);
-        //    }
-        //}
+                var initialCount = await context.Comments.CountAsync();
+
+                // Act
+                await commentService.DeleteCommentAsync(commentIdToRemove);
+
+                // Assert
+                var finalCount = await context.Comments.CountAsync();
+
+                var removedComment = await context.Comments.FindAsync(commentIdToRemove);
+                Assert.Null(removedComment);                
+                Assert.Equal(initialCount - 1, finalCount);
+            }
+        }
     }
 }
 

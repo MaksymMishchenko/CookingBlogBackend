@@ -159,7 +159,6 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockCommentRepo.GetByIdAsync(commentId, Arg.Any<CancellationToken>()).Returns(existingComment);
             _mockAuthService.GetCurrentUserAsync().Returns(currentUser);
 
-            //// Налаштовуємо IP через NSubstitute
             var context = new DefaultHttpContext();
             context.Connection.RemoteIpAddress = System.Net.IPAddress.Parse("127.0.0.1");
             _httpContextAccessorMock.HttpContext.Returns(context);
@@ -171,7 +170,6 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(ResultStatus.Forbidden, result.Status);
             Assert.Equal(CommentM.Errors.AccessDenied, result.Message);
 
-            // Перевіряємо, що SaveChanges НЕ викликався
             await _mockCommentRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -184,7 +182,6 @@ namespace PostApiService.Tests.UnitTests.Services
             const string newContent = "Content edited successfully";
             var token = CancellationToken.None;
 
-            // 1. Створюємо коментар, де UserId збігається з майбутнім "поточним юзером"
             var existingComment = new Comment
             {
                 Id = commentId,
@@ -198,13 +195,10 @@ namespace PostApiService.Tests.UnitTests.Services
                 UserName = "testuser"
             };
 
-            // Мокаємо отримання коментаря
             _mockCommentRepo.GetByIdAsync(commentId, token).Returns(existingComment);
 
-            // Мокаємо авторизацію (повертаємо власника)
             _mockAuthService.GetCurrentUserAsync().Returns(currentUser);
 
-            // Мокаємо HttpContext, щоб сервіс не падав при зверненні до контексту
             var context = new DefaultHttpContext();
             _httpContextAccessorMock.HttpContext.Returns(context);
 
@@ -216,32 +210,93 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(newContent, result.Value?.Content);
             Assert.Equal(CommentM.Success.CommentUpdatedSuccessfully, result.Message);
-
-            // Перевіряємо, що дані в об'єкті змінені перед збереженням
             Assert.Equal(newContent, existingComment.Content);
 
-            // Перевіряємо виклики репозиторію
             await _mockCommentRepo.Received(1).GetByIdAsync(commentId, token);
             await _mockCommentRepo.Received(1).SaveChangesAsync(token);
         }
 
         [Fact]
-        public async Task DeleteCommentAsync_ShouldRemoveCommentAndSaveChanges()
+        public async Task DeleteCommentAsync_ShouldReturnNotFoundResult_WhenCommentDoesNotExist()
         {
             // Arrange
-            var commentId = 1;
+            const int invalidCommentId = 99999;
 
-            var post = TestDataHelper.GetListWithComments()
-                .FirstOrDefault(c => c.Id == commentId);
-
-            _mockCommentRepo.GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(post);
+            _mockCommentRepo.GetByIdAsync(invalidCommentId, Arg.Any<CancellationToken>())
+                .Returns((Comment)null!);
 
             // Act
-            await _service.DeleteCommentAsync(commentId);
+            var result = await _service.DeleteCommentAsync(invalidCommentId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
+            Assert.Equal(CommentM.Errors.NotFound, result.Message);
+            Assert.Equal(CommentM.Errors.NotFoundCode, result.ErrorCode);
+
+            await _mockCommentRepo.Received(1)
+                .GetByIdAsync(invalidCommentId, Arg.Any<CancellationToken>());
+
+            await _mockCommentRepo.DidNotReceive()
+                .DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldReturnForbidden_WhenUserIsNotOwner()
+        {
+            // Arrange
+            var userId = "user-1";
+            var ownerId = "user-2";
+            var commentId = 10;
+
+            var existingComment = new Comment { Id = commentId, UserId = ownerId };
+            var currentUser = new IdentityUser { Id = userId };
+
+            _mockCommentRepo.GetByIdAsync(commentId, Arg.Any<CancellationToken>())
+                .Returns(existingComment);
+            _mockAuthService.GetCurrentUserAsync().Returns(currentUser);
+
+            var httpContext = new DefaultHttpContext();
+            httpContext.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            _httpContextAccessorMock.HttpContext.Returns(httpContext);
+
+            // Act
+            var result = await _service.DeleteCommentAsync(commentId);
+
+            // Assert
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+            Assert.Equal(CommentM.Errors.AccessDenied, result.Message);
+            Assert.Equal(CommentM.Errors.AccessDeniedCode, result.ErrorCode);
+
+            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(),
+                Arg.Any<CancellationToken>());
+            await _mockCommentRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldReturnSuccess_WhenUserIsOwner()
+        {
+            // Arrange
+            var userId = "test-user-id";
+            var commentId = 1;
+            var ct = CancellationToken.None;
+
+            var existingComment = new Comment { Id = commentId, UserId = userId };
+            var currentUser = new IdentityUser { Id = userId };
+
+            _mockCommentRepo.GetByIdAsync(commentId, ct).Returns(existingComment);
+            _mockAuthService.GetCurrentUserAsync().Returns(currentUser);
+
+            // Act
+            var result = await _service.DeleteCommentAsync(commentId, ct);
 
             // Assert            
-            await _mockCommentRepo.Received(1)
-                .GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
+
+            await _mockCommentRepo.Received(1).DeleteAsync(existingComment, ct);
+            await _mockCommentRepo.Received(1).SaveChangesAsync(ct);
         }
     }
 }

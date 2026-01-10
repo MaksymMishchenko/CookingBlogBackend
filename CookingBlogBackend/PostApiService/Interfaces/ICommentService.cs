@@ -6,6 +6,6 @@ namespace PostApiService.Interfaces
     {
         Task<Result<CommentDto>> AddCommentAsync(int postId, string content, CancellationToken ct = default);
         Task<Result<CommentDto>> UpdateCommentAsync(int commentId, string content, CancellationToken ct = default);
-        Task DeleteCommentAsync(int commentId, CancellationToken ct = default);
+        Task<Result> DeleteCommentAsync(int commentId, CancellationToken ct = default);
     }
 }

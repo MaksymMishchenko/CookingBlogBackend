@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -207,7 +206,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.True(data.Id > 0);
             Assert.NotEqual(default, data.CreatedAt);
             Assert.NotNull(data.Author);
-        }        
+        }
 
         [Fact]
         public async Task OnDeleteComment_ShouldReturnBadRequest_WhenCommentIdIsInvalid()
@@ -242,15 +241,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
-            int initialCount;
-
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                initialCount = await dbContext.Comments.CountAsync();
-            }
-
             var url = string.Format(Comments.GetById, commentIdToDelete);
 
             // Act
@@ -258,19 +248,12 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             // Assert
             response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                var removedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.Id == commentIdToDelete);
-
-                var commentCount = await dbContext.Comments.CountAsync();
-
-                Assert.Null(removedComment);
-                Assert.Equal(initialCount - 1, commentCount);
-            }
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
         }
 
         private async Task SeedDatabaseAsync(IEnumerable<Post> posts, ICollection<Category> categories)
