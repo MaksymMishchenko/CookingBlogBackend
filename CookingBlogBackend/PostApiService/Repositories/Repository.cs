@@ -43,8 +43,9 @@ namespace PostApiService.Repositories
         }
 
         public Task UpdateAsync(T entity, CancellationToken ct = default)
-        {
+        {           
             _context.Entry(entity).State = EntityState.Modified;
+
             return Task.CompletedTask;
         }
 

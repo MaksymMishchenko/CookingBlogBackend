@@ -2,30 +2,11 @@
 
 namespace PostApiService.Exceptions
 {
-    public class CommentNotFoundException : KeyNotFoundException
-    {
-        public int CommentId { get; }
-        public CommentNotFoundException(int commentId)
-            : base(string.Format(CommentM.Errors.CommentNotFound, commentId))
-        {
-            CommentId = commentId;
-        }
-    }
-
     public class CommentException : InvalidOperationException
     {
         public CommentException(string message, DbException ex) : base(message, ex) { }
-    }   
-
-    public class UpdateCommentFailedException : CommentException
-    {
-        public int CommentId { get; }
-        public UpdateCommentFailedException(int commentId, DbException ex)
-            : base(string.Format(CommentM.Errors.UpdateCommentFailed, commentId), ex)
-        {
-            CommentId = commentId;
-        }
     }
+   
     public class DeleteCommentFailedException : CommentException
     {
         public int CommentId { get; }

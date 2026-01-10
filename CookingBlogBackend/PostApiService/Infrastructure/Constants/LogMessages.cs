@@ -20,7 +20,9 @@
         public static class Security
         {
             public const string SecurityForbiddenCharacters =
-            "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
+                "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
+            public const string AccessDenied =
+                "Security Alert: User {UserId} attempted unauthorized {Action} on {ResourceType} {ResourceId}. Owner: {OwnerId}, IP: {IP}";
         }
 
         public static class System
@@ -49,9 +51,11 @@
             public const string CategoryDoesNotExist =
                 "Update Category Failed: Category with ID {Id} not found in database. Input Name: {Name}";
             public const string DeleteBlockedByRelatedPosts = "Delete blocked: Category {Name} has active posts";
-
         }
 
-        // 
+        public static class Comments
+        {
+            public const string NotFound = "Admin Comment Search: Comment with ID {CommentId} was not found.";
+        }
     }
 }

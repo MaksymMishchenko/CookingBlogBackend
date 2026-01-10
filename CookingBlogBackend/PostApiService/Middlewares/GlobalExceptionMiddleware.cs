@@ -71,21 +71,7 @@ namespace PostApiService.Middlewares
                     ex,
                     HttpStatusCode.Unauthorized,
                     Auth.LoginM.Errors.UnauthorizedAccess);
-            }
-            catch (CommentNotFoundException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex,
-                    HttpStatusCode.NotFound,
-                    string.Format(CommentM.Errors.CommentNotFound, ex.CommentId));
-            }
-            catch (UpdateCommentFailedException ex)
-            {
-                await HandleExceptionAsync(context,
-                    ex,
-                    HttpStatusCode.InternalServerError,
-                    string.Format(CommentM.Errors.UpdateCommentFailed, ex.CommentId));
-            }
+            }                        
             catch (DeleteCommentFailedException ex)
             {
                 await HandleExceptionAsync(context,

@@ -12,14 +12,17 @@ namespace PostApiService.Services
         private readonly IRepository<Comment> _commentRepository;
         private readonly IRepository<Post> _postRepository;
         private readonly IAuthService _authService;
+        private readonly IHttpContextAccessor _httpContextAccessor;
 
         public CommentService(IRepository<Comment> commentRepository,
             IRepository<Post> postRepository,
-            IAuthService authService)
+            IAuthService authService,
+            IHttpContextAccessor httpContextAccessor)
         {
             _commentRepository = commentRepository;
             _postRepository = postRepository;
             _authService = authService;
+            _httpContextAccessor = httpContextAccessor;
         }
 
         /// <summary>
@@ -55,28 +58,36 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Updates the content of a comment with the specified comment ID.
-        /// </summary>              
-        public async Task UpdateCommentAsync(int commentId, EditCommentModel comment, CancellationToken ct = default)
+        /// Updates the content of an existing comment after verifying ownership.
+        /// </summary>             
+        public async Task<Result<CommentDto>> UpdateCommentAsync(int commentId, string content, CancellationToken ct = default)
         {
             var existingComment = await _commentRepository.GetByIdAsync(commentId, ct);
 
             if (existingComment == null)
             {
-                throw new CommentNotFoundException(commentId);
+                Log.Warning(Comments.NotFound, commentId);
+                return Result<CommentDto>.NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
             }
 
-            existingComment.Content = comment.Content;
+            var user = await _authService.GetCurrentUserAsync();
 
-            try
+            if (existingComment.UserId != user.Id)
             {
-                await _commentRepository.UpdateAsync(existingComment, ct);
-                await _commentRepository.SaveChangesAsync(ct);
+                var ip = _httpContextAccessor.HttpContext?.Connection?.RemoteIpAddress?.ToString() ?? "Unknown";
+
+                Log.Warning(Security.AccessDenied, user.Id, "Update", "Comment", commentId, existingComment.UserId, ip
+                );
+
+                return Result<CommentDto>.Forbidden(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
             }
-            catch (DbException ex)
-            {
-                throw new UpdateCommentFailedException(commentId, ex);
-            }
+
+            existingComment.Content = content;
+            await _commentRepository.SaveChangesAsync(ct);
+
+            var commentDto = existingComment.ToDto(user.UserName!);
+
+            return Result<CommentDto>.Success(commentDto, CommentM.Success.CommentUpdatedSuccessfully);
         }
 
         /// <summary>
@@ -86,10 +97,10 @@ namespace PostApiService.Services
         {
             var existingComment = await _commentRepository.GetByIdAsync(commentId, ct);
 
-            if (existingComment == null)
-            {
-                throw new CommentNotFoundException(commentId);
-            }
+            //if (existingComment == null)
+            //{
+            //    throw new CommentNotFoundException(commentId);
+            //}
 
             try
             {

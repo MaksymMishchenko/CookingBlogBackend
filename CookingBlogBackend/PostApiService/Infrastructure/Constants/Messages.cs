@@ -46,8 +46,10 @@
         {
             public static class Errors
             {
-                public const string CommentNotFound = "Comment with ID {0} was not found.";                
-                public const string UpdateCommentFailed = "Failed to update the comment with ID {0}.";
+                public const string NotFound = "Comment not found.";
+                public const string NotFoundCode = "COMMENT_NOT_FOUND";
+                public const string AccessDenied = "You do not have permission to modify this comment.";
+                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";                
                 public const string DeleteCommentFailed = "Failed to delete the comment with ID {0}.";
             }
 

@@ -39,12 +39,11 @@ namespace PostApiService.Controllers
         [ValidateId]
         [ValidateModel]
         public async Task<IActionResult> UpdateCommentAsync
-            (int commentId, [FromBody] EditCommentModel comment, CancellationToken ct = default)
+            (int commentId, [FromBody] CommentUpdateDto dto, CancellationToken ct = default)
         {
-            await _commentService.UpdateCommentAsync(commentId, comment, ct);
+            var result = await _commentService.UpdateCommentAsync(commentId, dto.Content, ct);
 
-            return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentM.Success.CommentUpdatedSuccessfully));
+            return result.ToActionResult();
         }
 
         /// <summary>

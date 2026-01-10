@@ -1,4 +1,5 @@
-﻿using PostApiService.Interfaces;
+﻿using Microsoft.AspNetCore.Http;
+using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
@@ -9,14 +10,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
         private readonly InMemoryDatabaseFixture _fixture;
         private readonly IAuthService _authServiceMock;
         private readonly IdentityUser _testUser;
+        private readonly IHttpContextAccessor _httpContextAccessorMock;
 
         public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
             _authServiceMock = Substitute.For<IAuthService>();
-            _testUser = new IdentityUser { Id = "user123", UserName = "testuser", Email = "test@test.com" };
+            _httpContextAccessorMock = Substitute.For<IHttpContextAccessor>();
+            _testUser = new IdentityUser { Id = "testContId", UserName = "testuser", Email = "test@test.com" };
 
             _authServiceMock.GetCurrentUserAsync().Returns(_testUser);
+            _httpContextAccessorMock.HttpContext.Returns(new DefaultHttpContext());
         }
 
         private record TestSetup(
@@ -32,7 +36,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var commentRepo = new Repository<Comment>(context);
             var catService = new CategoryService(new Repository<Category>(context), postRepo);
             var postService = new PostService(postRepo, catService, new SnippetGeneratorService());
-            var commentService = new CommentService(commentRepo, postRepo, _authServiceMock);
+            var commentService = new CommentService(commentRepo, postRepo, _authServiceMock, _httpContextAccessorMock);
 
             return new TestSetup(context, postService, commentService, posts, categories);
         }
@@ -86,32 +90,32 @@ namespace PostApiService.Tests.IntegrationTests.Services
             }
         }
 
-        //[Fact]
-        //public async Task UpdateCommentAsync_ShouldUpdateContentOfExistingComment()
-        //{
-        //    // Arrange
-        //    ApplicationDbContext context;
-        //    var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
-        //    using (context)
-        //    {
+        [Fact]
+        public async Task UpdateCommentAsync_ShouldUpdateContentOfExistingComment()
+        {
+            // Arrange
+            const int postCount = 1;
+            const int commentCount = 1;
+            const int commentId = 1;
+            string content = "Edited comment content";
 
-        //        int commentId = 2;
-        //        var comment = new EditCommentModel
-        //        {
-        //            Content = "Edited comment content"
-        //        };
+            var (context, _, commentService, _, _) = await SetupAsync(categories =>
+                 _fixture.GeneratePosts(postCount, categories, commentCount));
 
-        //        // Act
-        //        await commentService.UpdateCommentAsync(commentId, comment);
+            using (context)
+            {
+                // Act
+                await commentService.UpdateCommentAsync(commentId, content);
 
-        //        // Assert
-        //        var editedComment = await context.Comments
-        //            .FirstOrDefaultAsync(c => c.Id == commentId);
+                // Assert
+                var editedComment = await context.Comments
+                    .FirstOrDefaultAsync(c => c.Id == commentId);
 
-        //        Assert.NotNull(editedComment);
-        //        Assert.Equal(comment.Content, editedComment.Content);
-        //    }
-        //}
+                Assert.NotNull(editedComment);
+                Assert.Equal(_testUser.Id, editedComment.UserId);
+                Assert.Equal(content, editedComment.Content);
+            }
+        }
 
         //[Fact]
         //public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
