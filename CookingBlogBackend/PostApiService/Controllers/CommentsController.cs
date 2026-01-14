@@ -1,6 +1,6 @@
 ﻿using PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
@@ -24,12 +24,11 @@ namespace PostApiService.Controllers
         [ValidateId]
         [ValidateModel]
         public async Task<IActionResult> AddCommentAsync
-            (int postId, [FromBody] Comment comment, CancellationToken ct = default)
+            (int postId, [FromBody] CommentCreateDto comment, CancellationToken ct = default)
         {
-            await _commentService.AddCommentAsync(postId, comment, ct);
+            var result = await _commentService.AddCommentAsync(postId, comment.Content, ct);
 
-            return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentM.Success.CommentAddedSuccessfully));
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -39,12 +38,11 @@ namespace PostApiService.Controllers
         [ValidateId]
         [ValidateModel]
         public async Task<IActionResult> UpdateCommentAsync
-            (int commentId, [FromBody] EditCommentModel comment, CancellationToken ct = default)
+            (int commentId, [FromBody] CommentUpdateDto comment, CancellationToken ct = default)
         {
-            await _commentService.UpdateCommentAsync(commentId, comment, ct);
+            var result = await _commentService.UpdateCommentAsync(commentId, comment.Content, ct);
 
-            return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentM.Success.CommentUpdatedSuccessfully));
+            return result.ToActionResult();
         }
 
         /// <summary>
@@ -55,10 +53,9 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> DeleteCommentAsync
             (int commentId, CancellationToken ct = default)
         {
-            await _commentService.DeleteCommentAsync(commentId, ct);
+            var result = await _commentService.DeleteCommentAsync(commentId, ct);
 
-            return Ok(ApiResponse<Comment>.CreateSuccessResponse
-                (CommentM.Success.CommentDeletedSuccessfully));
+            return result.ToActionResult();
         }
     }
 }

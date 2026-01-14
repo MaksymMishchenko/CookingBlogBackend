@@ -4,6 +4,8 @@
     {
         public const string DefaultConnection = "DefaultConnection";        
         public const string JwtSection = "JwtConfiguration";
+        public const string UnknownIp = "Unknown";
+        public const string UnknownUser = "Unknown User";
 
         public static class Errors
         {

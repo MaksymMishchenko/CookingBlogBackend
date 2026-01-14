@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260108205200_Initial")]
+    [Migration("20260114150647_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -258,6 +258,9 @@ namespace PostApiService.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsEditedByAdmin")
+                        .HasColumnType("bit");
 
                     b.Property<int>("PostId")
                         .HasColumnType("int");

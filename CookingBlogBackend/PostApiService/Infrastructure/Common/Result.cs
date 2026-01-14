@@ -22,8 +22,8 @@
         public static Result Conflict(string msg, string? code = null) => new(ResultStatus.Conflict, msg, code);
         public static Result Invalid(string msg, string? code = null) => new(ResultStatus.Invalid, msg, code);
         public static Result Error(string msg, string? code = null) => new(ResultStatus.Error, msg, code);
-        public static Result Unauthorized(string msg, string? code = null) => new(ResultStatus.Error, msg, code);
-        public static Result Forbidden(string msg, string? code = null) => new(ResultStatus.Error, msg, code);
+        public static Result Unauthorized(string msg, string? code = null) => new(ResultStatus.Unauthorized, msg, code);
+        public static Result Forbidden(string msg, string? code = null) => new(ResultStatus.Forbidden, msg, code);
     }
 
     public class Result<T> : Result
@@ -45,6 +45,8 @@
         public new static Result<T> NotFound(string msg, string? code = null) => new(default, ResultStatus.NotFound, msg, code);
         public new static Result<T> Conflict(string msg, string? code = null) => new(default, ResultStatus.Conflict, msg, code);
         public new static Result<T> Invalid(string msg, string? code = null) => new(default, ResultStatus.Invalid, msg, code);
+        public new static Result<T> Unauthorized(string msg, string? code = null) => new(default, ResultStatus.Unauthorized, msg, code);
+        public new static Result<T> Forbidden(string msg, string? code = null) => new(default, ResultStatus.Forbidden, msg, code);
         public new static Result<T> Error(string msg, string? code = null) => new(default, ResultStatus.Error, msg, code);
     }
 

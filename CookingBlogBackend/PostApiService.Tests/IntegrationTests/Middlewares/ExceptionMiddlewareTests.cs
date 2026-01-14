@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NSubstitute;
 using PostApiService.Exceptions;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
@@ -207,9 +208,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             Assert.Equal(expectedMessage, errorResponse.Message);
         }
 
-        [Theory]
-        [InlineData(typeof(PostNotFoundException), $"{Comments.Base}/999", HttpStatusCode.NotFound)]
-        [InlineData(typeof(AddCommentFailedException), $"{Comments.Base}/999", HttpStatusCode.InternalServerError)]
+        [Theory]               
         [InlineData(typeof(DbUpdateException), $"{Comments.Base}/999", HttpStatusCode.InternalServerError)]
         [InlineData(typeof(OperationCanceledException), $"{Comments.Base}/999", HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TimeoutException), $"{Comments.Base}/999", HttpStatusCode.RequestTimeout)]
@@ -238,30 +237,22 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             commentServiceMock.ClearReceivedCalls();
 
             switch (exceptionType)
-            {
-                case Type t when t == typeof(PostNotFoundException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
-                        .Returns(Task.FromException(new PostNotFoundException(testPostId)));
-                    break;
-                case Type t when t == typeof(AddCommentFailedException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
-                        .Returns(Task.FromException(new AddCommentFailedException(testPostId, null)));
-                    break;
+            {                
                 case Type t when t == typeof(DbUpdateException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
-                        .Returns(Task.FromException(new DbUpdateException(Global.System.DbUpdateError)));
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                        .Returns(Task.FromException<Result<CommentCreatedDto>>(new DbUpdateException(Global.System.DbUpdateError)));
                     break;
                 case Type t when t == typeof(OperationCanceledException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
-                        .Returns(Task.FromException(new OperationCanceledException(Global.System.RequestCancelled)));
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                        .Returns(Task.FromException<Result<CommentCreatedDto>>(new OperationCanceledException(Global.System.RequestCancelled)));
                     break;
                 case Type t when t == typeof(TimeoutException):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
-                        .Returns(Task.FromException(new TimeoutException(Global.System.Timeout)));
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                        .Returns(Task.FromException<Result<CommentCreatedDto>>(new TimeoutException(Global.System.Timeout)));
                     break;
                 case Type t when t == typeof(Exception):
-                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<Comment>(), Arg.Any<CancellationToken>())
-                        .Returns(Task.FromException(new Exception(Global.System.DatabaseCriticalError)));
+                    commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                        .Returns(Task.FromException<Result<CommentCreatedDto>>(new Exception(Global.System.DatabaseCriticalError)));
                     break;
                 default:
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
@@ -280,11 +271,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             Assert.NotNull(errorResponse);
 
             string expectedMessage = exceptionType switch
-            {
-                Type t when t == typeof(PostNotFoundException) => string.Format
-                (PostM.Errors.PostNotFound, testPostId),
-                Type t when t == typeof(AddCommentFailedException) => string.Format
-                (CommentM.Errors.AddCommentFailed, testPostId),
+            {                                
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,

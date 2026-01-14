@@ -35,7 +35,7 @@ namespace PostApiService.Tests.Fixtures
             });
 
             services.RemoveAll(typeof(IPostService));
-            
+
             var postServiceMock = Substitute.For<IPostService>();
             postServiceMock.AddPostAsync(
                 Arg.Any<PostCreateDto>())
@@ -48,10 +48,19 @@ namespace PostApiService.Tests.Fixtures
             services.RemoveAll(typeof(ICommentService));
 
             var commentServiceMock = Substitute.For<ICommentService>();
+
+            var expectedDto = new CommentCreatedDto(
+                1,
+                "Author",
+                "Content",
+                DateTime.UtcNow,
+                "testUserId"
+            );
             commentServiceMock.AddCommentAsync(
                 Arg.Any<int>(),
-                Arg.Any<Comment>())
-                .Returns(Task.CompletedTask);
+                Arg.Any<string>())
+                .Returns(Task.FromResult(Result<CommentCreatedDto>.Success(expectedDto,
+                    CommentM.Success.CommentAddedSuccessfully)));
 
             services.AddScoped(_ => commentServiceMock);
 
