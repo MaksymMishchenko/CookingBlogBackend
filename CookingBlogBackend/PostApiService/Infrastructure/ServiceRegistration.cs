@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
@@ -40,16 +41,19 @@ namespace PostApiService.Infrastructure
             });
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
-
             services.AddScoped<IAuthRepository, AuthRepository>();
-            services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<ITokenService, TokenService>();
+            services.AddScoped<IPostRepository, PostRepository>();
+            services.AddScoped<ICommentRepository, CommentRepository>();
+
+            services.AddScoped<IWebContext, WebContext>();
             services.AddHttpContextAccessor();
 
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ITokenService, TokenService>();
+            services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ICommentService, CommentService>();
-            services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
 
             return services;
         }

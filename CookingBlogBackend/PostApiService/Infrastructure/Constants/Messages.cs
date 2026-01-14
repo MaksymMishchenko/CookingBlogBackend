@@ -46,10 +46,10 @@
         {
             public static class Errors
             {
-                public const string CommentNotFound = "Comment with ID {0} was not found.";
-                public const string AddCommentFailed = "Failed to add the comment to the post with ID {0}.";
-                public const string UpdateCommentFailed = "Failed to update the comment with ID {0}.";
-                public const string DeleteCommentFailed = "Failed to delete the comment with ID {0}.";
+                public const string NotFound = "Comment not found.";
+                public const string NotFoundCode = "COMMENT_NOT_FOUND";
+                public const string AccessDenied = "You do not have permission to manage this comment.";
+                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";                
             }
 
             public static class Success
@@ -68,6 +68,7 @@
                 {
                     public const string InvalidCredentials = "Invalid username or password. Please check your credentials and try again.";
                     public const string UnauthorizedAccess = "Unauthorized Access";
+                    public const string UnauthorizedAccessCode = "UNAUTHORIZED";
                     public const string UserNotFound = "User Not Found";
                 }
 
@@ -111,7 +112,7 @@
             public static class Validation
             {
                 public const string Required = "{0} is required.";
-                public const string LengthRange = "{0} must be between {2} and {1} characters.";
+                public const string LengthRange = "{0} must be between {1} and {2} characters.";
                 public const string MaxLength = "{0} cannot exceed {1} characters.";
                 public const string InvalidUrl = "Invalid URL format.";
                 public const string SlugFormat = "Slug must only contain lowercase letters, numbers, and hyphens.";

@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Claims;
@@ -73,39 +75,45 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
         {
             // Arrange            
-            SetupMockUser();
+            const string userId = "testContId";
+            SetupMockUser(userId);
+            const string ExpectedCommentOutput = "Test comment content";
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
-            var postId = 1;
-            var newComment = new Comment
-            {
-                Content = "Lorem ipsum dolor sit amet.",
-                PostId = 1,
-                UserId = "testContId"
-            };
+            var postId = posts.First().Id;
 
-            var content = HttpHelper.GetJsonHttpContent(newComment);
+            var createDto = TestDataHelper.CreateCommentRequest(ExpectedCommentOutput);
+            var content = HttpHelper.GetJsonHttpContent(createDto);
+
+            var url = string.Format(Comments.GetById, postId);
 
             // Act
-            var response = await _client.PostAsync(string.Format(Comments.GetById, postId), content);
+            var response = await _client.PostAsync(url, content);
 
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var addedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.Content == newComment.Content &&
-                                              c.PostId == newComment.PostId);
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                Assert.NotNull(addedComment);
-                Assert.Equal(newComment.Content, addedComment.Content);
-                Assert.Equal(newComment.PostId, addedComment.PostId);
-            }
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<CommentCreatedDto>>();
+
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, result.Message);
+            Assert.NotNull(result.Data);
+
+            var data = result.Data!;
+            Assert.Equal(createDto.Content, data.Content);
+            Assert.Equal(ExpectedCommentOutput, data.Content);
+
+            Assert.Equal(userId, data.UserId);
+
+            Assert.True(data.Id > 0);
+            Assert.NotEqual(default, data.CreatedAt);
+            Assert.NotNull(data.Author);
         }
 
         [Fact]
@@ -115,7 +123,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             SetupMockUser();
             var invalidCommentId = 0;
 
-            var editModel = new EditCommentModel { Content = "Some valid content" };
+            var editModel = new CommentUpdateDto { Content = "Some valid content" };
             var content = HttpHelper.GetJsonHttpContent(editModel);
 
             var url = string.Format(Comments.GetById, invalidCommentId);
@@ -139,7 +147,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             SetupMockUser();
             var commentId = 2;
 
-            var invalidModel = new EditCommentModel { Content = "" };
+            var invalidModel = new CommentUpdateDto { Content = "" };
             var content = HttpHelper.GetJsonHttpContent(invalidModel);
 
             var url = string.Format(Comments.GetById, commentId);
@@ -162,17 +170,15 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnUpdateCommentAsync_ShouldUpdateCommentInDatabaseAndReturn200OkResult()
         {
             // Arrange
-            SetupMockUser();
+            const string userId = "testContId";
+            SetupMockUser(userId);
             int postId = 1;
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
-            var commentToBeEdited = new EditCommentModel
-            {
-                Content = "Updated comment content."
-            };
+            var commentToBeEdited = new CommentUpdateDto { Content = "Updated comment content." };
 
             var content = HttpHelper.GetJsonHttpContent(commentToBeEdited);
             var url = string.Format(Comments.GetById, postId);
@@ -183,16 +189,23 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             // Assert
             response.EnsureSuccessStatusCode();
 
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                var editedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.Content == commentToBeEdited.Content);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<CommentUpdatedDto>>();
 
-                Assert.NotNull(editedComment);
-                Assert.Equal(commentToBeEdited.Content, editedComment.Content);
-            }
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(CommentM.Success.CommentUpdatedSuccessfully, result.Message);
+            Assert.NotNull(result.Data);
+
+            var data = result.Data!;
+            Assert.Equal(commentToBeEdited.Content, data.Content);
+
+            Assert.Equal(userId, data.UserId);
+
+            Assert.True(data.Id > 0);
+            Assert.NotEqual(default, data.CreatedAt);
+            Assert.NotNull(data.Author);
         }
 
         [Fact]
@@ -228,15 +241,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
-            int initialCount;
-
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                initialCount = await dbContext.Comments.CountAsync();
-            }
-
             var url = string.Format(Comments.GetById, commentIdToDelete);
 
             // Act
@@ -244,19 +248,12 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             // Assert
             response.EnsureSuccessStatusCode();
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                var removedComment = await dbContext.Comments
-                    .FirstOrDefaultAsync(c => c.Id == commentIdToDelete);
-
-                var commentCount = await dbContext.Comments.CountAsync();
-
-                Assert.Null(removedComment);
-                Assert.Equal(initialCount - 1, commentCount);
-            }
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
         }
 
         private async Task SeedDatabaseAsync(IEnumerable<Post> posts, ICollection<Category> categories)

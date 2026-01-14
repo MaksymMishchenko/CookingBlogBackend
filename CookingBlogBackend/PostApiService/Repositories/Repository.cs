@@ -5,7 +5,7 @@ namespace PostApiService.Repositories
     public class Repository<T> : IRepository<T> where T : class, IEntity
     {
         private readonly ApplicationDbContext _context;
-        private readonly DbSet<T> _dbSet;
+        protected readonly DbSet<T> _dbSet;
 
         public Repository(ApplicationDbContext context)
         {

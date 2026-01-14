@@ -21,6 +21,8 @@
         {
             public const string SecurityForbiddenCharacters =
             "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
+            public const string AccessDenied =
+                "Security Alert: User {UserId} attempted unauthorized {Action} on {ResourceType} {ResourceId}. Owner: {OwnerId}, IP: {IP}";
         }
 
         public static class System
@@ -52,6 +54,13 @@
 
         }
 
-        // 
+        public static class Comments
+        {
+            public const string NotFound = "Admin Comment Search: Comment with ID {CommentId} was not found.";
+            public const string AdminUpdatedComment =
+                "Moderation: Admin {AdminId} updated comment {CommentId} originally by {AuthorName}";
+            public const string AdminDeletedComment =
+                "Moderation: Admin {AdminId} deleted comment {CommentId} owned by user {OwnerId}. IP: {IP}";
+        }
     }
 }

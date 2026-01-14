@@ -1,4 +1,4 @@
-﻿using PostApiService.Interfaces;
+﻿using PostApiService.Infrastructure.Services;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
@@ -7,56 +7,86 @@ namespace PostApiService.Tests.IntegrationTests.Services
     public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
-        private readonly IAuthService _authServiceMock;
         private readonly IdentityUser _testUser;
+        private readonly IWebContext _webContextMock;
 
         public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
-            _authServiceMock = Substitute.For<IAuthService>();
-            _testUser = new IdentityUser { Id = "user123", UserName = "testuser", Email = "test@test.com" };
+            _webContextMock = Substitute.For<IWebContext>();
 
-            _authServiceMock.GetCurrentUserAsync().Returns(_testUser);
+            _testUser = new IdentityUser
+            {
+                Id = "testContId",
+                UserName = "TestBob",
+                Email = "bob@test.com"
+            };
         }
 
-        private CommentService CreateCommentServiceAndSeedUniqueDb
-            (out ApplicationDbContext context, int totalPostCount = 25, int commentCount = 5)
+        private record TestSetup(
+          ApplicationDbContext Context,
+          PostService PostService,
+          CommentService CommentService,
+          List<Post> Posts,
+          List<Category> Categories);
+
+        private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
         {
-            context = _fixture.CreateUniqueContext();
+            var postRepo = new PostRepository(context);
+            var commentRepo = new CommentRepository(context);
+            var catService = new CategoryService(new Repository<Category>(context), postRepo);
+            var postService = new PostService(postRepo, catService, new SnippetGeneratorService());
+
+            _webContextMock.UserId.Returns(_testUser.Id);
+            _webContextMock.UserName.Returns(_testUser.UserName);
+            _webContextMock.IsAdmin.Returns(false);
+
+            var commentService = new CommentService(commentRepo, postRepo, _webContextMock);
+
+            return new TestSetup(context, postService, commentService, posts, categories);
+        }
+
+        private async Task<TestSetup> SetupAsync(Func<List<Category>, List<Post>> dataGenerator)
+        {
+            var context = _fixture.CreateUniqueContext();
+
+            if (!await context.Users.AnyAsync(u => u.Id == _testUser.Id))
+            {
+                context.Users.Add(_testUser);
+                await context.SaveChangesAsync();
+            }
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var postsToSeed = _fixture.GeneratePosts(totalPostCount, categories, commentCount);
+            await _fixture.SeedCategoryAsync(context, categories);
 
-            _fixture.SeedDatabaseAsync(context, postsToSeed).Wait();
+            var postsToSeed = dataGenerator(categories);
+            await _fixture.SeedDatabaseAsync(context, postsToSeed);
 
-            var commentRepo = new Repository<Comment>(context);
-            var postRepo = new Repository<Post>(context);
-
-            return new CommentService(commentRepo, postRepo, _authServiceMock);
+            return CreateTestSetup(context, postsToSeed, categories);
         }
 
         [Fact]
         public async Task AddCommentAsync_ShouldAddNewCommentToPostSuccessfully()
         {
             // Arrange
-            ApplicationDbContext context;
-            var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
+            const int postCount = 10;
+            const int commentCount = 5;
+            var (context, _, commentService, _, _) = await SetupAsync(categories =>
+                _fixture.GeneratePosts(postCount, categories, commentCount));
+
             using (context)
             {
                 var postId = 1;
                 var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
 
-                var comment = new Comment
-                {
-                    Content = "Test comment from Bob",
-                };
+                var content = "Test comment from Bob";
 
                 // Act
-                await commentService.AddCommentAsync(postId, comment);
+                await commentService.AddCommentAsync(postId, content);
 
                 // Assert
                 var addedComment = await context.Comments
-                    .FirstOrDefaultAsync(c => c.Content == comment.Content);
+                    .FirstOrDefaultAsync(c => c.Content == content);
 
                 Assert.NotNull(addedComment);
                 Assert.Equal(postId, addedComment.PostId);
@@ -69,26 +99,26 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public async Task UpdateCommentAsync_ShouldUpdateContentOfExistingComment()
         {
             // Arrange
-            ApplicationDbContext context;
-            var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
+            const int postCount = 1;
+            const int commentCount = 1;
+            const int commentId = 1;
+            string content = "Edited comment content";
+
+            var (context, _, commentService, _, _) = await SetupAsync(categories =>
+                 _fixture.GeneratePosts(postCount, categories, commentCount));
+
             using (context)
             {
-
-                int commentId = 2;
-                var comment = new EditCommentModel
-                {
-                    Content = "Edited comment content"
-                };
-
                 // Act
-                await commentService.UpdateCommentAsync(commentId, comment);
+                await commentService.UpdateCommentAsync(commentId, content);
 
                 // Assert
                 var editedComment = await context.Comments
                     .FirstOrDefaultAsync(c => c.Id == commentId);
 
                 Assert.NotNull(editedComment);
-                Assert.Equal(comment.Content, editedComment.Content);
+                Assert.Equal(_testUser.Id, editedComment.UserId);
+                Assert.Equal(content, editedComment.Content);
             }
         }
 
@@ -96,11 +126,19 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
         {
             // Arrange
-            ApplicationDbContext context;
-            var commentService = CreateCommentServiceAndSeedUniqueDb(out context);
+            const int postCount = 1;
+            const int commentCount = 1;
+            var commentIdToRemove = 1;
+
+            var (context, _, commentService, _, _) = await SetupAsync(categories =>
+                 _fixture.GeneratePosts(postCount, categories, commentCount));
+
             using (context)
             {
-                var commentIdToRemove = 1;
+                var commentBeforeDelete = await context.Comments.FindAsync(commentIdToRemove);
+                Assert.NotNull(commentBeforeDelete);
+                Assert.Equal(_testUser.Id, commentBeforeDelete.UserId);
+
                 var initialCount = await context.Comments.CountAsync();
 
                 // Act
@@ -112,6 +150,29 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var removedComment = await context.Comments.FindAsync(commentIdToRemove);
                 Assert.Null(removedComment);
                 Assert.Equal(initialCount - 1, finalCount);
+            }
+        }
+
+        [Fact]
+        public async Task DeletePost_ShouldCascadeDeleteAllAssociatedComments()
+        {
+            // Arrange
+            const int postId = 1;
+            var (context, postService, _, _, _) = await SetupAsync(categories =>
+                _fixture.GeneratePosts(1, categories, commentCount: 3));
+
+            using (context)
+            {
+                var initialCommentsCount = await context.Comments.CountAsync(c => c.PostId == postId);
+                Assert.Equal(3, initialCommentsCount);
+
+                // Act
+                var postToDelete = await postService.DeletePostAsync(postId);
+
+                // Assert                
+                var remainingCommentsCount = await context.Comments.CountAsync(c => c.PostId == postId);
+
+                Assert.Equal(0, remainingCommentsCount);
             }
         }
     }

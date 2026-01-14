@@ -610,5 +610,22 @@ namespace PostApiService.Tests.Helper
                 post.CreatedAt
             );
         }
+
+        public static CommentCreateDto CreateCommentRequest(string content = "Default test content") =>
+        new() { Content = content };
+
+        public static CommentCreatedDto CreateCommentResponse(
+            int id = 1,
+            string author = "Bob",
+            string content = "Default test content",
+            string userId = "TestUserId") =>
+            new(id, author, content, DateTime.UtcNow, userId);
+
+        public static CommentUpdatedDto UpdateCommentResponse(
+            int id = 1,
+            string author = "Bob",
+            string content = "Default test content",
+            string userId = "TestUserId") =>
+            new(id, author, content, DateTime.UtcNow, userId, false);
     }
 }
