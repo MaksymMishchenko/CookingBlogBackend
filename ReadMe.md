@@ -6,6 +6,7 @@ This repository contains the backend for the CookingBlog project, built with C#.
 **Frontend Repository:** [CookingBlog Frontend](https://github.com/MaksymMishchenko/CookingBlogFrontend)
 
 ## Key Features
+* **Security & XSS Protection**: Integrated `HtmlSanitizer` to clean user-generated content and prevent Cross-Site Scripting (XSS) attacks.
 * **Result Pattern Implementation**: Unified error handling using `Result<T>` for services and controllers.
 * **Authentication & Authorization**: Secure access using JWT Tokens.
 * **Unified Database**: Integrated Identity and Application contexts for streamlined data management.
@@ -19,6 +20,7 @@ This repository contains the backend for the CookingBlog project, built with C#.
 - **Authentication**: Identity & JWT Bearer
 - **Logging**: Serilog
 - **Testing**: XUnit, Coverlet, Bogus
+- **Security**: HtmlSanitizer (XSS Protection)
 - **Documentation**: Swagger/OpenAPI
 - **Utilities**: HtmlAgilityPack
 

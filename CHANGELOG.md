@@ -7,9 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- Implementation of `HtmlSanitizer` to protect comment and post content from XSS attacks (in progress).
 - Implementation of `RateLimiting` to protect API from brute-force and spam (in progress).
 
+### Planned
+- Apply sanitization logic to `CommentService` and `PostService` to prevent XSS.
+
+## [1.0.1-dev] - 2026-01-16
+### Added
+- **HTML Sanitization Infrastructure**: 
+    - Implemented `IHtmlSanitizationService` using `HtmlSanitizer` library.
+    - Added rule-based configuration via `appsettings.json`.
+    - Integrated unit tests for sanitization logic.
+    
 ## [1.0.0] - 2026-01-15
 ### Added
 - **Result Pattern Implementation**: 
