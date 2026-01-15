@@ -2,6 +2,7 @@
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.TypeSafe;
@@ -33,7 +34,8 @@ namespace PostApiService.Infrastructure
         /// <summary>
         /// Registers application-specific services and the database context to the IServiceCollection.
         /// </summary>        
-        public static IServiceCollection AddApplicationService(this IServiceCollection services, string connectionString)
+        public static IServiceCollection AddApplicationService(this IServiceCollection services,
+            IConfiguration configuration, string connectionString)
         {
             services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -54,6 +56,25 @@ namespace PostApiService.Infrastructure
             services.AddScoped<IPostService, PostService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ICommentService, CommentService>();
+
+            services.AddExternalTools(configuration);
+
+            return services;
+        }
+
+        public static IServiceCollection AddExternalTools(this IServiceCollection services, IConfiguration configuration)
+        {
+            // Get sanitizer configuration from appsettings.json
+            var section = configuration.GetSection(HtmlSanitizer);
+
+            if (!section.Exists())
+            {
+                throw new InvalidOperationException(string.Format(
+                    Errors.ConfigSectionMissing, HtmlSanitizer));
+            }
+
+            services.Configure<SanitizerConfiguration>(section);
+            services.AddSingleton<IHtmlSanitizationService, HtmlSanitizationService>();
 
             return services;
         }
