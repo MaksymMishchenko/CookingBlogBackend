@@ -9,7 +9,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PostApiService.Tests", "Pos
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{5D5E2D58-7933-4E9B-854E-E37A5268984A}"
 	ProjectSection(SolutionItems) = preProject
-		Solution Items\CookingBlogBackend.postman_collection.json = Solution Items\CookingBlogBackend.postman_collection.json
+		..\Postman\CookingBlogBackend.postman_collection.json = ..\Postman\CookingBlogBackend.postman_collection.json
 	EndProjectSection
 EndProject
 Global
