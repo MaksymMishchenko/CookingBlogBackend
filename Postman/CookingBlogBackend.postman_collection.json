@@ -112,7 +112,58 @@
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "Contributor Login",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"username\": \"cont\",\r\n  \"password\": \"-Rtyuehe2\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/Auth/Login",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"Auth",
+										"Login"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 17 Jan 2026 10:10:07 GMT"
+								},
+								{
+									"key": "Server",
+									"value": "Kestrel"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"success\": true,\n    \"message\": \"User with username 'cont' logged in successfully\",\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImU1MDdhYTA4LTIxOWUtNDlhMS1hMmM3LTVkNzBjY2ZhZjc0OCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJjb250IiwiQ29tbWVudCI6WyIyIiwiMyIsIjQiXSwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQ29udHJpYnV0b3IiLCJleHAiOjE3Njg2NDU1MDgsImlzcyI6Imh0dHBzOi8vbG9jYWxob3N0OjcwMzAiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo0MjAwIn0.i53JWeG8F1LWK5IIV2RPm84MNsJMgDhA93p-i78NSRE\"\n}"
+						}
+					]
 				}
 			]
 		},
@@ -821,7 +872,58 @@
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "XSS Sanitization Example",
+							"originalRequest": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/Comments/1",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"Comments",
+										"1"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 17 Jan 2026 10:12:12 GMT"
+								},
+								{
+									"key": "Server",
+									"value": "Kestrel"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"id\": 3001,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T10:12:11.286777Z\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment added successfully.\"\n}"
+						}
+					]
 				},
 				{
 					"name": "UpdateComment",
@@ -863,18 +965,69 @@
 							}
 						},
 						"url": {
-							"raw": "{{baseUrl}}/api/Comments/3001",
+							"raw": "{{baseUrl}}/api/Comments/300",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"Comments",
-								"3001"
+								"300"
 							]
 						}
 					},
-					"response": []
+					"response": [
+						{
+							"name": "XSS Sanitization Example",
+							"originalRequest": {
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/Comments/300",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"Comments",
+										"300"
+									]
+								}
+							},
+							"status": "OK",
+							"code": 200,
+							"_postman_previewlanguage": null,
+							"header": [
+								{
+									"key": "Content-Type",
+									"value": "application/json; charset=utf-8"
+								},
+								{
+									"key": "Date",
+									"value": "Sat, 17 Jan 2026 10:07:44 GMT"
+								},
+								{
+									"key": "Server",
+									"value": "Kestrel"
+								},
+								{
+									"key": "Transfer-Encoding",
+									"value": "chunked"
+								}
+							],
+							"cookie": [],
+							"body": "{\n    \"data\": {\n        \"isEditedByAdmin\": false,\n        \"id\": 300,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T09:37:17.1495565\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment updated successfully.\"\n}"
+						}
+					]
 				},
 				{
 					"name": "RemoveComment",

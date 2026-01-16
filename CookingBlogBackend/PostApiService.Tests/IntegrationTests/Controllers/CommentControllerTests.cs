@@ -78,6 +78,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             const string userId = "testContId";
             SetupMockUser(userId);
             const string ExpectedCommentOutput = "Test comment content";
+            const string HackCode = "Test comment content<script>Hack code</script>";
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
@@ -85,7 +86,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             var postId = posts.First().Id;
 
-            var createDto = TestDataHelper.CreateCommentRequest(ExpectedCommentOutput);
+            var createDto = TestDataHelper.CreateCommentRequest(HackCode);
             var content = HttpHelper.GetJsonHttpContent(createDto);
 
             var url = string.Format(Comments.GetById, postId);
@@ -106,7 +107,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(result.Data);
 
             var data = result.Data!;
-            Assert.Equal(createDto.Content, data.Content);
             Assert.Equal(ExpectedCommentOutput, data.Content);
 
             Assert.Equal(userId, data.UserId);
