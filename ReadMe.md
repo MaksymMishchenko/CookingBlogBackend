@@ -8,6 +8,7 @@ This repository contains the backend for the CookingBlog project, built with C#.
 ## Key Features
 * **Result Pattern Implementation**: Unified error handling using `Result<T>` for services and controllers.
 * **Authentication & Authorization**: Secure access using JWT Tokens.
+* **Content Safety:** Advanced HTML sanitization for user-generated content (comments and articles) to prevent XSS attacks.
 * **Unified Database**: Integrated Identity and Application contexts for streamlined data management.
 * **Postman Collection**: Automated API testing scripts with environment variable synchronization.
 * **Logging**: Structured logging with Serilog (Console and File sinks).
@@ -17,6 +18,7 @@ This repository contains the backend for the CookingBlog project, built with C#.
 - **ORM**: Entity Framework Core 8.0
 - **Database**: SQL Server
 - **Authentication**: Identity & JWT Bearer
+- **Security:** HtmlSanitizer (Ganss.Xss)
 - **Logging**: Serilog
 - **Testing**: XUnit, Coverlet, Bogus
 - **Documentation**: Swagger/OpenAPI
@@ -101,7 +103,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"cov
 * **Test Data Generation**: Bogus library is used for generating realistic test data.
 
 ## Roadmap / To-Do
-* **Security Improvements**: Implement `HtmlSanitizer` for XSS protection and `RateLimiting` for API throttling.
+* **Security Improvements**: Implement `RateLimiting` for API throttling.
 * **Comment System**: Implement an endpoint to retrieve a paginated list of comments by Post ID.
 * **Post Management (Admin)**: 
     * Add filtering/sorting for posts by active and inactive status (for frontend display).
