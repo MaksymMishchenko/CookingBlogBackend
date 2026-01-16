@@ -1,5 +1,6 @@
 ﻿using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
+using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
@@ -8,6 +9,7 @@ namespace PostApiService.Tests.UnitTests.Services
     public class CommentServiceTests
     {
         private readonly ICommentRepository _mockCommentRepo;
+        private readonly IHtmlSanitizationService _mockSanitizeService;
         private readonly IPostRepository _mockPostRepo;
         private readonly IWebContext _mockWebContext;
         private readonly CommentService _service;
@@ -15,10 +17,11 @@ namespace PostApiService.Tests.UnitTests.Services
         public CommentServiceTests()
         {
             _mockCommentRepo = Substitute.For<ICommentRepository>();
+            _mockSanitizeService = Substitute.For<IHtmlSanitizationService>();
             _mockPostRepo = Substitute.For<IPostRepository>();
             _mockWebContext = Substitute.For<IWebContext>();
 
-            _service = new CommentService(_mockCommentRepo, _mockPostRepo, _mockWebContext);
+            _service = new CommentService(_mockCommentRepo, _mockSanitizeService, _mockPostRepo, _mockWebContext);
         }
 
         [Fact]
@@ -42,6 +45,29 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task AddCommentAsync_ShouldReturnInvalid_WhenCommentIsEmpty()
+        {
+            // Arrange
+            const int postId = 1;
+            const string invalidComment = "<script></script>";
+
+            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockSanitizeService.SanitizeComment(invalidComment).Returns(string.Empty);
+
+            // Act 
+            var result = await _service.AddCommentAsync(postId, invalidComment);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Equal(CommentM.Errors.Empty, result.Message);
+            Assert.Equal(CommentM.Errors.EmptyCode, result.ErrorCode);
+
+            await _mockCommentRepo.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task AddCommentAsync_ShouldReturnNotFoundResult_WhenPostDoesNotExist()
         {
             // Arrange
@@ -49,7 +75,8 @@ namespace PostApiService.Tests.UnitTests.Services
             const string validComment = "Test comment content";
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>())
+                .Returns(validComment);
             _mockPostRepo.IsAvailableForCommentingAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(false);
 
@@ -63,6 +90,8 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Null(result.Value);
             Assert.Equal(PostM.Errors.PostNotFound, result.Message);
             Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
+
+            _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
 
             await _mockPostRepo.Received(1).IsAvailableForCommentingAsync
                 (Arg.Any<int>(), Arg.Any<CancellationToken>());
@@ -82,6 +111,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(userId);
             _mockWebContext.UserName.Returns(userName);
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(validComment);
             _mockPostRepo.IsAvailableForCommentingAsync(Arg.Any<int>(), token)
                 .Returns(true);
 
@@ -99,6 +129,8 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.NotEqual(default, data.CreatedAt);
             Assert.Equal(userId, data.UserId);
             Assert.Equal(CommentM.Success.CommentAddedSuccessfully, result.Message);
+
+            _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
 
             await _mockPostRepo.Received(1).IsAvailableForCommentingAsync(Arg.Any<int>(), token);
 
@@ -133,6 +165,29 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task UpdateCommentAsync_ShouldReturnInvalid_WhenCommentIsEmpty()
+        {
+            // Arrange
+            const int postId = 1;
+            const string invalidComment = "<script></script>";
+
+            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockSanitizeService.SanitizeComment(invalidComment).Returns(string.Empty);
+
+            // Act 
+            var result = await _service.UpdateCommentAsync(postId, invalidComment);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Equal(CommentM.Errors.Empty, result.Message);
+            Assert.Equal(CommentM.Errors.EmptyCode, result.ErrorCode);
+
+            await _mockCommentRepo.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task UpdateCommentAsync_ShouldReturnNotFoundResult_WhenCommentDoesNotExist()
         {
             // Arrange
@@ -140,7 +195,7 @@ namespace PostApiService.Tests.UnitTests.Services
             const string validComment = "Test comment content";
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(validComment);
             _mockCommentRepo.GetWithUserAsync(commentId, Arg.Any<CancellationToken>())
                 .Returns((Comment)null!);
 
@@ -155,8 +210,9 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(CommentM.Errors.NotFound, result.Message);
             Assert.Equal(CommentM.Errors.NotFoundCode, result.ErrorCode);
 
-            await _mockCommentRepo.Received(1).GetWithUserAsync(commentId, Arg.Any<CancellationToken>());
+            _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
 
+            await _mockCommentRepo.Received(1).GetWithUserAsync(commentId, Arg.Any<CancellationToken>());
             await _mockCommentRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -173,6 +229,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(currentUserId);
             _mockCommentRepo.GetWithUserAsync(commentId, Arg.Any<CancellationToken>()).Returns(existingComment);
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(hackComment);
             _mockWebContext.IsAdmin.Returns(false);
             _mockWebContext.IpAddress.Returns("127.0.0.1");
 
@@ -207,6 +264,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(adminId);
             _mockCommentRepo.GetWithUserAsync(commentId, Arg.Any<CancellationToken>()).Returns(existingComment);
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(newContent);
             _mockWebContext.IsAdmin.Returns(true);
             _mockWebContext.IpAddress.Returns("127.0.0.1");
 
@@ -217,6 +275,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.True(result.IsSuccess);
             Assert.True(existingComment.IsEditedByAdmin);
             Assert.Equal(newContent, existingComment.Content);
+
             await _mockCommentRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -239,6 +298,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(userId);
             _mockCommentRepo.GetWithUserAsync(commentId, Arg.Any<CancellationToken>()).Returns(existingComment);
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(newContent);
             _mockWebContext.IsAdmin.Returns(false);
             _mockWebContext.IpAddress.Returns("127.0.0.1");
 
@@ -249,6 +309,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(newContent, existingComment.Content);
             Assert.False(existingComment.IsEditedByAdmin);
+
             await _mockCommentRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -296,7 +357,6 @@ namespace PostApiService.Tests.UnitTests.Services
 
             await _mockCommentRepo.Received(1)
                 .GetByIdAsync(invalidCommentId, Arg.Any<CancellationToken>());
-
             await _mockCommentRepo.DidNotReceive()
                 .DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
         }

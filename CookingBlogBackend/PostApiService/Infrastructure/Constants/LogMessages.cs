@@ -20,7 +20,20 @@
         public static class Security
         {
             public const string SecurityForbiddenCharacters =
-            "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
+                "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
+
+            public const string XssDetectedOnPostCreate =
+                "Security Alert: XSS detected during Post creation. Title: {Title}, User: {UserId}, IP: {IP}. Original: {RawContent}";
+
+            public const string XssDetectedOnPostUpdate =
+                "Security Alert: XSS detected during Post update. PostId: {PostId}, User: {UserId}, IP: {IP}. Original: {RawContent}";
+
+            public const string XssDetectedOnCommentCreate =
+                "Security Alert: XSS detected during Comment creation for PostId: {PostId}. User: {UserId}, IP: {IP}. Original: {RawContent}";
+
+            public const string XssDetectedOnCommentUpdate =
+                "Security Alert: XSS detected during Comment update. CommentId: {CommentId}, User: {UserId}, IP: {IP}. Original: {RawContent}";
+
             public const string AccessDenied =
                 "Security Alert: User {UserId} attempted unauthorized {Action} on {ResourceType} {ResourceId}. Owner: {OwnerId}, IP: {IP}";
         }

@@ -49,7 +49,9 @@
                 public const string NotFound = "Comment not found.";
                 public const string NotFoundCode = "COMMENT_NOT_FOUND";
                 public const string AccessDenied = "You do not have permission to manage this comment.";
-                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";                
+                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";
+                public const string Empty = "Comment content cannot be empty.";
+                public const string EmptyCode = "COMMENT_IS_EMPTY";
             }
 
             public static class Success
