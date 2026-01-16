@@ -20,8 +20,14 @@ jobs:
         with:
           dotnet-version: '8.0'
 
+      - name: Restore dependencies
+        run: dotnet restore
+
       - name: Build project
-        run: dotnet build **/*.sln --configuration Release
+        run: dotnet build **/*.sln --configuration Release -no-restore
+
+      - name: Run Tests
+        run: dotnet test **/*.sln --configuration Release --no-build --verbosity normal
 
   release:
     needs: build-and-test
