@@ -41,7 +41,7 @@ namespace PostApiService.Tests.Fixtures
                 Arg.Any<PostCreateDto>())
                 .Returns(Task.FromResult(Result<PostAdminDetailsDto>.Success(new PostAdminDetailsDto(
                     1, "Mocked Post", "Mock Desc", "Content", "Author", "ImageUrl", "Slug", "Meta Title",
-                    "Meta Desc", 1, DateTime.UtcNow))));
+                    "Meta Desc", 1, DateTime.UtcNow, null))));
 
             services.AddScoped(_ => postServiceMock);
 

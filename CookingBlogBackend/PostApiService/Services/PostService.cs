@@ -158,13 +158,17 @@ namespace PostApiService.Services
                 return Result<PostAdminDetailsDto>.Invalid(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
+            var cleanTitle = postDto.Title.StripHtml();
+            var cleanSlug = postDto.Slug.StripHtml();
+
             var alreadyExists = await _repository
-               .AnyAsync(p => p.Title == postDto.Title || p.Slug == postDto.Slug, ct);
+               .AnyAsync(p => p.Title == cleanTitle || p.Slug == cleanSlug, ct);
 
             if (alreadyExists)
             {
-                return Result<PostAdminDetailsDto>.Conflict
-                    (string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist, postDto.Title, postDto.Slug), PostM.Errors.PostAlreadyExistCode);
+                return Result<PostAdminDetailsDto>.Conflict(string.Format(
+                    PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug),
+                    PostM.Errors.PostAlreadyExistCode);
             }
 
             var categoryExists = await _categoryService.ExistsAsync(postDto.CategoryId, ct);
@@ -217,15 +221,14 @@ namespace PostApiService.Services
                 return Result<PostAdminDetailsDto>.Invalid(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
-            var postEntity = await _repository
-                .GetByIdAsync(postId, ct);
+            var postEntity = await _repository.GetByIdAsync(postId, ct);
 
             if (postEntity == null)
             {
                 Log.Warning(Posts.NotFound, postId);
 
-                return Result<PostAdminDetailsDto>.NotFound(string.Format
-                    (PostM.Errors.PostNotFound, postDto.Title), PostM.Errors.PostNotFoundCode);
+                return Result<PostAdminDetailsDto>.NotFound(
+                    PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
             var cleanTitle = postDto.Title.StripHtml();
@@ -239,20 +242,29 @@ namespace PostApiService.Services
                 Log.Information(Posts.AlreadyExists, cleanTitle, cleanSlug);
                 return Result<PostAdminDetailsDto>.Conflict(string.Format(
                     PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug), PostM.Errors.PostAlreadyExistCode);
-            }            
+            }
+
+            if (postEntity.CategoryId != postDto.CategoryId)
+            {
+                var categoryExists = await _categoryService.ExistsAsync(postDto.CategoryId, ct);
+                if (!categoryExists)
+                {
+                    Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
+
+                    return Result<PostAdminDetailsDto>.NotFound
+                        (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
+                }
+            }
 
             postDto.UpdateEntity(postEntity, sanitizedContent);
-
-            //await _repository.UpdateAsync(postEntity, ct);
             await _repository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
 
-            var responseDto = postEntity.ToDto();
-            var successMessage = string.Format(PostM.Success.PostUpdatedSuccessfully);
+            var responseDto = postEntity.MapToAdminDto();
 
             return Result<PostAdminDetailsDto>.Success
-                (responseDto, successMessage);
+                (responseDto, PostM.Success.PostUpdatedSuccessfully);
         }
 
         /// <summary>
@@ -272,7 +284,7 @@ namespace PostApiService.Services
 
             if (existingPost == null)
             {
-                return Result<bool>.NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+                return Result.NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
             await _repository.DeleteAsync(existingPost, ct);

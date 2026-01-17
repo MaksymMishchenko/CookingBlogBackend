@@ -1,5 +1,7 @@
-﻿using MockQueryable;
+﻿using Microsoft.AspNetCore.SignalR;
+using MockQueryable;
 using PostApiService.Infrastructure.Common;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
@@ -11,6 +13,8 @@ namespace PostApiService.Tests.UnitTests
     public class PostServiceTests
     {
         private readonly IRepository<Post> _mockRepository;
+        private readonly IWebContext _mockWebContext;
+        private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly ICategoryService _mockCategoryService;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
         private readonly PostService _postService;
@@ -18,9 +22,12 @@ namespace PostApiService.Tests.UnitTests
         public PostServiceTests()
         {
             _mockRepository = Substitute.For<IRepository<Post>>();
+            _mockWebContext = Substitute.For<IWebContext>();
+            _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<ICategoryService>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
-            _postService = new PostService(_mockRepository, _mockCategoryService, _mockSnippetGenerator);
+            _mockWebContext = Substitute.For<IWebContext>();
+            _postService = new PostService(_mockRepository, _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockSnippetGenerator);
         }
 
         [Fact]

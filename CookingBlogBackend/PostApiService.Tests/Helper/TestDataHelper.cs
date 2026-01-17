@@ -607,7 +607,8 @@ namespace PostApiService.Tests.Helper
                 post.MetaTitle,
                 post.MetaDescription,
                 post.CategoryId,
-                post.CreatedAt
+                post.CreatedAt,
+                post.UpdatedAt
             );
         }
 

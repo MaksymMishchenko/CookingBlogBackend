@@ -1,4 +1,6 @@
 ﻿using PostApiService.Infrastructure.Common;
+using PostApiService.Infrastructure.Services;
+using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
@@ -7,23 +9,38 @@ namespace PostApiService.Tests.IntegrationTests.Services
     public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
+        private readonly IdentityUser _testUser;
 
         public PostServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
+
+            _testUser = new IdentityUser
+            {
+                Id = "testContId",
+                UserName = "TestBob",
+                Email = "bob@test.com"
+            };
         }
 
         private record TestSetup(
-        ApplicationDbContext Context,
-        PostService Service,
-        List<Post> Posts,
-        List<Category> Categories);
+            ApplicationDbContext Context,
+            PostService Service,
+            List<Post> Posts,
+            List<Category> Categories);
 
         private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
         {
             var repo = new Repository<Post>(context);
+            var webContextMock = Substitute.For<IWebContext>();
+            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
             var catService = new CategoryService(new Repository<Category>(context), repo);
-            var service = new PostService(repo, catService, new SnippetGeneratorService());
+
+            webContextMock.UserId.Returns(_testUser.Id);
+            sanitizeServiceMock.SanitizePost(Arg.Any<string>()).Returns(x => x.Arg<string>());
+            webContextMock.UserName.Returns(_testUser.UserName);            
+
+            var service = new PostService(repo, webContextMock, sanitizeServiceMock, catService, new SnippetGeneratorService());
 
             return new TestSetup(context, service, posts, categories);
         }

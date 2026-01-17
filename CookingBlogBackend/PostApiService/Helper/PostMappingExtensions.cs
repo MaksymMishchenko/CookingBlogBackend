@@ -29,9 +29,10 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
-            p.CreatedAt
+            p.CreatedAt,
+            p.UpdatedAt
         );
-
+        
         public static PostAdminDetailsDto MapToAdminDto(this Post p) =>
         new PostAdminDetailsDto(
             p.Id,
@@ -44,9 +45,10 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
-            p.CreatedAt
+            p.CreatedAt,
+            p.UpdatedAt
         );
-
+        
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)
         {
             var title = dto.Title.StripHtml();
@@ -54,8 +56,8 @@ namespace PostApiService.Helper
 
             return new Post
             {
-                Title = dto.Title.StripHtml(),
-                Description = dto.Description.StripHtml(),
+                Title = title,
+                Description = description,
                 Content = sanitizedContent,
                 Author = dto.Author.StripHtml(),
                 ImageUrl = dto.ImageUrl,
@@ -74,38 +76,17 @@ namespace PostApiService.Helper
                 IsActive = true
             };
         }
-
-        public static PostAdminDetailsDto ToDto(this Post post)
-        {
-            return new PostAdminDetailsDto(
-                post.Id,
-                post.Title,
-               post.Description,
-                post.Content,
-                post.Author,
-                post.ImageUrl,
-                post.Slug,
-                string.IsNullOrWhiteSpace(post.MetaTitle)
-                    ? post.Title
-                    : post.MetaTitle,
-                string.IsNullOrWhiteSpace(post.MetaDescription)
-                    ? (post.Description.Length > 200 ? post.Description[..197] + "..." : post.Description)
-                    : post.MetaDescription,
-                post.CategoryId,
-                DateTime.UtcNow
-            );
-        }
-
+        
         public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent)
         {
             entity.Title = dto.Title.StripHtml();
             entity.Description = dto.Description.StripHtml();
-            entity.Content = sanitizedContent; 
+            entity.Content = sanitizedContent;
             entity.Author = dto.Author.StripHtml();
             entity.ImageUrl = dto.ImageUrl;
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId;
-            
+
             entity.MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
                 ? dto.Title.StripHtml()
                 : dto.MetaTitle.StripHtml();
@@ -116,7 +97,7 @@ namespace PostApiService.Helper
                     : dto.Description.StripHtml())
                 : dto.MetaDescription.StripHtml();
 
-            //entity.UpdatedAt = DateTime.UtcNow;
+            entity.UpdatedAt = DateTime.UtcNow;
         }
     }
 }

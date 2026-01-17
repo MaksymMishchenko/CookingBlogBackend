@@ -11,6 +11,7 @@
         string? MetaTitle,
         string? MetaDescription,
         int CategoryId,
-        DateTime CreatedAt
+        DateTime CreatedAt,
+        DateTime? UpdatedAt
     );
 }
