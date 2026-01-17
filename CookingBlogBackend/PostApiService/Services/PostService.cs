@@ -155,7 +155,7 @@ namespace PostApiService.Services
 
             if (string.IsNullOrWhiteSpace(sanitizedContent))
             {
-                return Result<PostAdminDetailsDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
+                return Result<PostAdminDetailsDto>.Invalid(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
             var alreadyExists = await _repository
@@ -174,10 +174,10 @@ namespace PostApiService.Services
                 Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
 
                 return Result<PostAdminDetailsDto>.NotFound
-                    (string.Format(CategoryM.Errors.CategoryNotFound), PostM.Errors.CategoryNotFoundCode);
+                    (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
             }
 
-            var postEntity = postDto.ToEntity();
+            var postEntity = postDto.ToEntity(sanitizedContent);
 
             await _repository.AddAsync(postEntity, ct);
             await _repository.SaveChangesAsync(ct);
@@ -185,9 +185,9 @@ namespace PostApiService.Services
             Log.Information(Posts.Created, postEntity.Title, postEntity.Id);
 
             var responseDto = postEntity.MapToAdminDto();
-            var successMessage = string.Format(PostM.Success.PostAddedSuccessfully);
 
-            return Result<PostAdminDetailsDto>.Success(responseDto, successMessage);
+            return Result<PostAdminDetailsDto>.Success
+                (responseDto, PostM.Success.PostAddedSuccessfully);
         }
 
         /// <summary>
@@ -204,17 +204,17 @@ namespace PostApiService.Services
                     Auth.LoginM.Errors.UnauthorizedAccessCode);
             }
 
-            var sanitizedContent = _sanitizer.SanitizeComment(postDto.Content);
+            var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
             if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
             {
                 var traceContent = postDto.Content.Truncate(500);
-                Log.Warning(Security.XssDetectedOnPostUpdate,postId, userId, _webContext.IpAddress, traceContent);
+                Log.Warning(Security.XssDetectedOnPostUpdate, postId, userId, _webContext.IpAddress, traceContent);
             }
 
             if (string.IsNullOrWhiteSpace(sanitizedContent))
             {
-                return Result<PostAdminDetailsDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
+                return Result<PostAdminDetailsDto>.Invalid(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
             var postEntity = await _repository
@@ -228,20 +228,22 @@ namespace PostApiService.Services
                     (PostM.Errors.PostNotFound, postDto.Title), PostM.Errors.PostNotFoundCode);
             }
 
-            var alreadyExists = await _repository
-                .AnyAsync(p => p.Title == postDto.Title && p.Id != postId, ct);
+            var cleanTitle = postDto.Title.StripHtml();
+            var cleanSlug = postDto.Slug.StripHtml();
+
+            var alreadyExists = await _repository.AnyAsync(p => (p.Title == cleanTitle ||
+            p.Slug == cleanSlug) && p.Id != postId, ct);
 
             if (alreadyExists)
             {
-                Log.Information(Posts.AlreadyExists, postDto.Title, postDto.Slug);
+                Log.Information(Posts.AlreadyExists, cleanTitle, cleanSlug);
+                return Result<PostAdminDetailsDto>.Conflict(string.Format(
+                    PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug), PostM.Errors.PostAlreadyExistCode);
+            }            
 
-                return Result<PostAdminDetailsDto>.Conflict(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
-                    postDto.Title, postDto.Slug), PostM.Errors.PostAlreadyExistCode);
-            }
+            postDto.UpdateEntity(postEntity, sanitizedContent);
 
-            postDto.UpdateEntity(postEntity);
-
-            await _repository.UpdateAsync(postEntity, ct);
+            //await _repository.UpdateAsync(postEntity, ct);
             await _repository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
