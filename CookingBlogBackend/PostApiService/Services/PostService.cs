@@ -1,4 +1,5 @@
 ﻿using PostApiService.Helper;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Constants;
 using PostApiService.Models.Dto.Requests;
@@ -11,14 +12,20 @@ namespace PostApiService.Services
     public class PostService : IPostService
     {
         private readonly IRepository<Post> _repository;
+        private readonly IWebContext _webContext;
+        private readonly IHtmlSanitizationService _sanitizer;
         private readonly ICategoryService _categoryService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
         public PostService(IRepository<Post> repository,
+            IWebContext webContext,
+            IHtmlSanitizationService sanitizer,
             ICategoryService categoryService,
             ISnippetGeneratorService snippetGenerator)
         {
             _repository = repository;
+            _webContext = webContext;
+            _sanitizer = sanitizer;
             _categoryService = categoryService;
             _snippetGenerator = snippetGenerator;
         }
@@ -130,6 +137,27 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default)
         {
+            var userId = _webContext.UserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Result<PostAdminDetailsDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
+                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+            }
+
+            var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
+
+            if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
+            {
+                var traceContent = postDto.Content.Truncate(500);
+                Log.Warning(Security.XssDetectedOnPostCreate, postDto.Title, userId, _webContext.IpAddress, traceContent);
+            }
+
+            if (string.IsNullOrWhiteSpace(sanitizedContent))
+            {
+                return Result<PostAdminDetailsDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
+            }
+
             var alreadyExists = await _repository
                .AnyAsync(p => p.Title == postDto.Title || p.Slug == postDto.Slug, ct);
 
@@ -168,6 +196,27 @@ namespace PostApiService.Services
         public async Task<Result<PostAdminDetailsDto>> UpdatePostAsync
             (int postId, PostUpdateDto postDto, CancellationToken ct = default)
         {
+            var userId = _webContext.UserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Result<PostAdminDetailsDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
+                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+            }
+
+            var sanitizedContent = _sanitizer.SanitizeComment(postDto.Content);
+
+            if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
+            {
+                var traceContent = postDto.Content.Truncate(500);
+                Log.Warning(Security.XssDetectedOnPostUpdate,postId, userId, _webContext.IpAddress, traceContent);
+            }
+
+            if (string.IsNullOrWhiteSpace(sanitizedContent))
+            {
+                return Result<PostAdminDetailsDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
+            }
+
             var postEntity = await _repository
                 .GetByIdAsync(postId, ct);
 
@@ -209,6 +258,14 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Result> DeletePostAsync(int postId, CancellationToken ct = default)
         {
+            var userId = _webContext.UserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Result.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
+                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+            }
+
             var existingPost = await _repository.GetByIdAsync(postId, ct);
 
             if (existingPost == null)
