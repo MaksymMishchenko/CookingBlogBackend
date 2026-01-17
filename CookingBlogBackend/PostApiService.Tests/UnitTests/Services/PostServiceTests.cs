@@ -1,5 +1,6 @@
 ﻿using MockQueryable;
 using PostApiService.Infrastructure.Common;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
@@ -11,6 +12,8 @@ namespace PostApiService.Tests.UnitTests
     public class PostServiceTests
     {
         private readonly IRepository<Post> _mockRepository;
+        private readonly IWebContext _mockWebContext;
+        private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly ICategoryService _mockCategoryService;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
         private readonly PostService _postService;
@@ -18,9 +21,11 @@ namespace PostApiService.Tests.UnitTests
         public PostServiceTests()
         {
             _mockRepository = Substitute.For<IRepository<Post>>();
+            _mockWebContext = Substitute.For<IWebContext>();
+            _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<ICategoryService>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
-            _postService = new PostService(_mockRepository, _mockCategoryService, _mockSnippetGenerator);
+            _postService = new PostService(_mockRepository, _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockSnippetGenerator);
         }
 
         [Fact]
@@ -495,19 +500,12 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldReturnConflict_WhenPostExists()
+        public async Task AddPostAsync_ShouldReturnUnauthorized_WhenUserNotAuthenticated()
         {
-            // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var newPost = TestDataHelper.GetSinglePost(categories);
-            var postCreateDto = TestDataHelper.ToPostCreateDto(newPost);
+            // Arrange            
+            var postCreateDto = TestDataHelper.GetPostCreateDto();
 
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
-                .Returns(true);
-
-            var expectedMessage = string.Format
-                (PostM.Errors.PostTitleOrSlugAlreadyExist, postCreateDto.Title, postCreateDto.Slug);
-            var expectedErrorCode = PostM.Errors.PostAlreadyExistCode;
+            _mockWebContext.UserId.Returns(string.Empty);
 
             // Act
             var result = await _postService.AddPostAsync(postCreateDto);
@@ -515,14 +513,64 @@ namespace PostApiService.Tests.UnitTests
             // Assert
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Unauthorized, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
+
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnInvalid_WhenPostIsEmpty()
+        {
+            // Arrange
+            const string invalidPostContent = "<script></script>";
+            var postCreateDto = TestDataHelper.GetPostCreateDto(invalidPostContent);
+
+            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
+
+            // Act
+            var result = await _postService.AddPostAsync(postCreateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(PostM.Errors.Empty, result.Message);
+            Assert.Equal(PostM.Errors.EmptyCode, result.ErrorCode);
+
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnConflict_WhenPostExists()
+        {
+            // Arrange
+            var createPostDto = TestDataHelper.GetPostCreateDto();
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            // Act
+            var result = await _postService.AddPostAsync(createPostDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.Conflict, result.Status);
             Assert.Null(result.Value);
-            Assert.Equal(expectedMessage, result.Message);
-            Assert.Equal(expectedErrorCode, result.ErrorCode);
+            Assert.Equal(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
+                createPostDto.Title, createPostDto.Slug), result.Message);
+            Assert.Equal(PostM.Errors.PostAlreadyExistCode, result.ErrorCode);
 
             await _mockRepository.Received(1)
                 .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
-                    p.Compile()(new Post { Title = postCreateDto.Title, Slug = postCreateDto.Slug })),
+                    p.Compile()(new Post { Title = createPostDto.Title, Slug = createPostDto.Slug })),
                     Arg.Any<CancellationToken>());
 
             await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
@@ -532,14 +580,13 @@ namespace PostApiService.Tests.UnitTests
         public async Task AddPostAsync_ShouldReturnNotFound_WhenCategoryDoesNotExists()
         {
             // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var newPost = TestDataHelper.GetSinglePost(categories);
-            var postCreateDto = TestDataHelper.ToPostCreateDto(newPost);
+            var postCreateDto = TestDataHelper.GetPostCreateDto();
 
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
-                .Returns(false);
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
 
-            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, Arg.Any<CancellationToken>())
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(false);
 
             var expectedMessage = CategoryM.Errors.CategoryNotFound;
@@ -566,23 +613,44 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
+        public async Task AddPostAsync_ShouldStripHtmlFromTitleAndSlug()
+        {
+            // Arrange            
+            var postCreateDto = TestDataHelper.GetPostCreateDto(
+                title: "<h1>Clean Title</h1>",
+                slug: "<b>clean-slug</b>"
+            );
+
+            var ct = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
+
+            // Act
+            var result = await _postService.AddPostAsync(postCreateDto, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Clean Title", result.Value.Title);
+            Assert.Equal("clean-slug", result.Value.Slug);
+
+            await _mockRepository.Received(1).AddAsync(Arg.Any<Post>(), ct);
+        }
+
+        [Fact]
         public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
         {
-            // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var newPost = TestDataHelper.GetSinglePost(categories);
-            var postCreateDto = TestDataHelper.ToPostCreateDto(newPost);
+            // Arrange                       
+            var postCreateDto = TestDataHelper.GetPostCreateDto();
             var token = CancellationToken.None;
 
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
-
-            _mockCategoryService.ExistsAsync(Arg.Any<int>(), token).Returns(true);
-
-            _mockRepository.AddAsync(newPost, token)
-                .Returns(Task.CompletedTask);
-
-            var expectedMessage = PostM.Success.PostAddedSuccessfully;
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token).Returns(true);
 
             // Act
             var result = await _postService.AddPostAsync(postCreateDto, token);
@@ -598,37 +666,75 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(postCreateDto.Slug, data.Slug);
             Assert.Equal(postCreateDto.CategoryId, data.CategoryId);
 
-            Assert.Equal(expectedMessage, result.Message);
-
-            await _mockRepository.Received(1)
-                .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
-                    p.Compile()(newPost)), token);
-
-            await _mockCategoryService.Received(1).ExistsAsync(postCreateDto.CategoryId, token);
+            Assert.Equal(PostM.Success.PostAddedSuccessfully, result.Message);
 
             await _mockRepository.Received(1).AddAsync(Arg.Is<Post>(p =>
-                   p.Title == postCreateDto.Title &&
-                   p.Slug == postCreateDto.Slug &&
-                   p.CategoryId == postCreateDto.CategoryId), token);
-
+                 p.Title == postCreateDto.Title &&
+                 p.Slug == postCreateDto.Slug &&
+                 p.CategoryId == postCreateDto.CategoryId), token);
             await _mockRepository.Received(1).SaveChangesAsync(token);
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnUnauthorized_WhenUserNotAuthenticated()
+        {
+            // Arrange
+            const int postId = 1;
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto();
+
+            _mockWebContext.UserId.Returns(string.Empty);
+
+            // Act
+            var result = await _postService.UpdatePostAsync(postId, postUpdateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Unauthorized, result.Status);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
+
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnInvalid_WhenPostIsEmpty()
+        {
+            // Arrange
+            const int postId = 1;
+            const string invalidPostContent = "<script></script>";
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto(invalidPostContent);
+
+            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
+
+            // Act
+            var result = await _postService.UpdatePostAsync(postId, postUpdateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(PostM.Errors.Empty, result.Message);
+            Assert.Equal(PostM.Errors.EmptyCode, result.ErrorCode);
+
+            _mockSanitizationService.Received(1).SanitizePost(Arg.Any<string>());
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnNotFound_WhenPostDoesNotExist()
         {
             // Arrange
-            int postId = 999;
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var post = TestDataHelper.GetSinglePost(categories);
+            const int postId = 1;
+            const string content = "<script>alert('xss')</script>";
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto(content);
 
-            var postUpdateDto = TestDataHelper.ToPostUpdateDto(post);
-
+            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
                 .Returns((Post?)null);
-
-            var expectedMessage = string.Format(PostM.Errors.PostNotFound, post.Title);
-            var expectedErrorCode = PostM.Errors.PostNotFoundCode;
 
             // Act
             var result = await _postService.UpdatePostAsync(postId, postUpdateDto);
@@ -637,76 +743,123 @@ namespace PostApiService.Tests.UnitTests
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.NotFound, result.Status);
-            Assert.Equal(expectedMessage, result.Message);
-            Assert.Equal(expectedErrorCode, result.ErrorCode);
+            Assert.Equal(PostM.Errors.PostNotFound, result.Message);
+            Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
 
             await _mockRepository.Received(1).GetByIdAsync(postId, Arg.Any<CancellationToken>());
-
-            await _mockRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnConflict_WhenTitleAlreadyExistsForAnotherPost()
         {
-            // Arrange
-            int postId = 1;
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var postInDb = TestDataHelper.GetSinglePost(categories);
+            // Arrange           
+            const int postId = 1;
+            const string content = "Test post content";
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto(content);
 
-            var updateDto = TestDataHelper.ToPostUpdateDto(postInDb);
-
+            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(postInDb);
-
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
-                .Returns(true);
-
-            var expectedMessage = string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist, updateDto.Title, updateDto.Slug);
-            var expectedErrorCode = PostM.Errors.PostAlreadyExistCode;
+                .Returns(new Post());
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(),
+                Arg.Any<CancellationToken>()).Returns(true);
 
             // Act
-            var result = await _postService.UpdatePostAsync(postId, updateDto);
+            var result = await _postService.UpdatePostAsync(postId, postUpdateDto);
 
             // Assert
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.Conflict, result.Status);
-            Assert.Equal(expectedMessage, result.Message);
-            Assert.Equal(expectedErrorCode, result.ErrorCode);
+            Assert.Equal(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
+                postUpdateDto.Title, postUpdateDto.Slug), result.Message);
+            Assert.Equal(PostM.Errors.PostAlreadyExistCode, result.ErrorCode);
 
-            await _mockRepository.Received(1).GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
-            await _mockRepository.Received(1).AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>());
-
-            await _mockRepository.DidNotReceive().UpdateAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnNotFound_WhenCategoryDoesNotExists()
+        {
+            // Arrange
+            const int postId = 1;
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto(categoryId: 2);
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { CategoryId = 99 });
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns(false);
+
+            // Act
+            var result = await _postService.UpdatePostAsync(postId, postUpdateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(CategoryM.Errors.CategoryNotFound, result.Message);
+            Assert.Equal(PostM.Errors.CategoryNotFoundCode, result.ErrorCode);
+
+            await _mockCategoryService.Received(1)
+                .ExistsAsync(Arg.Is(postUpdateDto.CategoryId), Arg.Any<CancellationToken>());
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldStripHtmlFromTitleAndSlug()
+        {
+            // Arrange
+            const int postId = 1;
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto(
+                title: "<h1>Clean Title</h1>",
+                slug: "<b>clean-slug</b>"
+            );
+
+            var ct = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post());
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
+
+            // Act
+            var result = await _postService.UpdatePostAsync(postId, postUpdateDto, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal("Clean Title", result.Value.Title);
+            Assert.Equal("clean-slug", result.Value.Slug);
+
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
         }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnSuccess_WhenPostUpdatedSuccessfully()
         {
             // Arrange
-            int postId = 1;
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var postInDb = TestDataHelper.GetSinglePost(categories);
-            postInDb.Id = postId;
+            const int postId = 1;
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto();
 
-            var updateDto = TestDataHelper.ToPostUpdateDto(postInDb);
-            var token = CancellationToken.None;
+            var ct = CancellationToken.None;
 
+            _mockWebContext.UserId.Returns("user-id");
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(postInDb);
-
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
-                .Returns(false);
-
-            _mockRepository.UpdateAsync(postInDb, token)
-                .Returns(Task.CompletedTask);
+                .Returns(new Post());
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
 
             var expectedMessage = PostM.Success.PostUpdatedSuccessfully;
 
             // Act
-            var result = await _postService.UpdatePostAsync(postId, updateDto, token);
+            var result = await _postService.UpdatePostAsync(postId, postUpdateDto, ct);
 
             // Assert
             Assert.NotNull(result);
@@ -716,15 +869,31 @@ namespace PostApiService.Tests.UnitTests
             Assert.NotNull(result.Value);
 
             var data = result.Value!;
-            Assert.Equal(updateDto.Title, data.Title);
-            Assert.Equal(updateDto.Slug, data.Slug);
+            Assert.Equal(postUpdateDto.Title, data.Title);
+            Assert.Equal(postUpdateDto.Slug, data.Slug);
+            Assert.Equal(expectedMessage, result.Message);            
 
-            Assert.Equal(expectedMessage, result.Message);
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
+        }
 
-            await _mockRepository.Received(1).GetByIdAsync(postId, token);
-            await _mockRepository.Received(1).AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token);
-            await _mockRepository.Received(1).UpdateAsync(postInDb, token);
-            await _mockRepository.Received(1).SaveChangesAsync(token);
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnUnauthorized_WhenUserNotAuthenticated()
+        {
+            // Arrange
+            const int postId = 1;
+            _mockWebContext.UserId.Returns(string.Empty);
+
+            // Act
+            var result = await _postService.DeletePostAsync(postId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Unauthorized, result.Status);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
+
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -733,11 +902,9 @@ namespace PostApiService.Tests.UnitTests
             // Arrange
             int postId = 99;
 
+            _mockWebContext.UserId.Returns("user-id");
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
                 .Returns((Post)null!);
-
-            var errorMessage = PostM.Errors.PostNotFound;
-            var errorCode = PostM.Errors.PostNotFoundCode;
 
             // Act
             var result = await _postService.DeletePostAsync(postId);
@@ -746,11 +913,10 @@ namespace PostApiService.Tests.UnitTests
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.NotFound, result.Status);
-            Assert.Equal(errorMessage, result.Message);
-            Assert.Equal(errorCode, result.ErrorCode);
+            Assert.Equal(PostM.Errors.PostNotFound, result.Message);
+            Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
 
             await _mockRepository.Received(1).GetByIdAsync(postId, Arg.Any<CancellationToken>());
-
             await _mockRepository.DidNotReceive().DeleteAsync(Arg.Is<Post>(p =>
                     p.Id == postId), Arg.Any<CancellationToken>());
         }
@@ -759,35 +925,25 @@ namespace PostApiService.Tests.UnitTests
         public async Task DeletePostAsync_ShouldReturn200Ok_WhenPostRemove()
         {
             // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var post = TestDataHelper.GetSinglePost(categories);
-            var postId = post.Id;
+            int postId = 1;
+            var existingPost = new Post { Id = postId, Title = "To be deleted" };
+            _mockWebContext.UserId.Returns("user-id");
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
+                .Returns(existingPost);
 
-            var token = CancellationToken.None;
-
-            _mockRepository.GetByIdAsync(postId, token)
-                .Returns(post);
-
-            _mockRepository.DeleteAsync(post, token)
-                .Returns(Task.CompletedTask);
-
-            var successMessage = PostM.Success.PostDeletedSuccessfully;
+            var ct = CancellationToken.None;
 
             // Act
-            var result = await _postService.DeletePostAsync(post.Id);
+            var result = await _postService.DeletePostAsync(postId, ct);
 
             // Assert
             Assert.NotNull(result);
             Assert.True(result.IsSuccess);
             Assert.Equal(ResultStatus.Success, result.Status);
-            Assert.Equal(successMessage, result.Message);
+            Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
 
-            await _mockRepository.Received(1).GetByIdAsync(postId, token);
-
-            await _mockRepository.Received(1).DeleteAsync(Arg.Is<Post>(p =>
-                    p.Id == post.Id), token);
-
-            await _mockRepository.Received(1).SaveChangesAsync(token);
+            await _mockRepository.Received(1).DeleteAsync(existingPost, ct);
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
         }
     }
 }
