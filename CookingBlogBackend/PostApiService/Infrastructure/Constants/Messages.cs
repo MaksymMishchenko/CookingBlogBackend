@@ -13,6 +13,8 @@
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
                 public const string AddPostFailed = "Failed to add post with title '{0}'.";                                
                 public const string NoPostsFound = "No posts found for the requested page.";
+                public const string Empty = "Post content cannot be empty.";
+                public const string EmptyCode = "POST_CONTENT_IS_EMPTY";
             }
 
             public static class Success

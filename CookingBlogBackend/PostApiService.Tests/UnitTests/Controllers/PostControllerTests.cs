@@ -276,62 +276,50 @@ namespace PostApiService.Tests.UnitTests.Controllers
             await _mockPostService.Received(1).GetPostByIdAsync(postId, token);
         }
 
-        [Fact]
-        public async Task AddPostAsync_ShouldReturn409Conflict_WhenPostAlreadyExists()
+        [Theory]
+        [InlineData(ResultStatus.Unauthorized, 401, typeof(UnauthorizedObjectResult))]
+        [InlineData(ResultStatus.Invalid, 400, typeof(BadRequestObjectResult))]
+        [InlineData(ResultStatus.Conflict, 409, typeof(ConflictObjectResult))]
+        [InlineData(ResultStatus.NotFound, 404, typeof(NotFoundObjectResult))]
+        public async Task AddPostAsync_ShouldReturnCorrectStatusCode_ForNegativeResults(
+            ResultStatus status,
+            int expectedStatusCode,
+            Type expectedResultType)
         {
             // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var post = TestDataHelper.GetSinglePost(categories);
-            var postDto = TestDataHelper.ToPostCreateDto(post);
+            var msg = "Error message";
+            var code = "ERR_CODE";
 
-            var errorMessage = PostM.Errors.PostTitleOrSlugAlreadyExist;
-            var errorCode = PostM.Errors.PostAlreadyExistCode;
+            var serviceResult = status switch
+            {
+                ResultStatus.Unauthorized => Result<PostAdminDetailsDto>.Unauthorized(msg, code),
+                ResultStatus.Invalid => Result<PostAdminDetailsDto>.Invalid(msg, code),
+                ResultStatus.Conflict => Result<PostAdminDetailsDto>.Conflict(msg, code),
+                ResultStatus.NotFound => Result<PostAdminDetailsDto>.NotFound(msg, code),
+                _ => throw new ArgumentException($"Unsupported status: {status}")
+            };
 
-            var serviceResult = Result<PostAdminDetailsDto>.Conflict(errorMessage, errorCode);
-
-            _mockPostService.AddPostAsync(postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
-
-            // Act
-            var result = await _postsController.AddPostAsync(postDto);
-
-            // Assert
-            var conflictResult = Assert.IsType<ConflictObjectResult>(result);
-            var response = Assert.IsType<ApiResponse>(conflictResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(errorMessage, response.Message);
-            Assert.Equal(errorCode, response.ErrorCode);
-            Assert.Equal((int)HttpStatusCode.Conflict, conflictResult.StatusCode);
-
-            await _mockPostService.Received(1).AddPostAsync(postDto);
-        }
-
-        [Fact]
-        public async Task AddPostAsync_ShouldReturn404NotFound_WhenCategoryDoesNotExist()
-        {
-            // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var post = TestDataHelper.GetSinglePost(categories);
-            var postDto = TestDataHelper.ToPostCreateDto(post);
-            var errorMessage = CategoryM.Errors.CategoryNotFound;
-            var errorCode = PostM.Errors.CategoryNotFoundCode;
-
-            var serviceResult = Result<PostAdminDetailsDto>.NotFound(errorMessage, errorCode);
-
-            _mockPostService.AddPostAsync(postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
+            _mockPostService
+                .AddPostAsync(Arg.Any<PostCreateDto>(), Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.AddPostAsync(postDto);
+            var result = await _postsController.AddPostAsync(new PostCreateDto { Content = "New content" });
 
             // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+            Assert.IsType(expectedResultType, result);
 
+            var objectResult = result as ObjectResult;
+            Assert.NotNull(objectResult);
+            Assert.Equal(expectedStatusCode, objectResult.StatusCode);
+
+            var response = Assert.IsType<ApiResponse>(objectResult.Value);
             Assert.False(response.Success);
-            Assert.Equal(errorMessage, response.Message);
-            Assert.Equal((int)HttpStatusCode.NotFound, notFoundResult.StatusCode);
+            Assert.Equal(msg, response.Message);
+            Assert.Equal(code, response.ErrorCode);
 
-            await _mockPostService.Received(1).AddPostAsync(postDto);
+            await _mockPostService.Received(1)
+                .AddPostAsync(Arg.Any<PostCreateDto>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -340,7 +328,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
             var post = TestDataHelper.GetSinglePost(categories);
-            var postDto = TestDataHelper.ToPostCreateDto(post);
+
+            var postDto = TestDataHelper.GetPostCreateDto();
 
             var token = CancellationToken.None;
 
@@ -371,22 +360,64 @@ namespace PostApiService.Tests.UnitTests.Controllers
             await _mockPostService.Received(1).AddPostAsync(postDto, token);
         }
 
-        [Fact]
-        public async Task UpdatePostAsync_ShouldReturn404NotFound_WhenPostDoesNotExist()
+        [Theory]
+        [InlineData(ResultStatus.Unauthorized, 401, typeof(UnauthorizedObjectResult))]
+        [InlineData(ResultStatus.Invalid, 400, typeof(BadRequestObjectResult))]
+        [InlineData(ResultStatus.NotFound, 404, typeof(NotFoundObjectResult))]
+        [InlineData(ResultStatus.Conflict, 409, typeof(ConflictObjectResult))]
+        public async Task UpdatePostAsync_ShouldReturnCorrectStatusCode_ForNegativeResults(
+            ResultStatus status,
+            int expectedStatusCode,
+            Type expectedResultType)
         {
             // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var post = TestDataHelper.GetSinglePost(categories);
-            var postId = post.Id;
+            var msg = "Error message";
+            var code = "ERR_CODE";
 
-            var postDto = TestDataHelper.ToPostUpdateDto(post);
+            var serviceResult = status switch
+            {
+                ResultStatus.Unauthorized => Result<PostAdminDetailsDto>.Unauthorized(msg, code),
+                ResultStatus.Invalid => Result<PostAdminDetailsDto>.Invalid(msg, code),
+                ResultStatus.NotFound => Result<PostAdminDetailsDto>.NotFound(msg, code),
+                ResultStatus.Conflict => Result<PostAdminDetailsDto>.Conflict(msg, code),
+                _ => throw new ArgumentException($"Unsupported status: {status}")
+            };
 
-            var errorMessage = string.Format(PostM.Errors.PostNotFound, postDto.Title);
-            var errorCode = PostM.Errors.PostNotFoundCode;
+            _mockPostService
+                .UpdatePostAsync(Arg.Any<int>(), Arg.Any<PostUpdateDto>(), Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _postsController.UpdatePostAsync(1, new PostUpdateDto { Content = "Updated content" });
+
+            // Assert
+            Assert.IsType(expectedResultType, result);
+
+            var objectResult = result as ObjectResult;
+            Assert.NotNull(objectResult);
+            Assert.Equal(expectedStatusCode, objectResult.StatusCode);
+
+            var response = Assert.IsType<ApiResponse>(objectResult.Value);
+            Assert.False(response.Success);
+            Assert.Equal(msg, response.Message);
+            Assert.Equal(code, response.ErrorCode);
+
+            await _mockPostService.Received(1)
+                .UpdatePostAsync(Arg.Any<int>(), Arg.Any<PostUpdateDto>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturn404NotFound_WhenCategoryDoesNotExist()
+        {
+            // Arrange
+            const int postId = 1;
+            var postDto = TestDataHelper.GetPostUpdateDto();
+            var errorMessage = CategoryM.Errors.CategoryNotFound;
+            var errorCode = PostM.Errors.CategoryNotFoundCode;
 
             var serviceResult = Result<PostAdminDetailsDto>.NotFound(errorMessage, errorCode);
 
-            _mockPostService.UpdatePostAsync(postId, postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
+            _mockPostService.UpdatePostAsync(1, postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
 
             // Act
             var result = await _postsController.UpdatePostAsync(postId, postDto);
@@ -397,40 +428,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             Assert.False(response.Success);
             Assert.Equal(errorMessage, response.Message);
-            Assert.Equal(errorCode, response.ErrorCode);
             Assert.Equal((int)HttpStatusCode.NotFound, notFoundResult.StatusCode);
-
-            await _mockPostService.Received(1).UpdatePostAsync(postId, postDto, Arg.Any<CancellationToken>());
-        }
-
-        [Fact]
-        public async Task UpdatePostAsync_ShouldReturn409Conflict_WhenPostAlreadyExist()
-        {
-            // Arrange
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var post = TestDataHelper.GetSinglePost(categories);
-            var postId = post.Id;
-
-            var updatedTitle = post.Title;
-            var postDto = TestDataHelper.ToPostUpdateDto(post, updatedTitle);
-
-            var errorMessage = string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist, postDto.Title, postDto.Slug);
-            var errorCode = PostM.Errors.PostAlreadyExistCode;
-
-            var serviceResult = Result<PostAdminDetailsDto>.Conflict(errorMessage, errorCode);
-
-            _mockPostService.UpdatePostAsync(postId, postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
-
-            // Act
-            var result = await _postsController.UpdatePostAsync(postId, postDto);
-
-            // Assert
-            var conflictResult = Assert.IsType<ConflictObjectResult>(result);
-            var response = Assert.IsType<ApiResponse>(conflictResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(errorMessage, response.Message);
-            Assert.Equal((int)HttpStatusCode.Conflict, conflictResult.StatusCode);
 
             await _mockPostService.Received(1).UpdatePostAsync(postId, postDto, Arg.Any<CancellationToken>());
         }
@@ -473,32 +471,46 @@ namespace PostApiService.Tests.UnitTests.Controllers
             await _mockPostService.Received(1).UpdatePostAsync(postId, postDto, token);
         }
 
-        [Fact]
-        public async Task DeletePostAsync_ShouldReturn404NotFoundResult_IfPostDoesNotExists()
+        [Theory]
+        [InlineData(ResultStatus.Unauthorized, 401, typeof(UnauthorizedObjectResult))]
+        [InlineData(ResultStatus.NotFound, 404, typeof(NotFoundObjectResult))]
+        public async Task DeletePostAsync_ShouldReturnCorrectStatusCode_ForNegativeResults(
+            ResultStatus status,
+            int expectedStatusCode,
+            Type expectedResultType)
         {
             // Arrange
-            var postId = 1;
-            var errorMessage = PostM.Errors.PostNotFound;
-            var errorCode = PostM.Errors.PostNotFoundCode;
+            var msg = "Error message";
+            var code = "ERR_CODE";
 
-            var serviceResult = Result<bool>.NotFound(errorMessage, errorCode);
+            var serviceResult = status switch
+            {
+                ResultStatus.Unauthorized => Result.Unauthorized(msg, code),
+                ResultStatus.NotFound => Result.NotFound(msg, code),
+                _ => throw new ArgumentException($"Unsupported status: {status}")
+            };
 
-            _mockPostService.DeletePostAsync(postId, Arg.Any<CancellationToken>())
-                 .Returns(serviceResult);
+            _mockPostService
+                .DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.DeletePostAsync(postId);
+            var result = await _postsController.DeletePostAsync(1);
 
             // Assert
-            var notFoundObjectResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<ApiResponse>(notFoundObjectResult.Value);
+            Assert.IsType(expectedResultType, result);
 
+            var objectResult = result as ObjectResult;
+            Assert.NotNull(objectResult);
+            Assert.Equal(expectedStatusCode, objectResult.StatusCode);
+
+            var response = Assert.IsType<ApiResponse>(objectResult.Value);
             Assert.False(response.Success);
-            Assert.Equal((int)HttpStatusCode.NotFound, notFoundObjectResult.StatusCode);
-            Assert.Equal(errorMessage, response.Message);
-            Assert.Equal(errorCode, response.ErrorCode);
+            Assert.Equal(msg, response.Message);
+            Assert.Equal(code, response.ErrorCode);
 
-            await _mockPostService.Received(1).DeletePostAsync(postId, Arg.Any<CancellationToken>());
+            await _mockPostService.Received(1)
+                .DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
