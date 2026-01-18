@@ -21,6 +21,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
         [Theory]
         [InlineData(ResultStatus.Unauthorized, 401, typeof(UnauthorizedObjectResult))]
+        [InlineData(ResultStatus.Invalid, 400, typeof(BadRequestObjectResult))]
         [InlineData(ResultStatus.NotFound, 404, typeof(NotFoundObjectResult))]
         public async Task AddCommentAsync_ShouldReturnCorrectStatusCode_ForNegativeResults(
             ResultStatus status,
@@ -98,6 +99,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
         [Theory]
         [InlineData(ResultStatus.Unauthorized, 401, typeof(UnauthorizedObjectResult))]
+        [InlineData(ResultStatus.Invalid, 400, typeof(BadRequestObjectResult))]
         [InlineData(ResultStatus.NotFound, 404, typeof(NotFoundObjectResult))]
         [InlineData(ResultStatus.Forbidden, 403, typeof(ObjectResult))]
         public async Task UpdateCommentAsync_ShouldReturnCorrectStatusCode_ForNegativeResults(
@@ -112,6 +114,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var serviceResult = status switch
             {
                 ResultStatus.Unauthorized => Result<CommentUpdatedDto>.Unauthorized(msg, code),
+                ResultStatus.Invalid => Result<CommentUpdatedDto>.Invalid(msg, code),
                 ResultStatus.NotFound => Result<CommentUpdatedDto>.NotFound(msg, code),
                 ResultStatus.Forbidden => Result<CommentUpdatedDto>.Forbidden(msg, code),
                 _ => throw new ArgumentException($"Unsupported status: {status}")
@@ -217,7 +220,6 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             await _mockCommentService.Received(1).DeleteCommentAsync(Arg.Any<int>());
         }
-
 
         [Fact]
         public async Task OnDeleteComment_ShouldReturnOk_WhenCommentIsDeletedSuccessfully()

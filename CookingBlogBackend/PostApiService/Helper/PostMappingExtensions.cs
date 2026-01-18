@@ -14,6 +14,7 @@ namespace PostApiService.Helper
             p.Author,
             p.Category.Name ?? ContentConstants.DefaultCategory,
             p.CreatedAt,
+            p.UpdatedAt,
             p.Description,
             p.Comments.Count
         );
@@ -29,9 +30,10 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
-            p.CreatedAt
+            p.CreatedAt,
+            p.UpdatedAt
         );
-
+        
         public static PostAdminDetailsDto MapToAdminDto(this Post p) =>
         new PostAdminDetailsDto(
             p.Id,
@@ -44,61 +46,57 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
-            p.CreatedAt
+            p.CreatedAt,
+            p.UpdatedAt
         );
-
-        public static Post ToEntity(this PostCreateDto dto)
+        
+        public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)
         {
+            var title = dto.Title.StripHtml();
+            var description = dto.Description.StripHtml();
+
             return new Post
             {
-                Title = dto.Title,
-                Description = dto.Description,
-                Content = dto.Content,
-                Author = dto.Author,
+                Title = title,
+                Description = description,
+                Content = sanitizedContent,
+                Author = dto.Author.StripHtml(),
                 ImageUrl = dto.ImageUrl,
-                Slug = dto.Slug,
+                Slug = dto.Slug.StripHtml(),
                 CategoryId = dto.CategoryId,
+
                 MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
-                    ? dto.Title
-                    : dto.MetaTitle,
+                    ? title
+                    : dto.MetaTitle.StripHtml(),
+
                 MetaDescription = string.IsNullOrWhiteSpace(dto.MetaDescription)
-                    ? (dto.Description.Length > 200 ? dto.Description[..197] + "..." : dto.Description)
-                    : dto.MetaDescription,
+                    ? (description.Length > 200 ? description[..197] + "..." : description)
+                    : dto.MetaDescription.StripHtml(),
+
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
         }
-
-        public static PostAdminDetailsDto ToDto(this Post post)
+        
+        public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent)
         {
-            return new PostAdminDetailsDto(
-                post.Id,
-                post.Title,
-               post.Description,
-                post.Content,
-                post.Author,
-                post.ImageUrl,
-                post.Slug,
-                string.IsNullOrWhiteSpace(post.MetaTitle)
-                    ? post.Title
-                    : post.MetaTitle,
-                string.IsNullOrWhiteSpace(post.MetaDescription)
-                    ? (post.Description.Length > 200 ? post.Description[..197] + "..." : post.Description)
-                    : post.MetaDescription,
-                post.CategoryId,
-                DateTime.UtcNow
-            );
-        }
+            entity.Title = dto.Title.StripHtml();
+            entity.Description = dto.Description.StripHtml();
+            entity.Content = sanitizedContent;
+            entity.Author = dto.Author.StripHtml();
+            entity.ImageUrl = dto.ImageUrl;
+            entity.Slug = dto.Slug.StripHtml();
+            entity.CategoryId = dto.CategoryId;
 
-        public static void UpdateEntity(this PostUpdateDto dto, Post existingPost)
-        {
-            existingPost.Title = dto.Title;
-            existingPost.Description = dto.Description;
-            existingPost.Content = dto.Content;
-            existingPost.ImageUrl = dto.ImageUrl;
-            existingPost.MetaTitle = dto.MetaTitle;
-            existingPost.MetaDescription = dto.MetaDescription;
-            existingPost.Slug = dto.Slug;
+            entity.MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
+                ? dto.Title.StripHtml()
+                : dto.MetaTitle.StripHtml();
+
+            entity.MetaDescription = string.IsNullOrWhiteSpace(dto.MetaDescription)
+                ? (dto.Description.StripHtml().Length > 200
+                    ? dto.Description.StripHtml()[..197] + "..."
+                    : dto.Description.StripHtml())
+                : dto.MetaDescription.StripHtml();            
         }
     }
 }

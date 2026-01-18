@@ -64,6 +64,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
+                .RuleFor(p => p.UpdatedAt, f => f.Date.Recent(7).ToUniversalTime())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
                     if (!generateComments)
@@ -234,6 +235,7 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Category.Name, actualDto.Category);
             Assert.Equal(expectedPost.Description, actualDto.Description);
             Assert.Equal(expectedPost.CreatedAt, actualDto.CreatedAt);
+            Assert.Equal(expectedPost.UpdatedAt, actualDto.UpdatedAt);
             Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
         }
 
@@ -607,8 +609,49 @@ namespace PostApiService.Tests.Helper
                 post.MetaTitle,
                 post.MetaDescription,
                 post.CategoryId,
-                post.CreatedAt
+                post.CreatedAt,
+                post.UpdatedAt
             );
+        }
+
+        public static PostCreateDto GetPostCreateDto(
+            string title = "Test Post Title",
+            string slug = "test-post-title",
+            string content = "This is the content of the test post.",
+            int categoryId = 1)
+        {
+            return new PostCreateDto
+            {
+                Title = title,
+                Slug = slug,
+                Content = content,
+                Description = "Test Post Description",
+                Author = "Test Author",
+                ImageUrl = "http://example.com/image.jpg",
+                MetaTitle = "Test Meta Title",
+                MetaDescription = "Test Meta Description",
+                CategoryId = categoryId
+            };
+        }
+
+        public static PostUpdateDto GetPostUpdateDto(
+            string title = "Updated Post Title",
+            string slug = "updated-post-title",
+            string content = "Updated content of the post.",
+            int categoryId = 1)
+        {
+            return new PostUpdateDto
+            {
+                Title = title,
+                Slug = slug,
+                Content = content,
+                Description = "Updated Description",
+                Author = "Updated Author",
+                ImageUrl = "http://example.com/image.jpg",
+                MetaTitle = "Updated Meta Title",
+                MetaDescription = "Updated Meta Description",
+                CategoryId = categoryId
+            };
         }
 
         public static CommentCreateDto CreateCommentRequest(string content = "Default test content") =>

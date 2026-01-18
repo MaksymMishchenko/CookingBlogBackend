@@ -9,14 +9,17 @@ namespace PostApiService.Services
     public class CommentService : ICommentService
     {
         private readonly ICommentRepository _commentRepository;
+        private readonly IHtmlSanitizationService _sanitizer;
         private readonly IPostRepository _postRepository;
         private readonly IWebContext _webContext;
 
         public CommentService(ICommentRepository commentRepository,
+             IHtmlSanitizationService sanitizer,
             IPostRepository postRepository,
             IWebContext webContext)
         {
             _commentRepository = commentRepository;
+            _sanitizer = sanitizer;
             _postRepository = postRepository;
             _webContext = webContext;
         }
@@ -24,13 +27,28 @@ namespace PostApiService.Services
         /// <summary>
         /// Adds a new comment to a post with the given post ID.
         /// </summary>        
-        public async Task<Result<CommentCreatedDto>> AddCommentAsync(int postId, string content, CancellationToken ct = default)
+        public async Task<Result<CommentCreatedDto>> AddCommentAsync
+            (int postId, string content, CancellationToken ct = default)
         {
             var userId = _webContext.UserId;
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Result<CommentCreatedDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
                     Auth.LoginM.Errors.UnauthorizedAccessCode);
+            }
+
+            var sanitizedContent = _sanitizer.SanitizeComment(content);
+
+            if (!string.Equals(content, sanitizedContent, StringComparison.Ordinal))
+            {
+                var traceContent = content.Truncate(500);
+                Log.Warning(Security.XssDetectedOnCommentCreate, postId, userId, _webContext.IpAddress, traceContent);
+            }
+
+            if (string.IsNullOrWhiteSpace(sanitizedContent))
+            {
+                return Result<CommentCreatedDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
             }
 
             var postExists = await _postRepository.IsAvailableForCommentingAsync(postId, ct);
@@ -43,7 +61,7 @@ namespace PostApiService.Services
 
             var comment = new Comment
             {
-                Content = content,
+                Content = sanitizedContent,
                 PostId = postId,
                 UserId = userId,
                 CreatedAt = DateTime.UtcNow
@@ -63,10 +81,24 @@ namespace PostApiService.Services
         public async Task<Result<CommentUpdatedDto>> UpdateCommentAsync(int commentId, string content, CancellationToken ct = default)
         {
             var userId = _webContext.UserId;
+
             if (string.IsNullOrEmpty(userId))
             {
                 return Result<CommentUpdatedDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
                     Auth.LoginM.Errors.UnauthorizedAccessCode);
+            }
+
+            var sanitizedContent = _sanitizer.SanitizeComment(content);
+
+            if (!string.Equals(content, sanitizedContent, StringComparison.Ordinal))
+            {
+                var traceContent = content.Truncate(500);
+                Log.Warning(Security.XssDetectedOnCommentUpdate, commentId, userId, _webContext.IpAddress, traceContent);
+            }
+
+            if (string.IsNullOrWhiteSpace(sanitizedContent))
+            {
+                return Result<CommentUpdatedDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
             }
 
             var existingComment = await _commentRepository.GetWithUserAsync(commentId, ct);
@@ -89,7 +121,7 @@ namespace PostApiService.Services
 
             var authorName = existingComment.User.UserName ?? UnknownUser;
 
-            existingComment.Content = content;
+            existingComment.Content = sanitizedContent;
             if (isAdmin && existingComment.UserId != userId)
             {
                 existingComment.IsEditedByAdmin = true;
@@ -101,6 +133,7 @@ namespace PostApiService.Services
             }
 
             await _commentRepository.SaveChangesAsync(ct);
+
             var commentDto = existingComment.ToUpdatedDto(authorName);
 
             return Result<CommentUpdatedDto>.Success(commentDto, CommentM.Success.CommentUpdatedSuccessfully);
@@ -114,7 +147,7 @@ namespace PostApiService.Services
             var userId = _webContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
-            {                
+            {
                 return Result.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
                     Auth.LoginM.Errors.UnauthorizedAccessCode);
             }

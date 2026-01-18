@@ -13,6 +13,8 @@
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
                 public const string AddPostFailed = "Failed to add post with title '{0}'.";                                
                 public const string NoPostsFound = "No posts found for the requested page.";
+                public const string Empty = "Post content cannot be empty.";
+                public const string EmptyCode = "POST_CONTENT_IS_EMPTY";
             }
 
             public static class Success
@@ -49,7 +51,9 @@
                 public const string NotFound = "Comment not found.";
                 public const string NotFoundCode = "COMMENT_NOT_FOUND";
                 public const string AccessDenied = "You do not have permission to manage this comment.";
-                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";                
+                public const string AccessDeniedCode = "COMMENT_ACCESS_DENIED";
+                public const string Empty = "Comment content cannot be empty.";
+                public const string EmptyCode = "COMMENT_IS_EMPTY";
             }
 
             public static class Success

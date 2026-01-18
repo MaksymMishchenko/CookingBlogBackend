@@ -7,6 +7,7 @@
         string Author,
         string Category,
         DateTime CreatedAt,
+        DateTime? UpdatedAt,
         string Description,
         int CommentsCount
     );

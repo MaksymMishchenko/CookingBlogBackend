@@ -1,4 +1,5 @@
 ﻿using PostApiService.Infrastructure.Services;
+using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
@@ -6,14 +7,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
 {
     public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
-        private readonly InMemoryDatabaseFixture _fixture;
+        private readonly InMemoryDatabaseFixture _fixture;        
         private readonly IdentityUser _testUser;
-        private readonly IWebContext _webContextMock;
+        private readonly IWebContext _webContextMock;       
 
         public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
-            _webContextMock = Substitute.For<IWebContext>();
+            _webContextMock = Substitute.For<IWebContext>();            
 
             _testUser = new IdentityUser
             {
@@ -34,14 +35,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             var postRepo = new PostRepository(context);
             var commentRepo = new CommentRepository(context);
+            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();                
             var catService = new CategoryService(new Repository<Category>(context), postRepo);
-            var postService = new PostService(postRepo, catService, new SnippetGeneratorService());
+            var postService = new PostService(postRepo, _webContextMock, sanitizeServiceMock,
+                catService, new SnippetGeneratorService());
 
             _webContextMock.UserId.Returns(_testUser.Id);
+            sanitizeServiceMock.SanitizeComment(Arg.Any<string>()).Returns(x => x.Arg<string>());
             _webContextMock.UserName.Returns(_testUser.UserName);
             _webContextMock.IsAdmin.Returns(false);
 
-            var commentService = new CommentService(commentRepo, postRepo, _webContextMock);
+            var commentService = new CommentService(commentRepo, sanitizeServiceMock, postRepo, _webContextMock);
 
             return new TestSetup(context, postService, commentService, posts, categories);
         }
@@ -78,7 +82,6 @@ namespace PostApiService.Tests.IntegrationTests.Services
             {
                 var postId = 1;
                 var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
-
                 var content = "Test comment from Bob";
 
                 // Act

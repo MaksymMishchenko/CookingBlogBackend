@@ -293,25 +293,31 @@ namespace PostApiService.Tests.IntegrationTests
         [Fact]
         public async Task AddPostAsync_ShouldAddPost_Return201CreatedAtAction()
         {
-            // Arrange
+            // Arrange            
             SetupMockUser();
+            const string ExpectedSafeContent = "Test content";
+            const string HackContent = "Test content<script>Hack code</script>";
 
             var culinaryCategories = TestDataHelper.GetCulinaryCategories();
             await SeedCategoriesAsync(culinaryCategories);
 
             var categoryListFromDb = await GetCategoriesFromDbAsync();
             var postToCreate = TestDataHelper.GetSinglePost(categoryListFromDb, includeId: false);
+            postToCreate.Content = HackContent;
 
             var content = HttpHelper.GetJsonHttpContent(postToCreate);
 
             // Act
             var response = await _client.PostAsync(Posts.Base, content);
+            response.EnsureSuccessStatusCode();
 
             // Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse<Post>>();
-            Assert.NotNull(result);
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<PostAdminDetailsDto>>();
+
+            Assert.Equal(ExpectedSafeContent, result.Data.Content);
+            Assert.DoesNotContain("<script>", result.Data.Content);
 
             var locationHeader = response.Headers.Location?.ToString();
             Assert.NotNull(locationHeader);
@@ -360,22 +366,16 @@ namespace PostApiService.Tests.IntegrationTests
         {
             // Arrange
             SetupMockUser();
+            const string ExpectedSafeContent = "Updated test content";
+            const string HackContent = "Updated test content<script>Hack code</script>";
+            const string NewTitle = "Absolutely New Title";
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
             await SeedDatabaseAsync(posts, categories);
 
             var postId = 2;
-            Post? postFromDb;
-
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                postFromDb = await dbContext.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == postId);
-            }
-
-            Assert.NotNull(postFromDb);
-            var updateDto = TestDataHelper.ToPostUpdateDto(postFromDb, "Updated title");
+            var updateDto = TestDataHelper.GetPostUpdateDto(title: NewTitle, content: HackContent);
 
             var content = HttpHelper.GetJsonHttpContent(updateDto);
             var url = string.Format(Posts.GetById, postId);
@@ -390,13 +390,23 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.NotNull(result);
             Assert.True(result.Success);
             Assert.Equal(postId, result.Data.Id);
-            Assert.Equal("Updated title", result.Data.Title);
+            Assert.Equal(ExpectedSafeContent, result.Data.Content);
+            Assert.DoesNotContain("<script>", result.Data.Content);
+
+            Assert.NotNull(result.Data.UpdatedAt); 
+            Assert.True(result.Data.UpdatedAt > DateTime.UtcNow.AddSeconds(-10));
 
             using (var scope = _services.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var updatedInDb = await dbContext.Posts.FindAsync(postId);
-                Assert.Equal("Updated title", updatedInDb!.Title);
+                var updatedInDb = await dbContext.Posts.AsNoTracking().FirstOrDefaultAsync(p => p.Id == postId);
+
+                Assert.NotNull(updatedInDb);
+                Assert.Equal(NewTitle, updatedInDb.Title);
+                Assert.Equal(ExpectedSafeContent, updatedInDb.Content);
+
+                Assert.NotNull(updatedInDb.UpdatedAt);
+                Assert.Equal(result.Data.UpdatedAt, updatedInDb.UpdatedAt);
             }
         }
 
@@ -486,6 +496,37 @@ namespace PostApiService.Tests.IntegrationTests
             }
         }
 
+        [Fact]
+        public async Task DeletePostAsync_ShouldRemovePostAndAssociatedComments_Cascade()
+        {
+            // Arrange
+            SetupMockUser();
+
+            var categories = TestDataHelper.GetCulinaryCategories();           
+            var posts = TestDataHelper.GetPostsWithComments( count: 1, categories, commentCount: 3);
+            await SeedDatabaseAsync(posts, categories);
+
+            var targetPost = posts.First();
+            var postId = targetPost.Id;
+            var url = string.Format(Posts.GetById, postId);
+
+            // Act
+            var response = await _client.DeleteAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            // Assert
+            using (var scope = _services.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                
+                var postExists = await dbContext.Posts.AnyAsync(p => p.Id == postId);
+                Assert.False(postExists);
+                
+                var orphanCommentsExist = await dbContext.Comments.AnyAsync(c => c.PostId == postId);
+                Assert.False(orphanCommentsExist);
+            }
+        }
+
         private async Task SeedDatabaseAsync(IEnumerable<Post> posts, IEnumerable<Category> categories)
         {
             using (var scope = _services.CreateScope())
@@ -512,7 +553,7 @@ namespace PostApiService.Tests.IntegrationTests
                 await dbContext.Posts.AddRangeAsync(posts);
                 await dbContext.SaveChangesAsync();
             }
-        }        
+        }
 
         private async Task SeedCategoriesAsync(IEnumerable<Category> categories)
         {

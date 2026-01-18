@@ -1,4 +1,6 @@
 ﻿using PostApiService.Infrastructure.Common;
+using PostApiService.Infrastructure.Services;
+using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
@@ -7,23 +9,38 @@ namespace PostApiService.Tests.IntegrationTests.Services
     public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
         private readonly InMemoryDatabaseFixture _fixture;
+        private readonly IdentityUser _testUser;
 
         public PostServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
+
+            _testUser = new IdentityUser
+            {
+                Id = "testContId",
+                UserName = "TestBob",
+                Email = "bob@test.com"
+            };
         }
 
         private record TestSetup(
-        ApplicationDbContext Context,
-        PostService Service,
-        List<Post> Posts,
-        List<Category> Categories);
+            ApplicationDbContext Context,
+            PostService Service,
+            List<Post> Posts,
+            List<Category> Categories);
 
         private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
         {
             var repo = new Repository<Post>(context);
+            var webContextMock = Substitute.For<IWebContext>();
+            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
             var catService = new CategoryService(new Repository<Category>(context), repo);
-            var service = new PostService(repo, catService, new SnippetGeneratorService());
+
+            webContextMock.UserId.Returns(_testUser.Id);
+            sanitizeServiceMock.SanitizePost(Arg.Any<string>()).Returns(x => x.Arg<string>());
+            webContextMock.UserName.Returns(_testUser.UserName);
+
+            var service = new PostService(repo, webContextMock, sanitizeServiceMock, catService, new SnippetGeneratorService());
 
             return new TestSetup(context, service, posts, categories);
         }
@@ -70,7 +87,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 var data = result.Value!;
                 Assert.Equal(ExpectedTotalPostCount, data.TotalCount);
-                Assert.Equal(ExpectedPageSize, data.PageSize);
+                Assert.Equal(ExpectedPageSize, data.PageSize);                
 
                 Assert.Equal(expectedPostsOnPage.First().Id, data.Items.First().Id);
                 Assert.Equal(expectedPostsOnPage.Last().Id, data.Items.Last().Id);
@@ -200,6 +217,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     .FirstOrDefaultAsync(p => p.Title == postDto.Title);
 
                 Assert.NotNull(addedPostInDb);
+                Assert.True(data.Id > 0);
+                Assert.Equal(data.Id, addedPostInDb.Id);
                 Assert.Equal(postDto.Content, addedPostInDb.Content);
 
                 var finalCount = await context.Posts.CountAsync();
@@ -234,8 +253,15 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 Assert.NotNull(postInDb);
                 Assert.Equal(updateDto.Title, postInDb.Title);
-                Assert.Equal(updateDto.Content, postInDb.Content);
+                Assert.Equal(updateDto.Content, postInDb.Content);                
                 Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
+
+                Assert.NotNull(postInDb.UpdatedAt);
+                Assert.True(postInDb.UpdatedAt > DateTime.UtcNow.AddMinutes(-1));                
+                Assert.Equal(postInDb.UpdatedAt, result.Value!.UpdatedAt);
+
+                var totalCount = await context.Posts.CountAsync();
+                Assert.Equal(seededPosts.Count, totalCount);
             }
         }
 
@@ -248,7 +274,6 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var targetPost = seededPosts.First();
             var initialCount = seededPosts.Count;
-            var successMessage = PostM.Success.PostDeletedSuccessfully;
 
             using (context)
             {
@@ -258,13 +283,33 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 // Assert
                 Assert.True(result.IsSuccess);
                 Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.Equal(successMessage, result.Message);
+                Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
 
                 var postExists = await context.Posts.AnyAsync(p => p.Id == targetPost.Id);
                 Assert.False(postExists);
 
                 var finalCount = await context.Posts.CountAsync();
                 Assert.Equal(initialCount - 1, finalCount);
+            }
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldAlsoRemoveAssociatedComments()
+        {
+            // Arrange           
+            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
+                _fixture.GeneratePosts(1, cats, commentCount: 5));
+
+            var targetPost = seededPosts.First();
+
+            using (context)
+            {
+                // Act
+                await postService.DeletePostAsync(targetPost.Id);
+
+                // Assert               
+                var orphanCommentsExist = await context.Comments.AnyAsync(c => c.PostId == targetPost.Id);
+                Assert.False(orphanCommentsExist);
             }
         }
     }
