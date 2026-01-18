@@ -69,6 +69,7 @@ namespace PostApiService
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(8))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
+                .RuleFor(p => p.UpdatedAt, f => f.Date.Recent(7).ToUniversalTime())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
                     if (!generateComments)

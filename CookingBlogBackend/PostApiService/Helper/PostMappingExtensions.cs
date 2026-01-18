@@ -14,6 +14,7 @@ namespace PostApiService.Helper
             p.Author,
             p.Category.Name ?? ContentConstants.DefaultCategory,
             p.CreatedAt,
+            p.UpdatedAt,
             p.Description,
             p.Comments.Count
         );
@@ -29,8 +30,10 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
+            p.CreatedAt,
+            p.UpdatedAt
         );
-
+        
         public static PostAdminDetailsDto MapToAdminDto(this Post p) =>
         new PostAdminDetailsDto(
             p.Id,
@@ -43,6 +46,8 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
+            p.CreatedAt,
+            p.UpdatedAt
         );
         
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)

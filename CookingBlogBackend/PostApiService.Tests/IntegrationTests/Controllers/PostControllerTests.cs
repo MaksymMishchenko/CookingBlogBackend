@@ -393,6 +393,8 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(ExpectedSafeContent, result.Data.Content);
             Assert.DoesNotContain("<script>", result.Data.Content);
 
+            Assert.NotNull(result.Data.UpdatedAt); 
+            Assert.True(result.Data.UpdatedAt > DateTime.UtcNow.AddSeconds(-10));
 
             using (var scope = _services.CreateScope())
             {
@@ -402,6 +404,9 @@ namespace PostApiService.Tests.IntegrationTests
                 Assert.NotNull(updatedInDb);
                 Assert.Equal(NewTitle, updatedInDb.Title);
                 Assert.Equal(ExpectedSafeContent, updatedInDb.Content);
+
+                Assert.NotNull(updatedInDb.UpdatedAt);
+                Assert.Equal(result.Data.UpdatedAt, updatedInDb.UpdatedAt);
             }
         }
 

@@ -64,6 +64,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
+                .RuleFor(p => p.UpdatedAt, f => f.Date.Recent(7).ToUniversalTime())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
                     if (!generateComments)
@@ -234,6 +235,7 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Category.Name, actualDto.Category);
             Assert.Equal(expectedPost.Description, actualDto.Description);
             Assert.Equal(expectedPost.CreatedAt, actualDto.CreatedAt);
+            Assert.Equal(expectedPost.UpdatedAt, actualDto.UpdatedAt);
             Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
         }
 

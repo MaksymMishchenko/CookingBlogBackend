@@ -257,6 +257,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
 
                 Assert.NotNull(postInDb.UpdatedAt);
+                Assert.True(postInDb.UpdatedAt > DateTime.UtcNow.AddMinutes(-1));                
+                Assert.Equal(postInDb.UpdatedAt, result.Value!.UpdatedAt);
 
                 var totalCount = await context.Posts.CountAsync();
                 Assert.Equal(seededPosts.Count, totalCount);
