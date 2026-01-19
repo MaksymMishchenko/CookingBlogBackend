@@ -187,6 +187,7 @@ namespace PostApiService.Infrastructure
                     // Adding Claims to Users
                     await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
                     await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
+                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Comment));
 
                     await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
                     await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));

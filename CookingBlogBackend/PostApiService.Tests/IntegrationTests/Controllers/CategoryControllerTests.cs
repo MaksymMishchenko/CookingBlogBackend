@@ -4,31 +4,35 @@ using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
-    public class CategoryControllerTests : IClassFixture<CategoryFixture>
+    [Collection("SharedDatabase")]
+    public class CategoryControllerTests
     {
-        private readonly CategoryFixture _fixture;
+        private readonly BaseTestFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
 
-        public CategoryControllerTests(CategoryFixture fixture)
+        public CategoryControllerTests(BaseTestFixture fixture)
         {
             _fixture = fixture;
             _client = fixture.Client!;
             _services = fixture.Services!;
+            _fixture.LoginAsAdmin();
         }
 
         [Fact]
         public async Task GetAllCategoriesAsync_ShouldReturnAllCategories_WithStatusCode200Ok()
         {
             // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
             const int ExpectedTotalCategories = 6;
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            await SeedCategoriesAsync(categories);
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
             var url = Categories.Base;
 
@@ -52,9 +56,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task GetCategoryByIdAsync_ShouldReturnBadRequest_WhenCategoryIdIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             const int InvalidCategorytId = 0;
             var url = string.Format(Categories.GetById, InvalidCategorytId);
 
@@ -80,15 +82,16 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task GetCategoryByIdAsync_ShouldReturn200ОК_WithExpectedCategory()
         {
             // Arrange
-            SetupMockUser();
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
 
-            const int ExpectedCategoryId = 5;
             var categories = TestDataHelper.GetCulinaryCategories();
-            await SeedCategoriesAsync(categories);
 
-            var expectedCategory = categories.First(c => c.Id == ExpectedCategoryId);
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-            var url = string.Format(Categories.GetById, ExpectedCategoryId);
+            var expectedCategory = categories.Last();
+            int categoryId = expectedCategory.Id;
+            var url = string.Format(Categories.GetById, categoryId);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -100,19 +103,16 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.True(content!.Success);
             Assert.NotNull(content.Data);
 
-            Assert.Equal(expectedCategory.Id, content.Data.Id);
+            Assert.Equal(categoryId, content.Data.Id);
             Assert.Equal(expectedCategory!.Name, content.Data.Name);
         }
 
         [Fact]
         public async Task AddСategoryAsync_ShouldReturnBadRequest_WhenModelIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             var invalidCategory = new CreateCategoryDto { Name = null! };
             var content = HttpHelper.GetJsonHttpContent(invalidCategory);
-
             var url = Categories.Base;
 
             // Act
@@ -134,21 +134,20 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task AddCategoryAsync_ShouldReturnLocationHeader_AndDataShouldBeAccessible()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             var newCategory = new CreateCategoryDto { Name = "Seafood" };
             var content = HttpHelper.GetJsonHttpContent(newCategory);
-
             var url = Categories.Base;
-            
+
+            // Act
             var response = await _client.PostAsync(url, content);
-            
+
+            // Assert
             Assert.Equal(HttpStatusCode.Created, response.StatusCode);
-            
+
             var locationHeader = response.Headers.Location?.ToString();
-            Assert.NotNull(locationHeader);            
-            
+            Assert.NotNull(locationHeader);
+
             var getResponse = await _client.GetAsync(locationHeader);
             Assert.Equal(HttpStatusCode.OK, getResponse.StatusCode);
         }
@@ -156,12 +155,9 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task AddCategoryAsync_ShouldAddCategory_Return201CreatedAtAction()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             var newCategory = new CreateCategoryDto { Name = "Street Food" };
             var content = HttpHelper.GetJsonHttpContent(newCategory);
-
             var url = Categories.Base;
 
             // Act
@@ -185,9 +181,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task UpdateCategoryAsync_ShouldReturnBadRequest_WhenModelIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             const int ValidId = 3;
             var invalidCategory = new UpdateCategoryDto { Name = null! };
             var content = HttpHelper.GetJsonHttpContent(invalidCategory);
@@ -213,9 +207,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task UpdateCategoryAsync_ShouldReturnBadRequest_WhenIdIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             const int InvalidId = 0;
             var invalidCategory = new UpdateCategoryDto { Name = "Soap" };
             var content = HttpHelper.GetJsonHttpContent(invalidCategory);
@@ -244,16 +236,19 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task UpdateCategoryAsync_ShouldUpdateCategory_Return200Ok()
         {
             // Arrange
-            SetupMockUser();
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
 
-            const int ValidId = 2;
             var categories = TestDataHelper.GetCulinaryCategories();
-            await SeedCategoriesAsync(categories);
+
+            await _fixture.Services!.SeedCategoriesAsync(categories);
+
+            int categoryId = categories.First().Id;
 
             var updateDto = new UpdateCategoryDto { Name = "Soap" };
             var content = HttpHelper.GetJsonHttpContent(updateDto);
 
-            var url = string.Format(Categories.GetById, ValidId);
+            var url = string.Format(Categories.GetById, categoryId);
 
             // Act
             var response = await _client.PutAsync(url, content);
@@ -268,8 +263,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(updateDto.Name, result.Data.Name);
             Assert.Equal(CategoryM.Success.CategoryUpdatedSuccessfully, result.Message);
 
-            var category = await GetCategoryByIdAsync(ValidId);
-
+            var category = await GetCategoryByIdAsync(categoryId);
 
             Assert.NotNull(category);
             Assert.Equal(updateDto.Name, category.Name);
@@ -278,9 +272,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task DeleteCategoryAsync_ShouldReturnBadRequest_WhenCategoryIdIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
-
+            // Arrange            
             var invalidCategoryId = -1;
             var url = string.Format(Categories.GetById, invalidCategoryId);
 
@@ -300,19 +292,21 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(result.Errors);
             Assert.Contains("id", result.Errors.Keys);
             Assert.Equal(Global.Validation.InvalidId, result.Errors["id"][0]);
-        }        
+        }
 
         [Fact]
         public async Task DeleteCategoryAsync_ShouldReturn200Ok_IfCategoryIsDeletedSuccessfully()
         {
             // Arrange
-            SetupMockUser();
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
 
-            const int ValidCategoryId = 4;
             var categories = TestDataHelper.GetCulinaryCategories();
-            await SeedCategoriesAsync(categories);
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-            var url = string.Format(Categories.GetById, ValidCategoryId);
+            var expectedCategory = categories.First();
+            int realId = expectedCategory.Id;
+            var url = string.Format(Categories.GetById, realId);
 
             // Act
             var request = await _client.DeleteAsync(url);
@@ -326,46 +320,16 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(string.Format
                 (CategoryM.Success.CategoryDeletedSuccessfully), result.Message);
 
-            var category = await GetCategoryByIdAsync(ValidCategoryId);
+            var category = await GetCategoryByIdAsync(realId);
             Assert.Null(category);
         }
-
-        private async Task SeedCategoriesAsync(IEnumerable<Category> categories)
-        {
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                await dbContext.Database.EnsureDeletedAsync();
-                if (await dbContext.Database.EnsureCreatedAsync())
-                {
-                    await dbContext.Categories.AddRangeAsync(categories);
-                    await dbContext.SaveChangesAsync();
-                }
-            }
-        }       
 
         private async Task<Category?> GetCategoryByIdAsync(int id)
         {
             using var scope = _services.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            
+
             return await dbContext.Categories.AsNoTracking().FirstOrDefaultAsync(c => c.Id == id);
-            
-        }        
-
-        private void SetupMockUser()
-        {
-            var adminClaims = new[]
-                {
-                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
-                new Claim(ClaimTypes.Name, "admin"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
-            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
-
-            _fixture.SetCurrentUser(adminPrincipal);
         }
     }
 }

@@ -5,20 +5,24 @@ using System.Net.Http.Json;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
-    public class AuthControllerTests : IClassFixture<AuthFixture>
+    [Collection("SharedDatabase")]
+    public class AuthControllerTests
     {
         private readonly HttpClient? _client;
         private readonly IServiceProvider? _services;
-        public AuthControllerTests(AuthFixture fixture)
+        private readonly BaseTestFixture _fixture;
+
+        public AuthControllerTests(BaseTestFixture fixture)
         {
             _client = fixture.Client;
             _services = fixture.Services;
+            _fixture = fixture;
         }
 
         [Fact]
         public async Task OnRegister_ShouldReturnBadRequest_WhenDataIsInvalid()
         {
-            // Arrange
+            // Arrange            
             var invalidData = new RegisterUser { Email = "not-an-email" };
 
             var url = Authentication.Register;
@@ -40,6 +44,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnRegister_ShouldReturnSuccessResponse_IfUserRegisterSuccessfully()
         {
             // Arrange
+            await _fixture.ResetDatabaseAsync();
+
             var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe6" };
             var content = HttpHelper.GetJsonHttpContent(newUser);
 
@@ -86,21 +92,24 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.True(content.Errors.Any());
         }
 
-        [Fact]
-        public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully()
+        [Theory]
+        [InlineData(TestUserData.AdminUserName, TestUserData.AdminPassword)]
+        [InlineData(TestUserData.ContributorUserName, TestUserData.ContributorPassword)]
+        public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully(string userName, string password)
         {
             // Arrange            
-            var loginUser = new LoginUser { UserName = "cont", Password = "-Rtyuehe2" };
+            var loginUser = new LoginUser { UserName = userName, Password = password };
             var loginContent = HttpHelper.GetJsonHttpContent(loginUser);
 
             var url = Authentication.Login;
 
             // Act
             var loginResponse = await _client!.PostAsync(url, loginContent);
+            loginResponse.EnsureSuccessStatusCode();
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<ApiResponse<LoginUser>>();
 
-            // Assert
+            // Assert            
             Assert.True(loginResult!.Success);
             Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess,
                 loginUser.UserName), loginResult.Message);
