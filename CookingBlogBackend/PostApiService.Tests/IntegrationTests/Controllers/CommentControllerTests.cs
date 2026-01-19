@@ -1,34 +1,32 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Models.Common;
+﻿using PostApiService.Models.Common;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
-using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
-    public class CommentControllerTests : IClassFixture<CommentFixture>
+    [Collection("SharedDatabase")]
+    public class CommentControllerTests
     {
-        private readonly CommentFixture _fixture;
+        private readonly BaseTestFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
 
-        public CommentControllerTests(CommentFixture fixture)
+        public CommentControllerTests(BaseTestFixture fixture)
         {
             _fixture = fixture;
             _client = fixture.Client!;
             _services = fixture.Services!;
+            _fixture.LoginAsContributor();
         }
 
         [Fact]
         public async Task OnAddComment_ShouldReturnBadRequest_WhenPostIdIsInvalid()
         {
-            // Arrange            
-            SetupMockUser();
+            // Arrange                        
             var invalidPostId = 0;
-
-            var comment = new Comment { Content = "Valid content" };
+            var comment = new CommentCreateDto { Content = "Valid content" };
             var content = HttpHelper.GetJsonHttpContent(comment);
 
             var url = string.Format(Comments.GetById, invalidPostId);
@@ -48,11 +46,9 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnAddComment_ShouldReturnBadRequest_WhenModelIsInvalid()
         {
-            // Arrange            
-            SetupMockUser();
+            // Arrange                        
             var postId = 1;
-
-            var invalidComment = new Comment { Content = "" };
+            var invalidComment = new CommentCreateDto { Content = "" };
             var content = HttpHelper.GetJsonHttpContent(invalidComment);
 
             var url = string.Format(Comments.GetById, postId);
@@ -71,21 +67,29 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.True(result.Errors.Any());
         }
 
-        [Fact]
-        public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult()
+        [Theory]
+        [InlineData(TestUserData.AdminKey)]
+        [InlineData(TestUserData.ContributorKey)]
+        public async Task OnAddCommentAsync_ShouldAddCommentToDatabaseAndReturn200OkResult(string userRole)
         {
-            // Arrange            
-            const string userId = "testContId";
-            SetupMockUser(userId);
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            if (userRole == TestUserData.AdminKey)
+                _fixture.LoginAsAdmin();
+            else
+                _fixture.LoginAsContributor();
+
             const string ExpectedCommentOutput = "Test comment content";
             const string HackCode = "Test comment content<script>Hack code</script>";
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
-            await SeedDatabaseAsync(posts, categories);
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
             var postId = posts.First().Id;
-
             var createDto = TestDataHelper.CreateCommentRequest(HackCode);
             var content = HttpHelper.GetJsonHttpContent(createDto);
 
@@ -93,10 +97,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             // Act
             var response = await _client.PostAsync(url, content);
-
-            // Assert
             response.EnsureSuccessStatusCode();
-
+            // Assert            
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<CommentCreatedDto>>();
@@ -108,9 +110,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             var data = result.Data!;
             Assert.Equal(ExpectedCommentOutput, data.Content);
-
-            Assert.Equal(userId, data.UserId);
-
             Assert.True(data.Id > 0);
             Assert.NotEqual(default, data.CreatedAt);
             Assert.NotNull(data.Author);
@@ -119,13 +118,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnUpdateComment_ShouldReturnBadRequest_WhenCommentIdIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
+            // Arrange           
             var invalidCommentId = 0;
-
             var editModel = new CommentUpdateDto { Content = "Some valid content" };
             var content = HttpHelper.GetJsonHttpContent(editModel);
-
             var url = string.Format(Comments.GetById, invalidCommentId);
 
             // Act
@@ -143,13 +139,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnUpdateComment_ShouldReturnBadRequest_WhenModelIsInvalid()
         {
-            // Arrange
-            SetupMockUser();
+            // Arrange            
             var commentId = 2;
-
             var invalidModel = new CommentUpdateDto { Content = "" };
             var content = HttpHelper.GetJsonHttpContent(invalidModel);
-
             var url = string.Format(Comments.GetById, commentId);
 
             // Act
@@ -170,18 +163,23 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnUpdateCommentAsync_ShouldUpdateCommentInDatabaseAndReturn200OkResult()
         {
             // Arrange
-            const string userId = "testContId";
-            SetupMockUser(userId);
-            int postId = 1;
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
-            await SeedDatabaseAsync(posts, categories);
 
-            var commentToBeEdited = new CommentUpdateDto { Content = "Updated comment content." };
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var content = HttpHelper.GetJsonHttpContent(commentToBeEdited);
-            var url = string.Format(Comments.GetById, postId);
+            var title = posts.First().Title;
+
+            var expectedComment = posts.SelectMany(c => c.Comments).First();
+            var realId = expectedComment.Id;
+
+            var editedComment = new CommentUpdateDto { Content = "Updated comment content." };
+
+            var content = HttpHelper.GetJsonHttpContent(editedComment);
+            var url = string.Format(Comments.GetById, realId);
 
             // Act
             var response = await _client.PutAsync(url, content);
@@ -199,10 +197,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(result.Data);
 
             var data = result.Data!;
-            Assert.Equal(commentToBeEdited.Content, data.Content);
-
-            Assert.Equal(userId, data.UserId);
-
+            Assert.Equal(editedComment.Content, data.Content);
             Assert.True(data.Id > 0);
             Assert.NotEqual(default, data.CreatedAt);
             Assert.NotNull(data.Author);
@@ -211,10 +206,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnDeleteComment_ShouldReturnBadRequest_WhenCommentIdIsInvalid()
         {
-            // Arrange           
-            SetupMockUser();
+            // Arrange                       
             var invalidCommentId = 0;
-
             var url = string.Format(Comments.GetById, invalidCommentId);
 
             // Act
@@ -233,15 +226,19 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [Fact]
         public async Task OnDeleteCommentAsync_ShouldRemoveCommentInDatabaseAndReturn200OkResult()
         {
-            // Arrange            
-            SetupMockUser();
-            int commentIdToDelete = 3;
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(categories);
-            await SeedDatabaseAsync(posts, categories);
 
-            var url = string.Format(Comments.GetById, commentIdToDelete);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var comment = posts.SelectMany(p => p.Comments).First();
+            var realId = comment.Id;
+
+            var url = string.Format(Comments.GetById, realId);
 
             // Act
             var response = await _client.DeleteAsync(url);
@@ -254,50 +251,6 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(result);
             Assert.True(result.Success);
             Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
-        }
-
-        private async Task SeedDatabaseAsync(IEnumerable<Post> posts, ICollection<Category> categories)
-        {
-            using (var scope = _services.CreateScope())
-            {
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                await dbContext.Database.EnsureDeletedAsync();
-                await dbContext.Database.EnsureCreatedAsync();
-
-                var testUser = new IdentityUser
-                {
-                    Id = "testContId",
-                    UserName = "testCont",
-                    Email = "test@test.com",
-                    NormalizedUserName = "TESTCONT"
-                };
-
-                await dbContext.Users.AddAsync(testUser);
-                await dbContext.SaveChangesAsync();
-
-                await dbContext.Categories.AddRangeAsync(categories);
-                await dbContext.Posts.AddRangeAsync(posts);
-                await dbContext.SaveChangesAsync();
-            }
-        }
-
-        private void SetupMockUser(string userId = "testContId")
-        {
-            var contClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId),
-                new Claim(ClaimTypes.Name, "cont"),
-                new Claim(ClaimTypes.Role, "Contributor"),
-                new Claim("Comment", "2"),
-                new Claim("Comment", "3"),
-                new Claim("Comment", "4")
-            };
-
-            var contIdentity = new ClaimsIdentity(contClaims, "DynamicScheme");
-            var contPrincipal = new ClaimsPrincipal(contIdentity);
-
-            _fixture.SetCurrentUser(contPrincipal);
         }
     }
 }

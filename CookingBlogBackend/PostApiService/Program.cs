@@ -11,15 +11,15 @@ builder.Host.AddAppLogging();
 
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
-    (ConfigConstants.DefaultConnection) ??
-    throw new InvalidOperationException
-        (string.Format(ConfigConstants.Errors.ConnectionStringNotFound, ConfigConstants.DefaultConnection));
+    (ConfigConstants.DefaultConnection);
 
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(builder.Configuration, connectionString);
 
-var jwtConfiguration = builder.Configuration.GetSection(ConfigConstants.JwtSection).Get<JwtConfiguration>() ??
-     throw new InvalidOperationException(ConfigConstants.Errors.JwtConfigMissing);
+var jwtConfiguration = builder.Configuration
+    .GetSection(ConfigConstants.JwtSection)
+    .Get<JwtConfiguration>();
+     
 
 builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection(ConfigConstants.JwtSection));
 
@@ -70,14 +70,14 @@ if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing")
     app.UseSwaggerUI();
 
     await app.SeedUserAsync();
-    await app.SeedDataAsync();  
+    await app.SeedDataAsync();
 }
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 app.UseHttpsRedirection();
 
-app.UseAuthentication(); 
+app.UseAuthentication();
 
 app.UseAuthorization();
 

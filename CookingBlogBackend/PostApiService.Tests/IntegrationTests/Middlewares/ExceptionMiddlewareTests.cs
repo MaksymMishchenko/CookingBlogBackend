@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NSubstitute;
 using PostApiService.Exceptions;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
@@ -9,19 +8,19 @@ using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
 using System.Security.Authentication;
-using System.Security.Claims;
 
 namespace PostApiService.Tests.IntegrationTests.Middlewares
 {
     public class ExceptionMiddlewareTests : IClassFixture<ExceptionMiddlewareFixture>
     {
+        private readonly ExceptionMiddlewareFixture _fixture;
         private readonly HttpClient _client;
-        private readonly ExceptionMiddlewareFixture _factoryFixture;
 
-        public ExceptionMiddlewareTests(ExceptionMiddlewareFixture factoryFixture)
+        public ExceptionMiddlewareTests(ExceptionMiddlewareFixture fixture)
         {
-            _factoryFixture = factoryFixture;
-            _client = _factoryFixture.Client;
+            _fixture = fixture;
+            _client = fixture.Client!;
+            _fixture.ClearMocks();
         }
 
         [Theory]
@@ -33,26 +32,24 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
             // Arrange                        
-            var authServiceMock = _factoryFixture?.Services?.GetRequiredService<IAuthService>();
-
-            authServiceMock.ClearReceivedCalls();
+            var authServiceMock = _fixture?.Services?.GetRequiredService<IAuthService>();
 
             switch (exceptionType)
             {
                 case Type t when t == typeof(UserAlreadyExistsException):
-                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                    authServiceMock!.RegisterUserAsync(Arg.Any<RegisterUser>())
                         .Returns(Task.FromException(new UserAlreadyExistsException(Auth.Registration.Errors.UsernameAlreadyExists)));
                     break;
                 case Type t when t == typeof(EmailAlreadyExistsException):
-                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                    authServiceMock!.RegisterUserAsync(Arg.Any<RegisterUser>())
                         .Returns(Task.FromException(new EmailAlreadyExistsException(Auth.Registration.Errors.EmailAlreadyExists)));
                     break;
                 case Type t when t == typeof(UserClaimException):
-                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                    authServiceMock!.RegisterUserAsync(Arg.Any<RegisterUser>())
                         .Returns(Task.FromException(new UserClaimException(Auth.Registration.Errors.CreationFailed)));
                     break;
                 case Type t when t == typeof(UserCreationException):
-                    authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
+                    authServiceMock!.RegisterUserAsync(Arg.Any<RegisterUser>())
                         .Returns(Task.FromException(new UserCreationException(Auth.Registration.Errors.CreationFailed)));
                     break;
                 default:
@@ -60,7 +57,6 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             }
 
             var newUser = new RegisterUser { UserName = "testUser", Email = "test@test.com", Password = "Rtyuehe3-" };
-
             var content = HttpHelper.GetJsonHttpContent(newUser);
 
             // Act
@@ -77,10 +73,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(UserAlreadyExistsException) => Auth.Registration.Errors.UsernameAlreadyExists,
                 Type t when t == typeof(EmailAlreadyExistsException) => Auth.Registration.Errors.EmailAlreadyExists,
                 Type t when t == typeof(UserClaimException) => Auth.Registration.Errors.CreationFailed,
-                Type t when t == typeof(UserCreationException) => Auth.Registration.Errors.CreationFailed
+                Type t when t == typeof(UserCreationException) => Auth.Registration.Errors.CreationFailed,
+                _ => throw new ArgumentOutOfRangeException(nameof(exceptionType), "Unexpected exception type")
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
+
+            await authServiceMock.Received(1).RegisterUserAsync(Arg.Is<RegisterUser>(u => u.UserName == "testUser"));
         }
 
         [Theory]
@@ -91,9 +90,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         public async Task LoginUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
-            var authServiceMock = _factoryFixture?.Services?.GetRequiredService<IAuthService>();
-
-            authServiceMock.ClearReceivedCalls();
+            var authServiceMock = _fixture?.Services?.GetRequiredService<IAuthService>();
 
             Task<IdentityUser> failedTask = exceptionType switch
             {
@@ -111,7 +108,6 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             authServiceMock?.LoginAsync(Arg.Any<LoginUser>()).Returns(failedTask);
 
             var user = new LoginUser { UserName = "testUser", Password = "Rtyuehe3-" };
-
             var content = HttpHelper.GetJsonHttpContent(user);
 
             // Act
@@ -129,10 +125,13 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(UnauthorizedAccessException) => Auth.LoginM.Errors.UnauthorizedAccess,
                 Type t when t == typeof(UserNotFoundException) => Auth.LoginM.Errors.InvalidCredentials,
                 Type t when t == typeof(ArgumentException) => Auth.Token.Errors.GenerationFailed,
-                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException
+                Type t when t == typeof(Exception) => Global.Validation.UnexpectedErrorException,
+                _ => throw new ArgumentOutOfRangeException(nameof(exceptionType), "Unexpected exception type")
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
+
+            await authServiceMock.Received(1)!.LoginAsync(Arg.Is<LoginUser>(u => u.UserName == "testUser"));
         }
 
         [Theory]
@@ -143,21 +142,9 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         public async Task AddPostAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
-            // Arrange
-            var adminClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "admin-id"),
-                new Claim(ClaimTypes.Name, "admin"),
-                new Claim(ClaimTypes.Role, "Admin")
-            };
-            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
-            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
-
-            _factoryFixture.SetCurrentUser(adminPrincipal);
-
-            var postServiceMock = _factoryFixture?.Services?.GetRequiredService<IPostService>();
-
-            postServiceMock.ClearReceivedCalls();
+            // Arrange                             
+            _fixture.LoginAsAdmin();
+            var postServiceMock = _fixture?.Services?.GetRequiredService<IPostService>();
 
             var exception = exceptionType switch
             {
@@ -175,17 +162,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             postServiceMock?.AddPostAsync(Arg.Any<PostCreateDto>(), Arg.Any<CancellationToken>())
                 .Returns(Task.FromException<Result<PostAdminDetailsDto>>(exception));
 
-            var postDto = new PostCreateDto
-            {
-                Title = "Title",
-                Description = "Description",
-                Content = "Content",
-                Author = "Author",
-                ImageUrl = "https://mysite.com/photo.jpg",
-                Slug = "test-post-slug",
-                CategoryId = 1
-            };
-
+            var postDto = TestDataHelper.GetPostCreateDto();
             var content = HttpHelper.GetJsonHttpContent(postDto);
 
             // Act
@@ -202,13 +179,15 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError,
+                _ => throw new ArgumentOutOfRangeException(nameof(exceptionType), "Unexpected exception type")
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
+            await postServiceMock.Received(1)!.AddPostAsync(Arg.Any<PostCreateDto>(), Arg.Any<CancellationToken>());
         }
 
-        [Theory]               
+        [Theory]
         [InlineData(typeof(DbUpdateException), $"{Comments.Base}/999", HttpStatusCode.InternalServerError)]
         [InlineData(typeof(OperationCanceledException), $"{Comments.Base}/999", HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TimeoutException), $"{Comments.Base}/999", HttpStatusCode.RequestTimeout)]
@@ -216,28 +195,12 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         public async Task AddCommentAsync_ShouldReturnExpectedStatusCode_WhenExceptionThrown
             (Type exceptionType, string url, HttpStatusCode expectedStatus)
         {
-            // Arrange
-            var adminClaims = new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, "cont-id"),
-                new Claim(ClaimTypes.Name, "cont"),
-                new Claim(ClaimTypes.Role, "Contributor"),
-                new Claim("Comment", "2"),
-                new Claim("Comment", "3"),
-                new Claim("Comment", "4")
-            };
-            var adminIdentity = new ClaimsIdentity(adminClaims, "DynamicScheme");
-            var adminPrincipal = new ClaimsPrincipal(adminIdentity);
-
-            _factoryFixture.SetCurrentUser(adminPrincipal);
-
-            var testPostId = 999;
-            var commentServiceMock = _factoryFixture?.Services?.GetRequiredService<ICommentService>();
-
-            commentServiceMock.ClearReceivedCalls();
+            // Arrange                       
+            _fixture.LoginAsContributor();
+            var commentServiceMock = _fixture?.Services?.GetRequiredService<ICommentService>();
 
             switch (exceptionType)
-            {                
+            {
                 case Type t when t == typeof(DbUpdateException):
                     commentServiceMock?.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
                         .Returns(Task.FromException<Result<CommentCreatedDto>>(new DbUpdateException(Global.System.DbUpdateError)));
@@ -258,8 +221,8 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     throw new ArgumentException($"Unsupported exception type: {exceptionType}");
             }
 
-            var comment = new Comment { PostId = testPostId, Content = "Test comment", UserId = "testUserId" };
-            var content = HttpHelper.GetJsonHttpContent(comment);
+            var createDto = new CommentCreateDto { Content = "Test comment" };
+            var content = HttpHelper.GetJsonHttpContent(createDto);
 
             // Act
             var response = await _client.PostAsync(url, content);
@@ -267,18 +230,22 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             // Assert
             Assert.Equal(expectedStatus, response.StatusCode);
 
-            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse<Comment>>();
+            var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse>();
             Assert.NotNull(errorResponse);
 
             string expectedMessage = exceptionType switch
-            {                                
+            {
                 Type t when t == typeof(DbUpdateException) => Global.System.DbUpdateError,
                 Type t when t == typeof(OperationCanceledException) => Global.System.RequestCancelled,
                 Type t when t == typeof(TimeoutException) => Global.System.Timeout,
-                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError
+                Type t when t == typeof(Exception) => Global.System.DatabaseCriticalError,
+                _ => throw new ArgumentOutOfRangeException(nameof(exceptionType), "Unexpected exception type")
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
+
+            await commentServiceMock.Received(1)!.AddCommentAsync(
+                Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
         }
     }
 }

@@ -14,7 +14,7 @@ namespace PostApiService.Tests.Helper
             int commentCount = 1,
             bool generateIds = false)
         {
-            var posts = GetPostFaker(useNewSeed, categories, generateComments, commentCount, generateIds).Generate(count);
+            var posts = GetPostFaker(useNewSeed, categories!, generateComments, commentCount, generateIds).Generate(count);
 
             if (generateIds)
             {
@@ -394,13 +394,32 @@ namespace PostApiService.Tests.Helper
                 finalId = id.Value;
             }
 
-            var category = categories.First(c => c.Name == "Desserts");
+            var category = categories!.First(c => c.Name == "Desserts");
 
             return new Post
             {
                 Id = finalId,
                 Title = "Lorem ipsum dolor sit amet",
                 Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
+                Author = "Test author",
+                Description = "Test description",
+                MetaTitle = "Test meta title",
+                MetaDescription = "Test meta description",
+                ImageUrl = "http://example.com/img/img.jpg",
+                Slug = "post-slug",
+                CategoryId = category.Id,
+                Category = null!
+            };
+        }
+
+        public static Post GetCreatePostDto(string content, ICollection<Category>? categories = null)
+        {            
+            var category = categories!.First(c => c.Name == "Desserts");
+
+            return new Post
+            {                
+                Title = "Lorem ipsum dolor sit amet",
+                Content = content,
                 Author = "Test author",
                 Description = "Test description",
                 MetaTitle = "Test meta title",
@@ -426,7 +445,7 @@ namespace PostApiService.Tests.Helper
                 MetaDescription = "Meta Description",
                 CategoryId = categoryId
             };
-        }
+        }        
 
         public static List<Comment> GetListWithComments()
         {

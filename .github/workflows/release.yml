@@ -4,7 +4,11 @@ on:
   push:
     branches:
       - main
-      - dev 
+      - dev
+  pull_request:
+    branches:
+      - main
+      - dev
 
 jobs:
   build-and-test:
@@ -20,22 +24,33 @@ jobs:
         with:
           dotnet-version: '8.0'
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj*', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore CookingBlogBackend/PostApiService.sln
 
       - name: Build project
-        run: dotnet build **/*.sln --configuration Release -no-restore
+        run: dotnet build CookingBlogBackend/PostApiService.sln --configuration Release --no-restore
 
       - name: Run Tests
-        run: dotnet test **/*.sln --configuration Release --no-build --verbosity normal
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          # Цей секрет перевизначить значення з вашого appsettings.Testing.json
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
+        run: dotnet test CookingBlogBackend/PostApiService.sln --configuration Release --no-build --verbosity normal
 
   release:
     needs: build-and-test
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

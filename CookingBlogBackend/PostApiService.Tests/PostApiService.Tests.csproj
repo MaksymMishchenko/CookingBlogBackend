@@ -15,6 +15,16 @@
 	</ItemGroup>
 
 	<ItemGroup>
+	  <None Remove="appsettings.Testing.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="appsettings.Testing.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
+	</ItemGroup>
+
+	<ItemGroup>
 		<PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
 		<PackageReference Include="xunit" Version="2.5.3" />
 		<PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
@@ -39,6 +49,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
+		<PackageReference Include="Testcontainers.MsSql" Version="4.10.0" />
 	</ItemGroup>
 
 	<ItemGroup>

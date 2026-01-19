@@ -339,10 +339,20 @@ ASALocalRun/
 # BeatPulse healthcheck temp database
 healthchecksdb
 
-# Ignore appsettings.json
-appsettings.json
-appsettings.*.json
+# Ignore appsettings.json by default
+appsettings*.json
+
+# Allow (unignore) three specific files:
+!appsettings.json
+!appsettings.Development.json
 !appsettings.Example.json
+!appsettings.Testing.json
+
+# Ignore secrets and other environments
+appsettings.Production.json
+appsettings.Staging.json
+
+secrets.json
 
 # Ignore coverage-report
 **/coverage-report/
