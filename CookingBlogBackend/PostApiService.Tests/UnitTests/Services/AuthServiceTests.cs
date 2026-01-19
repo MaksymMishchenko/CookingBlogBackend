@@ -34,10 +34,10 @@ namespace PostApiService.Tests.UnitTests.Services
             };
 
             _mockAuthRepository.FindByNameAsync(registerUser.UserName)
-            .Returns(Task.FromResult((IdentityUser)null!));
+            .Returns(Task.FromResult((IdentityUser?)null));
 
             _mockAuthRepository.FindByEmailAsync(registerUser.Email)
-            .Returns(Task.FromResult((IdentityUser)null!));
+            .Returns(Task.FromResult((IdentityUser?)null));
 
             var identityUser = new IdentityUser
             {
@@ -80,7 +80,7 @@ namespace PostApiService.Tests.UnitTests.Services
             };
 
             _mockAuthRepository.FindByNameAsync(loginUser.UserName)
-            .Returns(Task.FromResult(identityUser));
+            .Returns(Task.FromResult<IdentityUser?>(identityUser));
 
             _mockAuthRepository.CheckPasswordAsync(Arg.Any<IdentityUser>(), loginUser.Password)
                 .Returns(Task.FromResult(true));
@@ -117,7 +117,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockHttpContextAccessor.HttpContext.Returns(httpContext);
 
             _mockAuthRepository.GetUserAsync()
-                .Returns(Task.FromResult(user));
+                .Returns(Task.FromResult<IdentityUser?>(user));
 
             // Act
             var result = await _authService.GetCurrentUserAsync();
@@ -144,7 +144,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var expectedToken = "generated_token";
 
             _mockAuthRepository.FindByNameAsync(userName)
-                            .Returns(Task.FromResult(user));
+                            .Returns(Task.FromResult<IdentityUser?>(user));
 
             _mockAuthRepository.GetClaimsAsync(user)
                             .Returns(claims);

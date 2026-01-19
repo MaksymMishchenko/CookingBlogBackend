@@ -633,7 +633,7 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal("Clean Title", result.Value.Title);
+            Assert.Equal("Clean Title", result.Value!.Title);
             Assert.Equal("clean-slug", result.Value.Slug);
 
             await _mockRepository.Received(1).AddAsync(Arg.Any<Post>(), ct);
@@ -834,7 +834,7 @@ namespace PostApiService.Tests.UnitTests
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal("Clean Title", result.Value.Title);
+            Assert.Equal("Clean Title", result.Value!.Title);
             Assert.Equal("clean-slug", result.Value.Slug);
 
             await _mockRepository.Received(1).SaveChangesAsync(ct);
@@ -871,7 +871,7 @@ namespace PostApiService.Tests.UnitTests
             var data = result.Value!;
             Assert.Equal(postUpdateDto.Title, data.Title);
             Assert.Equal(postUpdateDto.Slug, data.Slug);
-            Assert.Equal(expectedMessage, result.Message);            
+            Assert.Equal(expectedMessage, result.Message);
 
             await _mockRepository.Received(1).SaveChangesAsync(ct);
         }

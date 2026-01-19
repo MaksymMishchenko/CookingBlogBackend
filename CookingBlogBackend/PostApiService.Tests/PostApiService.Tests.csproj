@@ -4,6 +4,7 @@
 		<TargetFramework>net8.0</TargetFramework>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<WarningsAsErrors>Nullable</WarningsAsErrors>
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
 	</PropertyGroup>
@@ -12,6 +13,16 @@
 		<Compile Remove="TestResults\**" />
 		<EmbeddedResource Remove="TestResults\**" />
 		<None Remove="TestResults\**" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <None Remove="appsettings.Testing.json" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Content Include="appsettings.Testing.json">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </Content>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -39,6 +50,7 @@
 	<ItemGroup>
 		<PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" Version="8.0.10" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.10" />
+		<PackageReference Include="Testcontainers.MsSql" Version="4.10.0" />
 	</ItemGroup>
 
 	<ItemGroup>

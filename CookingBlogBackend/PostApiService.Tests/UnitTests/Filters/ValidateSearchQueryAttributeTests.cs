@@ -20,7 +20,7 @@ namespace PostApiService.Tests.UnitTests.Filters
         public void OnActionExecuting_ShouldReturnError_WhenQueryIsWhitespace(string? query)
         {
             // Arrange
-            var searchParams = new SearchPostQueryParameters { QueryString = query };
+            var searchParams = new SearchPostQueryParameters { QueryString = query! };
             var context = CreateContext(new Dictionary<string, object?> { { "query", searchParams } });
 
             // Act

@@ -1,55 +1,37 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using PostApiService.Helper;
-using PostApiService.Models.TypeSafe;
-using System.Security.Claims;
+using PostApiService.Tests.Infrastructure;
+using Respawn;
 
 namespace PostApiService.Tests.Fixtures
 {
     public class BaseTestFixture : IAsyncLifetime
     {
         private WebApplicationFactory<Program>? _factory;
-        private readonly string _identityConnectionString;
-        private readonly string _connectionString;
-        private readonly bool _useDatabase;
+
+        private Respawner _respawner = default!;
+        private SqlConnection _connection = default!;
 
         public HttpClient? Client { get; private set; }
         public IServiceProvider? Services { get; private set; }
 
-        public BaseTestFixture(string connectionString,
-            string identityConnectionString,
-            bool useDatabase)
-        {
-            _identityConnectionString = identityConnectionString;
-            _connectionString = connectionString;
-            _useDatabase = useDatabase;
-        }
-
         public virtual async Task InitializeAsync()
         {
+            await SharedDbContainer.StartAsync();
+
+            _connection = new SqlConnection(SharedDbContainer.ConnectionString);
+            await _connection.OpenAsync();
+
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
                 builder.UseEnvironment("Testing");
-
+                builder.ConfigureTestConfig();
                 builder.ConfigureTestServices(services =>
                 {
-                    if (_useDatabase)
-                    {
-                        services.RemoveAll(typeof(DbContextOptions<ApplicationDbContext>));
-                        services.AddDbContext<ApplicationDbContext>(options =>
-                        {
-                            options.UseSqlServer(_connectionString);
-                        });
-                    }
-
-                    services.RemoveAll(typeof(DbContextOptions<ApplicationDbContext>));
-                    services.AddDbContext<ApplicationDbContext>(options =>
-                    {
-                        options.UseSqlServer(_identityConnectionString);
-                    });
-
+                    services.AddTestAuth();
+                    services.AddTestDatabase(SharedDbContainer.ConnectionString);
                     ConfigureTestServices(services);
                 });
             });
@@ -57,64 +39,57 @@ namespace PostApiService.Tests.Fixtures
             Client = _factory.CreateClient();
             Services = _factory.Services;
 
-            await InitializeTestUsersDatabaseAsync();
+            await EnsureDatabaseCreatedAsync();
+            await InitializeRespawnerAsync();
+            await Services!.SeedDefaultUsersAsync();
+        }
+
+        private async Task EnsureDatabaseCreatedAsync()
+        {
+            using var scope = Services!.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            await context.Database.EnsureCreatedAsync();
+        }
+
+        private async Task InitializeRespawnerAsync()
+        {
+            _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
+            {
+                DbAdapter = DbAdapter.SqlServer,
+                SchemasToInclude = ["dbo"],
+                WithReseed = true,
+                TablesToIgnore = ["__EFMigrationsHistory"]
+            });
         }
 
         protected virtual void ConfigureTestServices(IServiceCollection services) { }
 
-        protected virtual async Task InitializeTestUsersDatabaseAsync()
+        public async Task ResetDatabaseAsync()
         {
-            using (var scope = Services?.CreateScope())
-            {
-                var cntx = scope!.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-                if (await cntx.Database.EnsureCreatedAsync())
-                {
-                    // Creating Role Entities
-                    var adminRole = new IdentityRole(TS.Roles.Admin);
-                    var contributorRole = new IdentityRole(TS.Roles.Contributor);
-
-                    // Adding Roles
-                    await roleManager.CreateAsync(adminRole);
-                    await roleManager.CreateAsync(contributorRole);
-
-                    // Creating User Entities
-                    var adminUser = new IdentityUser() { Id = "testAdminId", UserName = "admin", Email = "admin@test.com" };
-                    var contributorUser = new IdentityUser() { Id = "testContId", UserName = "cont", Email = "c@test.com" };
-
-                    // Adding Users with Password
-                    await userManager.CreateAsync(adminUser, "-Rtyuehe1");
-                    await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
-
-                    // Adding Claims to Users
-                    await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, "testAdminId"));
-
-                    await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, "testContId"));
-                    await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
-
-                    // Adding Roles to Users
-                    await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
-                    await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
-                }
-            }
+            await _respawner.ResetAsync(_connection);
         }
 
-        private static Claim GetContributorClaims(string controllerName)
+        public void LoginAsAdmin()
         {
-            return new Claim(controllerName,
-                ClaimHelper.SerializePermissions(
-                    TS.Permissions.Write,
-                    TS.Permissions.Update,
-                    TS.Permissions.Delete
-                ));
+            Client!.DefaultRequestHeaders.Remove(TestUserData.TestUserHeader);
+            Client!.DefaultRequestHeaders.Add(TestUserData.TestUserHeader, TestUserData.AdminKey);
+        }
+
+        public void LoginAsContributor()
+        {
+            Client!.DefaultRequestHeaders.Remove(TestUserData.TestUserHeader);
+            Client!.DefaultRequestHeaders.Add(TestUserData.TestUserHeader, TestUserData.ContributorKey);
         }
 
         public virtual async Task DisposeAsync()
         {
             _factory?.Dispose();
-            await Task.CompletedTask;
+
+            if (_connection != null)
+            {
+                await _connection.CloseAsync();
+                await _connection.DisposeAsync();
+            }
         }
     }
 }

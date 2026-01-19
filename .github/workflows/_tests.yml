@@ -1,0 +1,52 @@
+name: Unit & Integration Tests
+
+on:
+  workflow_call:
+    secrets:
+      SecretKey:
+        required: true
+
+jobs:
+  run-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj*', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore CookingBlogBackend/PostApiService.sln
+
+      - name: Build and Publish
+        run: dotnet publish CookingBlogBackend/PostApiService.sln --configuration Release --no-restore -o ./publish
+      
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: published-app
+          path: ./publish/
+     
+      - name: Run Tests with Coverage
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
+        run: >
+          dotnet test CookingBlogBackend/PostApiService.sln 
+          --configuration Release 
+          --no-build 
+          --verbosity normal 
+          --collect:"XPlat Code Coverage"

@@ -1,20 +1,13 @@
-﻿using System.Text;
-
-namespace PostApiService.Tests.Helper
+﻿namespace PostApiService.Tests.Helper
 {
     public class HttpHelper
     {
-        public static StringContent GetJsonHttpContent(object item)
-        {
-            return new StringContent(System.Text.Json.JsonSerializer.Serialize(item), Encoding.UTF8, "application/json");
-        }
-
         public static class Urls
         {
             public static class Categories
             {
                 public const string Base = "/api/category";
-                public const string GetById = "/api/category/{0}";                               
+                public const string GetById = "/api/category/{0}";
             }
 
             public static class Posts

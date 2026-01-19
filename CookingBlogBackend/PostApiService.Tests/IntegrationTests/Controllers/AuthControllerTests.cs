@@ -1,24 +1,27 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using PostApiService.Models.Common;
+﻿using PostApiService.Models.Common;
 using System.Net;
 using System.Net.Http.Json;
 
 namespace PostApiService.Tests.IntegrationTests.Controllers
 {
-    public class AuthControllerTests : IClassFixture<AuthFixture>
+    [Collection("SharedDatabase")]
+    public class AuthControllerTests
     {
         private readonly HttpClient? _client;
         private readonly IServiceProvider? _services;
-        public AuthControllerTests(AuthFixture fixture)
+        private readonly BaseTestFixture _fixture;
+
+        public AuthControllerTests(BaseTestFixture fixture)
         {
             _client = fixture.Client;
             _services = fixture.Services;
+            _fixture = fixture;
         }
 
         [Fact]
         public async Task OnRegister_ShouldReturnBadRequest_WhenDataIsInvalid()
         {
-            // Arrange
+            // Arrange            
             var invalidData = new RegisterUser { Email = "not-an-email" };
 
             var url = Authentication.Register;
@@ -40,13 +43,13 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         public async Task OnRegister_ShouldReturnSuccessResponse_IfUserRegisterSuccessfully()
         {
             // Arrange
-            var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe6" };
-            var content = HttpHelper.GetJsonHttpContent(newUser);
+            await _fixture.ResetDatabaseAsync();
 
+            var newUser = new RegisterUser { UserName = "Bob", Email = "bob@test.com", Password = "-Rtyuehe6" };
             var url = Authentication.Register;
 
             // Act     
-            var response = await _client!.PostAsync(url, content);
+            var response = await _client!.PostAsJsonAsync(url, newUser);
             response.EnsureSuccessStatusCode();
 
             var result = await response.Content.ReadFromJsonAsync<ApiResponse<RegisterUser>>();
@@ -56,15 +59,12 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(string.Format(Auth.Registration.Success.RegisterOk,
                 newUser.UserName), result.Message);
 
-            using (var scope = _services!.CreateScope())
-            {
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var userInDb = await userManager.FindByEmailAsync(newUser.Email);
+            var userInDb = await _fixture.ExecuteInScopeAsync(db =>
+                db.Users.AsNoTracking().FirstOrDefaultAsync(p => p.Email == newUser.Email));
 
-                Assert.NotNull(userInDb);
-                Assert.Equal(newUser.UserName, userInDb.UserName);
-                Assert.Equal(newUser.Email, userInDb.Email);
-            }
+            Assert.NotNull(userInDb);
+            Assert.Equal(newUser.UserName, userInDb.UserName);
+            Assert.Equal(newUser.Email, userInDb.Email);
         }
 
         [Fact]
@@ -86,21 +86,22 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.True(content.Errors.Any());
         }
 
-        [Fact]
-        public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully()
+        [Theory]
+        [InlineData(TestUserData.AdminUserName, TestUserData.AdminPassword)]
+        [InlineData(TestUserData.ContributorUserName, TestUserData.ContributorPassword)]
+        public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully(string userName, string password)
         {
             // Arrange            
-            var loginUser = new LoginUser { UserName = "cont", Password = "-Rtyuehe2" };
-            var loginContent = HttpHelper.GetJsonHttpContent(loginUser);
-
+            var loginUser = new LoginUser { UserName = userName, Password = password };
             var url = Authentication.Login;
 
             // Act
-            var loginResponse = await _client!.PostAsync(url, loginContent);
+            var loginResponse = await _client!.PostAsJsonAsync(url, loginUser);
+            loginResponse.EnsureSuccessStatusCode();
 
             var loginResult = await loginResponse.Content.ReadFromJsonAsync<ApiResponse<LoginUser>>();
 
-            // Assert
+            // Assert            
             Assert.True(loginResult!.Success);
             Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess,
                 loginUser.UserName), loginResult.Message);

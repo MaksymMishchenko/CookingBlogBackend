@@ -61,7 +61,7 @@ namespace PostApiService
             return new Faker<Post>()
                 .RuleFor(p => p.Id, _ => 0)
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
-                .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
+                .RuleFor(p => p.Description, f => f.Lorem.Sentence(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
                 .RuleFor(p => p.Category, f => f.PickRandom(culinaryCategories))
                 .RuleFor(p => p.Author, f => f.Person.FullName)
