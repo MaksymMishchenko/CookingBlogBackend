@@ -29,12 +29,12 @@ namespace PostApiService.Repositories
             return await _userManager.CreateAsync(user, password);
         }
 
-        public async Task<IdentityUser> FindByEmailAsync(string email)
+        public async Task<IdentityUser?> FindByEmailAsync(string email)
         {
             return await _userManager.FindByEmailAsync(email);
         }
 
-        public async Task<IdentityUser> FindByNameAsync(string userName)
+        public async Task<IdentityUser?> FindByNameAsync(string userName)
         {
             return await _userManager.FindByNameAsync(userName);
         }
@@ -49,9 +49,12 @@ namespace PostApiService.Repositories
             return await _userManager.GetRolesAsync(user);
         }
 
-        public async Task<IdentityUser> GetUserAsync()
+        public async Task<IdentityUser?> GetUserAsync()
         {
-            return await _userManager.GetUserAsync(_httpContextAccessor.HttpContext?.User);
+            var principal = _httpContextAccessor.HttpContext?.User;
+            if (principal is null) return null;
+
+            return await _userManager.GetUserAsync(principal);
         }
     }
 }

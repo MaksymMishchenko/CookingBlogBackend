@@ -60,7 +60,7 @@ namespace PostApiService.Models.Common
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public T Data { get; set; } = default!;
 
-        public static ApiResponse<T> CreateSuccessResponse(string message)
+        public static new ApiResponse<T> CreateSuccessResponse(string message)
         {
             return new ApiResponse<T>
             {
@@ -75,7 +75,7 @@ namespace PostApiService.Models.Common
             {
                 Success = true,
                 Message = message,
-                Data = data
+                Data = data!
             };
         }
 
@@ -91,7 +91,7 @@ namespace PostApiService.Models.Common
             {
                 Success = true,
                 Message = message,
-                SearchQuery = searchQuery,
+                SearchQuery = searchQuery!,
                 Data = data,
                 PageNumber = pageNumber,
                 PageSize = pageSize,
@@ -115,7 +115,7 @@ namespace PostApiService.Models.Common
             {
                 Success = true,
                 Message = message,
-                Token = !string.IsNullOrEmpty(token) ? token : null
+                Token = !string.IsNullOrEmpty(token) ? token : string.Empty
             };
         }
     }
