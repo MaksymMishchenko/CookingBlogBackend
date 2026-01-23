@@ -8,7 +8,7 @@ namespace PostApiService
             bool useNewSeed = false,
             bool generateComments = true,
             int commentCount = 1,
-            string[] userIds = null,
+            string[] userIds = null!,
             bool generateIds = false)
         {
             var posts = GetPostFaker(useNewSeed, generateComments, commentCount, userIds, generateIds).Generate(count);
@@ -39,7 +39,7 @@ namespace PostApiService
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
             int commentCount,
-            string[] userIds = null,
+            string[] userIds = null!,
             bool generateIds = false)
         {
             var culinaryCategories = new[]

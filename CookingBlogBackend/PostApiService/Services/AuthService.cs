@@ -158,7 +158,7 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<string> GenerateTokenString(IdentityUser user)
         {
-            var claims = await GetClaims(user.UserName);
+            var claims = await GetClaims(user.UserName!);
 
             return _tokenService.GenerateTokenString(claims);
         }

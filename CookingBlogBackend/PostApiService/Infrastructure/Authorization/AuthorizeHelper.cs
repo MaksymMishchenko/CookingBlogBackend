@@ -7,11 +7,14 @@ namespace PostApiService.Infrastructure.Authorization
     {
         internal static IEnumerable<int> GetPermissionFromClaim(string controllerName, IEnumerable<Claim> claims)
         {
-            if (!claims.Any(t => t.Type == controllerName))
+            var relevantClaims = claims.Where(t => t.Type == controllerName).ToList();
+
+            if (!relevantClaims.Any())
             {
-                return null;
+                return Enumerable.Empty<int>();
             }
-            return claims.Where(t => t.Type == controllerName).Select(t => t.Value.To<int>());
+
+            return relevantClaims.Select(t => t.Value.To<int>());
         }
     }
 }

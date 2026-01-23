@@ -11,6 +11,6 @@
         public object GetItems() => Items;
         public int TotalCount => TotalSearchCount;
         string ISearchPagedResult.Query => Query;
-        string ISearchPagedResult.Message => Message;
+        string ISearchPagedResult.Message => Message!;
     }
 }

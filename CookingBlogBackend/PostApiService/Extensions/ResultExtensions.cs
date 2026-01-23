@@ -7,7 +7,7 @@ namespace PostApiService.Extensions
     {
         private static IActionResult MapErrorResult(Result result)
         {
-            var errorResponse = ApiResponse.CreateErrorResponse(result.Message, errorCode: result.ErrorCode);
+            var errorResponse = ApiResponse.CreateErrorResponse(result.Message!, errorCode: result.ErrorCode);
 
             return result.Status switch
             {
@@ -28,7 +28,7 @@ namespace PostApiService.Extensions
             if (result.Status == ResultStatus.NoContent)
                 return new NoContentResult();
 
-            return new OkObjectResult(ApiResponse.CreateSuccessResponse(result.Message));
+            return new OkObjectResult(ApiResponse.CreateSuccessResponse(result.Message!));
         }
 
         public static IActionResult ToActionResult<T>(this Result<T> result)
@@ -57,7 +57,7 @@ namespace PostApiService.Extensions
                     pageData.TotalCount));
             }
 
-            return new OkObjectResult(ApiResponse<T>.CreateSuccessResponse(result.Message, result.Value));
+            return new OkObjectResult(ApiResponse<T>.CreateSuccessResponse(result.Message!, result.Value));
         }
 
         public static IActionResult ToCreatedResult<T>(
@@ -81,7 +81,7 @@ namespace PostApiService.Extensions
                     actionName,
                     null,
                     routeValues,
-                    ApiResponse<T>.CreateSuccessResponse(result.Message, result.Value)),
+                    ApiResponse<T>.CreateSuccessResponse(result.Message!, result.Value)),
                 
                 _ => result.ToActionResult()
             };

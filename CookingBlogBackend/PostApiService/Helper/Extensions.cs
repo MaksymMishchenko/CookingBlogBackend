@@ -6,20 +6,21 @@ namespace PostApiService.Helper
     {
         public static T To<T>(this object input)
         {
-            if (input == null)
+            if (input == null || input == DBNull.Value)
             {
-                return default;
+                return default!;
             }
             return (T)Convert.ChangeType(input, typeof(T));
         }
 
-        public static T Deserialize<T>(this string input)
+        public static T Deserialize<T>(this string? input)
         {
-            if (input == null)
-            {
-                return default;
+            if (string.IsNullOrEmpty(input))
+            {                
+                return JsonConvert.DeserializeObject<T>(input ?? string.Empty) ?? Activator.CreateInstance<T>();
             }
-            return (T)JsonConvert.DeserializeObject<T>(input);
+
+            return JsonConvert.DeserializeObject<T>(input)!;
         }
 
         public static string Serialize(this object input)

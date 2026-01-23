@@ -11,22 +11,19 @@ builder.Host.AddAppLogging();
 
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
-    (ConfigConstants.DefaultConnection);
+    (ConfigConstants.DefaultConnection);    
 
 // Register AddDbContext service to the IServiceCollection
-builder.Services.AddApplicationService(builder.Configuration, connectionString);
+builder.Services.AddApplicationService(builder.Configuration, connectionString!);
 
-var jwtConfiguration = builder.Configuration
-    .GetSection(ConfigConstants.JwtSection)
-    .Get<JwtConfiguration>();
-     
+var jwtConfiguration = builder.Configuration.GetSection(ConfigConstants.JwtSection).Get<JwtConfiguration>();
 
 builder.Services.Configure<JwtConfiguration>(builder.Configuration.GetSection(ConfigConstants.JwtSection));
 
 builder.Services.AddApplicationIdentity();
 
 // Register Application Jwt Bearer Authentication 
-builder.Services.AddAppJwtAuthentication(jwtConfiguration);
+builder.Services.AddAppJwtAuthentication(jwtConfiguration!);
 
 // Register application authorization
 // Adds policies and sets up authorization for protected resources.
