@@ -14,15 +14,28 @@ This repository contains the backend for the CookingBlog project, built with C#.
 * **Logging**: Structured logging with Serilog (Console and File sinks).
 
 ## Technologies Used
-- **Framework**: ASP.NET Core 8.0
-- **ORM**: Entity Framework Core 8.0
-- **Database**: SQL Server
-- **Authentication**: Identity & JWT Bearer
-- **Security:** HtmlSanitizer (Ganss.Xss)
-- **Logging**: Serilog
-- **Testing**: XUnit, Coverlet, Bogus
-- **Documentation**: Swagger/OpenAPI
-- **Utilities**: HtmlAgilityPack
+### Core Backend
+* **Framework:** .NET 8 (ASP.NET Core)
+* **ORM:** Entity Framework Core 8.0
+* **Database:** Microsoft SQL Server
+* **API Documentation:** Swagger / OpenAPI
+
+### Security & Authentication
+* **Identity:** Microsoft Identity Framework
+* **Tokens:** JWT Bearer Authentication
+* **Content Safety:** [HtmlSanitizer](https://github.com/mganss/HtmlSanitizer) (XSS protection for user posts and comments)
+
+### Testing & Quality Assurance
+* **Unit Testing:** xUnit & [FluentAssertions](https://fluentassertions.com/)
+* **Integration Testing:** [Testcontainers](https://testcontainers.com/) (spinning up real SQL Server instances in Docker for isolated testing)
+* **Database Lifecycle:** [Respawn](https://github.com/jbogard/Respawn) (intelligent database state reset between test runs)
+* **Data Generation:** [Bogus](https://github.com/bchavez/Bogus) (fake data for seeding and tests)
+* **Code Coverage:** Coverlet
+
+### Utilities & Tooling
+* **Versioning:** [MinVer](https://github.com/adamralph/minver) (automated versioning based on Git tags)
+* **Logging:** Serilog (structured logging)
+* **HTML Processing:** HtmlAgilityPack
 
 ## Installation & Setup
 

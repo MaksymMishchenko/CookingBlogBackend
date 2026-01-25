@@ -6,19 +6,19 @@
         {
             public static class Errors
             {
-                public const string PostNotFound = "Post not found.";                
+                public const string PostNotFound = "Post not found.";
                 public const string PostNotFoundCode = "POST_NOT_FOUND";
                 public const string PostTitleOrSlugAlreadyExist = "A post with the same Title '{0}' or Slug {1} already exists.";
                 public const string PostAlreadyExistCode = "POST_OR_SLUG_ALREADY_EXISTS";
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
-                public const string AddPostFailed = "Failed to add post with title '{0}'.";                                
+                public const string AddPostFailed = "Failed to add post with title '{0}'.";
                 public const string NoPostsFound = "No posts found for the requested page.";
                 public const string Empty = "Post content cannot be empty.";
                 public const string EmptyCode = "POST_CONTENT_IS_EMPTY";
             }
 
             public static class Success
-            {                
+            {
                 public const string SearchResultsFound = "Found {1} posts matching your search '{0}'.";
                 public const string SearchNoResults = "No posts found matching your search '{0}'.";
                 public const string PostAddedSuccessfully = "Post added successfully.";
@@ -72,13 +72,12 @@
                 {
                     public const string InvalidCredentials = "Invalid username or password. Please check your credentials and try again.";
                     public const string UnauthorizedAccess = "Unauthorized Access";
-                    public const string UnauthorizedAccessCode = "UNAUTHORIZED";
-                    public const string UserNotFound = "User Not Found";
+                    public const string UnauthorizedAccessCode = "UNAUTHORIZED";                    
                 }
 
                 public static class Success
                 {
-                    public const string LoginSuccess = "User with username '{0}' logged in successfully";
+                    public const string LoginSuccess = "User logged in successfully";
                 }
             }
 
@@ -87,15 +86,16 @@
                 public static class Errors
                 {
                     public const string InvalidRegistrationData = "Invalid registration data. Please check the provided information.";
-                    public const string UsernameAlreadyExists = "This username is already taken.";
-                    public const string EmailAlreadyExists = "Email already exists.";
-                    public const string CreationFailed = "User creation failed. ";
+                    public const string InvalidRegistrationDataCode = "REG_INVALID_DATA";
+                    public const string UserAlreadyExists = "Username or email is already taken.";
+                    public const string UserAlreadyExistsCode = "REG_USER_ALREADY_EXISTS";                   
                     public const string ClaimAssignmentFailed = "Failed to assign claim to user.";
+                    public const string ClaimAssignmentFailedCode = "REG_CLAIM_FAILED";
                 }
 
                 public static class Success
                 {
-                    public const string RegisterOk = "User with username {0} registered successfully.";
+                    public const string RegisterOk = "User registered successfully.";
                 }
             }
 
@@ -104,8 +104,7 @@
                 public static class Errors
                 {
                     public const string SecretKeyNullOrEmpty = "Secret key cannot be null or empty.";
-                    public const string TokenExpirationInvalid = "Token expiration time must be greater than zero.";
-                    public const string TokenGenerationFailed = "An error occurred while generating the token.";
+                    public const string TokenExpirationInvalid = "Token expiration time must be greater than zero.";                    
                     public const string GenerationFailed = "An unexpected error occurred.";
                 }
             }
@@ -125,7 +124,8 @@
                 public const string InvalidPageParameters = "Parameter must be greater than 0.";
                 public const string PageSizeExceeded = "Items per page size exceeds the allowed maximum.";
                 public const string ValidationFailed = "Validation Failed.";
-                
+                public const string InvalidEmail = "Invalid email address.";
+
                 public const string InvalidNumberFormat = "The value '{0}' is not a valid number.";
                 public const string SearchQueryForbiddenCharacters =
                     "Search query contains forbidden characters. Use only letters, numbers, spaces, dots or hyphens.";

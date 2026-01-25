@@ -1,4 +1,4 @@
-﻿namespace PostApiService.Models
+﻿namespace PostApiService.Infrastructure.Configuration
 {
     public class JwtConfiguration
     {

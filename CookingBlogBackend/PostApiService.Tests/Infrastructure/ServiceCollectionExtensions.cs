@@ -32,49 +32,19 @@ public static class ServiceCollectionExtensions
 
     public static IServiceCollection AddExceptionMiddlewareMocks(this IServiceCollection services)
     {
-        services.RemoveAll(typeof(IPostService));
-
-        var postServiceMock = Substitute.For<IPostService>();
-        postServiceMock.AddPostAsync(
-            Arg.Any<PostCreateDto>())
-            .Returns(Task.FromResult(Result<PostAdminDetailsDto>.Success(new PostAdminDetailsDto(
-                1, "Mocked Post", "Mock Desc", "Content", "Author", "ImageUrl", "Slug", "Meta Title",
-                "Meta Desc", 1, DateTime.UtcNow, null))));
-
-        services.AddScoped(_ => postServiceMock);
-
-        services.RemoveAll(typeof(ICommentService));
-        var commentServiceMock = Substitute.For<ICommentService>();
-
-        var expectedDto = new CommentCreatedDto(
-            1,
-            "Author",
-            "Content",
-            DateTime.UtcNow,
-            "testUserId"
-            );
-
-        commentServiceMock.AddCommentAsync(Arg.Any<int>(), Arg.Any<string>())
-            .Returns(Task.FromResult(Result<CommentCreatedDto>.Success(expectedDto,
-                CommentM.Success.CommentAddedSuccessfully)));
-
-        services.AddScoped(_ => commentServiceMock);
-
         services.RemoveAll(typeof(IAuthService));
         var authServiceMock = Substitute.For<IAuthService>();
 
-        authServiceMock.GenerateTokenString(
-            Arg.Any<IdentityUser>())
-            .Returns(Task.FromResult("mocked_token"));
+        var dto = AuthTestData.CreateLoggedInUserDto();
 
-        authServiceMock.GetCurrentUserAsync()
-            .Returns(Task.FromResult(new IdentityUser { UserName = "testUser" }));
+        authServiceMock.AuthenticateAsync(Arg.Any<LoginUserDto>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<LoggedInUserDto>.Success(dto,
+                string.Format(Auth.LoginM.Success.LoginSuccess, dto.UserName))));
 
-        authServiceMock.LoginAsync(Arg.Any<LoginUser>())
-            .Returns(Task.FromResult(new IdentityUser { UserName = "testUser" }));
-
-        authServiceMock.RegisterUserAsync(Arg.Any<RegisterUser>())
-            .Returns(Task.CompletedTask);
+        authServiceMock.RegisterUserAsync(Arg.Any<RegisterUserDto>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<RegisteredUserDto>.Created(
+                new RegisteredUserDto("test-id", "test-name", "test-email"),
+            Auth.Registration.Success.RegisterOk)));
 
         services.AddScoped(_ => authServiceMock);
 
@@ -82,7 +52,7 @@ public static class ServiceCollectionExtensions
         var tokenServiceMock = Substitute.For<ITokenService>();
 
         tokenServiceMock.GenerateTokenString(Arg.Any<IEnumerable<Claim>>())
-            .Returns("");
+            .Returns("mock-token");
 
         services.AddScoped(_ => tokenServiceMock);
 
@@ -92,8 +62,6 @@ public static class ServiceCollectionExtensions
     public static void ClearAllMocks(this IServiceProvider services)
     {
         services.GetRequiredService<IAuthService>().ClearReceivedCalls();
-        services.GetRequiredService<IPostService>().ClearReceivedCalls();
-        services.GetRequiredService<ICommentService>().ClearReceivedCalls();
         services.GetRequiredService<ITokenService>().ClearReceivedCalls();
     }
 }

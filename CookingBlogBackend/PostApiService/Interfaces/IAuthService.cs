@@ -1,11 +1,13 @@
-﻿namespace PostApiService.Interfaces
+﻿using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
+
+namespace PostApiService.Interfaces
 {
     public interface IAuthService
     {
-        Task RegisterUserAsync(RegisterUser user);
-        Task<IdentityUser> LoginAsync(LoginUser credentials);
-
-        Task<IdentityUser> GetCurrentUserAsync();
-        Task<string> GenerateTokenString(IdentityUser user);
+        Task<Result<RegisteredUserDto>> RegisterUserAsync(
+            RegisterUserDto userDto, CancellationToken ct = default);
+        Task<Result<LoggedInUserDto>> AuthenticateAsync(LoginUserDto credentials,
+            CancellationToken ct = default);
     }
 }

@@ -1,11 +1,14 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using PostApiService.Infrastructure.Common;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Interfaces;
+using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class AuthServiceIntegrationTests
+    public class AuthServiceIntegrationTests : IDisposable
     {
         private readonly ServiceProvider _provider;
 
@@ -17,6 +20,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseInMemoryDatabase(dbName));
+
+            services.Configure<JwtConfiguration>(options =>
+            {
+                options.SecretKey = "very-long-and-super-secret-key-for-testing";
+                options.Issuer = "test";
+                options.Audience = "test";
+                options.TokenExpirationMinutes = 60;
+            });
 
             services.AddIdentity<IdentityUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -32,53 +43,54 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task RegisterUserAsync_ShouldRegisterUser_WhenValidDataProvided()
+        public async Task RegisterUserAsync_ShouldRegisterUser_AndAssignClaims()
         {
             // Arrange
             var authService = _provider.GetRequiredService<IAuthService>();
-
-            var user = new RegisterUser
-            {
-                UserName = "testuser",
-                Email = "test@example.com",
-                Password = "Password123!"
-            };
+            var registerDto = AuthTestData.CreateRegisterUserDto();
 
             // Act
-            await authService.RegisterUserAsync(user);
+            var result = await authService.RegisterUserAsync(registerDto);
 
             // Assert
-            var authRepo = _provider.GetRequiredService<IAuthRepository>();
-            var createdUser = await authRepo.FindByNameAsync(user.UserName);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.NotNull(result.Value);
 
-            Assert.NotNull(createdUser);
-            Assert.Equal(user.Email, createdUser.Email);
+            var authRepo = _provider.GetRequiredService<IAuthRepository>();
+            var userInDb = await authRepo.FindByNameAsync(registerDto.UserName);
+
+            Assert.NotNull(userInDb);
+            Assert.Equal(registerDto.Email, userInDb.Email);
+
+            var claims = await authRepo.GetClaimsAsync(userInDb);
+            Assert.Contains(claims, c => c.Type == TS.Controller.Comment);
         }
 
         [Fact]
-        public async Task LoginUserAsync_ShouldLoginUser_WhenValidDataProvided()
+        public async Task AuthenticateAsync_ShouldLoginUser_WhenValidDataProvided()
         {
-            // Arrange            
-            var testUser = new IdentityUser { UserName = "testUser", Email = "validemail@test.com" };
-            var password = "Password123!";
+            // Arrange                        
+            var loginDto = AuthTestData.CreateUserLoginDto();
+            var identityUser = AuthTestData.CreateIdentityUser();
 
             var authRepo = _provider.GetRequiredService<IAuthRepository>();
-            await authRepo.CreateAsync(testUser, password);
-
-            var user = new LoginUser
-            {
-                UserName = "testUser",
-                Password = "Password123!"
-            };
+            await authRepo.CreateAsync(identityUser, loginDto.Password);
 
             var authService = _provider.GetRequiredService<IAuthService>();
 
             // Act
-            var authenticatedUser = await authService.LoginAsync(user);
+            var result = await authService.AuthenticateAsync(loginDto);
 
             // Assert
-            Assert.NotNull(authenticatedUser);
-            Assert.Equal(user.UserName, authenticatedUser.UserName);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.NotNull(result);
+            Assert.NotNull(result.Value!.Token);
+            Assert.Equal(loginDto.UserName, result.Value!.UserName);
+        }
+        
+        public void Dispose()
+        {
+            _provider.Dispose();
         }
     }
 }

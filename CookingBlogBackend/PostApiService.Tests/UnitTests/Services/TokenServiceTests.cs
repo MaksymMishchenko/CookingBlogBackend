@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Options;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Services;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;

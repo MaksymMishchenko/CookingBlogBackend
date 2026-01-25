@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using PostApiService.Exceptions;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Interfaces;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -14,6 +14,12 @@ namespace PostApiService.Services
         public TokenService(IOptions<JwtConfiguration> config)
         {
             _config = config.Value;
+
+            if (string.IsNullOrWhiteSpace(_config.SecretKey))
+                throw new ArgumentException(Auth.Token.Errors.SecretKeyNullOrEmpty);
+
+            if (_config.TokenExpirationMinutes <= 0)
+                throw new ArgumentException(Auth.Token.Errors.TokenExpirationInvalid);
         }
 
         /// <summary>
@@ -22,36 +28,20 @@ namespace PostApiService.Services
         /// </summary>        
         public string GenerateTokenString(IEnumerable<Claim> claims)
         {
-            try
-            {
-                if (string.IsNullOrWhiteSpace(_config.SecretKey))
-                {
-                    throw new ArgumentException(Auth.Token.Errors.SecretKeyNullOrEmpty);
-                }
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.SecretKey));
 
-                if (_config.TokenExpirationMinutes <= 0)
-                {
-                    throw new ArgumentException(Auth.Token.Errors.TokenExpirationInvalid);
-                }
+            var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
-                var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.SecretKey));
+            var securityToken = new JwtSecurityToken(
+                issuer: _config.Issuer,
+                audience: _config.Audience,
+                claims,
+                expires: DateTime.UtcNow.AddMinutes(_config.TokenExpirationMinutes),
+                signingCredentials: signingCred);
 
-                var signingCred = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
+            string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
 
-                var securityToken = new JwtSecurityToken(
-                    issuer: _config.Issuer,
-                    audience: _config.Audience,
-                    claims,
-                    expires: DateTime.Now.AddMinutes(_config.TokenExpirationMinutes),
-                    signingCredentials: signingCred);
-
-                string tokenString = new JwtSecurityTokenHandler().WriteToken(securityToken);
-                return tokenString;
-            }
-            catch (Exception ex)
-            {
-                throw new TokenGenerationException(Auth.Token.Errors.TokenGenerationFailed, ex);
-            }
+            return tokenString;
         }
     }
 }

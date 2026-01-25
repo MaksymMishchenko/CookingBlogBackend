@@ -40,7 +40,22 @@
 
         public static class System
         {
-            public const string DatabaseCriticalError = "Database critical failure. Details: {Message}";
+            public const string UnhandledException =
+                "Unhandled Exception: An unhandled exception occurred during the request. Message: {Message}, Path: {Path}";           
+        }
+
+        public static class Authentication
+        {
+            public const string RegistrationConflict =
+                "Registration Conflict: Username '{UserName}' or Email '{Email}' is already taken.";
+
+            public const string RegistrationFailed =
+                "User registration failed. Email: {Email}, Codes: {Codes}, Message: {Message}";
+
+            public const string ClaimAssignmentFailed =
+                "Security failure: Could not assign claims to user {UserId} ({Email})";
+
+            public const string RegistrationSuccess = "User {Email} registered successfully.";
         }
 
         public static class Categories

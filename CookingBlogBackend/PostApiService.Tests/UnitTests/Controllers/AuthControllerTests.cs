@@ -1,6 +1,8 @@
 ﻿using PostApiService.Controllers;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
@@ -16,59 +18,135 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
+        public async Task OnRegisterUser_ShouldReturnConflict_WhenUsernameAlreadyExists()
+        {
+            // Arrange
+            var newUser = AuthTestData.CreateRegisterUserDto();
+            var ct = CancellationToken.None;
+
+            var conflictResult = Result<RegisteredUserDto>.Conflict(
+                Auth.Registration.Errors.UserAlreadyExists,
+                Auth.Registration.Errors.UserAlreadyExistsCode);
+
+            _mockAuthService.RegisterUserAsync(newUser, ct)
+                .Returns(Task.FromResult(conflictResult));
+
+            // Act
+            var result = await _authController.RegisterUser(newUser, ct);
+
+            // Assert
+            var conflictRequestResult = Assert.IsType<ConflictObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(conflictRequestResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(Auth.Registration.Errors.UserAlreadyExists, response.Message);
+
+            await _mockAuthService.Received(1).RegisterUserAsync(newUser, ct);
+        }
+
+        [Fact]
+        public async Task OnRegisterUser_ShouldReturnConflict_WhenEmailAlreadyExists()
+        {
+            // Arrange
+            var newUser = AuthTestData.CreateRegisterUserDto();
+            var ct = CancellationToken.None;
+
+            var conflictResult = Result<RegisteredUserDto>.Conflict(
+                Auth.Registration.Errors.UserAlreadyExists,
+                Auth.Registration.Errors.UserAlreadyExistsCode);
+
+            _mockAuthService.RegisterUserAsync(newUser, ct)
+                .Returns(Task.FromResult(conflictResult));
+
+            // Act
+            var result = await _authController.RegisterUser(newUser, ct);
+
+            // Assert
+            var conflictRequestResult = Assert.IsType<ConflictObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(conflictRequestResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(Auth.Registration.Errors.UserAlreadyExists, response.Message);
+
+            await _mockAuthService.Received(1).RegisterUserAsync(newUser, ct);
+        }
+
+        [Fact]
         public async Task OnRegisterUser_ShouldReturnOk_IfUserRegisterSuccessfully()
         {
             // Arrange            
-            var newUser = new RegisterUser
-            {
-                UserName = "correctUser",
-                Email = "correctEmail@test.com",
-                Password = "-Rtyuehe2-"
-            };
+            var newUser = AuthTestData.CreateRegisterUserDto();
+            var registeredUserDto = AuthTestData.CreateRegisteredUserDto();
+            var ct = CancellationToken.None;
 
-            _mockAuthService.RegisterUserAsync(newUser).Returns(Task.FromResult(newUser));
+            var createdResult = Result<RegisteredUserDto>.Created(
+                registeredUserDto, Auth.Registration.Success.RegisterOk);
+
+            _mockAuthService.RegisterUserAsync(newUser, ct).Returns(createdResult);
 
             // Act
-            var result = await _authController.RegisterUser(newUser);
+            var result = await _authController.RegisterUser(newUser, ct);
 
             // Assert
             var okRequestResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<RegisterUser>>(okRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<RegisteredUserDto>>(okRequestResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(string.Format(Auth.Registration.Success.RegisterOk, newUser.UserName),
+            Assert.Equal(string.Format(Auth.Registration.Success.RegisterOk),
                 response.Message);
 
             await _mockAuthService.Received(1)
-                .RegisterUserAsync(newUser);
+                .RegisterUserAsync(newUser, ct);
+        }
+
+        [Fact]
+        public async Task OnLoginUser_ShouldReturnUnauthorized_WhenCredentialsAreInvalid()
+        {
+            // Arrange
+            var loginDto = AuthTestData.CreateUserLoginDto();
+            var errorResult = Result<LoggedInUserDto>.Unauthorized(Auth.LoginM.Errors.InvalidCredentials);
+
+            _mockAuthService.AuthenticateAsync(loginDto, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(errorResult));
+
+            // Act
+            var result = await _authController.LoginUserAsync(loginDto);
+
+            // Assert            
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(unauthorizedResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(Auth.LoginM.Errors.InvalidCredentials, response.Message);
+
+            await _mockAuthService.Received(1).AuthenticateAsync(loginDto, Arg.Any<CancellationToken>());
         }
 
         [Fact]
         public async Task OnLoginUser_ShouldReturnOk_IfUserLoginSuccessfully()
         {
-            // Arrange            
-            var newUser = new LoginUser
-            {
-                UserName = "correctUser",
-                Password = "-Rtyuehe2-"
-            };
+            // Arrange                        
+            var loginDto = AuthTestData.CreateUserLoginDto();
+            var loggedInDto = AuthTestData.CreateLoggedInUserDto();
+            var ct = CancellationToken.None;
 
-            var identityUser = new IdentityUser { UserName = newUser.UserName, PasswordHash = newUser.Password };
+            var responseDto = Result<LoggedInUserDto>.Success(loggedInDto, string.Format(
+                Auth.LoginM.Success.LoginSuccess, loggedInDto.UserName));
 
-            _mockAuthService.LoginAsync(Arg.Any<LoginUser>())
-                .Returns(identityUser);
+            _mockAuthService.AuthenticateAsync(loginDto, ct)
+                .Returns(responseDto);
 
             // Act
-            var result = await _authController.LoginUserAsync(newUser);
+            var result = await _authController.LoginUserAsync(loginDto, ct);
 
             // Assert
             var okRequestResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<LoginUser>>(okRequestResult.Value);
+            var response = Assert.IsType<ApiResponse<LoggedInUserDto>>(okRequestResult.Value);
             Assert.True(response.Success);
-            Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess, newUser.UserName),
-                response.Message);
+            Assert.Equal(loggedInDto.Token, response.Data.Token);
+            Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess), response.Message);
 
             await _mockAuthService.Received(1)
-                .LoginAsync(newUser);
+                .AuthenticateAsync(loginDto, ct);
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿using PostApiService.Exceptions;
-using PostApiService.Helper;
+﻿using PostApiService.Helper;
 using PostApiService.Interfaces;
+using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
-using System.Security.Authentication;
 using System.Security.Claims;
 
 namespace PostApiService.Services
@@ -30,22 +30,16 @@ namespace PostApiService.Services
                 ));
         }
 
-        private async Task<List<Claim>> GetClaims(string userName)
+        private async Task<List<Claim>> GetClaims(IdentityUser user,
+            CancellationToken ct = default)
         {
-            var user = await _authRepository.FindByNameAsync(userName);
-
-            if (user == null)
-            {
-                throw new UserNotFoundException(Auth.LoginM.Errors.UserNotFound);
-            }
-
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(ClaimTypes.Name, userName)
+                new Claim(ClaimTypes.NameIdentifier, user!.Id),
+                new Claim(ClaimTypes.Name, user.UserName!)
             };
 
-            var userClaims = await _authRepository.GetClaimsAsync(user);
+            var userClaims = await _authRepository.GetClaimsAsync(user, ct);
 
             var serializedClaims = userClaims
                 .Where(claim => claim.Type != ClaimTypes.NameIdentifier && claim.Type != ClaimTypes.Name)
@@ -55,7 +49,7 @@ namespace PostApiService.Services
 
             claims.AddRange(deserializedClaims);
 
-            var roles = await _authRepository.GetRolesAsync(user);
+            var roles = await _authRepository.GetRolesAsync(user, ct);
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
@@ -75,92 +69,83 @@ namespace PostApiService.Services
             return result;
         }
 
+        private async Task<string> GenerateTokenString(IdentityUser user,
+            CancellationToken ct = default)
+        {
+            var claims = await GetClaims(user, ct);
+
+            return _tokenService.GenerateTokenString(claims);
+        }
+
         /// <summary>
         /// Registers a new user in the system.        
         /// </summary>        
-        public async Task RegisterUserAsync(RegisterUser user)
+        public async Task<Result<RegisteredUserDto>> RegisterUserAsync(
+            RegisterUserDto userDto, CancellationToken ct = default)
         {
-            var existingUser = await _authRepository.FindByNameAsync(user.UserName);
-            if (existingUser != null)
+            var user = await _authRepository.FindByNameAsync(userDto.UserName, ct);
+            var email = await _authRepository.FindByEmailAsync(userDto.Email, ct);
+
+            if (user != null || email != null)
             {
-                throw new UserAlreadyExistsException
-                    (Auth.Registration.Errors.UsernameAlreadyExists);
+                Log.Warning(Authentication.RegistrationConflict, userDto.UserName, userDto.Email);
+
+                return Result<RegisteredUserDto>.Conflict(Auth.Registration.Errors.UserAlreadyExists,
+                    Auth.Registration.Errors.UserAlreadyExistsCode);
+            }            
+
+            var identityUser = userDto.ToEntity();
+
+            var createResult = await _authRepository.CreateAsync(identityUser, userDto.Password, ct);
+            if (!createResult.Succeeded)
+            {
+                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
+                var errorCodes = string.Join(", ", createResult.Errors.Select(e => e.Code));
+
+                Log.Warning(Authentication.RegistrationFailed, userDto.Email, errorCodes, errorMsg);
+
+                return Result<RegisteredUserDto>.Invalid(errorMsg);
             }
 
-            var existingUserByEmail = await _authRepository.FindByEmailAsync(user.Email);
-            if (existingUserByEmail != null)
+            var claimResult = await _authRepository.AddClaimAsync(
+                identityUser, GetContributorClaims(TS.Controller.Comment), ct);
+
+            // TODO (TechDebt): #24 Implement TransactionScope or Rollback logic.           
+            if (!claimResult.Succeeded)
             {
-                throw new EmailAlreadyExistsException
-                    (Auth.Registration.Errors.EmailAlreadyExists);
+                Log.Error(Authentication.ClaimAssignmentFailed, identityUser.Id, userDto.Email);
+
+                return Result<RegisteredUserDto>.Error(Auth.Registration.Errors.ClaimAssignmentFailed,
+                    Auth.Registration.Errors.ClaimAssignmentFailedCode);
             }
 
-            var identityUser = new IdentityUser
-            {
-                UserName = user.UserName,
-                Email = user.Email
-            };
+            var createdUserDto = identityUser.ToRegisteredDto();
 
-            var result = await _authRepository.CreateAsync(identityUser, user.Password);
+            Log.Information(Authentication.RegistrationSuccess, userDto.Email);
 
-            if (!result.Succeeded)
-            {
-                throw new UserCreationException
-                    (string.Join(", ", result.Errors.Select(e => e.Description)));
-            }
-
-            var identityResult = await _authRepository.AddClaimAsync
-                (identityUser, GetContributorClaims(TS.Controller.Comment));
-
-            if (!identityResult.Succeeded)
-            {
-                throw new UserClaimException
-                    (Auth.Registration.Errors.ClaimAssignmentFailed);
-            }
+            return Result<RegisteredUserDto>.Success(createdUserDto, Auth.Registration.Success.RegisterOk);
         }
 
         /// <summary>
         /// Authenticates a user by verifying the provided credentials.
         /// </summary>       
-        public async Task<IdentityUser> LoginAsync(LoginUser credentials)
+        public async Task<Result<LoggedInUserDto>> AuthenticateAsync(LoginUserDto credentials,
+            CancellationToken ct = default)
         {
-            var user = await _authRepository.FindByNameAsync(credentials.UserName)
-                 ?? throw new AuthenticationException(Auth.LoginM.Errors.InvalidCredentials);
+            var user = await _authRepository.FindByNameAsync(credentials.UserName, ct);
 
-            var isPasswordValid = await _authRepository.CheckPasswordAsync(user, credentials.Password);
-
-            if (!isPasswordValid)
+            // TODO (TechDebt): #25 Implement Account Lockout logic (AccessFailedAsync, IsLockedOutAsync).
+            // Currently, the system is vulnerable to brute-force attacks as it doesn't track failed attempts.
+            if (user == null || !await _authRepository.CheckPasswordAsync(user, credentials.Password, ct))
             {
-                throw new AuthenticationException
-                    (Auth.LoginM.Errors.InvalidCredentials);
+                return Result<LoggedInUserDto>.Unauthorized(Auth.LoginM.Errors.InvalidCredentials);
             }
 
-            return user;
-        }
+            var token = await GenerateTokenString(user, ct);
 
-        /// <summary>
-        /// Retrieves the currently authenticated user from the HTTP context.
-        /// </summary>
-        public async Task<IdentityUser> GetCurrentUserAsync()
-        {
-            var user = await _authRepository.GetUserAsync();
+            var responseDto = token.ToLoggedInUserDto(user.UserName!);            
 
-            if (user == null)
-            {
-                throw new UnauthorizedAccessException
-                    (Auth.LoginM.Errors.UnauthorizedAccess);
-            }
-
-            return user;
-        }
-
-        /// <summary>
-        /// Generates a JWT token string for the specified user based on their claims.
-        /// </summary>        
-        public async Task<string> GenerateTokenString(IdentityUser user)
-        {
-            var claims = await GetClaims(user.UserName!);
-
-            return _tokenService.GenerateTokenString(claims);
+            return Result<LoggedInUserDto>.Success(responseDto, Auth.LoginM.Success.LoginSuccess);
         }
     }
 }
