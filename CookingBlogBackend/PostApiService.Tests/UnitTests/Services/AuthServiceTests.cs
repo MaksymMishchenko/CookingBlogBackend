@@ -1,6 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
-using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using System.Security.Claims;
 using AuthService = PostApiService.Services.AuthService;
@@ -10,169 +9,244 @@ namespace PostApiService.Tests.UnitTests.Services
     public class AuthServiceTests
     {
         private readonly IAuthRepository _mockAuthRepository;
-        private readonly IHttpContextAccessor _mockHttpContextAccessor;
         private readonly ITokenService _mockTokenService;
         private readonly AuthService _authService;
         public AuthServiceTests()
         {
             _mockAuthRepository = Substitute.For<IAuthRepository>();
-            _mockHttpContextAccessor = Substitute.For<IHttpContextAccessor>();
             _mockTokenService = Substitute.For<ITokenService>();
             _authService = new AuthService
                 (_mockAuthRepository, _mockTokenService);
         }
 
         [Fact]
-        public async Task RegisterUser_ShouldRegisterNewUser()
+        public async Task RegisterUserAsync_ShouldReturnConflict_WhenUsernameExists()
         {
             // Arrange
-            var registerUser = new RegisterUser
-            {
-                UserName = "newuser",
-                Email = "newuser@example.com",
-                Password = "P@ssw0rd"
-            };
+            var registerDto = AuthTestData.CreateRegisterUserDto();
 
-            _mockAuthRepository.FindByNameAsync(registerUser.UserName)
-            .Returns(Task.FromResult((IdentityUser?)null));
-
-            _mockAuthRepository.FindByEmailAsync(registerUser.Email)
-            .Returns(Task.FromResult((IdentityUser?)null));
-
-            var identityUser = new IdentityUser
-            {
-                UserName = registerUser.UserName,
-                Email = registerUser.Email
-            };
-
-            var createResult = IdentityResult.Success;
-            _mockAuthRepository.CreateAsync(Arg.Any<IdentityUser>(), registerUser.Password)
-                .Returns(Task.FromResult(createResult));
-
-            var claimResult = IdentityResult.Success;
-            _mockAuthRepository.AddClaimAsync(Arg.Any<IdentityUser>(), Arg.Any<Claim>())
-                .Returns(Task.FromResult(claimResult));
+            _mockAuthRepository.FindByNameAsync(registerDto.UserName, Arg.Any<CancellationToken>())
+                .Returns(new IdentityUser());
 
             // Act
-            await _authService.RegisterUserAsync(registerUser);
+            var result = await _authService.RegisterUserAsync(registerDto);
 
             // Assert
-            await _mockAuthRepository.Received(1)
-                .CreateAsync(Arg.Any<IdentityUser>(), registerUser.Password);
-            await _mockAuthRepository.Received(1).Received(1).
-                AddClaimAsync(Arg.Any<IdentityUser>(), Arg.Any<Claim>());
+            Assert.Equal(ResultStatus.Conflict, result.Status);
+            Assert.Equal(Auth.Registration.Errors.UserAlreadyExists, result.Message);
+            Assert.Equal(Auth.Registration.Errors.UserAlreadyExistsCode, result.ErrorCode);
+
+            await _mockAuthRepository.Received(1).FindByNameAsync(
+                registerDto.UserName, Arg.Any<CancellationToken>());
+            await _mockAuthRepository.DidNotReceiveWithAnyArgs()
+                .CreateAsync(default!, default!, default!);
         }
 
         [Fact]
-        public async Task LoginUser_ShouldLoginUserSuccessfully()
+        public async Task RegisterUserAsync_ShouldReturnConflict_WhenEmailExists()
         {
             // Arrange
-            var loginUser = new LoginUser
-            {
-                UserName = "newuser",
-                Password = "P@ssw0rd"
-            };
+            var registerDto = AuthTestData.CreateRegisterUserDto();
 
-            var identityUser = new IdentityUser
-            {
-                UserName = loginUser.UserName,
-                Email = "newuser@example.com",
-            };
+            _mockAuthRepository.FindByNameAsync(registerDto.UserName, Arg.Any<CancellationToken>())
+                .Returns((IdentityUser)null!);
 
-            _mockAuthRepository.FindByNameAsync(loginUser.UserName)
-            .Returns(Task.FromResult<IdentityUser?>(identityUser));
-
-            _mockAuthRepository.CheckPasswordAsync(Arg.Any<IdentityUser>(), loginUser.Password)
-                .Returns(Task.FromResult(true));
+            _mockAuthRepository.FindByEmailAsync(registerDto.Email, Arg.Any<CancellationToken>())
+                .Returns(new IdentityUser());
 
             // Act
-            var result = await _authService.LoginAsync(loginUser);
+            var result = await _authService.RegisterUserAsync(registerDto);
+
+            // Assert
+            Assert.Equal(ResultStatus.Conflict, result.Status);
+            Assert.Equal(Auth.Registration.Errors.UserAlreadyExists, result.Message);
+            Assert.Equal(Auth.Registration.Errors.UserAlreadyExistsCode, result.ErrorCode);
+
+            await _mockAuthRepository.Received(1).FindByEmailAsync(
+                registerDto.Email, Arg.Any<CancellationToken>());
+            await _mockAuthRepository.DidNotReceiveWithAnyArgs()
+                .CreateAsync(default!, default!, default!);
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_ShouldReturnSuccess_WhenDataIsValid()
+        {
+            // Arrange
+            var registerDto = AuthTestData.CreateRegisterUserDto();
+            var ct = CancellationToken.None;
+
+            _mockAuthRepository.FindByNameAsync(registerDto.UserName, ct)
+                .Returns(Task.FromResult<IdentityUser?>(null));
+            _mockAuthRepository.FindByEmailAsync(registerDto.Email, ct)
+                .Returns(Task.FromResult<IdentityUser?>(null));
+
+            _mockAuthRepository.CreateAsync(Arg.Any<IdentityUser>(), registerDto.Password, ct)
+                .Returns(IdentityResult.Success);
+
+            _mockAuthRepository.AddClaimAsync(Arg.Any<IdentityUser>(), Arg.Any<Claim>(), ct)
+                .Returns(IdentityResult.Success);
+
+            // Act
+            var result = await _authService.RegisterUserAsync(registerDto, ct);
+
+            // Assert
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.NotNull(result.Value);
+            Assert.Equal(registerDto.UserName, result.Value.UserName);
+
+            Assert.Equal(Auth.Registration.Success.RegisterOk, result.Message);
+
+            await _mockAuthRepository.Received(1).CreateAsync(
+                Arg.Is<IdentityUser>(u => u.UserName == registerDto.UserName &&
+                u.Email == registerDto.Email),
+                registerDto.Password, ct
+            );
+
+            await _mockAuthRepository.Received(1).AddClaimAsync(
+                Arg.Any<IdentityUser>(),
+                Arg.Any<Claim>(), ct
+            );
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_ShouldReturnInvalid_WhenIdentityResultFails()
+        {
+            // Arrange
+            var registerDto = AuthTestData.CreateRegisterUserDto();
+
+            _mockAuthRepository.FindByNameAsync(registerDto.UserName, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IdentityUser?>(null));
+            _mockAuthRepository.FindByEmailAsync(registerDto.Email, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IdentityUser?>(null));
+
+            var identityErrors = new List<IdentityError>
+            {
+                new IdentityError { Code = "PasswordTooShort", Description = "Password is too short." },
+                new IdentityError { Code = "PasswordRequiresDigit", Description = "Password must have at least one digit." }
+            };
+
+            _mockAuthRepository.CreateAsync(Arg.Any<IdentityUser>(), registerDto.Password, Arg.Any<CancellationToken>())
+                .Returns(IdentityResult.Failed(identityErrors.ToArray()));
+
+            // Act
+            var result = await _authService.RegisterUserAsync(registerDto);
+
+            // Assert
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+
+            Assert.Contains("Password is too short.", result.Message);
+            Assert.Contains("Password must have at least one digit.", result.Message);
+
+            await _mockAuthRepository.DidNotReceive().AddClaimAsync(
+                Arg.Any<IdentityUser>(), Arg.Any<Claim>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task RegisterUserAsync_ShouldReturnError_WhenClaimAssignmentFails()
+        {
+            // Arrange
+            var registerDto = AuthTestData.CreateRegisterUserDto();
+
+            _mockAuthRepository.FindByNameAsync(registerDto.UserName, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IdentityUser?>(null));
+
+            _mockAuthRepository.FindByEmailAsync(registerDto.Email, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IdentityUser?>(null));
+
+            _mockAuthRepository.CreateAsync(Arg.Any<IdentityUser>(), registerDto.Password, Arg.Any<CancellationToken>())
+                .Returns(IdentityResult.Success);
+
+            _mockAuthRepository.AddClaimAsync(
+                Arg.Any<IdentityUser>(), Arg.Any<Claim>(), Arg.Any<CancellationToken>())
+                .Returns(IdentityResult.Failed(new IdentityError { Description = "Database link failure" }));
+
+            // Act
+            var result = await _authService.RegisterUserAsync(registerDto);
+
+            // Assert            
+            Assert.Equal(ResultStatus.Error, result.Status);
+            Assert.Equal(Auth.Registration.Errors.ClaimAssignmentFailed, result.Message);
+            Assert.Equal(Auth.Registration.Errors.ClaimAssignmentFailedCode, result.ErrorCode);
+
+            await _mockAuthRepository.Received(1)
+                .AddClaimAsync(Arg.Any<IdentityUser>(), Arg.Any<Claim>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AuthenticateAsync_ShouldReturnError_WhenUserDoesNotExist()
+        {
+            // Arrange
+            var loginDto = AuthTestData.CreateUserLoginDto();
+
+            _mockAuthRepository.FindByNameAsync(loginDto.UserName, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IdentityUser?>(null));
+
+            // Act
+            var result = await _authService.AuthenticateAsync(loginDto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(Auth.LoginM.Errors.InvalidCredentials, result.Message);
+
+            await _mockAuthRepository.DidNotReceiveWithAnyArgs().CheckPasswordAsync(default!, default!);
+        }
+
+        [Fact]
+        public async Task AuthenticateAsync_ShouldReturnError_WhenPasswordIsIncorrect()
+        {
+            // Arrange
+            var loginDto = AuthTestData.CreateUserLoginDto();
+            var identityUser = AuthTestData.CreateIdentityUser();
+
+            _mockAuthRepository.FindByNameAsync(loginDto.UserName, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<IdentityUser?>(identityUser));
+
+            _mockAuthRepository.CheckPasswordAsync(identityUser, loginDto.Password, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(false));
+
+            // Act
+            var result = await _authService.AuthenticateAsync(loginDto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(Auth.LoginM.Errors.InvalidCredentials, result.Message);
+
+            await _mockAuthRepository.Received(1).FindByNameAsync(loginDto.UserName, Arg.Any<CancellationToken>());
+            await _mockAuthRepository.Received(1).CheckPasswordAsync(identityUser, loginDto.Password, Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AuthenticateAsync_ShouldReturnSuccess_WhenCredentialsAreValid()
+        {
+            // Arrange
+            var loginDto = AuthTestData.CreateUserLoginDto();
+            var identityUser = AuthTestData.CreateIdentityUser();
+            var ct = CancellationToken.None;
+
+            _mockAuthRepository.FindByNameAsync(loginDto.UserName, ct)
+            .Returns(Task.FromResult<IdentityUser?>(identityUser));
+
+            _mockAuthRepository.CheckPasswordAsync(Arg.Any<IdentityUser>(), loginDto.Password, ct)
+                .Returns(Task.FromResult(true));
+
+            _mockTokenService.GenerateTokenString(Arg.Any<IEnumerable<Claim>>())
+                .Returns("fake-jwt-token");
+
+            // Act
+            var result = await _authService.AuthenticateAsync(loginDto, ct);
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(loginUser.UserName, result.UserName);
+
+            var data = result.Value!;
+            Assert.True(result.IsSuccess);
+            Assert.Equal("fake-jwt-token", data.Token);
+            Assert.Equal(string.Format(Auth.LoginM.Success.LoginSuccess), result.Message);
+
             await _mockAuthRepository.Received(1)
-                 .FindByNameAsync(loginUser.UserName);
+                 .FindByNameAsync(loginDto.UserName, ct);
             await _mockAuthRepository.Received(1)
-                .CheckPasswordAsync(identityUser, loginUser.Password);
-        }
-
-        [Fact]
-        public async Task GetCurrentUserAsync_ReturnsUser_WhenUserIsAuthenticated()
-        {
-            // Arrange
-            var user = new IdentityUser { UserName = "testuser", Email = "test@example.com" };
-            var claims = new List<Claim>
-            {
-                new Claim(ClaimTypes.Name, "testuser")
-            };
-            var identity = new ClaimsIdentity(claims, "TestAuthType");
-            var claimsPrincipal = new ClaimsPrincipal(identity);
-
-            var httpContext = new DefaultHttpContext
-            {
-                User = claimsPrincipal
-            };
-
-            _mockHttpContextAccessor.HttpContext.Returns(httpContext);
-
-            _mockAuthRepository.GetUserAsync()
-                .Returns(Task.FromResult<IdentityUser?>(user));
-
-            // Act
-            var result = await _authService.GetCurrentUserAsync();
-
-            // Assert
-            Assert.Equal("testuser", result.UserName);
-            Assert.Equal("test@example.com", result.Email);
-        }
-
-        [Fact]
-        public async Task GenerateTokenString_ShouldReturnToken_WhenUserExists()
-        {
-            // Arrange
-            var userName = "admin";
-            var user = new IdentityUser { UserName = userName };
-
-            var claims = new List<Claim>
-            {
-                new Claim("permissions", "[1,2,3]"),
-            };
-
-            var rolesFromManager = new List<string> { TS.Roles.Admin };
-
-            var expectedToken = "generated_token";
-
-            _mockAuthRepository.FindByNameAsync(userName)
-                            .Returns(Task.FromResult<IdentityUser?>(user));
-
-            _mockAuthRepository.GetClaimsAsync(user)
-                            .Returns(claims);
-
-            _mockAuthRepository.GetRolesAsync(user)
-                            .Returns(rolesFromManager);
-
-            _mockTokenService.GenerateTokenString(Arg.Any<IEnumerable<Claim>>())
-                             .Returns(expectedToken);
-
-            // Act
-            var result = await _authService.GenerateTokenString(user);
-
-            // Assert
-            Assert.Equal(expectedToken, result);
-
-            await _mockAuthRepository.Received(1).FindByNameAsync(userName);
-            await _mockAuthRepository.Received(1).GetClaimsAsync(user);
-            await _mockAuthRepository.Received(1).GetRolesAsync(user);
-
-            _mockTokenService.Received(1).GenerateTokenString(Arg.Is<IEnumerable<Claim>>(claims =>
-                claims.Any(c => c.Type == ClaimTypes.Name && c.Value == userName) &&
-                claims.Count(c => c.Type == "permissions") == 3 &&
-                claims.Any(c => c.Type == "permissions" && c.Value == "1") &&
-                claims.Any(c => c.Type == "permissions" && c.Value == "2") &&
-                claims.Any(c => c.Type == "permissions" && c.Value == "3") &&
-                claims.Any(c => c.Type == ClaimTypes.Role && c.Value == TS.Roles.Admin)
-            ));
+                .CheckPasswordAsync(identityUser, loginDto.Password, ct);
         }
     }
 }

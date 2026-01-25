@@ -1,4 +1,5 @@
 using PostApiService.Infrastructure;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Constants;
 using PostApiService.Middlewares;
 

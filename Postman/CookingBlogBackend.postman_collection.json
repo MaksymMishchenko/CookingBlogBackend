@@ -1,1112 +1,1210 @@
 {
-	"info": {
-		"_postman_id": "48effb5a-d266-4c6d-a701-daf7e3d0eeac",
-		"name": "CookingBlogBackend",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-		"_exporter_id": "40053538"
-	},
-	"item": [
-		{
-			"name": "AuthController",
-			"item": [
-				{
-					"name": "Register",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"userName\": \"{{$randomUserName}}\",\r\n  \"email\": \"{{$randomEmail}}\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Auth/register",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Auth",
-								"register"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "Login",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"if (pm.response.code === 200) {\r",
-									"    var jsonResponse = pm.response.json();\r",
-									"    // Зберігаємо токен в змінну середовища\r",
-									"    pm.environment.set(\"jwtToken\", jsonResponse.token); \r",
-									"} else {\r",
-									"    console.error(\"Error fetching token: \", pm.response.status);\r",
-									"}\r",
-									"\r",
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"-Rtyuehe1\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Auth/Login",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Auth",
-								"Login"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "Contributor Login",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n  \"username\": \"cont\",\r\n  \"password\": \"-Rtyuehe2\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/Auth/Login",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"Auth",
-										"Login"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": null,
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Date",
-									"value": "Sat, 17 Jan 2026 10:10:07 GMT"
-								},
-								{
-									"key": "Server",
-									"value": "Kestrel"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"success\": true,\n    \"message\": \"User with username 'cont' logged in successfully\",\n    \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6ImU1MDdhYTA4LTIxOWUtNDlhMS1hMmM3LTVkNzBjY2ZhZjc0OCIsImh0dHA6Ly9zY2hlbWFzLnhtbHNvYXAub3JnL3dzLzIwMDUvMDUvaWRlbnRpdHkvY2xhaW1zL25hbWUiOiJjb250IiwiQ29tbWVudCI6WyIyIiwiMyIsIjQiXSwiaHR0cDovL3NjaGVtYXMubWljcm9zb2Z0LmNvbS93cy8yMDA4LzA2L2lkZW50aXR5L2NsYWltcy9yb2xlIjoiQ29udHJpYnV0b3IiLCJleHAiOjE3Njg2NDU1MDgsImlzcyI6Imh0dHBzOi8vbG9jYWxob3N0OjcwMzAiLCJhdWQiOiJodHRwczovL2xvY2FsaG9zdDo0MjAwIn0.i53JWeG8F1LWK5IIV2RPm84MNsJMgDhA93p-i78NSRE\"\n}"
-						}
-					]
-				}
-			]
-		},
-		{
-			"name": "CategoryController",
-			"item": [
-				{
-					"name": "AddCategoryAsync",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const response = pm.response.json();\r",
-									"\r",
-									"pm.environment.set(\"temp_category_id\", response.data.id);\r",
-									"\r",
-									"pm.test(\"Status code is 201\", function () {\r",
-									"    pm.response.to.have.status(201);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"const timestamp = Math.floor(Date.now() / 1000);\r",
-									"const uniqueName = \"Category \" + timestamp;\r",
-									"\r",
-									"pm.variables.set(\"unique_category_name\", uniqueName);"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Category",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Category"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GetCategoryByIdAsync",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/Category/1",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Category",
-								"1"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GetAllCategoriesAsync",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/Category",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Category"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "UpdateCategoryAsync",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"const timestamp = Math.floor(Date.now() / 1000);\r",
-									"const uniqueName = \"uni \" + timestamp;\r",
-									"\r",
-									"pm.variables.set(\"unique_category_name\", uniqueName);"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Category",
-								"{{temp_category_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "DeleteCategoryAsync",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});\r",
-									"\r",
-									"pm.environment.unset(\"temp_category_id\");"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"packages": {},
-								"type": "text/javascript"
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Category",
-								"{{temp_category_id}}"
-							]
-						}
-					},
-					"response": []
-				}
-			]
-		},
-		{
-			"name": "PostsController",
-			"item": [
-				{
-					"name": "AddNewPost",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const jsonData = pm.response.json();\r",
-									"\r",
-									"pm.test(\"Post created and ID saved\", function () {    \r",
-									"    pm.response.to.have.status(201);\r",
-									"    \r",
-									"    const postId = jsonData.data.id;       \r",
-									"    pm.expect(postId).to.not.be.undefined;\r",
-									"    \r",
-									"    pm.environment.set(\"temp_post_id\", postId);\r",
-									"    console.log(\"Captured Post ID:\", postId);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									"const timestamp = Math.floor(Date.now() / 1000);\r",
-									"const uniqueTitle = \"Post title \" + timestamp;\r",
-									"const slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r",
-									"\r",
-									"pm.variables.set(\"unique_post_title\", uniqueTitle);\r",
-									"pm.variables.set(\"unique_post_slug\", slug);"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": 1\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Posts",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Posts"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GetPostById",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);   \r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								"{{temp_post_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "SearchPosts",
-					"request": {
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/posts/search?queryString=lorem&pageNumber=10&pageSize=10",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								"search"
-							],
-							"query": [
-								{
-									"key": "queryString",
-									"value": "lorem"
-								},
-								{
-									"key": "pageNumber",
-									"value": "10"
-								},
-								{
-									"key": "pageSize",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "GetPostsWithTotalAsync",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "noauth"
-						},
-						"method": "GET",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/posts?pageNumber=10&pageSize=10",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"posts"
-							],
-							"query": [
-								{
-									"key": "pageNumber",
-									"value": "10"
-								},
-								{
-									"key": "pageSize",
-									"value": "10"
-								}
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "UpdatePost",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"title\": \"Updated post title\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"sample-post-title-changed\",\r\n    \"categoryId\": 2\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								"{{temp_post_id}}"
-							]
-						}
-					},
-					"response": []
-				},
-				{
-					"name": "RemovePost",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"    pm.environment.unset(\"temp_post_id\");\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"posts",
-								"{{temp_post_id}}"
-							],
-							"query": [
-								{
-									"key": "id",
-									"value": "1",
-									"disabled": true
-								}
-							]
-						}
-					},
-					"response": []
-				}
-			],
-			"auth": {
-				"type": "bearer",
-				"bearer": [
-					{
-						"key": "token",
-						"value": "{{jwtToken}}}",
-						"type": "string"
-					}
-				]
-			},
-			"event": [
-				{
-					"listen": "prerequest",
-					"script": {
-						"type": "text/javascript",
-						"packages": {},
-						"exec": [
-							""
-						]
-					}
-				},
-				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"packages": {},
-						"exec": [
-							""
-						]
-					}
-				}
-			]
-		},
-		{
-			"name": "CommentsController",
-			"item": [
-				{
-					"name": "AddComment",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"const jsonData = pm.response.json();\r",
-									"\r",
-									"pm.test(\"Status code is 200\", function () {    \r",
-									"    pm.response.to.have.status(200);  \r",
-									"    const commentId = jsonData.data.id;        \r",
-									"    pm.expect(commentId).to.not.be.undefined;        \r",
-									"    pm.environment.set(\"comment_id_to_delete\", commentId);    \r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						},
-						{
-							"listen": "prerequest",
-							"script": {
-								"exec": [
-									""
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "POST",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n    \"Author\": \"Maks\",\r\n    \"Content\": \"Some test comment from user Maks.\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Comments/1",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Comments",
-								"1"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "XSS Sanitization Example",
-							"originalRequest": {
-								"method": "POST",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/Comments/1",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"Comments",
-										"1"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": null,
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Date",
-									"value": "Sat, 17 Jan 2026 10:12:12 GMT"
-								},
-								{
-									"key": "Server",
-									"value": "Kestrel"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"data\": {\n        \"id\": 3001,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T10:12:11.286777Z\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment added successfully.\"\n}"
-						}
-					]
-				},
-				{
-					"name": "UpdateComment",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "PUT",
-						"header": [],
-						"body": {
-							"mode": "raw",
-							"raw": "{\r\n  \"content\": \"This is an updated sample comment with enough length.\"\r\n}",
-							"options": {
-								"raw": {
-									"language": "json"
-								}
-							}
-						},
-						"url": {
-							"raw": "{{baseUrl}}/api/Comments/300",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Comments",
-								"300"
-							]
-						}
-					},
-					"response": [
-						{
-							"name": "XSS Sanitization Example",
-							"originalRequest": {
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/Comments/300",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"Comments",
-										"300"
-									]
-								}
-							},
-							"status": "OK",
-							"code": 200,
-							"_postman_previewlanguage": null,
-							"header": [
-								{
-									"key": "Content-Type",
-									"value": "application/json; charset=utf-8"
-								},
-								{
-									"key": "Date",
-									"value": "Sat, 17 Jan 2026 10:07:44 GMT"
-								},
-								{
-									"key": "Server",
-									"value": "Kestrel"
-								},
-								{
-									"key": "Transfer-Encoding",
-									"value": "chunked"
-								}
-							],
-							"cookie": [],
-							"body": "{\n    \"data\": {\n        \"isEditedByAdmin\": false,\n        \"id\": 300,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T09:37:17.1495565\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment updated successfully.\"\n}"
-						}
-					]
-				},
-				{
-					"name": "RemoveComment",
-					"event": [
-						{
-							"listen": "test",
-							"script": {
-								"exec": [
-									"pm.test(\"Status code is 200\", function () {\r",
-									"    pm.response.to.have.status(200);\r",
-									"    pm.environment.unset(\"comment_id_to_delete\");\r",
-									"});"
-								],
-								"type": "text/javascript",
-								"packages": {},
-								"requests": {}
-							}
-						}
-					],
-					"request": {
-						"auth": {
-							"type": "bearer",
-							"bearer": [
-								{
-									"key": "token",
-									"value": "{{jwtToken}}",
-									"type": "string"
-								}
-							]
-						},
-						"method": "DELETE",
-						"header": [],
-						"url": {
-							"raw": "{{baseUrl}}/api/Comments/{{comment_id_to_delete}}",
-							"host": [
-								"{{baseUrl}}"
-							],
-							"path": [
-								"api",
-								"Comments",
-								"{{comment_id_to_delete}}"
-							]
-						}
-					},
-					"response": []
-				}
-			],
-			"auth": {
-				"type": "bearer",
-				"bearer": [
-					{
-						"key": "token",
-						"value": "{{JwtToken}}",
-						"type": "string"
-					}
-				]
-			},
-			"event": [
-				{
-					"listen": "prerequest",
-					"script": {
-						"type": "text/javascript",
-						"packages": {},
-						"exec": [
-							""
-						]
-					}
-				},
-				{
-					"listen": "test",
-					"script": {
-						"type": "text/javascript",
-						"packages": {},
-						"exec": [
-							""
-						]
-					}
-				}
-			]
-		}
-	]
+  "info": {
+    "_postman_id": "48effb5a-d266-4c6d-a701-daf7e3d0eeac",
+    "name": "CookingBlogBackend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "40053538"
+  },
+  "item": [
+    {
+      "name": "AuthController",
+      "item": [
+        {
+          "name": "Register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"userName\": \"{{$randomUserName}}\",\r\n  \"email\": \"{{$randomEmail}}\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "register"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {\r",
+                  "    var jsonResponse = pm.response.json();\r",
+                  "    // Зберігаємо токен в змінну середовища\r",
+                  "    pm.environment.set(\"jwtToken\", jsonResponse.data.token); \r",
+                  "} else {\r",
+                  "    console.error(\"Error fetching token: \", pm.response.status);\r",
+                  "}\r",
+                  "\r",
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"-Rtyuehe1\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Auth/Login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Auth",
+                "Login"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "Contributor Login",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"username\": \"cont\",\r\n  \"password\": \"-Rtyuehe2\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/Auth/Login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "Auth",
+                    "Login"
+                  ]
+                }
+              },
+              "_postman_previewlanguage": "",
+              "header": [],
+              "cookie": [
+                {
+                  "expires": "Invalid Date",
+                  "domain": "",
+                  "path": ""
+                }
+              ],
+              "body": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "CategoryController",
+      "item": [
+        {
+          "name": "AddCategoryAsync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.environment.set(\"temp_category_id\", response.data.id);\r",
+                  "\r",
+                  "pm.test(\"Status code is 201\", function () {\r",
+                  "    pm.response.to.have.status(201);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Math.floor(Date.now() / 1000);\r",
+                  "const uniqueName = \"Category \" + timestamp;\r",
+                  "\r",
+                  "pm.variables.set(\"unique_category_name\", uniqueName);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Category"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetCategoryByIdAsync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Category/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Category",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetAllCategoriesAsync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Category",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Category"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UpdateCategoryAsync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Math.floor(Date.now() / 1000);\r",
+                  "const uniqueName = \"uni \" + timestamp;\r",
+                  "\r",
+                  "pm.variables.set(\"unique_category_name\", uniqueName);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Category",
+                "{{temp_category_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DeleteCategoryAsync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
+                  "\r",
+                  "pm.environment.unset(\"temp_category_id\");"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "packages": {},
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Category",
+                "{{temp_category_id}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PostsController",
+      "item": [
+        {
+          "name": "AddNewPost",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();\r",
+                  "\r",
+                  "pm.test(\"Post created and ID saved\", function () {    \r",
+                  "    pm.response.to.have.status(201);\r",
+                  "    \r",
+                  "    const postId = jsonData.data.id;       \r",
+                  "    pm.expect(postId).to.not.be.undefined;\r",
+                  "    \r",
+                  "    pm.environment.set(\"temp_post_id\", postId);\r",
+                  "    console.log(\"Captured Post ID:\", postId);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Math.floor(Date.now() / 1000);\r",
+                  "const uniqueTitle = \"Post title \" + timestamp;\r",
+                  "const slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r",
+                  "\r",
+                  "pm.variables.set(\"unique_post_title\", uniqueTitle);\r",
+                  "pm.variables.set(\"unique_post_slug\", slug);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": 1\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Posts",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Posts"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "XSS Sanitization Example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": 1\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/Posts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "Posts"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 17 Jan 2026 18:38:04 GMT"
+                },
+                {
+                  "key": "Server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "Location",
+                  "value": "https://localhost:7030/api/Posts/152"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"data\": {\n        \"id\": 152,\n        \"title\": \"Post title 1768675083\",\n        \"description\": \"This is a sample description for the post.\",\n        \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\n        \"author\": \"Peter\",\n        \"imageUrl\": \"https://example.com/sample-image.jpg\",\n        \"slug\": \"post-title-1768675083\",\n        \"metaTitle\": \"Sample Meta Title\",\n        \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\n        \"categoryId\": 1,\n        \"createdAt\": \"2026-01-17T18:38:04.2378634Z\",\n        \"updatedAt\": null\n    },\n    \"success\": true,\n    \"message\": \"Post added successfully.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GetPostById",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);   \r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "{{temp_post_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "SearchPosts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/search?queryString=lorem&pageNumber=10&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "queryString",
+                  "value": "lorem"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "10"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GetPostsWithTotalAsync",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts?pageNumber=10&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts"
+              ],
+              "query": [
+                {
+                  "key": "pageNumber",
+                  "value": "10"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UpdatePost",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const timestamp = Math.floor(Date.now() / 1000);\r",
+                  "const updatedTitle = \"Updated title \" + timestamp;\r",
+                  "const updatedSlug = \"updated-slug-\" + timestamp;\r",
+                  "\r",
+                  "pm.variables.set(\"updated_post_title\", updatedTitle);\r",
+                  "pm.variables.set(\"updated_post_slug\", updatedSlug);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": 2\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "{{temp_post_id}}"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "XSS Sanitization Example",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": 2\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "posts",
+                    "{{temp_post_id}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 17 Jan 2026 18:54:33 GMT"
+                },
+                {
+                  "key": "Server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"data\": {\n        \"id\": 162,\n        \"title\": \"Updated title 1768676073\",\n        \"description\": \"This is a sample description for the post.\",\n        \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\n        \"author\": \"John Doe\",\n        \"imageUrl\": \"https://example.com/changed-image.jpg\",\n        \"slug\": \"updated-slug-1768676073\",\n        \"metaTitle\": \"Sample changed Meta Title\",\n        \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\n        \"categoryId\": 2,\n        \"createdAt\": \"2026-01-17T18:54:21.1915937\",\n        \"updatedAt\": \"2026-01-17T18:54:33.5418361Z\"\n    },\n    \"success\": true,\n    \"message\": \"Post updated successfully.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "RemovePost",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    pm.environment.unset(\"temp_post_id\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "{{temp_post_id}}"
+              ],
+              "query": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "type": "text",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{jwtToken}}}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "CommentsController",
+      "item": [
+        {
+          "name": "AddComment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();\r",
+                  "\r",
+                  "pm.test(\"Status code is 200\", function () {    \r",
+                  "    pm.response.to.have.status(200);  \r",
+                  "    const commentId = jsonData.data.id;        \r",
+                  "    pm.expect(commentId).to.not.be.undefined;        \r",
+                  "    pm.environment.set(\"comment_id_to_delete\", commentId);    \r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{   \r\n    \"Content\": \"Some test comment from user Maks.\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Comments/1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Comments",
+                "1"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "XSS Sanitization Example",
+              "originalRequest": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/Comments/1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "Comments",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 17 Jan 2026 10:12:12 GMT"
+                },
+                {
+                  "key": "Server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"data\": {\n        \"id\": 3001,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T10:12:11.286777Z\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment added successfully.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "UpdateComment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"content\": \"This is an updated sample comment with enough length.\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Comments/21",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Comments",
+                "21"
+              ]
+            }
+          },
+          "response": [
+            {
+              "name": "XSS Sanitization Example",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/Comments/300",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "Comments",
+                    "300"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": null,
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json; charset=utf-8"
+                },
+                {
+                  "key": "Date",
+                  "value": "Sat, 17 Jan 2026 10:07:44 GMT"
+                },
+                {
+                  "key": "Server",
+                  "value": "Kestrel"
+                },
+                {
+                  "key": "Transfer-Encoding",
+                  "value": "chunked"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n    \"data\": {\n        \"isEditedByAdmin\": false,\n        \"id\": 300,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T09:37:17.1495565\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment updated successfully.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "RemoveComment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    pm.environment.unset(\"comment_id_to_delete\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Comments/{{comment_id_to_delete}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Comments",
+                "{{comment_id_to_delete}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "auth": {
+        "type": "bearer",
+        "bearer": [
+          {
+            "key": "token",
+            "value": "{{JwtToken}}",
+            "type": "string"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "packages": {},
+            "exec": [
+              ""
+            ]
+          }
+        }
+      ]
+    }
+  ]
 }

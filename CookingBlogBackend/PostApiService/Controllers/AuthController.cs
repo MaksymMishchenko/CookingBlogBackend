@@ -1,6 +1,6 @@
 ﻿using PostApiService.Controllers.Filters;
 using PostApiService.Interfaces;
-using PostApiService.Models.Common;
+using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Controllers
 {
@@ -21,28 +21,26 @@ namespace PostApiService.Controllers
         [AllowAnonymous]
         [HttpPost("Register")]
         [ValidateModel(InvalidErrorMessage = Auth.Registration.Errors.InvalidRegistrationData)]
-        public async Task<IActionResult> RegisterUser([FromBody] RegisterUser user)
+        public async Task<IActionResult> RegisterUser([FromBody] RegisterUserDto userDto,
+            CancellationToken ct = default)
         {
-            await _authService.RegisterUserAsync(user);
+            var result = await _authService.RegisterUserAsync(userDto);
 
-            return Ok(ApiResponse<RegisterUser>.CreateSuccessResponse
-               (string.Format(Auth.Registration.Success.RegisterOk, user.UserName)));
+            return result.ToActionResult();
         }
 
         /// <summary>
-        /// Authenticates a user and generates a JWT token upon successful login.
-        /// </summary>        
+        /// Authenticates a user based on the provided credentials and returns the authentication result.
+        /// </summary>       
         [AllowAnonymous]
         [HttpPost("Login")]
         [ValidateModel(InvalidErrorMessage = Auth.LoginM.Errors.InvalidCredentials)]
-        public async Task<IActionResult> LoginUserAsync([FromBody] LoginUser credentials)
+        public async Task<IActionResult> LoginUserAsync([FromBody] LoginUserDto credentials,
+            CancellationToken ct = default)
         {
-            var user = await _authService.LoginAsync(credentials);
+            var result = await _authService.AuthenticateAsync(credentials);
 
-            var token = await _authService.GenerateTokenString(user);
-
-            return Ok(ApiResponse<LoginUser>.CreateSuccessResponse
-                (string.Format(Auth.LoginM.Success.LoginSuccess, user.UserName), token));
+            return result.ToActionResult();
         }
     }
 }
