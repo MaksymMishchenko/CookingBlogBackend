@@ -40,6 +40,8 @@ jobs:
           output-file: "CHANGELOG.md"
           tag-prefix: "v"
           skip-version-file: "true"
+          skip-on-empty: "false"
+          skip-commit: "false"
       
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
