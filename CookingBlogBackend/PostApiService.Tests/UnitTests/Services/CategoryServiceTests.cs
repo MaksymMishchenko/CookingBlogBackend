@@ -1,4 +1,5 @@
-﻿using PostApiService.Infrastructure.Common;
+﻿using PostApiService.Helper;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -138,14 +139,38 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task AddCategoryAsync_ShouldStripHtmlFromName_BeforeSaving()
+        {
+            // Arrange
+            var dto = new CreateCategoryDto { Name = "<b>Healthy</b> Food" };
+            var expectedName = "Healthy Food";
+            var expectedSlug = "healthy-food";
+
+            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(),
+                Arg.Any<CancellationToken>()).Returns(false);
+
+            // Act
+            var result = await _categoryService.AddCategoryAsync(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(expectedName, result.Value!.Name);
+            Assert.Equal(expectedSlug, result.Value.Slug);
+
+            await _mockCategoryRepo.Received(1).AddAsync(Arg.Is<Category>(c => c.Name == expectedName),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task AddCategoryAsync_ShouldReturnConflict_WhenCategoryNameAlreadyExists()
         {
             // Arrange
             var dto = new CreateCategoryDto { Name = "Dessert" };
+            var expectedSlug = StringHelper.GenerateSlug(dto.Name);
             _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
                              .Returns(true);
 
-            var expectedMessage = string.Format(CategoryM.Errors.CategoryAlreadyExists, dto.Name);
+            var expectedMessage = string.Format(CategoryM.Errors.CategoryOrSlugExists, dto.Name, expectedSlug);
 
             // Act
             var result = await _categoryService.AddCategoryAsync(dto);
@@ -159,6 +184,26 @@ namespace PostApiService.Tests.UnitTests.Services
                 (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
             await _mockCategoryRepo.DidNotReceive().AddAsync(Arg.Any<Category>());
             await _mockCategoryRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddCategoryAsync_ShouldGenerateSlugFromName_WhenSlugInDtoIsEmpty()
+        {
+            // Arrange
+            var dto = new CreateCategoryDto { Name = "Desserts", Slug = "" };
+            var expectedSlug = "desserts";
+
+            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                             .Returns(false);
+
+            // Act
+            var result = await _categoryService.AddCategoryAsync(dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(expectedSlug, result.Value!.Slug); 
+            
+            await _mockCategoryRepo.Received(1).AddAsync(Arg.Is<Category>(c => c.Slug == expectedSlug), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -208,9 +253,8 @@ namespace PostApiService.Tests.UnitTests.Services
                 (categoryId, Arg.Any<CancellationToken>());
             await _mockCategoryRepo.DidNotReceive().AnyAsync
                 (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
-            await _mockCategoryRepo.DidNotReceive().UpdateAsync(Arg.Is<Category>(c => c.Name == dto.Name));
             await _mockCategoryRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-        }
+        }        
 
         [Fact]
         public async Task UpdateCategoryAsync_ShouldReturnConflict_WhenNewNameAlreadyExistsForOtherCategory()
@@ -220,13 +264,15 @@ namespace PostApiService.Tests.UnitTests.Services
             var dto = new UpdateCategoryDto { Name = "Dessert" };
             var existingCategory = new Category { Id = categoryId, Name = "Beverages" };
 
+            var finalSlug = StringHelper.GenerateSlug(dto.Name);
+
             _mockCategoryRepo.GetByIdAsync(categoryId, Arg.Any<CancellationToken>())
                 .Returns(existingCategory);
 
             _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
                              .Returns(true);
 
-            var expectedMessage = string.Format(CategoryM.Errors.CategoryAlreadyExists, dto.Name);
+            var expectedMessage = string.Format(CategoryM.Errors.CategoryOrSlugExists, dto.Name, finalSlug);
 
             // Act
             var result = await _categoryService.UpdateCategoryAsync(categoryId, dto);
@@ -241,7 +287,29 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockCategoryRepo.Received(1).AnyAsync
                 (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
 
-            await _mockCategoryRepo.DidNotReceive().UpdateAsync(Arg.Is<Category>(c => c.Name == dto.Name));
+            await _mockCategoryRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdateCategoryAsync_ShouldReturnConflict_WhenGeneratedSlugAlreadyExists()
+        {
+            // Arrange
+            const int categoryId = 1;
+            var dto = new UpdateCategoryDto { Name = "New Unique Name" };
+            var existingCategory = new Category { Id = categoryId, Name = "Old Name", Slug = "old-slug" };
+
+            _mockCategoryRepo.GetByIdAsync(categoryId, Arg.Any<CancellationToken>())
+                .Returns(existingCategory);
+            
+            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            // Act
+            var result = await _categoryService.UpdateCategoryAsync(categoryId, dto);
+
+            // Assert
+            Assert.Equal(ResultStatus.Conflict, result.Status);
+
             await _mockCategoryRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -250,9 +318,10 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int categoryId = 1;
+            var expectedName = "Beverages";
             var token = new CancellationToken(false);
 
-            var dto = new UpdateCategoryDto { Name = "Beverages" };
+            var dto = new UpdateCategoryDto { Name = "<i>Beverages</i>" };
             var existingCategory = new Category { Id = categoryId, Name = "Dessert" };
 
             _mockCategoryRepo.GetByIdAsync(categoryId, token).Returns(existingCategory);
@@ -264,15 +333,19 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.Equal(ResultStatus.Success, result.Status);            
+            Assert.Equal(expectedName, result.Value!.Name);
             Assert.Equal(dto.Name, result.Value!.Name);
             Assert.Equal(categoryId, result.Value.Id);
+
+            var expectedSlug = StringHelper.GenerateSlug(dto.Name);
+            Assert.Equal(expectedSlug, result.Value!.Slug);
+            Assert.Equal(expectedSlug, existingCategory.Slug);
 
             await _mockCategoryRepo.Received(1).GetByIdAsync
                 (categoryId, token);
             await _mockCategoryRepo.Received(1).AnyAsync
-                (Arg.Any<Expression<Func<Category, bool>>>(), token);
-            await _mockCategoryRepo.Received(1).UpdateAsync(Arg.Is<Category>(c => c.Name == dto.Name), token);
+                (Arg.Any<Expression<Func<Category, bool>>>(), token);            
             await _mockCategoryRepo.Received(1).SaveChangesAsync(token);
         }
 

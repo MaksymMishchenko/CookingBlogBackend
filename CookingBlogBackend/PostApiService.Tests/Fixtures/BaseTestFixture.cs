@@ -48,7 +48,9 @@ namespace PostApiService.Tests.Fixtures
         {
             using var scope = Services!.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await context.Database.EnsureCreatedAsync();
+
+            await context.Database.MigrateAsync();
+            await context.Database.EnsureCreatedAsync();           
         }
 
         private async Task InitializeRespawnerAsync()

@@ -185,7 +185,7 @@ namespace PostApiService.Tests.Helper
 
         public static List<CategoryDto> GetCategoryListDtos(ICollection<Category> categories)
         {
-            return categories.Select(c => new CategoryDto(c.Id, c.Name)).ToList();
+            return categories.Select(c => new CategoryDto(c.Id, c.Name, c.Slug)).ToList();
         }
 
         public static PostCreateDto ToPostCreateDto(Post post)
@@ -606,12 +606,12 @@ namespace PostApiService.Tests.Helper
         {
             return new List<Category>
             {
-                new Category { Name = "Breakfast" },
-                new Category { Name = "Main Course" },
-                new Category { Name = "Desserts" },
-                new Category { Name = "Healthy Food" },
-                new Category { Name = "Beverages" },
-                new Category { Name = "Vegetarian" }
+                new Category { Name = "Breakfast", Slug = StringHelper.GenerateSlug("Breakfast") },
+                new Category { Name = "Main Course", Slug = StringHelper.GenerateSlug("Main Course") },
+                new Category { Name = "Desserts", Slug = StringHelper.GenerateSlug("Desserts") },
+                new Category { Name = "Healthy Food", Slug = StringHelper.GenerateSlug("Healthy Food") },
+                new Category { Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
+                new Category { Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
             };
         }
 
