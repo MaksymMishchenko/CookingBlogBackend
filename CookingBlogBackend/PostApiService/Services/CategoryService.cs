@@ -1,4 +1,5 @@
-﻿using PostApiService.Helper;
+﻿using Microsoft.IdentityModel.Logging;
+using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -48,7 +49,7 @@ namespace PostApiService.Services
         }
 
         public async Task<Result<CategoryDto>> AddCategoryAsync
-            (CreateCategoryDto categoryDto, CancellationToken ct = default)
+    (CreateCategoryDto categoryDto, CancellationToken ct = default)
         {
             var alreadyExists = await _categoryRepository
                 .AnyAsync(c => c.Name == categoryDto.Name, ct);
@@ -56,20 +57,25 @@ namespace PostApiService.Services
             if (alreadyExists)
             {
                 Log.Information(Categories.CategoryExists, categoryDto.Name);
-
-                return Conflict<CategoryDto>
-                    (string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name),
+                return Conflict<CategoryDto>(
+                    string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name),
                     CategoryM.Errors.CategoryAlreadyExistsCode);
             }
-
+            
+            string source = string.IsNullOrWhiteSpace(categoryDto.Slug)
+                ? categoryDto.Name
+                : categoryDto.Slug;
+            
+            string finalSlug = StringHelper.GenerateSlug(source);
+            
+            categoryDto.Slug = finalSlug;
+            
             var categoryEntity = CategoryMappingExtensions.ToEntity(categoryDto);
 
             await _categoryRepository.AddAsync(categoryEntity, ct);
             await _categoryRepository.SaveChangesAsync(ct);
 
-            var responseDto = categoryEntity.ToDto();
-
-            return Success(responseDto, CategoryM.Success.CategoryAddedSuccessfully);
+            return Success(categoryEntity.ToDto(), CategoryM.Success.CategoryAddedSuccessfully);
         }
 
         public async Task<Result<CategoryDto>> UpdateCategoryAsync

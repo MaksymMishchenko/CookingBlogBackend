@@ -1,4 +1,5 @@
-﻿using System.Text.RegularExpressions;
+﻿using AnyAscii;
+using System.Text.RegularExpressions;
 
 namespace PostApiService.Helper
 {
@@ -16,6 +17,24 @@ namespace PostApiService.Helper
                 return input;
 
             return Regex.Replace(input, "<.*?>", string.Empty).Trim();
+        }
+
+        public static string GenerateSlug(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name))
+                return string.Empty;
+           
+            string slug = name.Transliterate();
+            
+            slug = slug.ToLowerInvariant();
+           
+            slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
+            
+            slug = Regex.Replace(slug, @"\s+", "-").Trim();
+           
+            slug = Regex.Replace(slug, @"-+", "-");
+
+            return slug.Trim('-');
         }
     }
 }
