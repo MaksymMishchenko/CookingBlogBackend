@@ -22,7 +22,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var categoriesToSeed = TestDataHelper.GetCulinaryCategories();
             _fixture.SeedCategoryAsync(context, categoriesToSeed).Wait();
 
-            var postRepo = new Repository<Post>(context);
+            var postRepo = new PostRepository(context);
             var repo = new Repository<Category>(context);
             var service = new CategoryService(repo, postRepo);
 

@@ -31,7 +31,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
         private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
         {
-            var repo = new Repository<Post>(context);
+            var repo = new PostRepository(context);
             var webContextMock = Substitute.For<IWebContext>();
             var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
             var catService = new CategoryService(new Repository<Category>(context), repo);

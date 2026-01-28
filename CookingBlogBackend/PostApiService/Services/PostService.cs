@@ -9,22 +9,21 @@ using System.Data;
 
 namespace PostApiService.Services
 {
-    public class PostService : IPostService
+    public class PostService : BaseService, IPostService
     {
-        private readonly IRepository<Post> _repository;
-        private readonly IWebContext _webContext;
+        //private readonly IRepository<Post> _repository;
+        private readonly IPostRepository _postRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly ICategoryService _categoryService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
-        public PostService(IRepository<Post> repository,
+        public PostService(IPostRepository postRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
             ICategoryService categoryService,
-            ISnippetGeneratorService snippetGenerator)
+            ISnippetGeneratorService snippetGenerator) : base(webContext)
         {
-            _repository = repository;
-            _webContext = webContext;
+            _postRepository = postRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
             _snippetGenerator = snippetGenerator;
@@ -39,9 +38,9 @@ namespace PostApiService.Services
             int pageSize = 10,
             CancellationToken ct = default)
         {
-            var totalPostCount = await _repository.GetTotalCountAsync(ct);
+            var totalPostCount = await _postRepository.GetTotalCountAsync(ct);
 
-            var posts = await _repository.AsQueryable()
+            var posts = await _postRepository.AsQueryable()
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -60,7 +59,7 @@ namespace PostApiService.Services
         public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsWithTotalCountAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
         {
-            var queryable = _repository.GetFilteredQueryable(p =>
+            var queryable = _postRepository.GetFilteredQueryable(p =>
                 p.Title.Contains(query) ||
                 p.Description.Contains(query) ||
                 p.Content.Contains(query)
@@ -117,7 +116,7 @@ namespace PostApiService.Services
         /// </summary>       
         public async Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default)
         {
-            var postDto = await _repository.AsQueryable()
+            var postDto = await _postRepository.AsQueryable()
             .Where(p => p.Id == postId)
             .Select(PostMappingExtensions.ToAdminDetailsDto)
             .FirstOrDefaultAsync();
@@ -125,11 +124,12 @@ namespace PostApiService.Services
             if (postDto == null)
             {
                 Log.Warning(Posts.NotFound, postId);
-                return Result<PostAdminDetailsDto>.NotFound
+
+                return NotFound<PostAdminDetailsDto>
                     (PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
-            return Result<PostAdminDetailsDto>.Success(postDto);
+            return Success(postDto);
         }
 
         /// <summary>
@@ -137,12 +137,11 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default)
         {
-            var userId = _webContext.UserId;
+            var userId = WebContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Result<PostAdminDetailsDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
-                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+                return Unauthorized<PostAdminDetailsDto>();
             }
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
@@ -150,23 +149,23 @@ namespace PostApiService.Services
             if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
             {
                 var traceContent = postDto.Content.Truncate(500);
-                Log.Warning(Security.XssDetectedOnPostCreate, postDto.Title, userId, _webContext.IpAddress, traceContent);
+                Log.Warning(Security.XssDetectedOnPostCreate, postDto.Title, userId, WebContext.IpAddress, traceContent);
             }
 
             if (string.IsNullOrWhiteSpace(sanitizedContent))
             {
-                return Result<PostAdminDetailsDto>.Invalid(PostM.Errors.Empty, PostM.Errors.EmptyCode);
+                return Invalid<PostAdminDetailsDto>(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();
 
-            var alreadyExists = await _repository
+            var alreadyExists = await _postRepository
                .AnyAsync(p => p.Title == cleanTitle || p.Slug == cleanSlug, ct);
 
             if (alreadyExists)
             {
-                return Result<PostAdminDetailsDto>.Conflict(string.Format(
+                return Conflict<PostAdminDetailsDto>(string.Format(
                     PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug),
                     PostM.Errors.PostAlreadyExistCode);
             }
@@ -177,21 +176,20 @@ namespace PostApiService.Services
             {
                 Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
 
-                return Result<PostAdminDetailsDto>.NotFound
+                return NotFound<PostAdminDetailsDto>
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
             }
 
             var postEntity = postDto.ToEntity(sanitizedContent);
 
-            await _repository.AddAsync(postEntity, ct);
-            await _repository.SaveChangesAsync(ct);
+            await _postRepository.AddAsync(postEntity, ct);
+            await _postRepository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Created, postEntity.Title, postEntity.Id);
 
             var responseDto = postEntity.MapToAdminDto();
 
-            return Result<PostAdminDetailsDto>.Success
-                (responseDto, PostM.Success.PostAddedSuccessfully);
+            return Success(responseDto, PostM.Success.PostAddedSuccessfully);
         }
 
         /// <summary>
@@ -200,12 +198,11 @@ namespace PostApiService.Services
         public async Task<Result<PostAdminDetailsDto>> UpdatePostAsync
             (int postId, PostUpdateDto postDto, CancellationToken ct = default)
         {
-            var userId = _webContext.UserId;
+            var userId = WebContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Result<PostAdminDetailsDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
-                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+                return Unauthorized<PostAdminDetailsDto>();
             }
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
@@ -213,34 +210,34 @@ namespace PostApiService.Services
             if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
             {
                 var traceContent = postDto.Content.Truncate(500);
-                Log.Warning(Security.XssDetectedOnPostUpdate, postId, userId, _webContext.IpAddress, traceContent);
+                Log.Warning(Security.XssDetectedOnPostUpdate, postId, userId, WebContext.IpAddress, traceContent);
             }
 
             if (string.IsNullOrWhiteSpace(sanitizedContent))
             {
-                return Result<PostAdminDetailsDto>.Invalid(PostM.Errors.Empty, PostM.Errors.EmptyCode);
+                return Invalid<PostAdminDetailsDto>(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
-            var postEntity = await _repository.GetByIdAsync(postId, ct);
+            var postEntity = await _postRepository.GetByIdAsync(postId, ct);
 
             if (postEntity == null)
             {
                 Log.Warning(Posts.NotFound, postId);
 
-                return Result<PostAdminDetailsDto>.NotFound(
-                    PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+                return NotFound<PostAdminDetailsDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();
 
-            var alreadyExists = await _repository.AnyAsync(p => (p.Title == cleanTitle ||
+            var alreadyExists = await _postRepository.AnyAsync(p => (p.Title == cleanTitle ||
             p.Slug == cleanSlug) && p.Id != postId, ct);
 
             if (alreadyExists)
             {
                 Log.Information(Posts.AlreadyExists, cleanTitle, cleanSlug);
-                return Result<PostAdminDetailsDto>.Conflict(string.Format(
+
+                return Conflict<PostAdminDetailsDto>(string.Format(
                     PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug), PostM.Errors.PostAlreadyExistCode);
             }
 
@@ -251,20 +248,19 @@ namespace PostApiService.Services
                 {
                     Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
 
-                    return Result<PostAdminDetailsDto>.NotFound
+                    return NotFound<PostAdminDetailsDto>
                         (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
                 }
             }
 
             postDto.UpdateEntity(postEntity, sanitizedContent);
-            await _repository.SaveChangesAsync(ct);
+            await _postRepository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
 
             var responseDto = postEntity.MapToAdminDto();
 
-            return Result<PostAdminDetailsDto>.Success
-                (responseDto, PostM.Success.PostUpdatedSuccessfully);
+            return Success(responseDto, PostM.Success.PostUpdatedSuccessfully);
         }
 
         /// <summary>
@@ -272,27 +268,26 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Result> DeletePostAsync(int postId, CancellationToken ct = default)
         {
-            var userId = _webContext.UserId;
+            var userId = WebContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Result.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
-                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+                return Unauthorized();
             }
 
-            var existingPost = await _repository.GetByIdAsync(postId, ct);
+            var existingPost = await _postRepository.GetByIdAsync(postId, ct);
 
             if (existingPost == null)
             {
-                return Result.NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+                return NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
-            await _repository.DeleteAsync(existingPost, ct);
-            await _repository.SaveChangesAsync(ct);
+            await _postRepository.DeleteAsync(existingPost, ct);
+            await _postRepository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Deleted, postId);
 
-            return Result.Success(PostM.Success.PostDeletedSuccessfully);
+            return Success(PostM.Success.PostDeletedSuccessfully);
         }
     }
 }

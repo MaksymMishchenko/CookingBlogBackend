@@ -32,8 +32,11 @@
             public static class Errors
             {
                 public const string CategoryNotFound = "Category was not found.";
+                public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
                 public const string CategoryAlreadyExists = "Category with Name '{0}' already exists.";
+                public const string CategoryAlreadyExistsCode = "CATEGORY_ALREADY_EXISTS";
                 public const string CannotDeleteCategoryWithPosts = "Cannot delete category with posts";
+                public const string CannotDeleteCategoryWithPostsCode = "CATEGORY_DELETE_BLOCKED";
             }
 
             public static class Success
@@ -71,6 +74,7 @@
                 public static class Errors
                 {
                     public const string InvalidCredentials = "Invalid username or password. Please check your credentials and try again.";
+                    public const string InvalidCredentialsErrorCode = "INVALID_CREDENTIALS";
                     public const string UnauthorizedAccess = "Unauthorized Access";
                     public const string UnauthorizedAccessCode = "UNAUTHORIZED";                    
                 }
@@ -87,6 +91,8 @@
                 {
                     public const string InvalidRegistrationData = "Invalid registration data. Please check the provided information.";
                     public const string InvalidRegistrationDataCode = "REG_INVALID_DATA";
+                    public const string DefaultRegistrationError = "An error occurred during registration. Please check your data or try again later.";                   
+                    public const string DefaultRegistrationErrorCode = "REGISTRATION_FAILED";
                     public const string UserAlreadyExists = "Username or email is already taken.";
                     public const string UserAlreadyExistsCode = "REG_USER_ALREADY_EXISTS";                   
                     public const string ClaimAssignmentFailed = "Failed to assign claim to user.";
