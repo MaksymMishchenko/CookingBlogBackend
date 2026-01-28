@@ -107,7 +107,7 @@ namespace PostApiService.Tests.UnitTests.Extensions
         public void ToActionResult_SearchPagedResult_MapsAllFieldsCorrectly()
         {
             // Arrange
-            var items = new List<SearchPostListDto> { new(1, "Title", "slug", "snippet", "author", "cat") };
+            var items = new List<SearchPostListDto> { new(1, "Title", "slug", "snippet", "author", "cat", "cat") };
             var searchRecord = new PagedSearchResult<SearchPostListDto>(
                 Query: "dessert",
                 Items: items,

@@ -73,7 +73,7 @@ namespace PostApiService.Extensions
             if (result.Status == ResultStatus.NoContent)
             {
                 return new NoContentResult();
-            }               
+            }
 
             return result.Status switch
             {
@@ -82,7 +82,7 @@ namespace PostApiService.Extensions
                     null,
                     routeValues,
                     ApiResponse<T>.CreateSuccessResponse(result.Message!, result.Value)),
-                
+
                 _ => result.ToActionResult()
             };
         }

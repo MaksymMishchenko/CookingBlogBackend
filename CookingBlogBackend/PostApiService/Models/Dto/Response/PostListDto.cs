@@ -6,6 +6,7 @@
         string Slug,
         string Author,
         string Category,
+        string CategorySlug,
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         string Description,

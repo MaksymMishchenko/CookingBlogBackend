@@ -8,6 +8,10 @@
             {
                 public const string PostNotFound = "Post not found.";
                 public const string PostNotFoundCode = "POST_NOT_FOUND";
+                public const string SlugAndCategoryRequired = "Slug and category are required and must be valid.";
+                public const string SlugAndCategoryRequiredCode = "SLUG_AND_CATEGORY_REQUIRED";
+                public const string PostNotFoundByPath = "Post not found or category mismatch for slug: {Slug} in category: {Category}";
+                public const string PostNotFoundByPathCode = "POST_NOT_FOUND_OR_CATEGORY_MISMATCH";
                 public const string PostTitleOrSlugAlreadyExist = "A post with the same Title '{0}' or Slug {1} already exists.";
                 public const string PostAlreadyExistCode = "POST_OR_SLUG_ALREADY_EXISTS";
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";

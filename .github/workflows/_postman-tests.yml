@@ -1,0 +1,38 @@
+name: Postman Tests
+
+on:
+  workflow_call:
+    secrets:
+      SecretKey:
+        required: true
+      # Сюди додавай інші секрети, які потрібні твоєму API
+
+jobs:
+  run-postman:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+      
+      - name: Start API in background
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
+        run: |
+          dotnet run --project CookingBlogBackend/PostApiService/PostApiService.csproj & 
+          sleep 15
+
+      - name: Install Newman
+        run: npm install -g newman
+      
+      - name: Run Postman Tests
+        run: |
+          newman run postman/collection.json \
+          -e postman/environment.json \
+          --env-var "baseUrl=https://localhost:7030" \
+          --reporters cli

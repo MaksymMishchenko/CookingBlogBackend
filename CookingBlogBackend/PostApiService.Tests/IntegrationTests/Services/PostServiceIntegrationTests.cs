@@ -87,7 +87,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 var data = result.Value!;
                 Assert.Equal(ExpectedTotalPostCount, data.TotalCount);
-                Assert.Equal(ExpectedPageSize, data.PageSize);                
+                Assert.Equal(ExpectedPageSize, data.PageSize);
 
                 Assert.Equal(expectedPostsOnPage.First().Id, data.Items.First().Id);
                 Assert.Equal(expectedPostsOnPage.Last().Id, data.Items.Last().Id);
@@ -188,6 +188,37 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task GetPostBySlugAsync_ShouldReturnSuccess_IfPostExistsInDb()
+        {
+            // Arrange                        
+            var (context, postService, seededPosts, _) = await SetupAsync(categories =>
+                _fixture.GeneratePosts(3, categories, 5));
+
+            var targetPost = seededPosts.First();
+
+            var requestDto = TestDataHelper.CreatePostRequest(targetPost.Category.Slug, targetPost.Slug);
+
+            using (context)
+            {
+                // Act
+                var result = await postService.GetPostBySlugAsync(requestDto);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+
+                var data = result.Value;
+                Assert.NotNull(data);
+
+                Assert.Equal(targetPost.Title, data.Title);
+                Assert.Equal(targetPost.Author, data.Author);
+                Assert.Equal(targetPost.Slug, data.Slug);
+                Assert.Equal(targetPost.Category.Slug, data.CategorySlug);
+                Assert.Equal(targetPost.Category.Name, data.Category);
+            }
+        }
+
+        [Fact]
         public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
         {
             // Arrange           
@@ -253,11 +284,11 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 Assert.NotNull(postInDb);
                 Assert.Equal(updateDto.Title, postInDb.Title);
-                Assert.Equal(updateDto.Content, postInDb.Content);                
+                Assert.Equal(updateDto.Content, postInDb.Content);
                 Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
 
                 Assert.NotNull(postInDb.UpdatedAt);
-                Assert.True(postInDb.UpdatedAt > DateTime.UtcNow.AddMinutes(-1));                
+                Assert.True(postInDb.UpdatedAt > DateTime.UtcNow.AddMinutes(-1));
                 Assert.Equal(postInDb.UpdatedAt, result.Value!.UpdatedAt);
 
                 var totalCount = await context.Posts.CountAsync();

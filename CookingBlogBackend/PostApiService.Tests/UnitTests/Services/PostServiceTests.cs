@@ -2,6 +2,7 @@
 using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
+using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -495,6 +496,111 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(errorMessage, result.Message);
             Assert.Equal(errorCode, result.ErrorCode);
+
+            _mockRepository.Received(1).AsQueryable();
+        }
+
+        [Theory]
+        [InlineData("valid-category", "<h1></h1>")]
+        [InlineData("   ", "valid-slug")]
+        [InlineData("  ", "  ")]
+        public async Task GetPostBySlugAsync_ShouldReturnInvalid_WhenInputsAreEmptyAfterHtmlStriping(string category, string slug)
+        {
+            // Act
+            var dto = new PostRequestBySlug { Category = category, Slug = slug };
+
+            var result = await _postService.GetPostBySlugAsync(dto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Equal(PostM.Errors.SlugAndCategoryRequired, result.Message);
+            Assert.Equal(PostM.Errors.SlugAndCategoryRequiredCode, result.ErrorCode);
+
+            _mockRepository.DidNotReceive().AsQueryable();
+        }
+
+        [Fact]
+        public async Task GetPostBySlugAsync_ShouldReturnNotFound_WhenPostDoesNotExist()
+        {
+            // Arrange
+            var dto = new PostRequestBySlug { Category = "any-category", Slug = "unknown-slug" };
+
+            var emptyData = new List<Post>().AsQueryable().BuildMock();
+            _mockRepository.AsQueryable().Returns(emptyData);
+
+            // Act
+            var result = await _postService.GetPostBySlugAsync(dto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
+            Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
+            Assert.Equal(PostM.Errors.PostNotFoundByPathCode, result.ErrorCode);
+
+            _mockRepository.Received(1).AsQueryable();
+        }
+
+        [Fact]
+        public async Task GetPostBySlugAsync_ShouldReturnNotFound_WhenCategoryMismatch()
+        {
+            // Arrange
+            var categoryPasta = new Category { Slug = "pasta" };
+
+            var requestDto = new PostRequestBySlug
+            {
+                Category = "desserts",
+                Slug = "carbonara"
+            };
+
+            var testPosts = new List<Post>
+            {
+                new Post { Slug = "carbonara", Category = categoryPasta }
+            }.AsQueryable().BuildMock();
+
+            _mockRepository.AsQueryable().Returns(testPosts);
+
+            // Act            
+            var result = await _postService.GetPostBySlugAsync(requestDto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
+            Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
+
+            _mockRepository.Received(1).AsQueryable();
+        }
+
+        [Fact]
+        public async Task GetPostBySlugAsync_ShouldReturnRecipe_WhenCategoryAndSlugAreCorrect()
+        {
+            // Arrange
+            const string expectedSlug = "classic-carbonara";
+            const string expectedCategory = "pasta";
+
+            var requestDto = TestDataHelper.CreatePostRequest("  PASTA  ", "Classic-Carbonara");
+
+            var pastaCategory = new Category { Slug = expectedCategory, Name = "Italian Pasta" };
+            var recipePost = new Post
+            {
+                Slug = expectedSlug,
+                Category = pastaCategory,
+                Title = "Classic Carbonara with Guanciale"
+            };
+
+            var mockData = new List<Post> { recipePost }.AsQueryable().BuildMock();
+            _mockRepository.AsQueryable().Returns(mockData);
+
+            // Act
+            var result = await _postService.GetPostBySlugAsync(requestDto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.NotNull(result.Value);
+            Assert.Equal(expectedSlug, result.Value!.Slug);
+            Assert.Equal(expectedCategory, result.Value.CategorySlug);
+            Assert.Contains("Carbonara", result.Value.Title);
 
             _mockRepository.Received(1).AsQueryable();
         }

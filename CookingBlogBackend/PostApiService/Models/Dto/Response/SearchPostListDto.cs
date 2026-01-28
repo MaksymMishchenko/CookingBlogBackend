@@ -7,6 +7,7 @@
         string Slug,
         string SearchSnippet,
         string Author,
-        string Category
+        string Category,
+        string CategorySlug
     );
 }
