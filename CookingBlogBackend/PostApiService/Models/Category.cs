@@ -10,6 +10,10 @@ namespace PostApiService.Models
         [MaxLength(20)]
         public string Name { get; set; } = default!;
 
+        [MaxLength(50)]
+        [RegularExpression(@"^[a-z0-9-]+$")]
+        public string Slug { get; set; } = default!;
+
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
     }
 }

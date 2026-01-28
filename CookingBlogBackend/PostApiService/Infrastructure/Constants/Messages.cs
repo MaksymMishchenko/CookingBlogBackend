@@ -33,8 +33,8 @@
             {
                 public const string CategoryNotFound = "Category was not found.";
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
-                public const string CategoryAlreadyExists = "Category with Name '{0}' already exists.";
-                public const string CategoryAlreadyExistsCode = "CATEGORY_ALREADY_EXISTS";
+                public const string CategoryOrSlugExists = "Category with name '{0}' or slug '{1}' already exists.";
+                public const string CategoryOrSlugExistsCode = "CATEGORY_OR_SLUG_EXISTS";
                 public const string CannotDeleteCategoryWithPosts = "Cannot delete category with posts";
                 public const string CannotDeleteCategoryWithPostsCode = "CATEGORY_DELETE_BLOCKED";
             }

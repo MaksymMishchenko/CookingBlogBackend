@@ -23,7 +23,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var token = new CancellationToken(false);
-            var categoriesFromService = new List<CategoryDto> { new CategoryDto(1, "Test") };
+            var categoriesFromService = new List<CategoryDto> { new CategoryDto(1, "Test", "test-slug") };
             var expectedResult = Result<List<CategoryDto>>.Success(categoriesFromService);
 
             _mockCategoryService.GetAllCategoriesAsync(token)
@@ -47,7 +47,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var token = new CancellationToken(false);
             const int CategoryId = 3;
-            var categoryFromService = new CategoryDto(1, "Test");
+            var categoryFromService = new CategoryDto(1, "Test", "test-slug");
             var expectedResult = Result<CategoryDto>.Success(categoryFromService);
 
             _mockCategoryService.GetCategoryByIdAsync(CategoryId, token)
@@ -92,8 +92,8 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var token = new CancellationToken(false);
-            var createDto = new CreateCategoryDto { Name = "New Category" };
-            var responseDto = new CategoryDto(1, createDto.Name);
+            var createDto = new CreateCategoryDto { Name = "New Category", Slug = "new-category-slug" };
+            var responseDto = new CategoryDto(1, createDto.Name, createDto.Slug);
             var expectedResult = Result<CategoryDto>.Success(responseDto);
 
             _mockCategoryService.AddCategoryAsync(createDto, token)
@@ -118,7 +118,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var createDto = new CreateCategoryDto { Name = "Existing Category" };
-            var errorMessage = string.Format(CategoryM.Errors.CategoryAlreadyExists, createDto.Name);
+            var errorMessage = string.Format(CategoryM.Errors.CategoryOrSlugExists, createDto.Name, createDto.Slug);
 
             var expectedResult = Result<CategoryDto>.Conflict(errorMessage);
 
@@ -144,7 +144,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var token = new CancellationToken(false);
             const int categoryId = 1;
             var updateDto = new UpdateCategoryDto { Name = "Updated Name" };
-            var responseDto = new CategoryDto(categoryId, "Updated Name");
+            var responseDto = new CategoryDto(categoryId, "Updated Name", "test-slug");
             var expectedResult = Result<CategoryDto>.Success(responseDto);
 
             _mockCategoryService.UpdateCategoryAsync(categoryId, updateDto, token)
@@ -190,7 +190,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             const int categoryId = 1;
             var updateDto = new UpdateCategoryDto { Name = "Existing Category" };
-            var errorMessage = string.Format(CategoryM.Errors.CategoryAlreadyExists, updateDto.Name);
+            var errorMessage = string.Format(CategoryM.Errors.CategoryOrSlugExists, updateDto.Name, updateDto.Slug);
             var expectedResult = Result<CategoryDto>.Conflict(errorMessage);
 
             _mockCategoryService.UpdateCategoryAsync(categoryId, updateDto, Arg.Any<CancellationToken>())
