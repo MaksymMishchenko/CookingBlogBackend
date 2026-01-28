@@ -6,12 +6,13 @@ using PostApiService.Repositories;
 
 namespace PostApiService.Services
 {
-    public class CategoryService : ICategoryService
+    public class CategoryService : BaseResultService, ICategoryService
     {
         private readonly IRepository<Category> _categoryRepository;
-        private readonly IRepository<Post> _postRepository;
+        private readonly IPostRepository _postRepository;
 
-        public CategoryService(IRepository<Category> categoryRepository, IRepository<Post> postRepository)
+        public CategoryService(IRepository<Category> categoryRepository,
+            IPostRepository postRepository)
         {
             _categoryRepository = categoryRepository;
             _postRepository = postRepository;
@@ -19,7 +20,7 @@ namespace PostApiService.Services
 
         public async Task<bool> ExistsAsync(int id, CancellationToken ct = default)
         {
-            return await _categoryRepository.AnyAsync(c => c.Id == id, ct);            
+            return await _categoryRepository.AnyAsync(c => c.Id == id, ct);
         }
 
         public async Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default)
@@ -29,8 +30,8 @@ namespace PostApiService.Services
             var dtos = categories
                 .OrderBy(c => c.Id)
                 .Select(c => c.ToDto()).ToList();
-
-            return Result<List<CategoryDto>>.Success(dtos);
+            
+            return Success(dtos);
         }
 
         public async Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken ct = default)
@@ -39,12 +40,11 @@ namespace PostApiService.Services
 
             if (category == null)
             {
-                return Result<CategoryDto>.NotFound(
-                    string.Format(CategoryM.Errors.CategoryNotFound)
-                );
+                return NotFound<CategoryDto>(CategoryM.Errors.CategoryNotFound,
+                    CategoryM.Errors.CategoryNotFoundCode);
             }
 
-            return Result<CategoryDto>.Success(category.ToDto());
+            return Success(category.ToDto());
         }
 
         public async Task<Result<CategoryDto>> AddCategoryAsync
@@ -57,8 +57,9 @@ namespace PostApiService.Services
             {
                 Log.Information(Categories.CategoryExists, categoryDto.Name);
 
-                return Result<CategoryDto>.Conflict
-                   (string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name));
+                return Conflict<CategoryDto>
+                    (string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name),
+                    CategoryM.Errors.CategoryAlreadyExistsCode);
             }
 
             var categoryEntity = CategoryMappingExtensions.ToEntity(categoryDto);
@@ -68,7 +69,7 @@ namespace PostApiService.Services
 
             var responseDto = categoryEntity.ToDto();
 
-            return Result<CategoryDto>.Success(responseDto, CategoryM.Success.CategoryAddedSuccessfully);
+            return Success(responseDto, CategoryM.Success.CategoryAddedSuccessfully);
         }
 
         public async Task<Result<CategoryDto>> UpdateCategoryAsync
@@ -81,7 +82,8 @@ namespace PostApiService.Services
             {
                 Log.Warning(Categories.CategoryDoesNotExist, categoryId);
 
-                return Result<CategoryDto>.NotFound(CategoryM.Errors.CategoryNotFound);
+                return NotFound<CategoryDto>(CategoryM.Errors.CategoryNotFound,
+                    CategoryM.Errors.CategoryNotFoundCode);
             }
 
             var alreadyExists = await _categoryRepository
@@ -91,8 +93,9 @@ namespace PostApiService.Services
             {
                 Log.Information(Categories.CategoryExists, categoryDto.Name);
 
-                return Result<CategoryDto>.Conflict
-                    (string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name));
+                return Conflict<CategoryDto>
+                    (string.Format(CategoryM.Errors.CategoryAlreadyExists, categoryDto.Name),
+                    CategoryM.Errors.CategoryAlreadyExistsCode);
             }
 
             categoryDto.UpdateEntity(category);
@@ -101,8 +104,8 @@ namespace PostApiService.Services
             await _categoryRepository.SaveChangesAsync(ct);
 
             var responseDto = category.ToDto();
-
-            return Result<CategoryDto>.Success(responseDto, CategoryM.Success.CategoryUpdatedSuccessfully);
+            
+            return Success(responseDto, CategoryM.Success.CategoryUpdatedSuccessfully);
         }
 
         public async Task<Result> DeleteCategoryAsync(int id, CancellationToken ct = default)
@@ -112,8 +115,8 @@ namespace PostApiService.Services
             if (category == null)
             {
                 Log.Warning(Categories.CategoryDoesNotExist, id);
-
-                return Result<bool>.NotFound(CategoryM.Errors.CategoryNotFound);
+                
+                return NotFound(CategoryM.Errors.CategoryNotFound, CategoryM.Errors.CategoryNotFoundCode); 
             }
 
             var hasPosts = await _postRepository.AnyAsync(c => c.CategoryId == id, ct);
@@ -121,13 +124,15 @@ namespace PostApiService.Services
             if (hasPosts)
             {
                 Log.Information(Categories.DeleteBlockedByRelatedPosts, category.Name);
-                return Result.Conflict(CategoryM.Errors.CannotDeleteCategoryWithPosts);
+                
+                return Conflict(CategoryM.Errors.CannotDeleteCategoryWithPosts,
+                    CategoryM.Errors.CannotDeleteCategoryWithPostsCode);
             }
 
             await _categoryRepository.DeleteAsync(category, ct);
             await _categoryRepository.SaveChangesAsync(ct);
-
-            return Result.Success(CategoryM.Success.CategoryDeletedSuccessfully);
+           
+            return Success(CategoryM.Success.CategoryDeletedSuccessfully);
         }
     }
 }

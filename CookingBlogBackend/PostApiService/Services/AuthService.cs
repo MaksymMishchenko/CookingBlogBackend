@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace PostApiService.Services
 {
-    public class AuthService : IAuthService
+    public class AuthService : BaseResultService, IAuthService
     {
         private readonly IAuthRepository _authRepository;
         private readonly ITokenService _tokenService;
@@ -92,7 +92,7 @@ namespace PostApiService.Services
 
                 return Result<RegisteredUserDto>.Conflict(Auth.Registration.Errors.UserAlreadyExists,
                     Auth.Registration.Errors.UserAlreadyExistsCode);
-            }            
+            }
 
             var identityUser = userDto.ToEntity();
 
@@ -104,7 +104,8 @@ namespace PostApiService.Services
 
                 Log.Warning(Authentication.RegistrationFailed, userDto.Email, errorCodes, errorMsg);
 
-                return Result<RegisteredUserDto>.Invalid(errorMsg);
+                return Invalid<RegisteredUserDto>(Auth.Registration.Errors.DefaultRegistrationError,
+                    Auth.Registration.Errors.DefaultRegistrationErrorCode);
             }
 
             var claimResult = await _authRepository.AddClaimAsync(
@@ -115,7 +116,7 @@ namespace PostApiService.Services
             {
                 Log.Error(Authentication.ClaimAssignmentFailed, identityUser.Id, userDto.Email);
 
-                return Result<RegisteredUserDto>.Error(Auth.Registration.Errors.ClaimAssignmentFailed,
+                return Error<RegisteredUserDto>(Auth.Registration.Errors.ClaimAssignmentFailed,
                     Auth.Registration.Errors.ClaimAssignmentFailedCode);
             }
 
@@ -123,7 +124,7 @@ namespace PostApiService.Services
 
             Log.Information(Authentication.RegistrationSuccess, userDto.Email);
 
-            return Result<RegisteredUserDto>.Success(createdUserDto, Auth.Registration.Success.RegisterOk);
+            return Success(createdUserDto, Auth.Registration.Success.RegisterOk);
         }
 
         /// <summary>
@@ -138,14 +139,14 @@ namespace PostApiService.Services
             // Currently, the system is vulnerable to brute-force attacks as it doesn't track failed attempts.
             if (user == null || !await _authRepository.CheckPasswordAsync(user, credentials.Password, ct))
             {
-                return Result<LoggedInUserDto>.Unauthorized(Auth.LoginM.Errors.InvalidCredentials);
+                return Unauthorized<LoggedInUserDto>(Auth.LoginM.Errors.InvalidCredentials,
+                    Auth.LoginM.Errors.InvalidCredentialsErrorCode);
             }
 
             var token = await GenerateTokenString(user, ct);
+            var responseDto = token.ToLoggedInUserDto(user.UserName!);
 
-            var responseDto = token.ToLoggedInUserDto(user.UserName!);            
-
-            return Result<LoggedInUserDto>.Success(responseDto, Auth.LoginM.Success.LoginSuccess);
+            return Success(responseDto, Auth.LoginM.Success.LoginSuccess);
         }
     }
 }
