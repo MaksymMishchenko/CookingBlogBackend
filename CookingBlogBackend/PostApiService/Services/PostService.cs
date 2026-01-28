@@ -1,6 +1,7 @@
 ﻿using PostApiService.Helper;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
+using PostApiService.Models;
 using PostApiService.Models.Constants;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -9,9 +10,11 @@ using System.Data;
 
 namespace PostApiService.Services
 {
+    // TODO (TechDebt): #30 Transition to a dedicated mapping service (e.g., AutoMapper or Mapperly).
+    // Current implementation relies on static PostMappingExtensions, which is becoming hard to maintain 
+    // as the number of DTO variations increases.
     public class PostService : BaseService, IPostService
     {
-        //private readonly IRepository<Post> _repository;
         private readonly IPostRepository _postRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly ICategoryService _categoryService;
@@ -88,7 +91,8 @@ namespace PostApiService.Services
                     p.Slug,
                     p.Content,
                     p.Author,
-                    CategoryName = p.Category.Name
+                    CategoryName = p.Category.Name,
+                    CategorySlug = p.Category.Slug,
                 })
                 .ToListAsync(ct);
 
@@ -102,7 +106,8 @@ namespace PostApiService.Services
                    item.Slug,
                    snippet,
                    item.Author,
-                   item.CategoryName ?? ContentConstants.DefaultCategory
+                   item.CategoryName ?? ContentConstants.DefaultCategory,
+                   item.CategorySlug ?? ContentConstants.DefaultSlugCategory
                    );
 
             }).ToList();
@@ -117,9 +122,9 @@ namespace PostApiService.Services
         public async Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default)
         {
             var postDto = await _postRepository.AsQueryable()
-            .Where(p => p.Id == postId)
-            .Select(PostMappingExtensions.ToAdminDetailsDto)
-            .FirstOrDefaultAsync();
+                .Where(p => p.Id == postId)
+                .Select(PostMappingExtensions.ToAdminDetailsDto)
+                .FirstOrDefaultAsync(ct);
 
             if (postDto == null)
             {
@@ -127,6 +132,36 @@ namespace PostApiService.Services
 
                 return NotFound<PostAdminDetailsDto>
                     (PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+            }
+
+            return Success(postDto);
+        }
+
+        /// <summary>
+        /// Retrieves detailed information for a specific post by its SLUG for SEO-friendly access.
+        /// </summary>       
+        public async Task<Result<PostDetailsDto>> GetPostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default)
+        {
+            var cleanSlug = dto.Slug.StripHtml().Trim().ToLowerInvariant();
+            var cleanCategory = dto.Category.StripHtml().Trim().ToLowerInvariant();
+
+            if (string.IsNullOrWhiteSpace(cleanSlug) || string.IsNullOrWhiteSpace(cleanCategory))
+            {
+                return Invalid<PostDetailsDto>(PostM.Errors.SlugAndCategoryRequired,
+                    PostM.Errors.SlugAndCategoryRequiredCode);
+            }
+
+            var postDto = await _postRepository.AsQueryable()                
+                .Where(p => p.Slug == cleanSlug && p.Category.Slug == cleanCategory)
+                .ToDetailsDtoExpression()
+                .FirstOrDefaultAsync(ct);
+
+            if (postDto == null)
+            {
+                Log.Warning(Posts.NotFoundByPath, cleanSlug, cleanCategory);
+
+                return NotFound<PostDetailsDto>
+                    (PostM.Errors.PostNotFoundByPath, PostM.Errors.PostNotFoundByPathCode);
             }
 
             return Success(postDto);

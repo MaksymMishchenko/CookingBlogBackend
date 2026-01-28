@@ -273,6 +273,96 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(string.Format(PostM.Errors.PostNotFound, nonExistentId), result.Message);
         }
 
+        [Theory]
+        [InlineData("Invalid-Category", "valid-slug")]
+        [InlineData("category!", "slug")]
+        public async Task GetPostBySlug_ShouldReturnBadRequest_WhenModelIsInvalid(string cat, string slug)
+        {
+            // Arrange                        
+            var url = string.Format(Posts.GetBySlug, cat, slug);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert           
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+
+            var hasCategoryError = result.Errors!.ContainsKey("Category") &&
+                           result.Errors["Category"].Contains(Global.Validation.SlugFormat);
+
+            var hasSlugError = result.Errors!.ContainsKey("Slug") &&
+                               result.Errors["Slug"].Contains(Global.Validation.SlugFormat);
+
+            Assert.True(hasCategoryError || hasSlugError, "Should contain slug format error message");
+        }
+
+        [Fact]
+        public async Task GetPostBySlug_ShouldReturnNotFound_WhenPostDoesNotExist()
+        {
+            // Arrange
+            var nonExistentCategory = "ghost-category";
+            var nonExistentSlug = "non-existent-post-slug";
+
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.GetBySlug, nonExistentCategory, nonExistentSlug);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert           
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();            
+            Assert.NotNull(result);
+            Assert.False(result.Success);
+            Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
+        }
+
+        [Fact]
+        public async Task GetPostBySlug_ShouldReturnPost_WhenCategoryAndSlugAreValidAndExist()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(categories);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var expectedPost = posts.First();
+            var existingCategory = expectedPost.Category.Slug;
+            var existingSlug = expectedPost.Slug;
+
+            var url = string.Format(Posts.GetBySlug, existingCategory, existingSlug);
+
+            // Act
+            var response = await _client.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<PostDetailsDto>>();
+
+            // Assert
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+
+            Assert.Equal(existingSlug, result.Data!.Slug);
+            Assert.Equal(existingCategory, result.Data.CategorySlug);
+            Assert.Equal(expectedPost.Title, result.Data.Title);
+        }
+
         [Fact]
         public async Task AddPost_ShouldReturnBadRequest_WhenModelIsInvalid()
         {

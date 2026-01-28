@@ -78,7 +78,7 @@ namespace PostApiService
 
                     return new Faker<Comment>()
                         .RuleFor(c => c.Id, _ => 0)
-                        .RuleFor(c => c.PostId, _ => post.Id)                        
+                        .RuleFor(c => c.PostId, _ => post.Id)
                         .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
                         .RuleFor(c => c.UserId, f => userIds != null ? f.PickRandom(userIds) : "adminId")
                         .Generate(commentCount);

@@ -1,13 +1,13 @@
 {
   "info": {
-    "_postman_id": "48effb5a-d266-4c6d-a701-daf7e3d0eeac",
-    "name": "CookingBlogBackend",
+    "_postman_id": "39861682-aa8e-4159-9abe-03988a763912",
+    "name": "CookingBlog Integration Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "40053538"
   },
   "item": [
     {
-      "name": "AuthController",
+      "name": "Happy Path Scenario",
       "item": [
         {
           "name": "Register",
@@ -24,6 +24,25 @@
                 "packages": {},
                 "requests": {}
               }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "const user = \"user_\" + Date.now();\r",
+                  "const email = \"test_\" + Date.now() + \"@example.com\";\r",
+                  "\r",
+                  "// Фіксуємо у змінні\r",
+                  "pm.variables.set(\"userName\", user);\r",
+                  "pm.variables.set(\"email\", email);\r",
+                  "\r",
+                  "// Виводимо в консоль, щоб бачити, що ПОВИННО піти на сервер\r",
+                  "console.log(\"Setting for request -> User: \" + user + \", Email: \" + email);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
             }
           ],
           "request": {
@@ -31,7 +50,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n  \"userName\": \"{{$randomUserName}}\",\r\n  \"email\": \"{{$randomEmail}}\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
+              "raw": "{\r\n  \"userName\": \"{{userName}}\",\r\n  \"email\": \"{{email}}\",\r\n  \"password\": \"-Rtyuehe3\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -60,8 +79,7 @@
               "script": {
                 "exec": [
                   "if (pm.response.code === 200) {\r",
-                  "    var jsonResponse = pm.response.json();\r",
-                  "    // Зберігаємо токен в змінну середовища\r",
+                  "    var jsonResponse = pm.response.json();    \r",
                   "    pm.environment.set(\"jwtToken\", jsonResponse.data.token); \r",
                   "} else {\r",
                   "    console.error(\"Error fetching token: \", pm.response.status);\r",
@@ -112,53 +130,10 @@
               ]
             }
           },
-          "response": [
-            {
-              "name": "Contributor Login",
-              "originalRequest": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"username\": \"cont\",\r\n  \"password\": \"-Rtyuehe2\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/Auth/Login",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "Auth",
-                    "Login"
-                  ]
-                }
-              },
-              "_postman_previewlanguage": "",
-              "header": [],
-              "cookie": [
-                {
-                  "expires": "Invalid Date",
-                  "domain": "",
-                  "path": ""
-                }
-              ],
-              "body": ""
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "CategoryController",
-      "item": [
+          "response": []
+        },
         {
-          "name": "AddCategoryAsync",
+          "name": "AddCategory",
           "event": [
             {
               "listen": "test",
@@ -182,9 +157,11 @@
               "script": {
                 "exec": [
                   "const timestamp = Math.floor(Date.now() / 1000);\r",
-                  "const uniqueName = \"Category \" + timestamp;\r",
+                  "const rawName = \"category \" + timestamp;\r",
+                  "const categorySlug = rawName.toLowerCase().replace(/ /g, '-');\r",
                   "\r",
-                  "pm.variables.set(\"unique_category_name\", uniqueName);"
+                  "pm.variables.set(\"unique_category_slug\", categorySlug);\r",
+                  "pm.variables.set(\"unique_category_name\", rawName);"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -207,7 +184,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
+              "raw": "{\r\n    \"Name\": \"{{unique_category_name}}\",\r\n    \"Slug\": \"{{unique_category_slug}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -228,7 +205,7 @@
           "response": []
         },
         {
-          "name": "GetCategoryByIdAsync",
+          "name": "GetCategoryById",
           "event": [
             {
               "listen": "test",
@@ -258,21 +235,21 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/Category/1",
+              "raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
                 "Category",
-                "1"
+                "{{temp_category_id}}"
               ]
             }
           },
           "response": []
         },
         {
-          "name": "GetAllCategoriesAsync",
+          "name": "GetAllCategories",
           "event": [
             {
               "listen": "test",
@@ -305,12 +282,15 @@
           "response": []
         },
         {
-          "name": "UpdateCategoryAsync",
+          "name": "UpdateCategory",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
+                  "const response = pm.response.json();\r",
+                  "pm.environment.set(\"temp_category_slug\", response.data.slug);\r",
+                  "\r",
                   "pm.test(\"Status code is 200\", function () {\r",
                   "    pm.response.to.have.status(200);\r",
                   "});"
@@ -325,9 +305,11 @@
               "script": {
                 "exec": [
                   "const timestamp = Math.floor(Date.now() / 1000);\r",
-                  "const uniqueName = \"uni \" + timestamp;\r",
+                  "const updatedCategoryName = \"uni \" + timestamp;\r",
+                  "const updatedCategorySlug = updatedCategoryName.toLowerCase().replace(/ /g, '-');\r",
                   "\r",
-                  "pm.variables.set(\"unique_category_name\", uniqueName);"
+                  "pm.variables.set(\"updated_category_name\", updatedCategoryName);\r",
+                  "pm.variables.set(\"updated_category_slug\", updatedCategorySlug);"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -350,7 +332,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"Name\": \"{{unique_category_name}}\"\r\n}",
+              "raw": "{\r\n    \"Name\": \"{{updated_category_name}}\",\r\n    \"Slug\": \"{{updated_category_slug}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -372,80 +354,18 @@
           "response": []
         },
         {
-          "name": "DeleteCategoryAsync",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});\r",
-                  "\r",
-                  "pm.environment.unset(\"temp_category_id\");"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "packages": {},
-                "type": "text/javascript"
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "DELETE",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "Category",
-                "{{temp_category_id}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "PostsController",
-      "item": [
-        {
           "name": "AddNewPost",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "const jsonData = pm.response.json();\r",
+                  "const response = pm.response.json();\r",
                   "\r",
                   "pm.test(\"Post created and ID saved\", function () {    \r",
-                  "    pm.response.to.have.status(201);\r",
-                  "    \r",
-                  "    const postId = jsonData.data.id;       \r",
-                  "    pm.expect(postId).to.not.be.undefined;\r",
-                  "    \r",
-                  "    pm.environment.set(\"temp_post_id\", postId);\r",
-                  "    console.log(\"Captured Post ID:\", postId);\r",
+                  "    pm.response.to.have.status(201);        \r",
+                  "    pm.environment.set(\"temp_post_id\", response.data.id);\r",
+                  "    pm.environment.set(\"unique_post_slug\", response.data.slug);    \r",
                   "});"
                 ],
                 "type": "text/javascript",
@@ -485,7 +405,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": 1\r\n}",
+              "raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": \"{{temp_category_id}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -493,71 +413,18 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Posts",
+              "raw": "{{baseUrl}}/api/Posts/",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Posts"
+                "Posts",
+                ""
               ]
             }
           },
-          "response": [
-            {
-              "name": "XSS Sanitization Example",
-              "originalRequest": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": 1\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/Posts",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "Posts"
-                  ]
-                }
-              },
-              "status": "Created",
-              "code": 201,
-              "_postman_previewlanguage": null,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                },
-                {
-                  "key": "Date",
-                  "value": "Sat, 17 Jan 2026 18:38:04 GMT"
-                },
-                {
-                  "key": "Server",
-                  "value": "Kestrel"
-                },
-                {
-                  "key": "Location",
-                  "value": "https://localhost:7030/api/Posts/152"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"data\": {\n        \"id\": 152,\n        \"title\": \"Post title 1768675083\",\n        \"description\": \"This is a sample description for the post.\",\n        \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\n        \"author\": \"Peter\",\n        \"imageUrl\": \"https://example.com/sample-image.jpg\",\n        \"slug\": \"post-title-1768675083\",\n        \"metaTitle\": \"Sample Meta Title\",\n        \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\n        \"categoryId\": 1,\n        \"createdAt\": \"2026-01-17T18:38:04.2378634Z\",\n        \"updatedAt\": null\n    },\n    \"success\": true,\n    \"message\": \"Post added successfully.\"\n}"
-            }
-          ]
+          "response": []
         },
         {
           "name": "GetPostById",
@@ -615,7 +482,71 @@
           "response": []
         },
         {
+          "name": "GetPostBySlug",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);   \r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/{{temp_category_slug}}/{{unique_post_slug}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "{{temp_category_slug}}",
+                "{{unique_post_slug}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "SearchPosts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);   \r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
           "request": {
             "method": "GET",
             "header": [],
@@ -648,7 +579,7 @@
           "response": []
         },
         {
-          "name": "GetPostsWithTotalAsync",
+          "name": "GetPostsWithTotalCount",
           "event": [
             {
               "listen": "test",
@@ -714,11 +645,11 @@
               "script": {
                 "exec": [
                   "const timestamp = Math.floor(Date.now() / 1000);\r",
-                  "const updatedTitle = \"Updated title \" + timestamp;\r",
                   "const updatedSlug = \"updated-slug-\" + timestamp;\r",
                   "\r",
-                  "pm.variables.set(\"updated_post_title\", updatedTitle);\r",
-                  "pm.variables.set(\"updated_post_slug\", updatedSlug);"
+                  "pm.environment.set(\"updated_post_title\", \"Updated title \" + timestamp);\r",
+                  "pm.environment.set(\"updated_post_slug\", updatedSlug);\r",
+                  "pm.environment.set(\"unique_post_slug\", updatedSlug);"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -741,7 +672,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": 2\r\n}",
+              "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": {{temp_category_id}}\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -760,58 +691,174 @@
               ]
             }
           },
-          "response": [
+          "response": []
+        },
+        {
+          "name": "AddComment",
+          "event": [
             {
-              "name": "XSS Sanitization Example",
-              "originalRequest": {
-                "method": "PUT",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": 2\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "posts",
-                    "{{temp_post_id}}"
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": null,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                },
-                {
-                  "key": "Date",
-                  "value": "Sat, 17 Jan 2026 18:54:33 GMT"
-                },
-                {
-                  "key": "Server",
-                  "value": "Kestrel"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"data\": {\n        \"id\": 162,\n        \"title\": \"Updated title 1768676073\",\n        \"description\": \"This is a sample description for the post.\",\n        \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\n        \"author\": \"John Doe\",\n        \"imageUrl\": \"https://example.com/changed-image.jpg\",\n        \"slug\": \"updated-slug-1768676073\",\n        \"metaTitle\": \"Sample changed Meta Title\",\n        \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\n        \"categoryId\": 2,\n        \"createdAt\": \"2026-01-17T18:54:21.1915937\",\n        \"updatedAt\": \"2026-01-17T18:54:33.5418361Z\"\n    },\n    \"success\": true,\n    \"message\": \"Post updated successfully.\"\n}"
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const jsonData = pm.response.json();\r",
+                  "\r",
+                  "pm.test(\"Status code is 200\", function () {    \r",
+                  "    pm.response.to.have.status(200);  \r",
+                  "    const commentId = jsonData.data.id;        \r",
+                  "    pm.expect(commentId).to.not.be.undefined;            \r",
+                  "    pm.environment.set(\"temp_comment_id\", commentId);    \r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
             }
-          ]
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{   \r\n    \"Content\": \"Some test comment from user Maks.\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Comments/{{temp_post_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Comments",
+                "{{temp_post_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UpdateComment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"content\": \"This is an updated sample comment with enough length.\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/Comments/{{temp_comment_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Comments",
+                "{{temp_comment_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "RemoveComment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    pm.environment.unset(\"temp_comment_id\");\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/Comments/{{temp_comment_id}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "Comments",
+                "{{temp_comment_id}}"
+              ]
+            }
+          },
+          "response": []
         },
         {
           "name": "RemovePost",
@@ -865,59 +912,19 @@
             }
           },
           "response": []
-        }
-      ],
-      "auth": {
-        "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{jwtToken}}}",
-            "type": "string"
-          }
-        ]
-      },
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "packages": {},
-            "exec": [
-              ""
-            ]
-          }
         },
         {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "packages": {},
-            "exec": [
-              ""
-            ]
-          }
-        }
-      ]
-    },
-    {
-      "name": "CommentsController",
-      "item": [
-        {
-          "name": "AddComment",
+          "name": "RemoveCategory",
           "event": [
             {
               "listen": "test",
               "script": {
                 "exec": [
-                  "const jsonData = pm.response.json();\r",
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});\r",
                   "\r",
-                  "pm.test(\"Status code is 200\", function () {    \r",
-                  "    pm.response.to.have.status(200);  \r",
-                  "    const commentId = jsonData.data.id;        \r",
-                  "    pm.expect(commentId).to.not.be.undefined;        \r",
-                  "    pm.environment.set(\"comment_id_to_delete\", commentId);    \r",
-                  "});"
+                  "pm.environment.unset(\"temp_category_id\");"
                 ],
                 "type": "text/javascript",
                 "packages": {},
@@ -947,262 +954,21 @@
                 }
               ]
             },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{   \r\n    \"Content\": \"Some test comment from user Maks.\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/Comments/1",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "Comments",
-                "1"
-              ]
-            }
-          },
-          "response": [
-            {
-              "name": "XSS Sanitization Example",
-              "originalRequest": {
-                "method": "POST",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/Comments/1",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "Comments",
-                    "1"
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": null,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                },
-                {
-                  "key": "Date",
-                  "value": "Sat, 17 Jan 2026 10:12:12 GMT"
-                },
-                {
-                  "key": "Server",
-                  "value": "Kestrel"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"data\": {\n        \"id\": 3001,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T10:12:11.286777Z\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment added successfully.\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "UpdateComment",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"content\": \"This is an updated sample comment with enough length.\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/Comments/21",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "Comments",
-                "21"
-              ]
-            }
-          },
-          "response": [
-            {
-              "name": "XSS Sanitization Example",
-              "originalRequest": {
-                "method": "PUT",
-                "header": [],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\r\n  \"content\": \"Test <script>alert('xss')</script> <b>Bold is ok</b>\"\r\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{baseUrl}}/api/Comments/300",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "Comments",
-                    "300"
-                  ]
-                }
-              },
-              "status": "OK",
-              "code": 200,
-              "_postman_previewlanguage": null,
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json; charset=utf-8"
-                },
-                {
-                  "key": "Date",
-                  "value": "Sat, 17 Jan 2026 10:07:44 GMT"
-                },
-                {
-                  "key": "Server",
-                  "value": "Kestrel"
-                },
-                {
-                  "key": "Transfer-Encoding",
-                  "value": "chunked"
-                }
-              ],
-              "cookie": [],
-              "body": "{\n    \"data\": {\n        \"isEditedByAdmin\": false,\n        \"id\": 300,\n        \"author\": \"admin\",\n        \"content\": \"Test  <b>Bold is ok</b>\",\n        \"createdAt\": \"2026-01-17T09:37:17.1495565\",\n        \"userId\": \"b6fc80c0-88ee-4b3d-83ef-069df0fcd3aa\"\n    },\n    \"success\": true,\n    \"message\": \"Comment updated successfully.\"\n}"
-            }
-          ]
-        },
-        {
-          "name": "RemoveComment",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "    pm.environment.unset(\"comment_id_to_delete\");\r",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/Comments/{{comment_id_to_delete}}",
+              "raw": "{{baseUrl}}/api/Category/{{temp_category_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Comments",
-                "{{comment_id_to_delete}}"
+                "Category",
+                "{{temp_category_id}}"
               ]
             }
           },
           "response": []
-        }
-      ],
-      "auth": {
-        "type": "bearer",
-        "bearer": [
-          {
-            "key": "token",
-            "value": "{{JwtToken}}",
-            "type": "string"
-          }
-        ]
-      },
-      "event": [
-        {
-          "listen": "prerequest",
-          "script": {
-            "type": "text/javascript",
-            "packages": {},
-            "exec": [
-              ""
-            ]
-          }
-        },
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "packages": {},
-            "exec": [
-              ""
-            ]
-          }
         }
       ]
     }

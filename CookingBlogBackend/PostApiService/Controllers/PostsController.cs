@@ -48,11 +48,24 @@ namespace PostApiService.Controllers
         /// <summary>
         /// Retrieves a specific post by its ID.
         /// </summary>        
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetPostByIdAsync
             (int id, CancellationToken ct = default)
         {
             var result = await _postsService.GetPostByIdAsync(id, ct);
+
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Retrieves a specific post by its category and slug.
+        /// </summary>        
+        [HttpGet("{category}/{slug}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPostBySlugAsync([FromRoute] PostRequestBySlug dto,
+            CancellationToken ct = default)
+        {
+            var result = await _postsService.GetPostBySlugAsync(dto, ct);
 
             return result.ToActionResult();
         }

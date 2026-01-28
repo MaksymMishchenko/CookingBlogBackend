@@ -10,9 +10,14 @@
     {
         base.OnModelCreating(modelBuilder);
 
-        modelBuilder.Entity<Category>()
-                .HasIndex(c => c.Name)
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasIndex(c => c.Name)
                 .IsUnique();
+
+            entity.HasIndex(c => c.Slug)
+                .IsUnique();
+        });
 
         modelBuilder.Entity<Post>(entity =>
         {

@@ -3,5 +3,6 @@
     public class ContentConstants
     {
         public const string DefaultCategory = "Uncategorized";
+        public const string DefaultSlugCategory = "uncategorized";
     }
 }

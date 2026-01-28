@@ -74,6 +74,7 @@
             public const string Deleted = "Post with ID {Id} deleted successfully";
             public const string AlreadyExists = "Post with title '{0}' or slug '{1}' already exists.";
             public const string NotFound = "Admin Post Search: Post with ID {PostId} was not found.";
+            public const string NotFoundByPath = "Post not found or category mismatch for slug: {Slug} in category: {Category}";
             public const string CategoryExists = "Add category failed: Name already exists. Name: {Name}";
             public const string CategoryNotFound = "Post creation failed: Category {CategoryId} not found";
             public const string CategoryDoesNotExist =

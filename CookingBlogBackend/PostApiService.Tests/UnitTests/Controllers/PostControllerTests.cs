@@ -276,6 +276,108 @@ namespace PostApiService.Tests.UnitTests.Controllers
             await _mockPostService.Received(1).GetPostByIdAsync(postId, token);
         }
 
+        [Fact]
+        public async Task GetPostBySlugAsync_ShouldReturnBadRequest400_WhenInputsAreEmpty()
+        {
+            // Arrange
+            const string InvalidCategorySlug = " ";
+            const string InvalidPostSlug = " ";
+
+            var requestDto = TestDataHelper.CreatePostRequest(InvalidCategorySlug, InvalidPostSlug);
+
+            var expectedErrorMessage = PostM.Errors.SlugAndCategoryRequired;
+            var expectedErrorCode = PostM.Errors.SlugAndCategoryRequiredCode;
+
+            var serviceResult = Result<PostDetailsDto>.Invalid(
+                expectedErrorMessage, expectedErrorCode);
+
+            _mockPostService.GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(),
+                Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _postsController.GetPostBySlugAsync(requestDto);
+
+            // Assert            
+            var invalidResult = Assert.IsType<BadRequestObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(invalidResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(expectedErrorMessage, response.Message);
+            Assert.Equal(expectedErrorCode, response.ErrorCode);
+
+            await _mockPostService.Received(1).GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(),
+                Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task GetPostBySlugAsync_ReturnsNotFound_WhenSlugOrCategoryMismatch()
+        {
+            // Arrange
+            const string WrongCategorySlug = "wrong-category";
+            const string ValidPostSlug = "valid-slug";
+
+            var requestDto = TestDataHelper.CreatePostRequest(WrongCategorySlug, ValidPostSlug);
+
+            var expectedErrorMessage = PostM.Errors.PostNotFoundByPath;
+            var expectedErrorCode = PostM.Errors.PostNotFoundByPathCode;
+
+            var serviceResult = Result<PostDetailsDto>.NotFound(
+                expectedErrorMessage, expectedErrorCode);
+
+            _mockPostService.GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>())
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _postsController.GetPostBySlugAsync(requestDto);
+
+            // Assert            
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(expectedErrorMessage, response.Message);
+            Assert.Equal(expectedErrorCode, response.ErrorCode);
+
+            await _mockPostService.Received(1).GetPostBySlugAsync
+                (Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task GetPostBySlugAsync_ReturnsOk200_WhenPostExists()
+        {
+            // Arrange
+            const string ValidCategorySlug = "desserts";
+            const string ValidSlug = "chocolate-cake";
+            var ct = CancellationToken.None;
+
+            var requestDto = TestDataHelper.CreatePostRequest(ValidCategorySlug, ValidSlug);
+
+            var expectedPostDto = TestDataHelper.GetPostDetailsDto
+                (slug: ValidSlug, categorySlug: ValidCategorySlug);
+            var serviceResult = Result<PostDetailsDto>.Success(expectedPostDto);
+
+            _mockPostService.GetPostBySlugAsync(requestDto, ct)
+                .Returns(serviceResult);
+
+            // Act             
+            var result = await _postsController.GetPostBySlugAsync(requestDto, ct);
+
+            // Assert            
+            var okResult = Assert.IsType<OkObjectResult>(result);
+
+            var response = Assert.IsType<ApiResponse<PostDetailsDto>>(okResult.Value);
+
+            Assert.True(response.Success);
+            Assert.NotNull(response.Data);
+            Assert.Equal(ValidSlug, response.Data.Slug);
+            Assert.Equal(ValidCategorySlug, response.Data.CategorySlug);
+            Assert.Equal(expectedPostDto.Title, response.Data.Title);
+
+            await _mockPostService.Received(1).GetPostBySlugAsync
+               (Arg.Any<PostRequestBySlug>(), ct);
+        }
+
         [Theory]
         [InlineData(ResultStatus.Unauthorized, 401, typeof(UnauthorizedObjectResult))]
         [InlineData(ResultStatus.Invalid, 400, typeof(BadRequestObjectResult))]

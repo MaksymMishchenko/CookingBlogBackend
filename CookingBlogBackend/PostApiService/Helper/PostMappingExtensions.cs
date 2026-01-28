@@ -13,6 +13,7 @@ namespace PostApiService.Helper
             p.Slug,
             p.Author,
             p.Category.Name ?? ContentConstants.DefaultCategory,
+            p.Category.Slug ?? ContentConstants.DefaultSlugCategory,
             p.CreatedAt,
             p.UpdatedAt,
             p.Description,
@@ -33,7 +34,27 @@ namespace PostApiService.Helper
             p.CreatedAt,
             p.UpdatedAt
         );
-        
+
+        public static IQueryable<PostDetailsDto> ToDetailsDtoExpression(this IQueryable<Post> query)
+        {
+            return query.Select(p => new PostDetailsDto(
+                p.Id,
+                p.Title,
+                p.Description,
+                p.Content,
+                p.Author,
+                p.ImageUrl,
+                p.Slug,
+                p.MetaTitle,
+                p.MetaDescription,
+                p.Category.Name ?? ContentConstants.DefaultCategory,
+                p.Category.Slug ?? ContentConstants.DefaultSlugCategory,
+                p.CreatedAt,
+                p.UpdatedAt,
+                p.Comments.Count
+            ));
+        }
+
         public static PostAdminDetailsDto MapToAdminDto(this Post p) =>
         new PostAdminDetailsDto(
             p.Id,
@@ -49,7 +70,7 @@ namespace PostApiService.Helper
             p.CreatedAt,
             p.UpdatedAt
         );
-        
+
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)
         {
             var title = dto.Title.StripHtml();
@@ -76,8 +97,8 @@ namespace PostApiService.Helper
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-        }
-        
+        }        
+
         public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent)
         {
             entity.Title = dto.Title.StripHtml();
@@ -96,7 +117,7 @@ namespace PostApiService.Helper
                 ? (dto.Description.StripHtml().Length > 200
                     ? dto.Description.StripHtml()[..197] + "..."
                     : dto.Description.StripHtml())
-                : dto.MetaDescription.StripHtml();            
+                : dto.MetaDescription.StripHtml();
         }
     }
 }

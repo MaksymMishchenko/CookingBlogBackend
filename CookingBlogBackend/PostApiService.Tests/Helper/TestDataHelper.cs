@@ -380,7 +380,8 @@ namespace PostApiService.Tests.Helper
                 p.Slug,
                 p.Content,
                 p.Author,
-                p.Category.Name
+                p.Category.Name,
+                p.Category.Slug
                 ))
                  .ToList();
         }
@@ -410,6 +411,26 @@ namespace PostApiService.Tests.Helper
                 CategoryId = category.Id,
                 Category = null!
             };
+        }
+
+        public static Post GetSingleCulinaryPost(string? slug = null, string? categoryName = null)
+        {
+            var categories = GetCulinaryCategories();
+            var selectedCategory = categoryName != null
+                ? categories.First(c => c.Name == categoryName)
+                : categories.First(c => c.Name == "Main Course");
+
+            var faker = GetPostFaker(useNewSeed: true, new List<Category> { selectedCategory },
+                                     generateComments: false, commentCount: 0, generateIds: true);
+
+            var post = faker.Generate();
+
+            if (!string.IsNullOrEmpty(slug))
+            {
+                post.Slug = slug;
+            }
+
+            return post;
         }
 
         public static Post GetCreatePostDto(string content, ICollection<Category>? categories = null)
@@ -670,6 +691,40 @@ namespace PostApiService.Tests.Helper
                 MetaTitle = "Updated Meta Title",
                 MetaDescription = "Updated Meta Description",
                 CategoryId = categoryId
+            };
+        }
+
+        public static PostDetailsDto GetPostDetailsDto(
+        string slug = "test-post-slug",
+        string categorySlug = "test-category-slug",
+        string title = "Test Post Title")
+        {
+            return new PostDetailsDto(
+                Id: 1,
+                Title: title,
+                Description: "Test Description for SEO and social preview.",
+                Content: "<h1>Main Content</h1><p>Full post content goes here.</p>",
+                Author: "Admin",
+                ImageUrl: "https://example.com/images/post.jpg",
+                Slug: slug,
+                MetaTitle: "SEO Meta Title",
+                MetaDescription: "SEO Meta Description",
+                Category: "Test Category Name",
+                CategorySlug: categorySlug,
+                CreatedAt: DateTime.UtcNow,
+                UpdatedAt: null,
+                CommentCount: 5
+            );
+        }
+
+        public static PostRequestBySlug CreatePostRequest(
+        string category = "pasta",
+        string slug = "classic-carbonara")
+        {
+            return new PostRequestBySlug
+            {
+                Category = category,
+                Slug = slug
             };
         }
 
