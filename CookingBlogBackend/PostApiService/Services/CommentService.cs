@@ -6,22 +6,20 @@ using PostApiService.Repositories;
 
 namespace PostApiService.Services
 {
-    public class CommentService : ICommentService
+    public class CommentService : BaseService, ICommentService
     {
         private readonly ICommentRepository _commentRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly IPostRepository _postRepository;
-        private readonly IWebContext _webContext;
 
         public CommentService(ICommentRepository commentRepository,
              IHtmlSanitizationService sanitizer,
             IPostRepository postRepository,
-            IWebContext webContext)
+            IWebContext webContext) : base(webContext)
         {
             _commentRepository = commentRepository;
             _sanitizer = sanitizer;
             _postRepository = postRepository;
-            _webContext = webContext;
         }
 
         /// <summary>
@@ -30,12 +28,11 @@ namespace PostApiService.Services
         public async Task<Result<CommentCreatedDto>> AddCommentAsync
             (int postId, string content, CancellationToken ct = default)
         {
-            var userId = _webContext.UserId;
+            var userId = WebContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Result<CommentCreatedDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
-                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+                return Unauthorized<CommentCreatedDto>();
             }
 
             var sanitizedContent = _sanitizer.SanitizeComment(content);
@@ -43,12 +40,12 @@ namespace PostApiService.Services
             if (!string.Equals(content, sanitizedContent, StringComparison.Ordinal))
             {
                 var traceContent = content.Truncate(500);
-                Log.Warning(Security.XssDetectedOnCommentCreate, postId, userId, _webContext.IpAddress, traceContent);
+                Log.Warning(Security.XssDetectedOnCommentCreate, postId, userId, WebContext.IpAddress, traceContent);
             }
 
             if (string.IsNullOrWhiteSpace(sanitizedContent))
             {
-                return Result<CommentCreatedDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
+                return Invalid<CommentCreatedDto>(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
             }
 
             var postExists = await _postRepository.IsAvailableForCommentingAsync(postId, ct);
@@ -56,7 +53,8 @@ namespace PostApiService.Services
             if (!postExists)
             {
                 Log.Warning(Posts.NotFound, postId);
-                return Result<CommentCreatedDto>.NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+
+                return NotFound<CommentCreatedDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
             var comment = new Comment
@@ -70,9 +68,9 @@ namespace PostApiService.Services
             await _commentRepository.AddAsync(comment, ct);
             await _commentRepository.SaveChangesAsync(ct);
 
-            var commentDto = comment.ToCreatedDto(_webContext.UserName);
+            var commentDto = comment.ToCreatedDto(WebContext.UserName);
 
-            return Result<CommentCreatedDto>.Success(commentDto, CommentM.Success.CommentAddedSuccessfully);
+            return Success(commentDto, CommentM.Success.CommentAddedSuccessfully);
         }
 
         /// <summary>
@@ -80,12 +78,11 @@ namespace PostApiService.Services
         /// </summary>             
         public async Task<Result<CommentUpdatedDto>> UpdateCommentAsync(int commentId, string content, CancellationToken ct = default)
         {
-            var userId = _webContext.UserId;
+            var userId = WebContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Result<CommentUpdatedDto>.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
-                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+                return Unauthorized<CommentUpdatedDto>();
             }
 
             var sanitizedContent = _sanitizer.SanitizeComment(content);
@@ -93,12 +90,12 @@ namespace PostApiService.Services
             if (!string.Equals(content, sanitizedContent, StringComparison.Ordinal))
             {
                 var traceContent = content.Truncate(500);
-                Log.Warning(Security.XssDetectedOnCommentUpdate, commentId, userId, _webContext.IpAddress, traceContent);
+                Log.Warning(Security.XssDetectedOnCommentUpdate, commentId, userId, WebContext.IpAddress, traceContent);
             }
 
             if (string.IsNullOrWhiteSpace(sanitizedContent))
             {
-                return Result<CommentUpdatedDto>.Invalid(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
+                return Invalid<CommentUpdatedDto>(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
             }
 
             var existingComment = await _commentRepository.GetWithUserAsync(commentId, ct);
@@ -106,17 +103,18 @@ namespace PostApiService.Services
             if (existingComment == null)
             {
                 Log.Warning(Comments.NotFound, commentId);
-                return Result<CommentUpdatedDto>.NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
+
+                return NotFound<CommentUpdatedDto>(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
             }
 
-            var isAdmin = _webContext.IsAdmin;
+            var isAdmin = WebContext.IsAdmin;
 
             if (existingComment.UserId != userId && !isAdmin)
             {
-                Log.Warning(Security.AccessDenied, userId, "Update", "Comment", commentId, existingComment.UserId, _webContext.IpAddress
+                Log.Warning(Security.AccessDenied, userId, "Update", "Comment", commentId, existingComment.UserId, WebContext.IpAddress
                 );
 
-                return Result<CommentUpdatedDto>.Forbidden(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
+                return Forbidden<CommentUpdatedDto>(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
             }
 
             var authorName = existingComment.User.UserName ?? UnknownUser;
@@ -129,14 +127,14 @@ namespace PostApiService.Services
                 Log.Information(Comments.AdminUpdatedComment,
                      userId,
                      commentId,
-                     _webContext.UserName);
+                     WebContext.UserName);
             }
 
             await _commentRepository.SaveChangesAsync(ct);
 
             var commentDto = existingComment.ToUpdatedDto(authorName);
 
-            return Result<CommentUpdatedDto>.Success(commentDto, CommentM.Success.CommentUpdatedSuccessfully);
+            return Success(commentDto, CommentM.Success.CommentUpdatedSuccessfully);
         }
 
         /// <summary>
@@ -144,12 +142,11 @@ namespace PostApiService.Services
         /// </summary>       
         public async Task<Result> DeleteCommentAsync(int commentId, CancellationToken ct = default)
         {
-            var userId = _webContext.UserId;
+            var userId = WebContext.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
-                return Result.Unauthorized(Auth.LoginM.Errors.UnauthorizedAccess,
-                    Auth.LoginM.Errors.UnauthorizedAccessCode);
+                return Unauthorized();
             }
 
             var existingComment = await _commentRepository.GetByIdAsync(commentId, ct);
@@ -157,17 +154,18 @@ namespace PostApiService.Services
             if (existingComment == null)
             {
                 Log.Warning(Comments.NotFound, commentId);
-                return Result.NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
+
+                return NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
             }
 
-            var isAdmin = _webContext.IsAdmin;
-            var ip = _webContext.IpAddress;
+            var isAdmin = WebContext.IsAdmin;
+            var ip = WebContext.IpAddress;
 
             if (existingComment.UserId != userId && !isAdmin)
             {
                 Log.Warning(Security.AccessDenied, userId, "Delete", "Comment", commentId, existingComment.UserId, ip);
 
-                return Result.Forbidden(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
+                return Forbidden(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
             }
 
             await _commentRepository.DeleteAsync(existingComment, ct);
@@ -178,7 +176,7 @@ namespace PostApiService.Services
                 Log.Information(Comments.AdminDeletedComment, userId, commentId, existingComment.UserId, ip);
             }
 
-            return Result.Success(CommentM.Success.CommentDeletedSuccessfully);
+            return Success(CommentM.Success.CommentDeletedSuccessfully);
         }
     }
 }

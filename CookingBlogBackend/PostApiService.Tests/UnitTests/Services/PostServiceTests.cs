@@ -11,7 +11,7 @@ namespace PostApiService.Tests.UnitTests
 {
     public class PostServiceTests
     {
-        private readonly IRepository<Post> _mockRepository;
+        private readonly IPostRepository _mockRepository;
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly ICategoryService _mockCategoryService;
@@ -20,7 +20,7 @@ namespace PostApiService.Tests.UnitTests
 
         public PostServiceTests()
         {
-            _mockRepository = Substitute.For<IRepository<Post>>();
+            _mockRepository = Substitute.For<IPostRepository>();
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<ICategoryService>();

@@ -134,8 +134,8 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert
             Assert.Equal(ResultStatus.Invalid, result.Status);
 
-            Assert.Contains("Password is too short.", result.Message);
-            Assert.Contains("Password must have at least one digit.", result.Message);
+            Assert.Equal(Auth.Registration.Errors.DefaultRegistrationError, result.Message);
+            Assert.Equal(Auth.Registration.Errors.DefaultRegistrationErrorCode, result.ErrorCode);
 
             await _mockAuthRepository.DidNotReceive().AddClaimAsync(
                 Arg.Any<IdentityUser>(), Arg.Any<Claim>(), Arg.Any<CancellationToken>());
@@ -187,6 +187,7 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(Auth.LoginM.Errors.InvalidCredentials, result.Message);
+            Assert.Equal(Auth.LoginM.Errors.InvalidCredentialsErrorCode, result.ErrorCode);
 
             await _mockAuthRepository.DidNotReceiveWithAnyArgs().CheckPasswordAsync(default!, default!);
         }
@@ -210,6 +211,7 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(Auth.LoginM.Errors.InvalidCredentials, result.Message);
+            Assert.Equal(Auth.LoginM.Errors.InvalidCredentialsErrorCode, result.ErrorCode);
 
             await _mockAuthRepository.Received(1).FindByNameAsync(loginDto.UserName, Arg.Any<CancellationToken>());
             await _mockAuthRepository.Received(1).CheckPasswordAsync(identityUser, loginDto.Password, Arg.Any<CancellationToken>());
