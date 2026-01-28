@@ -1,9 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace PostApiService.Models.Dto.Response
+﻿namespace PostApiService.Models.Dto.Response
 {
     public record CategoryDto(
-        int Id,        
-        string Name
+        int Id,
+        string Name,
+        string Slug
     );
 }

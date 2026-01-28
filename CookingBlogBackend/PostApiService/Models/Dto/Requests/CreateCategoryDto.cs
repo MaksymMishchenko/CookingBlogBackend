@@ -7,5 +7,9 @@ namespace PostApiService.Models.Dto.Requests
         [Required(ErrorMessage = Global.Validation.Required)]
         [StringLength(20, MinimumLength = 3, ErrorMessage = Global.Validation.LengthRange)]
         public string Name { get; set; } = default!;
+        
+        [StringLength(50, ErrorMessage = Global.Validation.LengthRange)]
+        [RegularExpression(@"^[a-z0-9-]+$", ErrorMessage = Global.Validation.SlugFormat)]
+        public string? Slug { get; set; }
     }
 }
