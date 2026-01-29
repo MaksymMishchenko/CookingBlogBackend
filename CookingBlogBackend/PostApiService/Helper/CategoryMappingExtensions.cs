@@ -9,10 +9,11 @@ namespace PostApiService.Helper
         new(category.Id, category.Name, category.Slug);
 
         public static Category ToEntity(this CreateCategoryDto dto) =>
-            new() { Name = dto.Name };       
+            new() { Name = dto.Name, Slug = dto.Slug! };       
         public static void UpdateEntity(this UpdateCategoryDto dto, Category existingCategory)
         {
             existingCategory.Name = dto.Name;
+            existingCategory.Slug = dto.Slug!;
         }
     }
 }

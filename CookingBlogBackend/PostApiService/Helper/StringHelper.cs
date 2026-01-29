@@ -26,15 +26,12 @@ namespace PostApiService.Helper
            
             string slug = name.Transliterate();
             
-            slug = slug.ToLowerInvariant();
-           
+            slug = slug.ToLowerInvariant();           
             slug = Regex.Replace(slug, @"[^a-z0-9\s-]", "");
-            
-            slug = Regex.Replace(slug, @"\s+", "-").Trim();
-           
-            slug = Regex.Replace(slug, @"-+", "-");
+            slug = Regex.Replace(slug, @"[\s_]+", "-");
+            slug = Regex.Replace(slug, @"-+", "-").Trim('-');
 
-            return slug.Trim('-');
+            return slug;
         }
     }
 }
