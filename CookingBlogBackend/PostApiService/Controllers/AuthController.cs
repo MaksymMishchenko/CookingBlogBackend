@@ -1,5 +1,4 @@
-﻿using PostApiService.Controllers.Filters;
-using PostApiService.Interfaces;
+﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 
 namespace PostApiService.Controllers
@@ -20,7 +19,6 @@ namespace PostApiService.Controllers
         /// </summary>        
         [AllowAnonymous]
         [HttpPost("Register")]
-        [ValidateModel(InvalidErrorMessage = Auth.Registration.Errors.InvalidRegistrationData)]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUserDto userDto,
             CancellationToken ct = default)
         {
@@ -34,7 +32,6 @@ namespace PostApiService.Controllers
         /// </summary>       
         [AllowAnonymous]
         [HttpPost("Login")]
-        [ValidateModel(InvalidErrorMessage = Auth.LoginM.Errors.InvalidCredentials)]
         public async Task<IActionResult> LoginUserAsync([FromBody] LoginUserDto credentials,
             CancellationToken ct = default)
         {

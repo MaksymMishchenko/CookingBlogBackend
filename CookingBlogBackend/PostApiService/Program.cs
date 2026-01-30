@@ -1,3 +1,4 @@
+using PostApiService.Controllers.Filters;
 using PostApiService.Infrastructure;
 using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Constants;
@@ -40,6 +41,7 @@ builder.Services.AddControllers(options =>
 
     // Use EmptyBodyBehavior.Allow as the default behavior for the entire application.
     options.AllowEmptyInputInBodyModelBinding = true;
+    options.Filters.Add<AutoValidationFilter>();
 })
     .AddJsonOptions(options =>
     {

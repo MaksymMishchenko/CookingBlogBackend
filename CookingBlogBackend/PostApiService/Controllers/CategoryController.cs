@@ -1,5 +1,4 @@
-﻿using PostApiService.Controllers.Filters;
-using PostApiService.Interfaces;
+﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -33,7 +32,6 @@ namespace PostApiService.Controllers
         /// Retrieves a specific category by its unique identifier.
         /// </summary>
         [HttpGet("{id}")]
-        [ValidateId]
         public async Task<IActionResult> GetCategoryByIdAsync(int id, CancellationToken ct = default)
         {
             var result = await _categoryService.GetCategoryByIdAsync(id, ct);
@@ -45,7 +43,6 @@ namespace PostApiService.Controllers
         /// Creates a new category.
         /// </summary>
         [HttpPost]
-        [ValidateModel]
         public async Task<IActionResult> AddСategoryAsync
             ([FromBody] CreateCategoryDto categoryDto, CancellationToken ct = default)
         {
@@ -59,8 +56,6 @@ namespace PostApiService.Controllers
         /// Updates an existing category's information.
         /// </summary>
         [HttpPut("{Id}")]
-        [ValidateId]
-        [ValidateModel]
         public async Task<IActionResult> UpdateCategoryAsync
             (int id, [FromBody] UpdateCategoryDto categoryDto, CancellationToken ct = default)
         {
@@ -73,7 +68,6 @@ namespace PostApiService.Controllers
         /// Deletes a category from the system.
         /// </summary>
         [HttpDelete("{id}")]
-        [ValidateId]
         public async Task<IActionResult> DeleteCategoryAsync
             (int id, CancellationToken ct = default)
         {

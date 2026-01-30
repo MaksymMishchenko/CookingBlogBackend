@@ -1,6 +1,4 @@
-﻿using PostApiService.Controllers.Filters;
-using PostApiService.Controllers.Filters.PostApiService.Controllers.Filters;
-using PostApiService.Interfaces;
+﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -24,7 +22,6 @@ namespace PostApiService.Controllers
         /// </summary>          
         [HttpGet]
         [AllowAnonymous]
-        [ValidatePaginationParameters]
         public async Task<IActionResult> GetPostsWithTotalPostCountAsync
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
@@ -39,8 +36,6 @@ namespace PostApiService.Controllers
         /// along with the total count of matched records.                  
         [HttpGet("search")]
         [AllowAnonymous]
-        [ValidateSearchQuery]
-        [ValidatePaginationParameters]
         public async Task<IActionResult> SearchPostsWithTotalCountAsync
             ([FromQuery] SearchPostQueryParameters query, CancellationToken ct = default)
         {
@@ -54,7 +49,6 @@ namespace PostApiService.Controllers
         /// Retrieves a specific post by its ID.
         /// </summary>        
         [HttpGet("{id}")]
-        [ValidateId]
         public async Task<IActionResult> GetPostByIdAsync
             (int id, CancellationToken ct = default)
         {
@@ -67,7 +61,6 @@ namespace PostApiService.Controllers
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
-        [ValidateModel]
         public async Task<IActionResult> AddPostAsync
             ([FromBody] PostCreateDto dto, CancellationToken ct = default)
         {
@@ -81,8 +74,6 @@ namespace PostApiService.Controllers
         /// Updates an existing post.
         /// </summary>               
         [HttpPut("{postId}")]
-        [ValidateId]
-        [ValidateModel]
         public async Task<IActionResult> UpdatePostAsync
             (int postId, [FromBody] PostUpdateDto postDto, CancellationToken ct = default)
         {
@@ -95,7 +86,6 @@ namespace PostApiService.Controllers
         /// Deletes a post by its ID.
         /// </summary>        
         [HttpDelete("{postId}")]
-        [ValidateId]
         public async Task<IActionResult> DeletePostAsync
             (int postId, CancellationToken ct = default)
         {
