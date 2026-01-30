@@ -1,5 +1,4 @@
-﻿using PostApiService.Controllers.Filters;
-using PostApiService.Interfaces;
+﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -21,8 +20,6 @@ namespace PostApiService.Controllers
         /// Adds a comment to a specific post.
         /// </summary>        
         [HttpPost("{postId}")]
-        [ValidateId]
-        [ValidateModel]
         public async Task<IActionResult> AddCommentAsync
             (int postId, [FromBody] CommentCreateDto comment, CancellationToken ct = default)
         {
@@ -35,8 +32,6 @@ namespace PostApiService.Controllers
         /// Updates an existing comment based on the provided comment ID.
         /// </summary>        
         [HttpPut("{commentId}")]
-        [ValidateId]
-        [ValidateModel]
         public async Task<IActionResult> UpdateCommentAsync
             (int commentId, [FromBody] CommentUpdateDto comment, CancellationToken ct = default)
         {
@@ -49,7 +44,6 @@ namespace PostApiService.Controllers
         /// Deletes a comment by its ID.
         /// </summary>        
         [HttpDelete("{commentId}")]
-        [ValidateId]
         public async Task<IActionResult> DeleteCommentAsync
             (int commentId, CancellationToken ct = default)
         {
