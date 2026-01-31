@@ -1,0 +1,67 @@
+name: Postman Tests
+
+on:
+  workflow_call:
+    secrets:
+      SecretKey:
+        required: true
+
+jobs:
+  run-postman:
+    runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: "Y"
+          MSSQL_SA_PASSWORD: "Password123!"
+        ports:
+          - 1433:1433
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0'
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages         
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj*', '**/packages.lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-    
+    
+      - name: Build API
+        run: dotnet build CookingBlogBackend/PostApiService/PostApiService.csproj --configuration Debug
+
+      - name: Start API in background
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}          
+          ASPNETCORE_URLS: "https://localhost:7030;http://localhost:5030"
+          ConnectionStrings__DefaultConnection: "Server=127.0.0.1;Database=CookingBlog;User Id=sa;Password=Password123!;Encrypt=False;TrustServerCertificate=True;"
+        run: |
+          echo "Waiting for SQL Server to warm up..."
+          sleep 45                    
+          dotnet run --project CookingBlogBackend/PostApiService/PostApiService.csproj --no-build --launch-profile "https" > api.log 2>&1 &           
+          sleep 30 
+
+      - name: Check API Status
+        run: |         
+          curl -k -i https://localhost:7030/api/posts || (echo "--- API LOGS ---" && cat api.log && exit 1)
+
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run Postman Tests
+        run: |
+          newman run postman/collection.json \
+          -e postman/environment.json \
+          --env-var "baseUrl=https://localhost:7030" \
+          --reporters cli \
+          --insecure

@@ -31,7 +31,7 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore CookingBlogBackend/PostApiService.sln
 
-      - name: Build and Publish
+      - name: Build and Publish                      
         run: dotnet publish CookingBlogBackend/PostApiService.sln --configuration Release --no-restore -o ./publish
       
       - name: Upload Build Artifact
