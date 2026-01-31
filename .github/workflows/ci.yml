@@ -12,7 +12,7 @@ jobs:
     secrets:
       SecretKey: ${{ secrets.SecretKey }}
 
-      postman-validation:
+  postman-validation:
     needs: validate
     uses: ./.github/workflows/_postman_tests.yml
     secrets:
