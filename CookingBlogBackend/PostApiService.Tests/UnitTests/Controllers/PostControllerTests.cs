@@ -219,6 +219,91 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
+        public async Task GetPostsByCategoryWithTotalCountAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
+        {
+            // Arrange
+            const string InvalidSlug = "non-existent-category";
+            var queryParameters = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
+            var token = CancellationToken.None;
+
+            var expectedErrorMessage = CategoryM.Errors.CategoryNotFound;
+            var expectedErrorCode = PostM.Errors.CategoryNotFoundCode;
+
+            var serviceResult = Result<PagedResult<PostListDto>>.NotFound(
+                expectedErrorMessage,
+                expectedErrorCode);
+
+            _mockPostService.GetPostsByCategoryWithTotalCount(
+                InvalidSlug,
+                queryParameters.PageNumber,
+                queryParameters.PageSize,
+                token)
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _postsController.GetPostsByCategoryWithTotalCountAsync(InvalidSlug, queryParameters, token);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(expectedErrorMessage, response.Message);
+            Assert.Equal(expectedErrorCode, response.ErrorCode);
+
+            await _mockPostService.Received(1).GetPostsByCategoryWithTotalCount(
+                InvalidSlug,
+                queryParameters.PageNumber,
+                queryParameters.PageSize,
+                token);
+        }
+
+        [Fact]
+        public async Task GetPostsByCategoryWithTotalCountAsync_ShouldReturnOk_WhenCategoryExists()
+        {
+            // Arrange
+            const string CategorySlug = "desserts";
+            const int ExpectedTotalCount = 5;
+            var queryParameters = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
+            var token = CancellationToken.None;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var mockPosts = TestDataHelper.GetPostListDtos(ExpectedTotalCount, categories);
+
+            var pagedData = new PagedResult<PostListDto>(
+                mockPosts,
+                ExpectedTotalCount,
+                queryParameters.PageNumber,
+                queryParameters.PageSize);
+
+            var serviceResult = Result<PagedResult<PostListDto>>.Success(pagedData);
+
+            _mockPostService.GetPostsByCategoryWithTotalCount(
+                CategorySlug,
+                queryParameters.PageNumber,
+                queryParameters.PageSize,
+                token)
+                .Returns(serviceResult);
+
+            // Act
+            var result = await _postsController.GetPostsByCategoryWithTotalCountAsync(CategorySlug, queryParameters, token);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
+
+            Assert.True(response.Success);
+            Assert.Equal(ExpectedTotalCount, response.TotalCount);
+            Assert.Same(mockPosts, response.Data);
+
+            await _mockPostService.Received(1).GetPostsByCategoryWithTotalCount(
+                CategorySlug,
+                queryParameters.PageNumber,
+                queryParameters.PageSize,
+                token);
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnStatusCode200_IfPostExists()
         {
             // Arrange

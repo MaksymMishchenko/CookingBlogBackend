@@ -12,9 +12,10 @@ namespace PostApiService.Tests.Helper
             bool useNewSeed = false,
             bool generateComments = true,
             int commentCount = 1,
-            bool generateIds = false)
+            bool generateIds = false,
+            Category? forcedCategory = null)
         {
-            var posts = GetPostFaker(useNewSeed, categories!, generateComments, commentCount, generateIds).Generate(count);
+            var posts = GetPostFaker(useNewSeed, categories!, generateComments, commentCount, generateIds, forcedCategory).Generate(count);
 
             if (generateIds)
             {
@@ -45,7 +46,8 @@ namespace PostApiService.Tests.Helper
             ICollection<Category> categories,
             bool generateComments,
             int commentCount,
-            bool generateIds)
+            bool generateIds,
+            Category? forcedCategory = null)
         {
             var seed = 0;
             if (useNewSeed)
@@ -58,7 +60,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
-                .RuleFor(p => p.Category, f => f.PickRandom(categories))
+                .RuleFor(p => p.Category, f => forcedCategory ?? f.PickRandom(categories))
                 .RuleFor(p => p.Author, f => f.Person.FullName)
                 .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
@@ -434,11 +436,11 @@ namespace PostApiService.Tests.Helper
         }
 
         public static Post GetCreatePostDto(string content, ICollection<Category>? categories = null)
-        {            
+        {
             var category = categories!.First(c => c.Name == "Desserts");
 
             return new Post
-            {                
+            {
                 Title = "Lorem ipsum dolor sit amet",
                 Content = content,
                 Author = "Test author",
@@ -466,7 +468,7 @@ namespace PostApiService.Tests.Helper
                 MetaDescription = "Meta Description",
                 CategoryId = categoryId
             };
-        }        
+        }
 
         public static List<Comment> GetListWithComments()
         {

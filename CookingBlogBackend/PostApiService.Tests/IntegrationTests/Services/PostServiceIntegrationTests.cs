@@ -161,6 +161,72 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task GetPostsByCategoryWithTotalCount_ShouldReturnOnlyFilteredPosts_AndCorrectTotalCount()
+        {
+            // Arrange
+            const string targetSlug = "breakfast";
+            const int pageNumber = 1;
+            const int pageSize = 10;
+            const int postsInTargetCategory = 5;
+            const int postsInOtherCategory = 3;
+            
+            var (context, postService, _, allCategories) = await SetupAsync(cats =>
+            {
+                var targetCat = cats.First(c => c.Slug == targetSlug);
+                var otherCat = cats.First(c => c.Slug != targetSlug);
+                
+                var targetPosts = TestDataHelper.GetPostsWithComments(postsInTargetCategory, cats, forcedCategory: targetCat);
+               
+                var otherPosts = TestDataHelper.GetPostsWithComments(postsInOtherCategory, cats, forcedCategory: otherCat);
+
+                return targetPosts.Concat(otherPosts).ToList();
+            });
+
+            using (context)
+            {
+                // Act
+                var result = await postService.GetPostsByCategoryWithTotalCount(targetSlug, pageNumber, pageSize);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+                Assert.Equal(ResultStatus.Success, result.Status);
+
+                var data = result.Value!;
+                
+                Assert.Equal(postsInTargetCategory, data.TotalCount);
+                Assert.Equal(postsInTargetCategory, data.Items.Count());
+               
+                Assert.All(data.Items, item =>
+                {
+                    Assert.Equal(targetSlug, item.CategorySlug);
+                });
+                
+                var sortedIds = data.Items.Select(i => i.Id).ToList();
+                var expectedIds = data.Items.OrderByDescending(i => i.CreatedAt).Select(i => i.Id).ToList();
+                Assert.Equal(expectedIds, sortedIds);
+            }
+        }
+
+        [Fact]
+        public async Task GetPostsByCategoryWithTotalCount_ShouldReturnNotFound_WhenSlugDoesNotExist()
+        {
+            // Arrange
+            const string nonExistentSlug = "non-existent-category-slug";
+            var (context, postService, _, _) = await SetupAsync(cats => new List<Post>());
+
+            using (context)
+            {
+                // Act
+                var result = await postService.GetPostsByCategoryWithTotalCount(nonExistentSlug, 1, 10);
+
+                // Assert
+                Assert.False(result.IsSuccess);
+                Assert.Equal(ResultStatus.NotFound, result.Status);
+                Assert.Equal(CategoryM.Errors.CategoryNotFound, result.Message);
+            }
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnSuccess_IfPostExistsInDb()
         {
             // Arrange                        
