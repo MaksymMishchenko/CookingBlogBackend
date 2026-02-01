@@ -24,6 +24,11 @@ namespace PostApiService.Services
             return await _categoryRepository.AnyAsync(c => c.Id == id, ct);
         }
 
+        public async Task<bool> ExistsBySlugAsync(string slug, CancellationToken ct = default)
+        {
+            return await _categoryRepository.AnyAsync(c => c.Slug == slug, ct);
+        }
+
         public async Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default)
         {
             var categories = await _categoryRepository.GetAllAsync(ct);
@@ -141,6 +146,6 @@ namespace PostApiService.Services
             await _categoryRepository.SaveChangesAsync(ct);
            
             return Success(CategoryM.Success.CategoryDeletedSuccessfully);
-        }
+        }      
     }
 }

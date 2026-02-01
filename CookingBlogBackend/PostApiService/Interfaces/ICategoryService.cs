@@ -8,6 +8,7 @@ namespace PostApiService.Interfaces
     {
         public Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default);
         Task<bool> ExistsAsync(int id, CancellationToken ct = default);
+        Task<bool> ExistsBySlugAsync(string slug, CancellationToken ct = default);
         public Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken ct = default);
         public Task<Result<CategoryDto>> AddCategoryAsync
             (CreateCategoryDto categoryDto, CancellationToken ct = default);
