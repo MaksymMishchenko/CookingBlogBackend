@@ -39,6 +39,42 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task ExistsBySlugAsync_ShouldReturnSuccessWithTrue_IfCategoryExists()
+        {
+            // Arrange
+            const string Slug = "existent-slug";
+            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                           .Returns(true);
+
+            // Act
+            var result = await _categoryService.ExistsBySlugAsync(Slug);
+
+            // Assert
+            Assert.True(result);
+
+            await _mockCategoryRepo.Received(1).AnyAsync
+                (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task ExistsBySlugAsync_ShouldReturnFalse_IfCategoryDoesNotExist()
+        {
+            // Arrange
+            const string Slug = "non-existent-slug";
+            _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
+                           .Returns(false);
+
+            // Act
+            var result = await _categoryService.ExistsBySlugAsync(Slug);
+
+            // Assert
+            Assert.False(result);
+
+            await _mockCategoryRepo.Received(1).AnyAsync
+                (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task GetAllCategoriesAsync_ShouldReturnListWithAllCategories()
         {
             // Arrange
@@ -201,8 +237,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(expectedSlug, result.Value!.Slug); 
-            
+            Assert.Equal(expectedSlug, result.Value!.Slug);
+
             await _mockCategoryRepo.Received(1).AddAsync(Arg.Is<Category>(c => c.Slug == expectedSlug), Arg.Any<CancellationToken>());
         }
 
@@ -254,7 +290,7 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockCategoryRepo.DidNotReceive().AnyAsync
                 (Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>());
             await _mockCategoryRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-        }        
+        }
 
         [Fact]
         public async Task UpdateCategoryAsync_ShouldReturnConflict_WhenNewNameAlreadyExistsForOtherCategory()
@@ -300,7 +336,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockCategoryRepo.GetByIdAsync(categoryId, Arg.Any<CancellationToken>())
                 .Returns(existingCategory);
-            
+
             _mockCategoryRepo.AnyAsync(Arg.Any<Expression<Func<Category, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(true);
 
@@ -333,7 +369,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);            
+            Assert.Equal(ResultStatus.Success, result.Status);
             Assert.Equal(expectedName, result.Value!.Name);
             Assert.Equal(dto.Name, result.Value!.Name);
             Assert.Equal(categoryId, result.Value.Id);
@@ -345,7 +381,7 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockCategoryRepo.Received(1).GetByIdAsync
                 (categoryId, token);
             await _mockCategoryRepo.Received(1).AnyAsync
-                (Arg.Any<Expression<Func<Category, bool>>>(), token);            
+                (Arg.Any<Expression<Func<Category, bool>>>(), token);
             await _mockCategoryRepo.Received(1).SaveChangesAsync(token);
         }
 

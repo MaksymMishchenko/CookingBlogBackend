@@ -61,6 +61,24 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task ExistBySlugAsync_ShouldReturnTrue_IfCategoryExists()
+        {
+            // Arrange            
+            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out var context);
+
+            using (context)
+            {
+                var categoryToFind = seededCategories.First();
+
+                // Act              
+                var result = await categoryService.ExistsBySlugAsync(categoryToFind.Slug);
+
+                // Assert
+                Assert.True(result);
+            }
+        }
+
+        [Fact]
         public async Task GetAllCategoriesAsync_ShouldReturnListOfCategories()
         {
             // Arrange
