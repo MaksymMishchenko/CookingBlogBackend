@@ -11,6 +11,8 @@ namespace PostApiService.Interfaces
             CancellationToken ct = default);
         Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsWithTotalCountAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default);
+        Task<Result<PagedResult<PostListDto>>> GetPostsByCategoryWithTotalCount
+            (string slug, int pageNumber, int pageSize, CancellationToken ct);
         Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default);
         Task<Result<PostDetailsDto>> GetPostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default);
         Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default);

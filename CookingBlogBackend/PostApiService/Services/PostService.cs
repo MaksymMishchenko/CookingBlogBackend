@@ -1,7 +1,6 @@
 ﻿using PostApiService.Helper;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
-using PostApiService.Models;
 using PostApiService.Models.Constants;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -116,6 +115,34 @@ namespace PostApiService.Services
                 (query, searchPostList, searchTotalPosts, pageNumber, pageSize, message));
         }
 
+        public async Task<Result<PagedResult<PostListDto>>> GetPostsByCategoryWithTotalCount
+            (string slug, int pageNumber, int pageSize, CancellationToken ct = default)
+        {
+            var categoryExists = await _categoryService.ExistsBySlugAsync(slug, ct);
+
+            if (!categoryExists)
+            {
+                return NotFound<PagedResult<PostListDto>>
+                    (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
+            }
+
+            var query = _postRepository.AsQueryable()
+                .Where(p => p.Category.Slug == slug);
+
+            var totalPostCount = await query.CountAsync(ct);
+
+            var posts = await query
+                .OrderByDescending(p => p.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .Select(PostMappingExtensions.ToDtoExpression)
+                .ToListAsync(ct);
+
+            var pagedData = new PagedResult<PostListDto>(posts, totalPostCount, pageNumber, pageSize);
+
+            return Result<PagedResult<PostListDto>>.Success(pagedData);
+        }
+
         /// <summary>
         /// Retrieves detailed information for a specific post by its identifier for administrative use.
         /// </summary>       
@@ -151,7 +178,7 @@ namespace PostApiService.Services
                     PostM.Errors.SlugAndCategoryRequiredCode);
             }
 
-            var postDto = await _postRepository.AsQueryable()                
+            var postDto = await _postRepository.AsQueryable()
                 .Where(p => p.Slug == cleanSlug && p.Category.Slug == cleanCategory)
                 .ToDetailsDtoExpression()
                 .FirstOrDefaultAsync(ct);

@@ -447,6 +447,109 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
+        public async Task GetPostsByCategoryWithTotalCount_ShouldReturnNotFound_IfCategoryDoesNotExist()
+        {
+            // Arrange
+            const string slug = "not-existent-category";
+
+            _mockCategoryService.ExistsBySlugAsync(slug, Arg.Any<CancellationToken>())
+                .Returns(false);
+
+            // Act
+            var result = await _postService.GetPostsByCategoryWithTotalCount(slug, 1, 10);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
+
+            Assert.Null(result.Value);
+            Assert.Equal(CategoryM.Errors.CategoryNotFound, result.Message);
+            Assert.Equal(CategoryM.Errors.CategoryNotFoundCode, result.ErrorCode);
+
+            _mockRepository.DidNotReceive().AsQueryable();
+
+            await _mockCategoryService.Received(1).ExistsBySlugAsync(slug, Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task GetPostsByCategoryWithTotalCount_ShouldReturnListOfPosts_IfCategoryExist()
+        {
+            // Arrange
+            var myCategory = new Category { Id = 7, Name = "Breakfast", Slug = "breakfast" };
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var targetPosts = TestDataHelper.GetPostsWithComments(3, categories, forcedCategory: myCategory);
+            var otherPosts = TestDataHelper.GetPostsWithComments(2, categories);
+
+            var allPosts = targetPosts.Concat(otherPosts).ToList();
+
+            var filteredPosts = allPosts
+                .Where(p => p.Category.Slug == myCategory.Slug)
+                .ToList();
+
+            _mockCategoryService.ExistsBySlugAsync(myCategory.Slug, Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            _mockRepository.AsQueryable().Returns(allPosts.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _postService.GetPostsByCategoryWithTotalCount(myCategory.Slug, 1, 10);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            Assert.NotNull(result);
+            var data = result.Value!;
+            Assert.Equal(filteredPosts.Count, data.TotalCount);
+
+            _mockRepository.Received(1).AsQueryable();
+
+            await _mockCategoryService.Received(1).ExistsBySlugAsync(myCategory.Slug, Arg.Any<CancellationToken>());
+        }
+
+        [Theory]
+        [InlineData(1, 2, 2)]
+        [InlineData(2, 2, 1)]
+        public async Task GetPostsByCategoryWithTotalCount_ShouldPaginateCorrectlyWithinCategory(
+            int pageNumber, int pageSize, int expectedCount)
+        {
+            // Arrange
+            var myCategory = new Category { Id = 7, Name = "Breakfast", Slug = "breakfast" };
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var targetPosts = TestDataHelper.GetPostsWithComments(3, categories, forcedCategory: myCategory);
+            var otherPosts = TestDataHelper.GetPostsWithComments(2, categories);
+
+            var allPosts = targetPosts.Concat(otherPosts).ToList();
+
+            var filteredPosts = allPosts
+                .Where(p => p.Category.Slug == myCategory.Slug)
+                .ToList();
+
+            _mockCategoryService.ExistsBySlugAsync(myCategory.Slug, Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            _mockRepository.AsQueryable().Returns(allPosts.AsQueryable().BuildMock());
+
+            // Act
+            var result = await _postService.GetPostsByCategoryWithTotalCount(myCategory.Slug, pageNumber, pageSize);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            Assert.NotNull(result);
+            var data = result.Value!;
+            Assert.Equal(filteredPosts.Count, data.TotalCount);
+
+            _mockRepository.Received(1).AsQueryable();
+
+            await _mockCategoryService.Received(1).ExistsBySlugAsync(myCategory.Slug, Arg.Any<CancellationToken>());
+
+            Assert.Equal(expectedCount, result.Value!.Items.Count());
+            Assert.Equal(3, result.Value!.TotalCount);
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnSuccessResult_WithCorrectData_WhenPostExists()
         {
             // Arrange
