@@ -187,6 +187,58 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task GetPostsByCategory_ShouldReturnOk_WithFilteredPosts()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            const string TargetCategorySlug = "desserts";
+            const int PostsInTarget = 3;
+            const int PostsInOther = 2;
+            const int PageNumber = 1;
+            const int PageSize = 10;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var targetCategory = categories.First(c => c.Slug == TargetCategorySlug);
+            var otherCategory = categories.First(c => c.Slug != TargetCategorySlug);
+
+            var targetPosts = TestDataHelper.GetPostsWithComments(PostsInTarget, categories, forcedCategory: targetCategory);
+            var otherPosts = TestDataHelper.GetPostsWithComments(PostsInOther, categories, forcedCategory: otherCategory);
+
+            var allPosts = targetPosts.Concat(otherPosts).ToList();
+
+            allPosts.ForEach(p => p.Slug = $"{p.Slug}-{Guid.NewGuid().ToString()[..4]}");
+
+            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
+
+            var url = string.Format(Posts.GetByCategorySlug, TargetCategorySlug, PageNumber, PageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
+
+            Assert.NotNull(content);
+            Assert.True(content.Success);
+            Assert.NotNull(content.Data);
+
+            Assert.Equal(PostsInTarget, content.TotalCount);
+            Assert.Equal(PostsInTarget, content.Data.Count);
+
+            Assert.All(content.Data, post =>
+            {
+                Assert.Equal(TargetCategorySlug, post.CategorySlug);
+            });
+
+            var expectedFirstId = targetPosts.OrderByDescending(p => p.CreatedAt).First().Id;
+            Assert.Equal(expectedFirstId, content.Data.First().Id);
+        }
+
+        [Fact]
         public async Task GetPostById_ShouldReturnBadRequest_WhenPostIdIsInvalid()
         {
             // Arrange
@@ -324,7 +376,7 @@ namespace PostApiService.Tests.IntegrationTests
             // Assert           
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
 
-            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();            
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse>();
             Assert.NotNull(result);
             Assert.False(result.Success);
             Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);

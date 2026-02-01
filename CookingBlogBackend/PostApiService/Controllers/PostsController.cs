@@ -45,6 +45,17 @@ namespace PostApiService.Controllers
             return result.ToActionResult();
         }
 
+        [HttpGet("category/{slug}")]
+        [AllowAnonymous]
+        public async Task<IActionResult> GetPostsByCategoryWithTotalCountAsync
+            (string slug, [FromQuery] PostQueryParameters query, CancellationToken ct = default)
+        {
+            var result = await _postsService.GetPostsByCategoryWithTotalCount
+                (slug, query.PageNumber, query.PageSize, ct);
+
+            return result.ToActionResult();
+        }
+
         /// <summary>
         /// Retrieves a specific post by its ID.
         /// </summary>        
