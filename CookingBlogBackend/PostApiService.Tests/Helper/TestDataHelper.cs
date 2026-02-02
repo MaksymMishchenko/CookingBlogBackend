@@ -241,7 +241,7 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
         }
 
-        public static void AssertSearchPostsWithTotalCountAsync(Post expectedPost, SearchPostListDto actualDto)
+        public static void AssertSearchActivePostsPagedAsync(Post expectedPost, SearchPostListDto actualDto)
         {
             Assert.NotNull(actualDto);
             Assert.Equal(expectedPost.Id, actualDto.Id);

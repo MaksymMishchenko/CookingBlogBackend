@@ -20,7 +20,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
+        public async Task GetActivePostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
             // Arrange
             const int TotalPostCount = 0;
@@ -36,14 +36,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
 
-            _mockPostService.GetPostsWithTotalPostCountAsync(
+            _mockPostService.GetActivePostsPagedAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
                 .Returns(pagedResult);
 
             // Act
-            var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters);
+            var result = await _postsController.GetActivePostsAsync(queryParameters);
 
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -51,14 +51,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
 
             await _mockPostService.Received(1)
-                .GetPostsWithTotalPostCountAsync(
+                .GetActivePostsPagedAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnOk_WhenPostsExist()
+        public async Task GetActivePostsAsync_ShouldReturnOk_WhenPostsExist()
         {
             // Arrange
             const int MockTotalPostsCount = 50;
@@ -80,14 +80,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
 
-            _mockPostService.GetPostsWithTotalPostCountAsync(
+            _mockPostService.GetActivePostsPagedAsync(
                 Arg.Is(ExpectedPageNumber),
                 Arg.Is(ExpectedPageSize),
                 token)
                 .Returns(pagedResult);
 
             // Act
-            var result = await _postsController.GetPostsWithTotalPostCountAsync(queryParameters, token);
+            var result = await _postsController.GetActivePostsAsync(queryParameters, token);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -103,14 +103,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(MockTotalPostsCount, response.TotalCount);
 
             await _mockPostService.Received(1)
-                .GetPostsWithTotalPostCountAsync(
+                .GetActivePostsPagedAsync(
                 Arg.Is(ExpectedPageNumber),
                 Arg.Is(ExpectedPageSize),
                 token);
         }
 
         [Fact]
-        public async Task SearchPosts_ShouldReturnOk_WhenPostsExist()
+        public async Task SearchActivePostsAsync_ShouldReturnOk_WhenPostsExist()
         {
             // Arrange
             const int ExpectedPageNumber = 1;
@@ -141,7 +141,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<PagedSearchResult<SearchPostListDto>>.Success(searchPagedResult);
 
-            _mockPostService.SearchPostsWithTotalCountAsync(
+            _mockPostService.SearchActivePostsPagedAsync(
                 Query,
                 ExpectedPageNumber,
                 ExpectedPageSize,
@@ -149,7 +149,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.SearchPostsWithTotalCountAsync(queryParameters, token);
+            var result = await _postsController.SearchActivePostsAsync(queryParameters, token);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -159,7 +159,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedMessage, response.Message);
             Assert.Same(posts, response.Data);
 
-            await _mockPostService.Received(1).SearchPostsWithTotalCountAsync(
+            await _mockPostService.Received(1).SearchActivePostsPagedAsync(
                 Query,
                 ExpectedPageNumber,
                 ExpectedPageSize,
@@ -167,7 +167,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task SearchPosts_ShouldReturnOkWithEmptyList_WhenNoPostsMatch()
+        public async Task SearchActivePostsAsync_ShouldReturnOkWithEmptyList_WhenNoPostsMatch()
         {
             // Arrange
             const string Query = "NonExistent";
@@ -193,7 +193,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<PagedSearchResult<SearchPostListDto>>.Success(searchPagedResult);
 
-            _mockPostService.SearchPostsWithTotalCountAsync(
+            _mockPostService.SearchActivePostsPagedAsync(
                 Query,
                 queryParameters.PageNumber,
                 queryParameters.PageSize,
@@ -201,7 +201,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.SearchPostsWithTotalCountAsync(queryParameters, token);
+            var result = await _postsController.SearchActivePostsAsync(queryParameters, token);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -211,7 +211,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedMessage, response.Message);
             Assert.Same(searchPagedResult.Items, response.Data);
 
-            await _mockPostService.Received(1).SearchPostsWithTotalCountAsync(
+            await _mockPostService.Received(1).SearchActivePostsPagedAsync(
                 Query,
                 queryParameters.PageNumber,
                 queryParameters.PageSize,
@@ -219,7 +219,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostsByCategoryWithTotalCountAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
+        public async Task GetActivePostsByCategoryAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {
             // Arrange
             const string InvalidSlug = "non-existent-category";
@@ -233,7 +233,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 expectedErrorMessage,
                 expectedErrorCode);
 
-            _mockPostService.GetPostsByCategoryWithTotalCount(
+            _mockPostService.GetActivePostsByCategoryPagedAsync(
                 InvalidSlug,
                 queryParameters.PageNumber,
                 queryParameters.PageSize,
@@ -241,7 +241,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.GetPostsByCategoryWithTotalCountAsync(InvalidSlug, queryParameters, token);
+            var result = await _postsController.GetActivePostsByCategoryAsync(InvalidSlug, queryParameters, token);
 
             // Assert
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -251,7 +251,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedErrorMessage, response.Message);
             Assert.Equal(expectedErrorCode, response.ErrorCode);
 
-            await _mockPostService.Received(1).GetPostsByCategoryWithTotalCount(
+            await _mockPostService.Received(1).GetActivePostsByCategoryPagedAsync(
                 InvalidSlug,
                 queryParameters.PageNumber,
                 queryParameters.PageSize,
@@ -259,7 +259,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostsByCategoryWithTotalCountAsync_ShouldReturnOk_WhenCategoryExists()
+        public async Task GetActivePostsByCategoryAsync_ShouldReturnOk_WhenCategoryExists()
         {
             // Arrange
             const string CategorySlug = "desserts";
@@ -278,7 +278,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<PagedResult<PostListDto>>.Success(pagedData);
 
-            _mockPostService.GetPostsByCategoryWithTotalCount(
+            _mockPostService.GetActivePostsByCategoryPagedAsync(
                 CategorySlug,
                 queryParameters.PageNumber,
                 queryParameters.PageSize,
@@ -286,7 +286,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.GetPostsByCategoryWithTotalCountAsync(CategorySlug, queryParameters, token);
+            var result = await _postsController.GetActivePostsByCategoryAsync(CategorySlug, queryParameters, token);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -296,7 +296,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(ExpectedTotalCount, response.TotalCount);
             Assert.Same(mockPosts, response.Data);
 
-            await _mockPostService.Received(1).GetPostsByCategoryWithTotalCount(
+            await _mockPostService.Received(1).GetActivePostsByCategoryPagedAsync(
                 CategorySlug,
                 queryParameters.PageNumber,
                 queryParameters.PageSize,
@@ -362,7 +362,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostBySlugAsync_ShouldReturnBadRequest400_WhenInputsAreEmpty()
+        public async Task GetActivePostBySlugAsync_ShouldReturnBadRequest400_WhenInputsAreEmpty()
         {
             // Arrange
             const string InvalidCategorySlug = " ";
@@ -376,12 +376,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var serviceResult = Result<PostDetailsDto>.Invalid(
                 expectedErrorMessage, expectedErrorCode);
 
-            _mockPostService.GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(),
+            _mockPostService.GetActivePostBySlugAsync(Arg.Any<PostRequestBySlug>(),
                 Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.GetPostBySlugAsync(requestDto);
+            var result = await _postsController.GetActivePostBySlugAsync(requestDto);
 
             // Assert            
             var invalidResult = Assert.IsType<BadRequestObjectResult>(result);
@@ -391,12 +391,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedErrorMessage, response.Message);
             Assert.Equal(expectedErrorCode, response.ErrorCode);
 
-            await _mockPostService.Received(1).GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(),
+            await _mockPostService.Received(1).GetActivePostBySlugAsync(Arg.Any<PostRequestBySlug>(),
                 Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetPostBySlugAsync_ReturnsNotFound_WhenSlugOrCategoryMismatch()
+        public async Task GetActivePostBySlugAsync_ReturnsNotFound_WhenSlugOrCategoryMismatch()
         {
             // Arrange
             const string WrongCategorySlug = "wrong-category";
@@ -410,11 +410,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var serviceResult = Result<PostDetailsDto>.NotFound(
                 expectedErrorMessage, expectedErrorCode);
 
-            _mockPostService.GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>())
+            _mockPostService.GetActivePostBySlugAsync(Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
-            var result = await _postsController.GetPostBySlugAsync(requestDto);
+            var result = await _postsController.GetActivePostBySlugAsync(requestDto);
 
             // Assert            
             var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
@@ -424,12 +424,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedErrorMessage, response.Message);
             Assert.Equal(expectedErrorCode, response.ErrorCode);
 
-            await _mockPostService.Received(1).GetPostBySlugAsync
+            await _mockPostService.Received(1).GetActivePostBySlugAsync
                 (Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetPostBySlugAsync_ReturnsOk200_WhenPostExists()
+        public async Task GetActivePostBySlugAsync_ReturnsOk200_WhenPostExists()
         {
             // Arrange
             const string ValidCategorySlug = "desserts";
@@ -442,11 +442,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 (slug: ValidSlug, categorySlug: ValidCategorySlug);
             var serviceResult = Result<PostDetailsDto>.Success(expectedPostDto);
 
-            _mockPostService.GetPostBySlugAsync(requestDto, ct)
+            _mockPostService.GetActivePostBySlugAsync(requestDto, ct)
                 .Returns(serviceResult);
 
             // Act             
-            var result = await _postsController.GetPostBySlugAsync(requestDto, ct);
+            var result = await _postsController.GetActivePostBySlugAsync(requestDto, ct);
 
             // Assert            
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -459,7 +459,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(ValidCategorySlug, response.Data.CategorySlug);
             Assert.Equal(expectedPostDto.Title, response.Data.Title);
 
-            await _mockPostService.Received(1).GetPostBySlugAsync
+            await _mockPostService.Received(1).GetActivePostBySlugAsync
                (Arg.Any<PostRequestBySlug>(), ct);
         }
 

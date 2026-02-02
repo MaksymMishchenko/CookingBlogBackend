@@ -59,109 +59,120 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ReturnsCorrectPageWithPostCountAndCommentCount()
+        public async Task GetActivePostsPagedAsync_ReturnsOnlyActivePostsWithCorrectCounts()
         {
             // Arrange            
             const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 10;
-            const int ExpectedTotalPostCount = 25;
-            const int ExpectedCommentCountPerPost = 5;
+            const int ActiveCount = 15;
+            const int InactiveCount = 5;
+            const int ExpectedCommentCountPerPost = 2;
 
-            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
-                _fixture.GeneratePosts(ExpectedTotalPostCount, cats, ExpectedCommentCountPerPost));
+            var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
+            {
+                var active = _fixture.GeneratePosts(ActiveCount, cats, ExpectedCommentCountPerPost);
+                active.ForEach(p => p.IsActive = true);
+
+                var inactive = _fixture.GeneratePosts(InactiveCount, cats, 0);
+
+                int lastActiveId = active.Max(p => p.Id);
+                inactive.ForEach(p =>
+                {
+                    p.IsActive = false;
+                    p.Id = ++lastActiveId;
+                    p.Slug = $"inactive-{p.Slug}-{p.Id}";
+                });
+
+                return active.Concat(inactive).ToList();
+            });
 
             using (context)
             {
-                var expectedPostsOnPage = seededPosts
+                var expectedActivePosts = allSeededPosts
+                    .Where(p => p.IsActive)
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((ExpectedPageNumber - 1) * ExpectedPageSize)
                     .Take(ExpectedPageSize)
                     .ToList();
 
                 // Act
-                var result = await postService.GetPostsWithTotalPostCountAsync(ExpectedPageNumber, ExpectedPageSize);
+                var result = await postService.GetActivePostsPagedAsync(ExpectedPageNumber, ExpectedPageSize);
 
                 // Assert                
                 Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
-
                 var data = result.Value!;
-                Assert.Equal(ExpectedTotalPostCount, data.TotalCount);
-                Assert.Equal(ExpectedPageSize, data.PageSize);
 
-                Assert.Equal(expectedPostsOnPage.First().Id, data.Items.First().Id);
-                Assert.Equal(expectedPostsOnPage.Last().Id, data.Items.Last().Id);
+                Assert.Equal(ActiveCount, data.TotalCount);
+                Assert.Equal(expectedActivePosts.Count, data.Items.Count());
 
                 Assert.All(data.Items.Select((item, index) => new { item, index }), x =>
                 {
-                    var expectedPost = expectedPostsOnPage[x.index];
+                    var expectedPost = expectedActivePosts[x.index];
+
                     TestDataHelper.AssertPostListDtoMapping(expectedPost, x.item, ExpectedCommentCountPerPost);
+
+                    var original = allSeededPosts.First(p => p.Id == x.item.Id);
+                    Assert.True(original.IsActive);
                 });
             }
         }
 
         [Fact]
-        public async Task SearchPosts_ShouldFindQuery_InTitleOrDescriptionOrContent()
+        public async Task SearchActivePostsPagedAsync_ShouldFindOnlyActivePosts_InTitleOrDescriptionOrContent()
         {
             // Arrange            
             const string Query = "Chili";
 
-            var (_, postService, seededPosts, _) = await SetupAsync(categories =>
-                _fixture.GeneratePostsWithKeywords(categories));
+            var (context, postService, allSeededPosts, _) = await SetupAsync(categories =>
+            {
+                var posts = _fixture.GeneratePostsWithKeywords(categories);
 
-            var expectedIds = seededPosts
-                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                int halfCount = posts.Count / 2;
+                var activePart = posts.Take(halfCount).ToList();
+                var inactivePart = posts.Skip(halfCount).ToList();
+
+                activePart.ForEach(p => p.IsActive = true);
+
+                inactivePart.ForEach(p =>
+                {
+                    p.IsActive = false;
+                    p.Title += $" {Query} (Hidden)";
+                    p.Slug = $"hidden-{p.Slug}";
+                });
+
+                return activePart.Concat(inactivePart).ToList();
+            });
+
+            var expectedActiveMatchedIds = allSeededPosts
+                .Where(p => p.IsActive && (
+                            p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
                             p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
-                            p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
+                            p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase)))
                 .Select(p => p.Id)
                 .OrderBy(id => id)
                 .ToList();
 
             // Act
-            var result = await postService.SearchPostsWithTotalCountAsync(Query);
+            var result = await postService.SearchActivePostsPagedAsync(Query);
 
             // Assert           
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-
             var data = result.Value!;
+
             var actualIds = data.Items.Select(r => r.Id).OrderBy(id => id).ToList();
 
-            Assert.Equal(expectedIds, actualIds);
+            Assert.Equal(expectedActiveMatchedIds, actualIds);
+            Assert.Equal(expectedActiveMatchedIds.Count, data.TotalSearchCount);
 
             Assert.All(data.Items, item =>
             {
-                bool foundInTitle = item.Title.Contains(Query, StringComparison.OrdinalIgnoreCase);
-                Assert.Contains(item.Id, expectedIds);
+                var original = allSeededPosts.First(p => p.Id == item.Id);
+                Assert.True(original.IsActive);
             });
         }
 
         [Fact]
-        public async Task SearchPostsWithTotalCountAsync_ShouldReturnPagesSearchedPosts_WithTotalCount()
-        {
-            // Arrange            
-            const int PageNumber = 1;
-            const int PageSize = 10;
-            const int PostsCountToSeed = 10;
-            const string Query = "Chili";
-
-            var (_, postService, seededPosts, _) = await SetupAsync(cats =>
-                _fixture.GeneratePostsWithKeywords(Query, cats, PostsCountToSeed));
-
-            // Act             
-            var result = await postService.SearchPostsWithTotalCountAsync(Query, PageNumber, PageSize);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-
-            var data = result.Value!;
-            Assert.Equal(seededPosts.Count, data.TotalSearchCount);
-            Assert.Equal(PageSize, data.Items.Count());
-        }
-
-        [Fact]
-        public async Task GetPostsByCategoryWithTotalCount_ShouldReturnOnlyFilteredPosts_AndCorrectTotalCount()
+        public async Task GetActivePostsByCategoryPagedAsync_ShouldReturnOnlyFilteredPosts_AndCorrectTotalCount()
         {
             // Arrange
             const string targetSlug = "breakfast";
@@ -169,15 +180,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
             const int pageSize = 10;
             const int postsInTargetCategory = 5;
             const int postsInOtherCategory = 3;
-            
+
             var (context, postService, _, allCategories) = await SetupAsync(cats =>
             {
                 var targetCat = cats.First(c => c.Slug == targetSlug);
                 var otherCat = cats.First(c => c.Slug != targetSlug);
-                
-                var targetPosts = TestDataHelper.GetPostsWithComments(postsInTargetCategory, cats, forcedCategory: targetCat);
-               
-                var otherPosts = TestDataHelper.GetPostsWithComments(postsInOtherCategory, cats, forcedCategory: otherCat);
+
+                var targetPosts = TestDataHelper.GetPostsWithComments(
+                    postsInTargetCategory, cats, forcedCategory: targetCat);
+
+                var otherPosts = TestDataHelper.GetPostsWithComments(
+                    postsInOtherCategory, cats, forcedCategory: otherCat);
 
                 return targetPosts.Concat(otherPosts).ToList();
             });
@@ -185,22 +198,22 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 // Act
-                var result = await postService.GetPostsByCategoryWithTotalCount(targetSlug, pageNumber, pageSize);
+                var result = await postService.GetActivePostsByCategoryPagedAsync(targetSlug, pageNumber, pageSize);
 
                 // Assert
                 Assert.True(result.IsSuccess);
                 Assert.Equal(ResultStatus.Success, result.Status);
 
                 var data = result.Value!;
-                
+
                 Assert.Equal(postsInTargetCategory, data.TotalCount);
                 Assert.Equal(postsInTargetCategory, data.Items.Count());
-               
+
                 Assert.All(data.Items, item =>
                 {
                     Assert.Equal(targetSlug, item.CategorySlug);
                 });
-                
+
                 var sortedIds = data.Items.Select(i => i.Id).ToList();
                 var expectedIds = data.Items.OrderByDescending(i => i.CreatedAt).Select(i => i.Id).ToList();
                 Assert.Equal(expectedIds, sortedIds);
@@ -208,21 +221,62 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetPostsByCategoryWithTotalCount_ShouldReturnNotFound_WhenSlugDoesNotExist()
+        public async Task GetActivePostsByCategoryPagedAsync_ShouldReturnOnlyActivePosts_ForSpecificCategory()
         {
             // Arrange
-            const string nonExistentSlug = "non-existent-category-slug";
-            var (context, postService, _, _) = await SetupAsync(cats => new List<Post>());
+            const string targetCategorySlug = "desserts";
+            const int ExpectedActiveInCat = 3;
+            const int ExpectedComments = 2;
+            const int InactiveInCat = 2;
+
+            var (context, postService, allSeededPosts, categories) = await SetupAsync(cats =>
+            {
+                var targetCat = cats.First(c => c.Slug == targetCategorySlug);
+                var otherCat = cats.First(c => c.Slug != targetCategorySlug);
+
+                var activeInCat = _fixture.GeneratePosts(ExpectedActiveInCat, [targetCat], ExpectedComments);
+                activeInCat.ForEach(p => p.IsActive = true);
+
+                var inactiveInCat = _fixture.GeneratePosts(InactiveInCat, [targetCat], 0);
+                int lastId = activeInCat.Max(p => p.Id);
+                inactiveInCat.ForEach(p =>
+                {
+                    p.IsActive = false;
+                    p.Id = ++lastId;
+                    p.Slug = $"inactive-{p.Slug}-{p.Id}";
+                });
+
+                var activeOtherCat = _fixture.GeneratePosts(2, new[] { otherCat }, 0);
+                activeOtherCat.ForEach(p =>
+                {
+                    p.IsActive = true;
+                    p.Id = ++lastId;
+                    p.Slug = $"other-{p.Slug}-{p.Id}";
+                });
+
+                return activeInCat.Concat(inactiveInCat).Concat(activeOtherCat).ToList();
+            });
 
             using (context)
             {
                 // Act
-                var result = await postService.GetPostsByCategoryWithTotalCount(nonExistentSlug, 1, 10);
+                var result = await postService.GetActivePostsByCategoryPagedAsync(targetCategorySlug, 1, 10);
 
                 // Assert
-                Assert.False(result.IsSuccess);
-                Assert.Equal(ResultStatus.NotFound, result.Status);
-                Assert.Equal(CategoryM.Errors.CategoryNotFound, result.Message);
+                Assert.True(result.IsSuccess);
+                var data = result.Value!;
+
+                Assert.Equal(ExpectedActiveInCat, data.TotalCount);
+                Assert.Equal(ExpectedActiveInCat, data.Items.Count());
+
+                Assert.All(data.Items, item =>
+                {
+                    Assert.Equal(targetCategorySlug, item.CategorySlug);
+
+                    var original = allSeededPosts.First(p => p.Id == item.Id);
+                    Assert.True(original.IsActive);
+                    TestDataHelper.AssertPostListDtoMapping(original, item, ExpectedComments);
+                });
             }
         }
 
@@ -254,11 +308,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetPostBySlugAsync_ShouldReturnSuccess_IfPostExistsInDb()
+        public async Task GetActivePostBySlugAsync_ShouldReturnSuccess_IfPostExistsInDbAndIsActive()
         {
             // Arrange                        
+            const int ExpectedCommentCount = 5;
+
             var (context, postService, seededPosts, _) = await SetupAsync(categories =>
-                _fixture.GeneratePosts(3, categories, 5));
+            {
+                var posts = _fixture.GeneratePosts(3, categories, ExpectedCommentCount);
+                posts.ForEach(p => p.IsActive = true);
+                return posts;
+            });
 
             var targetPost = seededPosts.First();
 
@@ -267,7 +327,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 // Act
-                var result = await postService.GetPostBySlugAsync(requestDto);
+                var result = await postService.GetActivePostBySlugAsync(requestDto);
 
                 // Assert
                 Assert.True(result.IsSuccess);
@@ -281,6 +341,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.Equal(targetPost.Slug, data.Slug);
                 Assert.Equal(targetPost.Category.Slug, data.CategorySlug);
                 Assert.Equal(targetPost.Category.Name, data.Category);
+
+                Assert.Equal(ExpectedCommentCount, data.CommentCount);
             }
         }
 

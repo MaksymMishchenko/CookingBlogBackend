@@ -24,6 +24,8 @@
             entity.HasIndex(p => p.Slug)
                   .IsUnique();
 
+            entity.HasIndex(p => p.IsActive);
+
             entity.HasOne(p => p.Category)
                 .WithMany(c => c.Posts)
                 .HasForeignKey(p => p.CategoryId)
