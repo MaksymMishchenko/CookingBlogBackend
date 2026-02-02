@@ -15,6 +15,7 @@ namespace PostApiService.Repositories
        
         IQueryable<T> AsQueryable();
         IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate);
+        public IQueryable<T> GetActive();
         Task<int> SaveChangesAsync(CancellationToken ct = default);
     }
 }

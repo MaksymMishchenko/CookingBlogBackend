@@ -21,7 +21,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPosts_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
+        public async Task GetActivePostsAsync_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
         {
             // Arrange
             var pageNumber = 1;
@@ -42,7 +42,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnPagedPosts()
+        public async Task GetActivePostsAsync_ShouldReturnPagedPosts()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -89,7 +89,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostsWithTotalPostCountAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
+        public async Task GetActivePostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -119,7 +119,40 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task Search_ShouldReturnBadRequest_WhenQueryIsTooShort()
+        public async Task GetActivePostsAsync_ShouldExcludeInactivePosts_WhenMixedContentExists()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var posts = TestDataHelper.GetPostsWithComments(count: 5, categories);
+
+            posts[0].IsActive = false;
+            posts[1].IsActive = false;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.Paginated, 1, 10);
+
+            // Act
+            var response = await _client.GetAsync(url);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            Assert.NotNull(content);
+
+            Assert.Equal(3, content.TotalCount);
+            Assert.Equal(3, content.Data!.Count);
+
+            var inactiveSlugs = posts.Where(p => !p.IsActive).Select(p => p.Slug);
+            Assert.All(content.Data, dto => Assert.DoesNotContain(dto.Slug, inactiveSlugs));
+        }
+
+        [Fact]
+        public async Task SearchActivePostsAsync_ShouldReturnBadRequest_WhenQueryIsTooShort()
         {
             // Arrange
             const int PageNumber = 1;
@@ -139,7 +172,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task SearchPostsWithTotalCountAsync_Pagination_ShouldReturnsSuccessAndCorrectData()
+        public async Task SearchActivePostsAsync_Pagination_ShouldReturnsSuccessAndCorrectData()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -182,12 +215,103 @@ namespace PostApiService.Tests.IntegrationTests
                 int expectedIndex = (PageNumber - 1) * PageSize + index;
                 var expectedPost = expectedPostsSorted[expectedIndex];
 
-                TestDataHelper.AssertSearchPostsWithTotalCountAsync(expectedPost, postDto);
+                TestDataHelper.AssertSearchActivePostsPagedAsync(expectedPost, postDto);
             });
         }
 
         [Fact]
-        public async Task GetPostsByCategory_ShouldReturnOk_WithFilteredPosts()
+        public async Task SearchActivePostsAsync_ShouldExcludeInactivePosts_EvenIfTheyMatchQuery()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            const string Query = "Chili";
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var posts = TestDataHelper.GetPostsWithComments(count: 2, categories);
+
+            var activePost = posts[0];
+            activePost.Title = $"Amazing {Query} Recipe";
+            activePost.IsActive = true;
+
+            var inactivePost = posts[1];
+            inactivePost.Title = $"Hidden {Query} Secret";
+            inactivePost.IsActive = false;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.Search, Query, 1, 10);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<SearchPostListDto>>>();
+
+            Assert.NotNull(content);
+            Assert.True(content.Success);
+
+            Assert.Equal(1, content.TotalCount);
+            Assert.Single(content.Data);
+
+            Assert.Equal(activePost.Slug, content.Data[0].Slug);
+            Assert.DoesNotContain(content.Data, p => p.Slug == inactivePost.Slug);
+        }
+
+        [Theory]
+        [InlineData("Desserts")]
+        [InlineData("dessert_slug")]
+        [InlineData("dessert@!")]
+        [InlineData(" ")]
+        public async Task GetActivePostsByCategoryAsync_ShouldReturnBadRequest_WhenSlugIsInvalid(string invalidSlug)
+        {
+            // Arrange
+            const int PageNumber = 1;
+            const int PageSize = 10;
+           
+            var url = string.Format(Posts.GetByCategorySlug, invalidSlug, PageNumber, PageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert            
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(content);
+            Assert.False(content.Success);
+            
+            Assert.True(content.Errors!.Count > 0);
+        }
+
+        [Theory]
+        [InlineData(0, 10)]
+        [InlineData(-1, 10)]
+        [InlineData(1, 0)]
+        [InlineData(1, 51)]
+        public async Task GetActivePostsByCategoryAsync_ShouldReturnBadRequest_WhenPaginationIsInvalid(int pageNumber, int pageSize)
+        {
+            // Arrange
+            const string ValidSlug = "desserts";
+            var url = string.Format(Posts.GetByCategorySlug, ValidSlug, pageNumber, pageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
+
+            Assert.NotNull(content);
+            Assert.False(content.Success);           
+            Assert.True(content.Errors!.ContainsKey("PageNumber") || content.Errors.ContainsKey("PageSize"));
+        }
+
+        [Fact]
+        public async Task GetActivePostsByCategoryAsync_ShouldReturnOk_WithFilteredPosts()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -236,6 +360,58 @@ namespace PostApiService.Tests.IntegrationTests
 
             var expectedFirstId = targetPosts.OrderByDescending(p => p.CreatedAt).First().Id;
             Assert.Equal(expectedFirstId, content.Data.First().Id);
+        }
+
+        [Fact]
+        public async Task GetActivePostsByCategoryAsync_ShouldExcludeInactivePosts_EvenInTargetCategory()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            const string TargetCategorySlug = "desserts";
+            const int ActiveCount = 3;
+            const int InactiveCount = 2;
+            const int PageNumber = 1;
+            const int PageSize = 10;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var targetCategory = categories.First(c => c.Slug == TargetCategorySlug);
+
+            var posts = TestDataHelper.GetPostsWithComments(
+                ActiveCount + InactiveCount,
+                categories,
+                forcedCategory: targetCategory);
+
+            for (int i = 0; i < posts.Count; i++)
+            {
+                posts[i].IsActive = i < ActiveCount;
+                posts[i].Slug = $"{posts[i].Slug}-{Guid.NewGuid().ToString()[..4]}";
+            }
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.GetByCategorySlug, TargetCategorySlug, PageNumber, PageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
+
+            Assert.NotNull(content);
+            Assert.True(content.Success);
+
+            Assert.Equal(ActiveCount, content.TotalCount);
+            Assert.Equal(ActiveCount, content.Data!.Count);
+
+            var inactiveSlugs = posts.Where(p => !p.IsActive).Select(p => p.Slug);
+            Assert.All(content.Data, dto =>
+            {
+                Assert.DoesNotContain(dto.Slug, inactiveSlugs);
+                Assert.Equal(TargetCategorySlug, dto.CategorySlug);
+            });
         }
 
         [Fact]
@@ -328,7 +504,7 @@ namespace PostApiService.Tests.IntegrationTests
         [Theory]
         [InlineData("Invalid-Category", "valid-slug")]
         [InlineData("category!", "slug")]
-        public async Task GetPostBySlug_ShouldReturnBadRequest_WhenModelIsInvalid(string cat, string slug)
+        public async Task GetActivePostBySlugAsync_ShouldReturnBadRequest_WhenModelIsInvalid(string cat, string slug)
         {
             // Arrange                        
             var url = string.Format(Posts.GetBySlug, cat, slug);
@@ -354,7 +530,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostBySlug_ShouldReturnNotFound_WhenPostDoesNotExist()
+        public async Task GetActivePostBySlugAsync_ShouldReturnNotFound_WhenPostDoesNotExist()
         {
             // Arrange
             var nonExistentCategory = "ghost-category";
@@ -383,7 +559,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostBySlug_ShouldReturnPost_WhenCategoryAndSlugAreValidAndExist()
+        public async Task GetActivePostBySlugAsync_ShouldReturnPost_WhenCategoryAndSlugAreValidAndExist()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -413,6 +589,33 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(existingSlug, result.Data!.Slug);
             Assert.Equal(existingCategory, result.Data.CategorySlug);
             Assert.Equal(expectedPost.Title, result.Data.Title);
+        }
+
+        [Fact]
+        public async Task GetActivePostBySlug_ShouldReturnNotFound_WhenPostIsInactive()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var category = categories.First();
+
+            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, forcedCategory: category);
+            var inactivePost = posts.First();
+
+            inactivePost.IsActive = false;
+            inactivePost.Slug = "hidden-gem-slug";
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.GetBySlug, category.Slug, inactivePost.Slug);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert           
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
         [Fact]

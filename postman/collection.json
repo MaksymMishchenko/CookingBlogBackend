@@ -483,7 +483,7 @@
           "response": []
         },
         {
-          "name": "GetPostBySlug",
+          "name": "GetActivePostBySlug",
           "event": [
             {
               "listen": "test",
@@ -532,7 +532,7 @@
           "response": []
         },
         {
-          "name": "SearchPosts",
+          "name": "SearchActivePosts",
           "event": [
             {
               "listen": "test",
@@ -580,7 +580,7 @@
           "response": []
         },
         {
-          "name": "GetPostsWithTotalCount",
+          "name": "GetActivePosts",
           "event": [
             {
               "listen": "test",
@@ -626,7 +626,7 @@
           "response": []
         },
         {
-          "name": "GetPostsByCategory",
+          "name": "GetActivePostsByCategory",
           "event": [
             {
               "listen": "test",

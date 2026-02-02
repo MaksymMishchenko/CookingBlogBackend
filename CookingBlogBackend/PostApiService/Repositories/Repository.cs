@@ -65,6 +65,16 @@ namespace PostApiService.Repositories
                 .Where(predicate);
         }
 
+        public IQueryable<T> GetActive()
+        {            
+            if (typeof(IActivatable).IsAssignableFrom(typeof(T)))
+            {                
+                return _dbSet.AsNoTracking().Where(e => ((IActivatable)e).IsActive);
+            }
+           
+            return _dbSet.AsNoTracking();
+        }
+
         public async Task<int> SaveChangesAsync(CancellationToken ct = default)
         {
             return await _context.SaveChangesAsync(ct);

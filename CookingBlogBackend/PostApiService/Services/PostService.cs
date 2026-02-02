@@ -32,40 +32,47 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a paginated list of posts, including the **aggregated comment count** for each post,
-        /// and the total count of all posts in the database.
+        /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
+        /// and the total count of active posts for correct pagination.
         /// </summary>
-        public async Task<Result<PagedResult<PostListDto>>> GetPostsWithTotalPostCountAsync(
+        public async Task<Result<PagedResult<PostListDto>>> GetActivePostsPagedAsync(
             int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default)
         {
-            var totalPostCount = await _postRepository.GetTotalCountAsync(ct);
+            var query = _postRepository.GetActive();
 
-            var posts = await _postRepository.AsQueryable()
+            var totalCount = await query.CountAsync(ct);
+
+            var posts = await query
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .Select(PostMappingExtensions.ToDtoExpression)
                 .ToListAsync(ct);
 
-            var pagedData = new PagedResult<PostListDto>(posts, totalPostCount, pageNumber, pageSize);
+            var pagedData = new PagedResult<PostListDto>(posts, totalCount, pageNumber, pageSize);
 
             return Result<PagedResult<PostListDto>>.Success(pagedData);
         }
 
         /// <summary>
-        /// Searches for posts based on a query string matching Title, Description, or Content.
+        /// Searches for ACTIVE posts based on a query string matching Title, Description, or Content.
         /// Results are sorted by creation date (descending) and returned with pagination.
         /// </summary>
-        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsWithTotalCountAsync
+        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchActivePostsPagedAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
         {
-            var queryable = _postRepository.GetFilteredQueryable(p =>
-                p.Title.Contains(query) ||
-                p.Description.Contains(query) ||
-                p.Content.Contains(query)
-            );
+            var queryable = _postRepository.GetActive();
+
+            if (!string.IsNullOrWhiteSpace(query))
+            {
+                queryable = queryable.Where(p =>
+                    p.Title.Contains(query) ||
+                    p.Description.Contains(query) ||
+                    p.Content.Contains(query)
+                );
+            }
 
             var searchTotalPosts = await queryable.CountAsync(ct);
 
@@ -115,7 +122,10 @@ namespace PostApiService.Services
                 (query, searchPostList, searchTotalPosts, pageNumber, pageSize, message));
         }
 
-        public async Task<Result<PagedResult<PostListDto>>> GetPostsByCategoryWithTotalCount
+        /// <summary>
+        /// Retrieves a paginated list of active posts belonging to a specific category identified by its slug.
+        /// </summary>
+        public async Task<Result<PagedResult<PostListDto>>> GetActivePostsByCategoryPagedAsync
             (string slug, int pageNumber, int pageSize, CancellationToken ct = default)
         {
             var categoryExists = await _categoryService.ExistsBySlugAsync(slug, ct);
@@ -126,7 +136,7 @@ namespace PostApiService.Services
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
             }
 
-            var query = _postRepository.AsQueryable()
+            var query = _postRepository.GetActive()
                 .Where(p => p.Category.Slug == slug);
 
             var totalPostCount = await query.CountAsync(ct);
@@ -165,9 +175,9 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves detailed information for a specific post by its SLUG for SEO-friendly access.
+        /// Retrieves the details of a specific active post based on its slug and category slug.
         /// </summary>       
-        public async Task<Result<PostDetailsDto>> GetPostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default)
+        public async Task<Result<PostDetailsDto>> GetActivePostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default)
         {
             var cleanSlug = dto.Slug.StripHtml().Trim().ToLowerInvariant();
             var cleanCategory = dto.Category.StripHtml().Trim().ToLowerInvariant();
@@ -178,7 +188,7 @@ namespace PostApiService.Services
                     PostM.Errors.SlugAndCategoryRequiredCode);
             }
 
-            var postDto = await _postRepository.AsQueryable()
+            var postDto = await _postRepository.GetActive()
                 .Where(p => p.Slug == cleanSlug && p.Category.Slug == cleanCategory)
                 .ToDetailsDtoExpression()
                 .FirstOrDefaultAsync(ct);
