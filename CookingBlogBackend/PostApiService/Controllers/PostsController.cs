@@ -1,6 +1,7 @@
 ﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
+using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Controllers
 {
@@ -17,40 +18,46 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a paginated collection of posts and the total record count. 
-        /// Returns a success message with the count or an information message if the database is empty.
-        /// </summary>          
+        /// Retrieves a paginated list of active posts. 
+        /// Excludes hidden content and returns the total count of active records.
+        /// </summary>         
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetPostsWithTotalPostCountAsync
+        public async Task<IActionResult> GetActivePostsAsync
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var result = await _postsService.GetPostsWithTotalPostCountAsync
+            var result = await _postsService.GetActivePostsPagedAsync
                 (query.PageNumber, query.PageSize, ct);
 
             return result.ToActionResult();
         }
 
         /// <summary>
-        /// Searches posts by query string and returns a paginated list of results 
-        /// along with the total count of matched records.                  
+        /// Searches for active posts by query. 
+        /// Excludes hidden content and provides a snippet of matching text.
+        /// </summary>                  
         [HttpGet("search")]
         [AllowAnonymous]
-        public async Task<IActionResult> SearchPostsWithTotalCountAsync
+        public async Task<IActionResult> SearchActivePostsAsync
             ([FromQuery] SearchPostQueryParameters query, CancellationToken ct = default)
         {
-            var result = await _postsService.SearchPostsWithTotalCountAsync
+            var result = await _postsService.SearchActivePostsPagedAsync
                 (query.QueryString, query.PageNumber, query.PageSize, ct);
 
             return result.ToActionResult();
         }
 
+        /// <summary>
+        /// Retrieves a paginated list of active posts within a category. 
+        /// Excludes hidden content and returns 404 if the category does not exist.
+        /// </summary>
         [HttpGet("category/{slug}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetPostsByCategoryWithTotalCountAsync
-            (string slug, [FromQuery] PostQueryParameters query, CancellationToken ct = default)
+        public async Task<IActionResult> GetActivePostsByCategoryAsync
+            ([RegularExpression(@"^[a-z0-9-]+$")] string slug,
+            [FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var result = await _postsService.GetPostsByCategoryWithTotalCount
+            var result = await _postsService.GetActivePostsByCategoryPagedAsync
                 (slug, query.PageNumber, query.PageSize, ct);
 
             return result.ToActionResult();
@@ -69,14 +76,15 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
-        /// Retrieves a specific post by its category and slug.
+        /// Retrieves details of a specific active post. 
+        /// Returns 404 if the post is inactive or does not exist.
         /// </summary>        
         [HttpGet("{category}/{slug}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetPostBySlugAsync([FromRoute] PostRequestBySlug dto,
+        public async Task<IActionResult> GetActivePostBySlugAsync([FromRoute] PostRequestBySlug dto,
             CancellationToken ct = default)
         {
-            var result = await _postsService.GetPostBySlugAsync(dto, ct);
+            var result = await _postsService.GetActivePostBySlugAsync(dto, ct);
 
             return result.ToActionResult();
         }
