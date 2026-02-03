@@ -6,6 +6,7 @@ using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using System.Data;
+using System.Linq.Expressions;
 
 namespace PostApiService.Services
 {
@@ -31,40 +32,31 @@ namespace PostApiService.Services
             _snippetGenerator = snippetGenerator;
         }
 
-        /// <summary>
-        /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
-        /// and the total count of active posts for correct pagination.
-        /// </summary>
-        public async Task<Result<PagedResult<PostListDto>>> GetActivePostsPagedAsync(
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken ct = default)
+        private async Task<PagedResult<TDto>> GetPagedDataAsync<TEntity, TDto>(
+             IQueryable<TEntity> query,
+             int pageNumber,
+             int pageSize,
+             Expression<Func<TEntity, TDto>> projection,
+             CancellationToken ct)
         {
-            var query = _postRepository.GetActive();
-
             var totalCount = await query.CountAsync(ct);
 
-            var posts = await query
-                .OrderByDescending(p => p.CreatedAt)
+            var items = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(PostMappingExtensions.ToDtoExpression)
+                .Select(projection)
                 .ToListAsync(ct);
 
-            var pagedData = new PagedResult<PostListDto>(posts, totalCount, pageNumber, pageSize);
-
-            return Result<PagedResult<PostListDto>>.Success(pagedData);
+            return new PagedResult<TDto>(items, totalCount, pageNumber, pageSize);
         }
 
-        /// <summary>
-        /// Searches for ACTIVE posts based on a query string matching Title, Description, or Content.
-        /// Results are sorted by creation date (descending) and returned with pagination.
-        /// </summary>
-        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchActivePostsPagedAsync
-            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
+        private async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsInternalAsync(
+            IQueryable<Post> queryable,
+            string query,
+            int pageNumber,
+            int pageSize,
+            CancellationToken ct)
         {
-            var queryable = _postRepository.GetActive();
-
             if (!string.IsNullOrWhiteSpace(query))
             {
                 queryable = queryable.Where(p =>
@@ -74,19 +66,18 @@ namespace PostApiService.Services
                 );
             }
 
-            var searchTotalPosts = await queryable.CountAsync(ct);
-
-            var message = searchTotalPosts == 0
+            var totalCount = await queryable.CountAsync(ct);
+            var message = totalCount == 0
                 ? string.Format(PostM.Success.SearchNoResults, query)
-                : string.Format(PostM.Success.SearchResultsFound, query, searchTotalPosts);
+                : string.Format(PostM.Success.SearchResultsFound, query, totalCount);
 
-            if (searchTotalPosts == 0)
+            if (totalCount == 0)
             {
-                return Result<PagedSearchResult<SearchPostListDto>>.Success(new PagedSearchResult<SearchPostListDto>
-                    (query, new List<SearchPostListDto>(), searchTotalPosts, pageNumber, pageSize, message));
+                return Success(new PagedSearchResult<SearchPostListDto>(
+                    query, new List<SearchPostListDto>(), totalCount, pageNumber, pageSize, message));
             }
 
-            var postsWithContent = await queryable
+            var postsFromDb = await queryable
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -98,28 +89,49 @@ namespace PostApiService.Services
                     p.Content,
                     p.Author,
                     CategoryName = p.Category.Name,
-                    CategorySlug = p.Category.Slug,
+                    CategorySlug = p.Category.Slug
                 })
                 .ToListAsync(ct);
 
-            var searchPostList = postsWithContent.Select(item =>
-            {
-                var snippet = _snippetGenerator.CreateSnippet(item.Content, query, 100);
+            var searchPostList = postsFromDb.Select(item => new SearchPostListDto(
+                item.Id,
+                item.Title,
+                item.Slug,
+                _snippetGenerator.CreateSnippet(item.Content, query, 100),
+                item.Author,
+                item.CategoryName ?? ContentConstants.DefaultCategory,
+                item.CategorySlug ?? ContentConstants.DefaultSlugCategory
+            )).ToList();
 
-                return new SearchPostListDto(
-                   item.Id,
-                   item.Title,
-                   item.Slug,
-                   snippet,
-                   item.Author,
-                   item.CategoryName ?? ContentConstants.DefaultCategory,
-                   item.CategorySlug ?? ContentConstants.DefaultSlugCategory
-                   );
+            return Success(new PagedSearchResult<SearchPostListDto>(
+                query, searchPostList, totalCount, pageNumber, pageSize, message));
+        }
 
-            }).ToList();
+        /// <summary>
+        /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
+        /// and the total count of active posts for correct pagination.
+        /// </summary>
+        public async Task<Result<PagedResult<PostListDto>>> GetActivePostsPagedAsync(
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var query = _postRepository.GetActive().OrderByDescending(p => p.CreatedAt);
+            var result = await GetPagedDataAsync(query, pageNumber, pageSize,
+                PostMappingExtensions.ToDtoExpression, ct);
 
-            return Result<PagedSearchResult<SearchPostListDto>>.Success(new PagedSearchResult<SearchPostListDto>
-                (query, searchPostList, searchTotalPosts, pageNumber, pageSize, message));
+            return Success(result);
+        }
+
+        /// <summary>
+        /// Searches for ACTIVE posts based on a query string matching Title, Description, or Content.
+        /// Results are sorted by creation date (descending) and returned with pagination.
+        /// </summary>
+        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchActivePostsPagedAsync(
+            string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
+        {
+            var queryable = _postRepository.GetActive();
+            return await SearchPostsInternalAsync(queryable, query, pageNumber, pageSize, ct);
         }
 
         /// <summary>
@@ -137,20 +149,17 @@ namespace PostApiService.Services
             }
 
             var query = _postRepository.GetActive()
-                .Where(p => p.Category.Slug == slug);
+                .Where(p => p.Category.Slug == slug)
+                .OrderByDescending(p => p.CreatedAt);
 
-            var totalPostCount = await query.CountAsync(ct);
+            var result = await GetPagedDataAsync(
+                query,
+                pageNumber,
+                pageSize,
+                PostMappingExtensions.ToDtoExpression,
+                ct);
 
-            var posts = await query
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .Select(PostMappingExtensions.ToDtoExpression)
-                .ToListAsync(ct);
-
-            var pagedData = new PagedResult<PostListDto>(posts, totalPostCount, pageNumber, pageSize);
-
-            return Result<PagedResult<PostListDto>>.Success(pagedData);
+            return Success(result);
         }
 
         /// <summary>
