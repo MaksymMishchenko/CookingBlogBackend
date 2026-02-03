@@ -124,6 +124,38 @@ namespace PostApiService.Services
         }
 
         /// <summary>
+        /// Retrieves a paginated list of all posts for administrative purposes, with optional filtering by active status.
+        /// Results are sorted by creation date (descending) and return detailed information, including administrative metadata.
+        /// </summary>
+        public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
+            bool? isActive = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var userId = WebContext.UserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized<PagedResult<AdminPostListDto>>();
+            }
+
+            var query = _postRepository.AsQueryable();
+
+            if (isActive.HasValue)
+            {
+                query = query.Where(p => p.IsActive == isActive.Value);
+            }
+
+            query = query.OrderByDescending(p => p.CreatedAt);
+
+            var result = await GetPagedDataAsync(query, pageNumber, pageSize,
+                PostMappingExtensions.ToAdminPostListDto, ct);
+
+            return Success(result);
+        }
+
+        /// <summary>
         /// Searches for ACTIVE posts based on a query string matching Title, Description, or Content.
         /// Results are sorted by creation date (descending) and returned with pagination.
         /// </summary>

@@ -9,6 +9,11 @@ namespace PostApiService.Interfaces
             int pageNumber,
             int pageSize,
             CancellationToken ct = default);
+        Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
+            bool? isActive = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default);
         Task<Result<PagedSearchResult<SearchPostListDto>>> SearchActivePostsPagedAsync
             (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default);
         Task<Result<PagedResult<PostListDto>>> GetActivePostsByCategoryPagedAsync

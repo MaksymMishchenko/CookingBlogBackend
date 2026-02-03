@@ -1,4 +1,5 @@
 ﻿using MockQueryable;
+using NSubstitute;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
@@ -230,6 +231,102 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(expectedSortedPosts.Last().Id, pagedData.Items.Last().Id);
 
             _mockRepository.Received(1).GetActive();
+        }
+
+        [Fact]
+        public async Task GetAdminPostsPagedAsync_ShouldReturnUnauthorized_WhenUserIdIsEmpty()
+        {
+            // Arrange
+            _mockWebContext.UserId.Returns(string.Empty);
+
+            // Act
+            var result = await _postService.GetAdminPostsPagedAsync();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Unauthorized, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
+            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
+
+            _mockRepository.DidNotReceive().AsQueryable();
+        }
+
+        [Theory]
+        [InlineData(true, 10)]
+        [InlineData(false, 5)]
+        [InlineData(null, 15)]
+        public async Task GetAdminPostsPagedAsync_ShouldFilterCorrectlyByIsActive(bool? filterValue, int expectedCount)
+        {
+            // Arrange
+            const int ActivePostsCount = 10;
+            const int InactivePostsCount = 5;
+            const int LargePageSize = 50;
+            var ct = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("admin-id");
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var activePosts = TestDataHelper.GetPostsWithComments
+               (count: ActivePostsCount, categories, commentCount: 1, generateIds: true);
+            activePosts.ForEach(p => p.IsActive = true);
+
+            var inactivePosts = TestDataHelper.GetPostsWithComments
+               (count: InactivePostsCount, categories, commentCount: 1, generateIds: true);
+            inactivePosts.ForEach(p => p.IsActive = false);
+
+            var allPosts = activePosts.Concat(inactivePosts).AsQueryable().BuildMock();
+
+            _mockRepository.AsQueryable().Returns(allPosts);
+
+            // Act
+            var result = await _postService.GetAdminPostsPagedAsync(
+                isActive: filterValue, pageSize: LargePageSize, ct: ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(expectedCount, result.Value!.Items.Count());
+
+            _mockRepository.Received(1).AsQueryable();
+        }
+
+        [Fact]
+        public async Task GetAdminPostsPagedAsync_ShouldMapToAdminPostListDtoWithCorrectFields()
+        {
+            // Arrange
+            const int ExpectedCommentCount = 5;
+            const int PostCount = 1;
+            var ct = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("admin-id");
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(
+                count: PostCount, categories, commentCount: ExpectedCommentCount, generateIds: true);
+            var testPost = posts.First();
+            testPost.IsActive = true;
+
+            var mockQueryable = posts.AsQueryable().BuildMock();
+            _mockRepository.AsQueryable().Returns(mockQueryable);
+
+            // Act
+            var result = await _postService.GetAdminPostsPagedAsync(ct: ct);
+
+            // Assert            
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            var pagedData = result.Value!;
+            var dto = pagedData.Items.First();
+
+            Assert.IsType<AdminPostListDto>(dto);
+
+            Assert.Equal(testPost.Category.Name, dto.CategoryName);
+            Assert.Equal(5, dto.CommentCount);
+            Assert.Equal(testPost.IsActive, dto.IsActive);
+
+            _mockRepository.Received(1).AsQueryable();
         }
 
         [Fact]

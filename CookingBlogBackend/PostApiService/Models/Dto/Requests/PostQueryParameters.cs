@@ -2,5 +2,6 @@
 {
     public class PostQueryParameters : PaginationQueryParameters
     {
+        public bool? isActive { get; set; }
     }
 }

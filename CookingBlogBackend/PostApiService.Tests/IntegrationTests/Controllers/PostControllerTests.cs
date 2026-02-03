@@ -152,6 +152,43 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
+        public async Task GetAdminPostsAsync_ShouldReturnAllPostsForAuthenticatedAdmin()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            _fixture.LoginAsAdmin();
+
+            const int ActiveCount = 2;
+            const int InactiveCount = 1;
+            const int TotalCount = ActiveCount + InactiveCount;
+            const int PageNumber = 1;
+            const int PageSize = 10;
+            bool? filterStatus = null;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(count: TotalCount, categories);
+
+            posts.First().IsActive = false;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.AdminPaginated, filterStatus, PageNumber, PageSize);           
+
+            // Act
+            var response = await _client.GetAsync(url);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<AdminPostListDto>>>();
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            Assert.NotNull(content);
+            Assert.Equal(TotalCount, content.TotalCount);
+
+            Assert.Contains(content.Data!, dto => dto.IsActive == false);
+        }
+
+        [Fact]
         public async Task SearchActivePostsAsync_ShouldReturnBadRequest_WhenQueryIsTooShort()
         {
             // Arrange
@@ -270,7 +307,7 @@ namespace PostApiService.Tests.IntegrationTests
             // Arrange
             const int PageNumber = 1;
             const int PageSize = 10;
-           
+
             var url = string.Format(Posts.GetByCategorySlug, invalidSlug, PageNumber, PageSize);
 
             // Act
@@ -283,7 +320,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             Assert.NotNull(content);
             Assert.False(content.Success);
-            
+
             Assert.True(content.Errors!.Count > 0);
         }
 
@@ -306,7 +343,7 @@ namespace PostApiService.Tests.IntegrationTests
             var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
 
             Assert.NotNull(content);
-            Assert.False(content.Success);           
+            Assert.False(content.Success);
             Assert.True(content.Errors!.ContainsKey("PageNumber") || content.Errors.ContainsKey("PageSize"));
         }
 
