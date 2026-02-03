@@ -118,6 +118,64 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task GetAdminPostsPagedAsync_ShouldReturnBothActiveAndInactivePosts_WhenFilterIsNull()
+        {
+            // Arrange            
+            const int ExpectedPageNumber = 1;
+            const int ExpectedPageSize = 10;
+            const int ActiveCount = 15;
+            const int InactiveCount = 5;
+            const int TotalExpectedCount = ActiveCount + InactiveCount;
+
+            var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
+            {
+                var active = _fixture.GeneratePosts(ActiveCount, cats, 2);
+                active.ForEach(p => {
+                    p.IsActive = true;
+                    p.Id = 0;
+                });
+
+                var inactive = _fixture.GeneratePosts(InactiveCount, cats, 0);                
+                inactive.ForEach(p => {
+                    p.IsActive = false;
+                    p.Id = 0;
+                    p.Slug = $"inactive-{Guid.NewGuid()}";
+                });
+
+                return active.Concat(inactive).ToList();
+            });
+
+            using (context)
+            {                
+                var expectedPosts = allSeededPosts
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Skip((ExpectedPageNumber - 1) * ExpectedPageSize)
+                    .Take(ExpectedPageSize)
+                    .ToList();
+
+                // Act
+                var result = await postService.GetAdminPostsPagedAsync(
+                    isActive: null,
+                    pageNumber: ExpectedPageNumber,
+                    pageSize: ExpectedPageSize);
+
+                // Assert                
+                Assert.True(result.IsSuccess);
+                var data = result.Value!;
+                
+                Assert.Equal(TotalExpectedCount, data.TotalCount);                
+                Assert.Equal(expectedPosts.Count, data.Items.Count());
+                
+                Assert.All(data.Items.Select((item, index) => new { item, index }), x =>
+                {
+                    var expectedPost = expectedPosts[x.index];
+                    Assert.Equal(expectedPost.Id, x.item.Id);
+                    Assert.Equal(expectedPost.IsActive, x.item.IsActive);
+                });
+            }
+        }
+
+        [Fact]
         public async Task SearchActivePostsPagedAsync_ShouldFindOnlyActivePosts_InTitleOrDescriptionOrContent()
         {
             // Arrange            

@@ -18,7 +18,7 @@
                 public const string GetByCategorySlug = "/api/posts/category/{0}?pageNumber={1}&pageSize={2}";
                 public const string Search = "/api/posts/search?queryString={0}&pageNumber={1}&pageSize={2}";
                 public const string Paginated = "/api/posts?pageNumber={0}&pageSize={1}";
-                
+                public const string AdminPaginated = "/api/posts/admin?isActive={0}&pageNumber={1}&pageSize={2}";
             }
 
             public static class Comments

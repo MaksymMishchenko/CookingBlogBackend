@@ -110,6 +110,77 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
+        public async Task GetAdminPostsAsync_ShouldReturnUnauthorized_WhenServiceReturnsUnauthorized()
+        {
+            // Arrange
+            var query = new PostQueryParameters();
+            var ct = CancellationToken.None;
+           
+            var expectedMessage = Auth.LoginM.Errors.UnauthorizedAccess;
+            var expectedErrorCode = Auth.LoginM.Errors.UnauthorizedAccessCode;
+
+            var authError = Result<PagedResult<AdminPostListDto>>.Unauthorized(
+                expectedMessage,
+                expectedErrorCode);
+
+            _mockPostService.GetAdminPostsPagedAsync(
+                    Arg.Any<bool?>(),
+                    Arg.Any<int>(),
+                    Arg.Any<int>(),
+                    ct)
+                .Returns(authError);
+
+            // Act
+            var result = await _postsController.GetAdminPostsAsync(query, ct);
+
+            // Assert
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);            
+            var response = Assert.IsType<ApiResponse>(unauthorizedResult.Value);
+            Assert.Equal(expectedErrorCode, response.ErrorCode);
+            Assert.Equal(expectedMessage, response.Message);
+        }
+
+        [Fact]
+        public async Task GetAdminPostsAsync_ShouldReturnOk_WithAdminPostListDtos()
+        {
+            // Arrange
+            const int ExpectedPageNumber = 1;
+            const int ExpectedPageSize = 10;
+            const int TotalCount = 0;
+            var ct = CancellationToken.None;
+
+            var query = new PostQueryParameters
+            {
+                isActive = false,
+                PageNumber = ExpectedPageNumber,
+                PageSize = ExpectedPageSize
+            };
+
+            var pagedData = new PagedResult<AdminPostListDto>(
+                new List<AdminPostListDto>(),
+                TotalCount,
+                ExpectedPageNumber,
+                ExpectedPageSize);
+
+            var pagedResult = Result<PagedResult<AdminPostListDto>>.Success(pagedData);
+
+            _mockPostService.GetAdminPostsPagedAsync(query.isActive, ExpectedPageNumber, ExpectedPageSize, ct)
+                .Returns(pagedResult);
+
+            // Act
+            var result = await _postsController.GetAdminPostsAsync(query, ct);
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+           
+            await _mockPostService.Received(1).GetAdminPostsPagedAsync(
+                query.isActive,
+                ExpectedPageNumber,
+                ExpectedPageSize,
+                ct);
+        }
+
+        [Fact]
         public async Task SearchActivePostsAsync_ShouldReturnOk_WhenPostsExist()
         {
             // Arrange
