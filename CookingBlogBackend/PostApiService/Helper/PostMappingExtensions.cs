@@ -35,6 +35,16 @@ namespace PostApiService.Helper
             p.UpdatedAt
         );
 
+        public static Expression<Func<Post, AdminPostListDto>> ToAdminPostListDto => p => new AdminPostListDto(
+            p.Id,
+            p.Title,
+            p.Author,
+            p.Category.Name ?? ContentConstants.DefaultCategory,
+            p.CreatedAt,
+            p.IsActive,
+            p.Comments.Count
+        );
+
         public static IQueryable<PostDetailsDto> ToDetailsDtoExpression(this IQueryable<Post> query)
         {
             return query.Select(p => new PostDetailsDto(
@@ -68,7 +78,7 @@ namespace PostApiService.Helper
             p.MetaDescription,
             p.CategoryId,
             p.CreatedAt,
-            p.UpdatedAt
+            p.UpdatedAt            
         );
 
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)
@@ -97,7 +107,7 @@ namespace PostApiService.Helper
                 CreatedAt = DateTime.UtcNow,
                 IsActive = true
             };
-        }        
+        }
 
         public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent)
         {

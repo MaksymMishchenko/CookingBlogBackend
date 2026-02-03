@@ -33,6 +33,19 @@ namespace PostApiService.Controllers
         }
 
         /// <summary>
+        /// Retrieves a paginated list of posts for the administrative dashboard.
+        /// Supports filtering by activity status and includes post statistics (e.g., comment counts).       
+        [HttpGet("admin")]
+        public async Task<IActionResult> GetAdminPostsAsync
+            ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
+        {
+            var result = await _postsService.GetAdminPostsPagedAsync
+                (query.isActive, query.PageNumber, query.PageSize, ct);
+
+            return result.ToActionResult();
+        }
+
+        /// <summary>
         /// Searches for active posts by query. 
         /// Excludes hidden content and provides a snippet of matching text.
         /// </summary>                  
