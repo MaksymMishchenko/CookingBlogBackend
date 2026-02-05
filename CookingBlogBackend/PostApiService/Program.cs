@@ -4,16 +4,22 @@ using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Constants;
 using PostApiService.Middlewares;
 
-
 var builder = WebApplication.CreateBuilder(args);
+
+// TODO: Need to delete or comment out this block before deploying to a real production server.
+// This is only required for local testing of the Production profile to access User Secrets.
+if (builder.Environment.IsProduction())
+{
+    builder.Configuration.AddUserSecrets<Program>();
+}
 
 // Add services to the container.
 
-builder.Host.AddAppLogging();
+builder.Host.AddAppLogging(builder.Configuration);
 
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
-    (ConfigConstants.DefaultConnection);    
+    (ConfigConstants.DefaultConnection);
 
 // Register AddDbContext service to the IServiceCollection
 builder.Services.AddApplicationService(builder.Configuration, connectionString!);
@@ -64,10 +70,14 @@ var app = builder.Build();
 app.UseCors("AllowLocalhost");
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+if ((app.Environment.IsDevelopment() || app.Environment.IsProduction())
+    && !app.Environment.IsEnvironment("Testing"))
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
     await app.SeedUserAsync();
     await app.SeedDataAsync();

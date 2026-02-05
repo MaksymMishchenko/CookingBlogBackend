@@ -9,6 +9,8 @@ using PostApiService.Interfaces;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
+using Serilog.Exceptions;
+using Serilog.Settings.Configuration;
 using System.Security.Claims;
 using System.Text;
 
@@ -18,15 +20,15 @@ namespace PostApiService.Infrastructure
     {
         /// <summary>
         /// Configures Serilog for file and console logging.
-        /// </summary>
-        public static void AddAppLogging(this IHostBuilder host)
+        /// </summary>        
+        public static void AddAppLogging(this IHostBuilder host, IConfiguration configuration)
         {
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Information()
-                .WriteTo.Console()
-                .WriteTo.File("logs/api_validation_.txt",
-                    rollingInterval: RollingInterval.Day,
-                    retainedFileCountLimit: 7)
+            Log.Logger = new LoggerConfiguration()               
+                .ReadFrom.Configuration(configuration)
+                .Enrich.FromLogContext()
+                .Enrich.WithExceptionDetails()
+                .Enrich.WithThreadId()
+                .Enrich.WithMachineName()
                 .CreateLogger();
 
             host.UseSerilog();
