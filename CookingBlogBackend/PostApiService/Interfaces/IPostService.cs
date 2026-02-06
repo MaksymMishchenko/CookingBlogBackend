@@ -5,7 +5,7 @@ namespace PostApiService.Interfaces
 {
     public interface IPostService
     {
-        Task<Result<PagedResult<PostListDto>>> GetActivePostsPagedAsync(
+        Task<Result<PagedResult<PostListDto>>> GetPostsPagedAsync(
             int pageNumber,
             int pageSize,
             CancellationToken ct = default);

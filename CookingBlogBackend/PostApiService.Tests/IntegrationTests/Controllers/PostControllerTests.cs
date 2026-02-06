@@ -21,7 +21,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetActivePostsAsync_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
+        public async Task GetPostsAsync_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
         {
             // Arrange
             var pageNumber = 1;
@@ -42,7 +42,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetActivePostsAsync_ShouldReturnPagedPosts()
+        public async Task GetPostsAsync_ShouldReturnPagedPosts()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -89,7 +89,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetActivePostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
+        public async Task GetPostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -119,7 +119,7 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetActivePostsAsync_ShouldExcludeInactivePosts_WhenMixedContentExists()
+        public async Task GetPostsAsync_ShouldExcludeInactivePosts_WhenMixedContentExists()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();

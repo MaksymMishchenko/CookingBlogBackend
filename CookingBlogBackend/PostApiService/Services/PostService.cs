@@ -111,7 +111,7 @@ namespace PostApiService.Services
         /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
         /// and the total count of active posts for correct pagination.
         /// </summary>
-        public async Task<Result<PagedResult<PostListDto>>> GetActivePostsPagedAsync(
+        public async Task<Result<PagedResult<PostListDto>>> GetPostsPagedAsync(
             int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default)

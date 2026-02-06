@@ -23,10 +23,10 @@ namespace PostApiService.Controllers
         /// </summary>         
         [HttpGet]
         [AllowAnonymous]
-        public async Task<IActionResult> GetActivePostsAsync
+        public async Task<IActionResult> GetPostsAsync
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var result = await _postsService.GetActivePostsPagedAsync
+            var result = await _postsService.GetPostsPagedAsync
                 (query.PageNumber, query.PageSize, ct);
 
             return result.ToActionResult();

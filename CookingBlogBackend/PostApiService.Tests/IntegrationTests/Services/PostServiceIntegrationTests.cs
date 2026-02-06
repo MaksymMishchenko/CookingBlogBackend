@@ -59,7 +59,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetActivePostsPagedAsync_ReturnsOnlyActivePostsWithCorrectCounts()
+        public async Task GetPostsPagedAsync_ReturnsOnlyActivePostsWithCorrectCounts()
         {
             // Arrange            
             const int ExpectedPageNumber = 1;
@@ -96,7 +96,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     .ToList();
 
                 // Act
-                var result = await postService.GetActivePostsPagedAsync(ExpectedPageNumber, ExpectedPageSize);
+                var result = await postService.GetPostsPagedAsync(ExpectedPageNumber, ExpectedPageSize);
 
                 // Assert                
                 Assert.True(result.IsSuccess);
