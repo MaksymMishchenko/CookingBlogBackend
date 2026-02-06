@@ -1,7 +1,6 @@
 ﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
-using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Controllers
 {
@@ -27,7 +26,7 @@ namespace PostApiService.Controllers
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
             var result = await _postsService.GetPostsPagedAsync
-                (query.PageNumber, query.PageSize, ct);
+                (query.Search, query.CategorySlug, query.PageNumber, query.PageSize, ct);
 
             return result.ToActionResult();
         }
@@ -40,38 +39,7 @@ namespace PostApiService.Controllers
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
             var result = await _postsService.GetAdminPostsPagedAsync
-                (query.isActive, query.PageNumber, query.PageSize, ct);
-
-            return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Searches for active posts by query. 
-        /// Excludes hidden content and provides a snippet of matching text.
-        /// </summary>                  
-        [HttpGet("search")]
-        [AllowAnonymous]
-        public async Task<IActionResult> SearchActivePostsAsync
-            ([FromQuery] SearchPostQueryParameters query, CancellationToken ct = default)
-        {
-            var result = await _postsService.SearchActivePostsPagedAsync
-                (query.QueryString, query.PageNumber, query.PageSize, ct);
-
-            return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Retrieves a paginated list of active posts within a category. 
-        /// Excludes hidden content and returns 404 if the category does not exist.
-        /// </summary>
-        [HttpGet("category/{slug}")]
-        [AllowAnonymous]
-        public async Task<IActionResult> GetActivePostsByCategoryAsync
-            ([RegularExpression(@"^[a-z0-9-]+$")] string slug,
-            [FromQuery] PostQueryParameters query, CancellationToken ct = default)
-        {
-            var result = await _postsService.GetActivePostsByCategoryPagedAsync
-                (slug, query.PageNumber, query.PageSize, ct);
+                (query.IsActive, query.PageNumber, query.PageSize, ct);
 
             return result.ToActionResult();
         }

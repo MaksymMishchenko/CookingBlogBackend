@@ -30,6 +30,25 @@ namespace PostApiService.Controllers.Filters
                     return;
                 }
 
+                if (value is PostQueryParameters pqp)
+                {
+                    if (pqp.PageNumber < 1 || pqp.PageSize < 1)
+                    {
+                        ReturnBadRequest(context, nameof(pqp.PageNumber), Global.Validation.InvalidPageParameters);
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(pqp.Search))
+                    {
+                        var searchError = ValidateSearchString(pqp.Search);
+                        if (searchError != null)
+                        {
+                            ReturnBadRequest(context, nameof(pqp.Search), searchError);
+                            return;
+                        }
+                    }                    
+                }
+
                 if (value is PaginationQueryParameters pg)
                 {
                     if (pg.PageNumber < 1 || pg.PageSize < 1)
@@ -40,16 +59,6 @@ namespace PostApiService.Controllers.Filters
                     if (pg.PageSize > 10)
                     {
                         ReturnBadRequest(context, nameof(pg.PageSize), string.Format(Global.Validation.PageSizeExceeded, 10));
-                        return;
-                    }
-                }
-
-                if (value is SearchPostQueryParameters search)
-                {
-                    var error = ValidateSearchString(search.QueryString);
-                    if (error != null)
-                    {
-                        ReturnBadRequest(context, nameof(search.QueryString), error);
                         return;
                     }
                 }
@@ -78,9 +87,7 @@ namespace PostApiService.Controllers.Filters
 
         private string? ValidateSearchString(string? query)
         {
-            if (string.IsNullOrWhiteSpace(query)) return Global.Validation.SearchQueryRequired;
-            if (query.Length < 3) return string.Format(Global.Validation.SearchQueryTooShort, 3);
-            if (query.Length > 100) return string.Format(Global.Validation.SearchQueryTooLong, 100);
+            if (string.IsNullOrWhiteSpace(query)) return null;
             if (!query.Any(char.IsLetterOrDigit)) return Global.Validation.SearchQueryMustContainLetterOrDigit;
             if (!SafeSearchRegex.IsMatch(query)) return Global.Validation.SearchQueryForbiddenCharacters;
 

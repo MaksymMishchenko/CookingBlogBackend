@@ -5,19 +5,19 @@ namespace PostApiService.Interfaces
 {
     public interface IPostService
     {
-        Task<Result<PagedResult<PostListDto>>> GetPostsPagedAsync(
-            int pageNumber,
-            int pageSize,
+        Task<Result<object>> GetPostsPagedAsync(
+            string? search = null,
+            string? categorySlug = null,
+            int pageNumber = 1,
+            int pageSize = 10,
             CancellationToken ct = default);
+
         Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
             bool? isActive = null,
             int pageNumber = 1,
             int pageSize = 10,
-            CancellationToken ct = default);
-        Task<Result<PagedSearchResult<SearchPostListDto>>> SearchActivePostsPagedAsync
-            (string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default);
-        Task<Result<PagedResult<PostListDto>>> GetActivePostsByCategoryPagedAsync
-            (string slug, int pageNumber, int pageSize, CancellationToken ct);
+            CancellationToken ct = default);        
+        
         Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default);
         Task<Result<PostDetailsDto>> GetActivePostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default);
         Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default);
