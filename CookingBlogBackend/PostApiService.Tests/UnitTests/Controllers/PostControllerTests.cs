@@ -20,7 +20,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetActivePostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
+        public async Task GetPostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
         {
             // Arrange
             const int TotalPostCount = 0;
@@ -36,14 +36,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
 
-            _mockPostService.GetActivePostsPagedAsync(
+            _mockPostService.GetPostsPagedAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>())
                 .Returns(pagedResult);
 
             // Act
-            var result = await _postsController.GetActivePostsAsync(queryParameters);
+            var result = await _postsController.GetPostsAsync(queryParameters);
 
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -51,14 +51,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
 
             await _mockPostService.Received(1)
-                .GetActivePostsPagedAsync(
+                .GetPostsPagedAsync(
                 Arg.Any<int>(),
                 Arg.Any<int>(),
                 Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetActivePostsAsync_ShouldReturnOk_WhenPostsExist()
+        public async Task GetPostsAsync_ShouldReturnOk_WhenPostsExist()
         {
             // Arrange
             const int MockTotalPostsCount = 50;
@@ -80,14 +80,14 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
 
-            _mockPostService.GetActivePostsPagedAsync(
+            _mockPostService.GetPostsPagedAsync(
                 Arg.Is(ExpectedPageNumber),
                 Arg.Is(ExpectedPageSize),
                 token)
                 .Returns(pagedResult);
 
             // Act
-            var result = await _postsController.GetActivePostsAsync(queryParameters, token);
+            var result = await _postsController.GetPostsAsync(queryParameters, token);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
@@ -103,7 +103,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(MockTotalPostsCount, response.TotalCount);
 
             await _mockPostService.Received(1)
-                .GetActivePostsPagedAsync(
+                .GetPostsPagedAsync(
                 Arg.Is(ExpectedPageNumber),
                 Arg.Is(ExpectedPageSize),
                 token);
