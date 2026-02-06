@@ -1,5 +1,4 @@
 ﻿using MockQueryable;
-using NSubstitute;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
@@ -30,207 +29,85 @@ namespace PostApiService.Tests.UnitTests
             _postService = new PostService(_mockRepository, _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockSnippetGenerator);
         }
 
-        [Fact]
-        public async Task GetPostsPagedAsync_ShouldReturnCorrectPageSortedByDateDescending()
+        [Theory]
+        [InlineData(1, 2, 2, 5)]
+        [InlineData(3, 2, 1, 5)]
+        public async Task GetPostsPagedAsync_Pagination_ShouldReturnCorrectSubsets(
+        int page, int size, int expectedItemsCount, int totalInDb)
         {
-            // Arrange            
-            const int PageNumber = 1;
-            const int PageSize = 10;
-            const int ActiveCount = 15;
-            const int InactiveCount = 5;
-            const int ExpectedCommentCountPerPost = 11;
-            var token = CancellationToken.None;
-
+            // Arrange
             var categories = TestDataHelper.GetCulinaryCategories();
-            var activePosts = TestDataHelper.GetPostsWithComments(count: ActiveCount, categories, commentCount: ExpectedCommentCountPerPost);
-            activePosts.ForEach(p => p.IsActive = true);
+            var posts = TestDataHelper.GetPostsWithComments(totalInDb, categories, generateIds: true);
+            var mockQuery = posts.AsQueryable().BuildMock();
 
-            var inactivePosts = TestDataHelper.GetPostsWithComments(count: InactiveCount, categories, commentCount: ExpectedCommentCountPerPost);
-            inactivePosts.ForEach(p => p.IsActive = false);
-
-            var allPosts = activePosts.Concat(inactivePosts).ToList();
-
-            var activeQueryableMock = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(activeQueryableMock);
+            _mockRepository.GetFilteredPosts(null, true, null).Returns(mockQuery);
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize, token);
+            var result = await _postService.GetPostsPagedAsync(pageNumber: page, pageSize: size);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var pagedData = result.Value!;
 
-            Assert.Equal(ActiveCount, pagedData.TotalCount);
+            var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);
 
-            var expectedSortedActivePosts = activePosts
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((PageNumber - 1) * PageSize)
-                .Take(PageSize)
-                .ToList();
-
-            Assert.All(pagedData.Items.Select((postDto, index) => (postDto, index)), x =>
-            {
-                var expectedPost = expectedSortedActivePosts[x.index];
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, x.postDto, ExpectedCommentCountPerPost);
-            });
-
-            _mockRepository.Received(1).GetActive();
+            Assert.Equal(expectedItemsCount, data.Items.Count());
+            Assert.Equal(totalInDb, data.TotalCount);
         }
 
         [Fact]
-        public async Task GetPostsPagedAsync_ShouldReturnSecondPage_WhenMultiplePagesExist()
+        public async Task GetPostsPagedAsync_SearchMode_ShouldReturnSearchPostListDto()
         {
             // Arrange
-            const int PageNumber = 2;
-            const int PageSize = 10;
-            const int ActivePostsCount = 23;
-            const int InactivePostsCount = 5;
-            const int ExpectedCommentCountPerPost = 7;
-
+            const string SearchTerm = "pizza";
             var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(3, categories);
+            var mockQuery = posts.AsQueryable().BuildMock();
 
-            var activePosts = TestDataHelper.GetPostsWithComments(
-                count: ActivePostsCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
-            activePosts.ForEach(p => p.IsActive = true);
-
-            var inactivePosts = TestDataHelper.GetPostsWithComments(
-                count: InactivePostsCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
-            inactivePosts.ForEach(p => p.IsActive = false);
-
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
+            _mockRepository.GetFilteredPosts(SearchTerm, true, null).Returns(mockQuery);
+            _mockSnippetGenerator.CreateSnippet(Arg.Any<string>(), SearchTerm, 100).Returns("...pizza...");
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(search: SearchTerm);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var pagedData = result.Value!;
 
-            Assert.Equal(PageSize, pagedData.Items.Count());
-            Assert.Equal(ActivePostsCount, pagedData.TotalCount);
-
-            var sortedActivePosts = activePosts.OrderByDescending(p => p.CreatedAt).ToList();
-            var expectedFirstPostOnSecondPage = sortedActivePosts.Skip(PageSize).First();
-            var unexpectedPostFromFirstPage = sortedActivePosts.First();
-
-            Assert.Equal(expectedFirstPostOnSecondPage.Id, pagedData.Items.First().Id);
-            Assert.NotEqual(unexpectedPostFromFirstPage.Id, pagedData.Items.First().Id);
-
-            _mockRepository.Received(1).GetActive();
+            var data = Assert.IsType<PagedSearchResult<SearchPostListDto>>(result.Value);
+            Assert.Equal(SearchTerm, data.Query);
+            Assert.All(data.Items, item => Assert.NotEmpty(item.SearchSnippet));
         }
 
         [Fact]
-        public async Task GetPostsPagedAsync_ShouldReturnLastPartialPage()
+        public async Task GetPostsPagedAsync_CategoryMode_ShouldCheckExistenceAndReturnPosts()
         {
             // Arrange
-            const int PageNumber = 3;
-            const int PageSize = 10;
-            const int ExpectedTotalPostCount = 25;
-            const int ExpectedCommentCountPerPost = 5;
-            const int ExpectedCountOnPage = 5;
+            const string CategorySlug = "cooking";
+            _mockCategoryService.ExistsBySlugAsync(CategorySlug, Arg.Any<CancellationToken>()).Returns(true);
 
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var testPosts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPostCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
-            testPosts.ForEach(p => p.IsActive = true);
-
-            var mockQueryable = testPosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
+            var mockQuery = new List<Post>().AsQueryable().BuildMock();
+            _mockRepository.GetFilteredPosts(null, true, CategorySlug).Returns(mockQuery);
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(categorySlug: CategorySlug);
 
             // Assert
             Assert.True(result.IsSuccess);
-            var pagedData = result.Value!;
-
-            Assert.Equal(ExpectedCountOnPage, pagedData.Items.Count());
-            Assert.Equal(ExpectedTotalPostCount, pagedData.TotalCount);
-
-            var expectedPostsOnPage = testPosts
-                .OrderByDescending(p => p.CreatedAt)
-                .Skip((PageNumber - 1) * PageSize)
-                .Take(PageSize)
-                .ToList();
-
-            Assert.Equal(
-                expectedPostsOnPage.Select(p => p.Id),
-                pagedData.Items.Select(p => p.Id)
-            );
-
-            _mockRepository.Received(1).GetActive();
+            await _mockCategoryService.Received(1).ExistsBySlugAsync(CategorySlug, Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetPostsPagedAsync_ShouldReturnEmptyList_WhenPageNumberIsTooLarge()
+        public async Task GetPostsPagedAsync_InvalidCategory_ShouldReturnNotFound()
         {
             // Arrange
-            const int PageNumber = 5;
-            const int PageSize = 10;
-            const int ActivePostsCount = 25;
-            const int ExpectedCommentCountPerPost = 1;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var activePosts = TestDataHelper.GetPostsWithComments(
-                count: ActivePostsCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
-            activePosts.ForEach(p => p.IsActive = true);
-
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
+            const string FakeCategory = "fake-cat";
+            _mockCategoryService.ExistsBySlugAsync(FakeCategory, Arg.Any<CancellationToken>()).Returns(false);
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(categorySlug: FakeCategory);
 
             // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var pagedData = result.Value!;
-
-            Assert.Empty(pagedData.Items);
-            Assert.Equal(ActivePostsCount, pagedData.TotalCount);
-
-            _mockRepository.Received(1).GetActive();
-        }
-
-        [Fact]
-        public async Task GetPostsPagedAsync_ShouldReturnFullPage_WhenTotalCountEqualsPageSize()
-        {
-            // Arrange
-            const int PageNumber = 1;
-            const int PageSize = 15;
-            const int ActivePostsCount = 15;
-            const int ExpectedCommentCountPerPost = 5;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var activePosts = TestDataHelper.GetPostsWithComments(
-                count: ActivePostsCount, categories, commentCount: ExpectedCommentCountPerPost, generateIds: true);
-            activePosts.ForEach(p => p.IsActive = true);
-
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
-
-            // Act
-            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var pagedData = result.Value!;
-
-            Assert.Equal(ActivePostsCount, pagedData.Items.Count());
-            Assert.Equal(ActivePostsCount, pagedData.TotalCount);
-
-            var expectedSortedPosts = activePosts.OrderByDescending(p => p.CreatedAt).ToList();
-            Assert.Equal(expectedSortedPosts.First().Id, pagedData.Items.First().Id);
-            Assert.Equal(expectedSortedPosts.Last().Id, pagedData.Items.Last().Id);
-
-            _mockRepository.Received(1).GetActive();
+            Assert.False(result.IsSuccess);
+            Assert.Equal(PostM.Errors.CategoryNotFoundCode, result.ErrorCode);
         }
 
         [Fact]
@@ -327,311 +204,6 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(testPost.IsActive, dto.IsActive);
 
             _mockRepository.Received(1).AsQueryable();
-        }
-
-        [Fact]
-        public async Task SearchActivePostsPagedAsync_ShouldReturn_PagedSearchPosts_WithTotalCount()
-        {
-            // Arrange
-            const string Query = "Chili";
-            const int PageNumber = 2;
-            const int PageSize = 2;
-            var token = CancellationToken.None;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-
-            var activePosts = allTestPosts.Where(p => p.IsActive).ToList();
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
-
-            var expectedFilteredPosts = activePosts
-                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
-                            p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
-                            p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(p => p.CreatedAt)
-                .ToList();
-
-            int expectedTotalCount = expectedFilteredPosts.Count;
-            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, expectedTotalCount);
-
-            const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
-            _mockSnippetGenerator
-                .CreateSnippet(Arg.Any<string>(), Arg.Is(Query), Arg.Is(100))
-                .Returns(ExpectedSnippet);
-
-            // Act
-            var result = await _postService.SearchActivePostsPagedAsync(Query, PageNumber, PageSize, token);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var data = result.Value!;
-
-            Assert.Equal(expectedTotalCount, data.TotalSearchCount);
-            Assert.Equal(expectedMessage, data.Message);
-            Assert.Equal(Query, data.Query);
-
-            var expectedCountOnPage = expectedFilteredPosts.Skip((PageNumber - 1) * PageSize).Take(PageSize).Count();
-            Assert.Equal(expectedCountOnPage, data.Items.Count());
-
-            if (expectedCountOnPage > 0)
-            {
-                var expectedPostModel = expectedFilteredPosts.Skip((PageNumber - 1) * PageSize).First();
-                var actualDto = data.Items.First();
-
-                Assert.Equal(expectedPostModel.Id, actualDto.Id);
-                Assert.Equal(ExpectedSnippet, actualDto.SearchSnippet);
-                TestDataHelper.AssertSearchActivePostsPagedAsync(expectedPostModel, actualDto);
-            }
-
-            _mockRepository.Received(1).GetActive();
-
-            _mockSnippetGenerator.Received(expectedCountOnPage).CreateSnippet(
-                Arg.Any<string>(),
-                Arg.Is(Query),
-                Arg.Is(100)
-            );
-        }
-
-        [Fact]
-        public async Task SearchActivePostsPagedAsync_ShouldReturn_FirstPage_WithDefaultParameters()
-        {
-            // Arrange
-            const string Query = "Chili";
-            const int ExpectedActiveMatchCount = 3;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-
-            var activePosts = allTestPosts.Where(p => p.IsActive).ToList();
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
-
-            const string ExpectedSnippet = "Tips for brioche buns, sharp cheddar, and...";
-            _mockSnippetGenerator
-                .CreateSnippet(Arg.Any<string>(), Arg.Is(Query), Arg.Is(100))
-                .Returns(ExpectedSnippet);
-
-            var expectedSortedPosts = activePosts
-                .Where(p => p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase)
-                         || p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase)
-                         || p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase))
-                .OrderByDescending(p => p.CreatedAt)
-                .ToList();
-
-            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, ExpectedActiveMatchCount);
-
-            // Act            
-            var result = await _postService.SearchActivePostsPagedAsync(Query);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var data = result.Value!;
-
-            Assert.Equal(ExpectedActiveMatchCount, data.TotalSearchCount);
-            Assert.Equal(expectedMessage, data.Message);
-            Assert.Equal(Query, data.Query);
-            Assert.Equal(ExpectedActiveMatchCount, data.Items.Count());
-
-            Assert.Equal(expectedSortedPosts.First().Id, data.Items.First().Id);
-
-            Assert.All(data.Items.Select((searchPostDto, index) => (searchPostDto, index)), x =>
-            {
-                var expectedPost = expectedSortedPosts[x.index];
-                TestDataHelper.AssertSearchActivePostsPagedAsync(expectedPost, x.searchPostDto);
-                Assert.Equal(ExpectedSnippet, x.searchPostDto.SearchSnippet);
-            });
-
-            _mockRepository.Received(1).GetActive();
-
-            _mockSnippetGenerator.Received(ExpectedActiveMatchCount).CreateSnippet(
-                Arg.Any<string>(),
-                Arg.Is(Query),
-                Arg.Is(100)
-            );
-        }
-
-        [Fact]
-        public async Task SearchActivePostsPagedAsync_ShouldReturn_EmptyPostsList_WithZeroTotalCount()
-        {
-            // Arrange
-            const string Query = "Not Found Query";
-            const int ExpectedTotalCount = 0;
-            const int PageNumber = 1;
-            const int PageSize = 10;
-
-            var expectedMessage = string.Format(PostM.Success.SearchNoResults, Query);
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-            var activePosts = allTestPosts.Where(p => p.IsActive).ToList();
-
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
-
-            // Act
-            var result = await _postService.SearchActivePostsPagedAsync(Query, PageNumber, PageSize);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var data = result.Value!;
-
-            Assert.NotNull(data);
-            Assert.Empty(data.Items);
-
-            Assert.Equal(ExpectedTotalCount, data.TotalSearchCount);
-            Assert.Equal(expectedMessage, data.Message);
-            Assert.Equal(Query, data.Query);
-
-            _mockRepository.Received(1).GetActive();
-
-            _mockSnippetGenerator.DidNotReceive().CreateSnippet(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<int>());
-        }
-
-        [Fact]
-        public async Task SearchActivePostsPagedAsync_ShouldReturn_EmptyItems_ButCorrectTotalCount_WhenPageNumberIsOutOfRange()
-        {
-            // Arrange
-            const string Query = "Chili";
-            const int PageNumber = 10;
-            const int PageSize = 2;
-            const int ExpectedActiveMatchCount = 3;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var allTestPosts = TestDataHelper.GetSearchedPost(categories);
-
-            var activePosts = allTestPosts.Where(p => p.IsActive).ToList();
-            var mockQueryable = activePosts.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockQueryable);
-
-            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, ExpectedActiveMatchCount);
-
-            // Act
-            var result = await _postService.SearchActivePostsPagedAsync(Query, PageNumber, PageSize);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            var data = result.Value!;
-
-            Assert.Empty(data.Items);
-            Assert.Equal(ExpectedActiveMatchCount, data.TotalSearchCount);
-            Assert.Equal(expectedMessage, data.Message);
-            Assert.Equal(Query, data.Query);
-
-            _mockSnippetGenerator.DidNotReceive().CreateSnippet(
-                Arg.Any<string>(),
-                Arg.Any<string>(),
-                Arg.Any<int>());
-
-            _mockRepository.Received(1).GetActive();
-        }
-
-        [Fact]
-        public async Task GetActivePostsByCategoryPagedAsync_ShouldReturnNotFound_IfCategoryDoesNotExist()
-        {
-            // Arrange
-            const string slug = "non-existent-category";
-            var ct = CancellationToken.None;
-
-            _mockCategoryService.ExistsBySlugAsync(slug, ct)
-                .Returns(false);
-
-            // Act
-            var result = await _postService.GetActivePostsByCategoryPagedAsync(slug, 1, 10, ct);
-
-            // Assert
-            Assert.False(result.IsSuccess);
-            Assert.Equal(ResultStatus.NotFound, result.Status);
-            Assert.Equal(CategoryM.Errors.CategoryNotFound, result.Message);
-            Assert.Equal(PostM.Errors.CategoryNotFoundCode, result.ErrorCode);
-
-            _mockRepository.DidNotReceive().GetActive();
-
-            await _mockCategoryService.Received(1).ExistsBySlugAsync(slug, ct);
-        }
-
-        [Fact]
-        public async Task GetActivePostsByCategoryPagedAsync_ShouldReturnListOfActivePosts_IfCategoryExists()
-        {
-            // Arrange
-            var myCategory = new Category { Id = 7, Name = "Breakfast", Slug = "breakfast" };
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var targetActivePosts = TestDataHelper.GetPostsWithComments(3, categories, forcedCategory: myCategory);
-            targetActivePosts.ForEach(p => p.IsActive = true);
-
-            var otherActivePosts = TestDataHelper.GetPostsWithComments(2, categories);
-            otherActivePosts.ForEach(p => p.IsActive = true);
-
-            var allActivePosts = targetActivePosts.Concat(otherActivePosts).ToList();
-
-            _mockCategoryService.ExistsBySlugAsync(myCategory.Slug, Arg.Any<CancellationToken>())
-                .Returns(true);
-
-            _mockRepository.GetActive().Returns(allActivePosts.AsQueryable().BuildMock());
-
-            // Act
-            var result = await _postService.GetActivePostsByCategoryPagedAsync(myCategory.Slug, 1, 10);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            var data = result.Value!;
-
-            Assert.Equal(targetActivePosts.Count, data.TotalCount);
-            Assert.All(data.Items, item => Assert.Equal(myCategory.Slug, item.CategorySlug));
-
-            _mockRepository.Received(1).GetActive();
-
-            await _mockCategoryService.Received(1).ExistsBySlugAsync(
-                myCategory.Slug, Arg.Any<CancellationToken>());
-        }
-
-        [Theory]
-        [InlineData(1, 2, 2)]
-        [InlineData(2, 2, 1)]
-        public async Task GetActivePostsByCategoryPagedAsync_ShouldPaginateCorrectlyWithinCategory(
-            int pageNumber, int pageSize, int expectedCount)
-        {
-            // Arrange
-            var myCategory = new Category { Id = 7, Name = "Breakfast", Slug = "breakfast" };
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var targetActivePosts = TestDataHelper.GetPostsWithComments(3, categories, forcedCategory: myCategory);
-            targetActivePosts.ForEach(p => p.IsActive = true);
-
-            var otherActivePosts = TestDataHelper.GetPostsWithComments(2, categories);
-            otherActivePosts.ForEach(p => p.IsActive = true);
-
-            var allActivePosts = targetActivePosts.Concat(otherActivePosts).ToList();
-
-            _mockCategoryService.ExistsBySlugAsync(myCategory.Slug, Arg.Any<CancellationToken>())
-                .Returns(true);
-
-            _mockRepository.GetActive().Returns(allActivePosts.AsQueryable().BuildMock());
-
-            // Act
-            var result = await _postService.GetActivePostsByCategoryPagedAsync(myCategory.Slug, pageNumber, pageSize);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            var data = result.Value!;
-
-            Assert.Equal(3, data.TotalCount);
-            Assert.Equal(expectedCount, data.Items.Count());
-
-            Assert.All(data.Items, item => Assert.Equal(myCategory.Slug, item.CategorySlug));
-
-            _mockRepository.Received(1).GetActive();
-            await _mockCategoryService.Received(1).ExistsBySlugAsync(
-                myCategory.Slug, Arg.Any<CancellationToken>());
         }
 
         [Fact]

@@ -1,13 +1,13 @@
 {
   "info": {
-    "_postman_id": "39861682-aa8e-4159-9abe-03988a763912",
+    "_postman_id": "4117c7ac-9b4f-4fe5-80c2-b9f234efdcc1",
     "name": "CookingBlog Integration Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "40053538"
   },
   "item": [
     {
-      "name": "Public",
+      "name": "Happy Path Scenario",
       "item": [
         {
           "name": "Register",
@@ -532,55 +532,7 @@
           "response": []
         },
         {
-          "name": "SearchActivePosts",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);   \r",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/posts/search?queryString=lorem&pageNumber=10&pageSize=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "posts",
-                "search"
-              ],
-              "query": [
-                {
-                  "key": "queryString",
-                  "value": "lorem"
-                },
-                {
-                  "key": "pageNumber",
-                  "value": "10"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GetActivePosts",
+          "name": "GetPosts",
           "event": [
             {
               "listen": "test",
@@ -603,7 +555,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts?pageNumber=10&pageSize=10",
+              "raw": "{{baseUrl}}/api/posts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -613,67 +565,20 @@
               ],
               "query": [
                 {
-                  "key": "pageNumber",
-                  "value": "10"
+                  "key": "search",
+                  "value": "lorem"
                 },
                 {
-                  "key": "pageSize",
-                  "value": "10"
-                }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GetActivePostsByCategory",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "protocolProfileBehavior": {
-            "disableBodyPruning": true
-          },
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "GET",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": ""
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/Posts/category/{{temp_category_slug}}?pageNumber=1&pageSize=5",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "Posts",
-                "category",
-                "{{temp_category_slug}}"
-              ],
-              "query": [
+                  "key": "categorySlug",
+                  "value": "breakfast"
+                },
                 {
                   "key": "pageNumber",
                   "value": "1"
                 },
                 {
                   "key": "pageSize",
-                  "value": "5"
+                  "value": "7"
                 }
               ]
             }
@@ -1022,128 +927,6 @@
                 "api",
                 "Category",
                 "{{temp_category_id}}"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Admin",
-      "item": [
-        {
-          "name": "Admin Login",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {\r",
-                  "    var jsonResponse = pm.response.json();    \r",
-                  "    pm.environment.set(\"jwtToken\", jsonResponse.data.token); \r",
-                  "} else {\r",
-                  "    console.error(\"Error fetching token: \", pm.response.status);\r",
-                  "}\r",
-                  "\r",
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
-                "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n  \"username\": \"admin\",\r\n  \"password\": \"-Rtyuehe1\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/Auth/Login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "Auth",
-                "Login"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "GetAdminPosts",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            }
-          ],
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{jwtToken}}",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/posts/admin?isActive=true&pageNumber=10&pageSize=10",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "posts",
-                "admin"
-              ],
-              "query": [
-                {
-                  "key": "isActive",
-                  "value": "true"
-                },
-                {
-                  "key": "pageNumber",
-                  "value": "10"
-                },
-                {
-                  "key": "pageSize",
-                  "value": "10"
-                }
               ]
             }
           },

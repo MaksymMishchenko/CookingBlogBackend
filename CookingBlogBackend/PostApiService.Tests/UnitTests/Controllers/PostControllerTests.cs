@@ -20,93 +20,80 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetPostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
+        public async Task GetPostsAsync_InNormalMode_ShouldReturnOkWithPagedResult()
         {
-            // Arrange
-            const int TotalPostCount = 0;
-            var queryParameters = new PostQueryParameters { PageNumber = 2, PageSize = 10 };
+            // Arrange            
+            var queryParams = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
+            var mockData = new PagedResult<PostListDto>(new List<PostListDto>(), 0, 1, 10);
 
-            var posts = TestDataHelper.GetEmptyPostListDtos();
-
-            var pagedData = new PagedResult<PostListDto>(
-                posts,
-                TotalPostCount,
-                queryParameters.PageNumber,
-                queryParameters.PageSize);
-
-            var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
-
-            _mockPostService.GetPostsPagedAsync(
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>())
-                .Returns(pagedResult);
+            _mockPostService.GetPostsPagedAsync(null, null, 1, 10, Arg.Any<CancellationToken>())
+                .Returns(Result<object>.Success(mockData));
 
             // Act
-            var result = await _postsController.GetPostsAsync(queryParameters);
+            var result = await _postsController.GetPostsAsync(queryParams);
 
             // Assert           
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
-            Assert.True(response.Success);
 
-            await _mockPostService.Received(1)
-                .GetPostsPagedAsync(
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>());
+            Assert.True(response.Success);
+            Assert.Equal(0, response.TotalCount);
+            Assert.Equal(1, response.PageNumber);
+
+            Assert.IsAssignableFrom<IEnumerable<PostListDto>>(response.Data);
+            Assert.Empty(response.Data);
+
+            await _mockPostService.Received(1).GetPostsPagedAsync(null, null, 1, 10, Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetPostsAsync_ShouldReturnOk_WhenPostsExist()
+        public async Task GetPostsAsync_InSearchMode_ShouldReturnOkWithPagedSearchResult()
         {
             // Arrange
-            const int MockTotalPostsCount = 50;
-            const int ExpectedPageNumber = 3;
-            const int ExpectedPageSize = 10;
+            const string SearchTerm = "pizza";
+            const string ExpectedMessage = "Results found";
+            var queryParams = new PostQueryParameters { Search = SearchTerm, PageNumber = 1, PageSize = 5 };
+            var mockSearchData = new PagedSearchResult<SearchPostListDto>(
+                SearchTerm, new List<SearchPostListDto>(), 0, 1, 5, "Results found");
 
-            var token = CancellationToken.None;
-
-            var queryParameters = new PostQueryParameters { PageNumber = ExpectedPageNumber, PageSize = ExpectedPageSize };
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var mockPosts = TestDataHelper.GetPostListDtos(MockTotalPostsCount, categories);
-
-            var pagedData = new PagedResult<PostListDto>(
-                mockPosts,
-                MockTotalPostsCount,
-                queryParameters.PageNumber,
-                queryParameters.PageSize);
-
-            var pagedResult = Result<PagedResult<PostListDto>>.Success(pagedData);
-
-            _mockPostService.GetPostsPagedAsync(
-                Arg.Is(ExpectedPageNumber),
-                Arg.Is(ExpectedPageSize),
-                token)
-                .Returns(pagedResult);
+            _mockPostService.GetPostsPagedAsync(SearchTerm, null, 1, 5, Arg.Any<CancellationToken>())
+                .Returns(Result<object>.Success(mockSearchData));
 
             // Act
-            var result = await _postsController.GetPostsAsync(queryParameters, token);
+            var result = await _postsController.GetPostsAsync(queryParams);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
             var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
 
-
-            Assert.NotNull(response);
             Assert.True(response.Success);
-            Assert.NotNull(response.Data);
 
-            Assert.Equal(ExpectedPageNumber, response.PageNumber);
-            Assert.Equal(ExpectedPageSize, response.PageSize);
-            Assert.Equal(MockTotalPostsCount, response.TotalCount);
+            Assert.Equal(SearchTerm, response.SearchQuery);
+            Assert.Equal(ExpectedMessage, response.Message);
+            Assert.Equal(0, response.TotalCount);
+            Assert.Equal(1, response.PageNumber);
 
-            await _mockPostService.Received(1)
-                .GetPostsPagedAsync(
-                Arg.Is(ExpectedPageNumber),
-                Arg.Is(ExpectedPageSize),
-                token);
+            Assert.IsAssignableFrom<IEnumerable<SearchPostListDto>>(response.Data);
+            Assert.Empty(response.Data);
+        }
+
+        [Fact]
+        public async Task GetPostsAsync_ShouldReturnNotFound_WhenServiceReturnsNotFound()
+        {
+            // Arrange
+            var queryParams = new PostQueryParameters { CategorySlug = "invalid-cat" };
+            _mockPostService.GetPostsPagedAsync(null, "invalid-cat", Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns(Result<object>.NotFound(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode));
+
+            // Act
+            var result = await _postsController.GetPostsAsync(queryParams);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(PostM.Errors.CategoryNotFoundCode, response.ErrorCode);
         }
 
         [Fact]
@@ -115,7 +102,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             // Arrange
             var query = new PostQueryParameters();
             var ct = CancellationToken.None;
-           
+
             var expectedMessage = Auth.LoginM.Errors.UnauthorizedAccess;
             var expectedErrorCode = Auth.LoginM.Errors.UnauthorizedAccessCode;
 
@@ -134,7 +121,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.GetAdminPostsAsync(query, ct);
 
             // Assert
-            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);            
+            var unauthorizedResult = Assert.IsType<UnauthorizedObjectResult>(result);
             var response = Assert.IsType<ApiResponse>(unauthorizedResult.Value);
             Assert.Equal(expectedErrorCode, response.ErrorCode);
             Assert.Equal(expectedMessage, response.Message);
@@ -151,7 +138,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var query = new PostQueryParameters
             {
-                isActive = false,
+                IsActive = false,
                 PageNumber = ExpectedPageNumber,
                 PageSize = ExpectedPageSize
             };
@@ -164,7 +151,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<AdminPostListDto>>.Success(pagedData);
 
-            _mockPostService.GetAdminPostsPagedAsync(query.isActive, ExpectedPageNumber, ExpectedPageSize, ct)
+            _mockPostService.GetAdminPostsPagedAsync(query.IsActive, ExpectedPageNumber, ExpectedPageSize, ct)
                 .Returns(pagedResult);
 
             // Act
@@ -172,206 +159,12 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(result);
-           
+
             await _mockPostService.Received(1).GetAdminPostsPagedAsync(
-                query.isActive,
+                query.IsActive,
                 ExpectedPageNumber,
                 ExpectedPageSize,
                 ct);
-        }
-
-        [Fact]
-        public async Task SearchActivePostsAsync_ShouldReturnOk_WhenPostsExist()
-        {
-            // Arrange
-            const int ExpectedPageNumber = 1;
-            const int ExpectedPageSize = 3;
-            const int TotalCount = 3;
-            const string Query = "Chili";
-            var expectedMessage = string.Format(PostM.Success.SearchResultsFound, Query, TotalCount);
-
-            var token = CancellationToken.None;
-
-            var queryParameters = new SearchPostQueryParameters
-            {
-                PageNumber = ExpectedPageNumber,
-                PageSize = ExpectedPageSize,
-                QueryString = Query
-            };
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetSearchedPostListDtos(categories);
-
-            var searchPagedResult = new PagedSearchResult<SearchPostListDto>(
-                Query,
-                posts,
-                TotalCount,
-                ExpectedPageNumber,
-                ExpectedPageSize,
-                expectedMessage);
-
-            var serviceResult = Result<PagedSearchResult<SearchPostListDto>>.Success(searchPagedResult);
-
-            _mockPostService.SearchActivePostsPagedAsync(
-                Query,
-                ExpectedPageNumber,
-                ExpectedPageSize,
-                token)
-                .Returns(serviceResult);
-
-            // Act
-            var result = await _postsController.SearchActivePostsAsync(queryParameters, token);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
-
-            Assert.True(response.Success);
-            Assert.Equal(expectedMessage, response.Message);
-            Assert.Same(posts, response.Data);
-
-            await _mockPostService.Received(1).SearchActivePostsPagedAsync(
-                Query,
-                ExpectedPageNumber,
-                ExpectedPageSize,
-                token);
-        }
-
-        [Fact]
-        public async Task SearchActivePostsAsync_ShouldReturnOkWithEmptyList_WhenNoPostsMatch()
-        {
-            // Arrange
-            const string Query = "NonExistent";
-            const int ExpectedTotalCount = 0;
-            var queryParameters = new SearchPostQueryParameters
-            {
-                QueryString = Query,
-                PageNumber = 1,
-                PageSize = 10
-            };
-
-            var token = CancellationToken.None;
-
-            var expectedMessage = string.Format(PostM.Success.SearchNoResults, Query);
-
-            var searchPagedResult = new PagedSearchResult<SearchPostListDto>(
-                Query,
-                new List<SearchPostListDto>(),
-                ExpectedTotalCount,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                expectedMessage);
-
-            var serviceResult = Result<PagedSearchResult<SearchPostListDto>>.Success(searchPagedResult);
-
-            _mockPostService.SearchActivePostsPagedAsync(
-                Query,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                token)
-                .Returns(serviceResult);
-
-            // Act
-            var result = await _postsController.SearchActivePostsAsync(queryParameters, token);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
-
-            Assert.True(response.Success);
-            Assert.Equal(expectedMessage, response.Message);
-            Assert.Same(searchPagedResult.Items, response.Data);
-
-            await _mockPostService.Received(1).SearchActivePostsPagedAsync(
-                Query,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                token);
-        }
-
-        [Fact]
-        public async Task GetActivePostsByCategoryAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
-        {
-            // Arrange
-            const string InvalidSlug = "non-existent-category";
-            var queryParameters = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
-            var token = CancellationToken.None;
-
-            var expectedErrorMessage = CategoryM.Errors.CategoryNotFound;
-            var expectedErrorCode = PostM.Errors.CategoryNotFoundCode;
-
-            var serviceResult = Result<PagedResult<PostListDto>>.NotFound(
-                expectedErrorMessage,
-                expectedErrorCode);
-
-            _mockPostService.GetActivePostsByCategoryPagedAsync(
-                InvalidSlug,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                token)
-                .Returns(serviceResult);
-
-            // Act
-            var result = await _postsController.GetActivePostsByCategoryAsync(InvalidSlug, queryParameters, token);
-
-            // Assert
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
-            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
-
-            Assert.False(response.Success);
-            Assert.Equal(expectedErrorMessage, response.Message);
-            Assert.Equal(expectedErrorCode, response.ErrorCode);
-
-            await _mockPostService.Received(1).GetActivePostsByCategoryPagedAsync(
-                InvalidSlug,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                token);
-        }
-
-        [Fact]
-        public async Task GetActivePostsByCategoryAsync_ShouldReturnOk_WhenCategoryExists()
-        {
-            // Arrange
-            const string CategorySlug = "desserts";
-            const int ExpectedTotalCount = 5;
-            var queryParameters = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
-            var token = CancellationToken.None;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var mockPosts = TestDataHelper.GetPostListDtos(ExpectedTotalCount, categories);
-
-            var pagedData = new PagedResult<PostListDto>(
-                mockPosts,
-                ExpectedTotalCount,
-                queryParameters.PageNumber,
-                queryParameters.PageSize);
-
-            var serviceResult = Result<PagedResult<PostListDto>>.Success(pagedData);
-
-            _mockPostService.GetActivePostsByCategoryPagedAsync(
-                CategorySlug,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                token)
-                .Returns(serviceResult);
-
-            // Act
-            var result = await _postsController.GetActivePostsByCategoryAsync(CategorySlug, queryParameters, token);
-
-            // Assert
-            var okResult = Assert.IsType<OkObjectResult>(result);
-            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
-
-            Assert.True(response.Success);
-            Assert.Equal(ExpectedTotalCount, response.TotalCount);
-            Assert.Same(mockPosts, response.Data);
-
-            await _mockPostService.Received(1).GetActivePostsByCategoryPagedAsync(
-                CategorySlug,
-                queryParameters.PageNumber,
-                queryParameters.PageSize,
-                token);
         }
 
         [Fact]

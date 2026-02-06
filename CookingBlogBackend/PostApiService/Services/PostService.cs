@@ -50,7 +50,7 @@ namespace PostApiService.Services
             return new PagedResult<TDto>(items, totalCount, pageNumber, pageSize);
         }
 
-        private async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchPostsInternalAsync(
+        private async Task<Result<PagedSearchResult<SearchPostListDto>>> HandleSearchScenarioAsync(
             IQueryable<Post> queryable,
             string query,
             int pageNumber,
@@ -111,16 +111,34 @@ namespace PostApiService.Services
         /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
         /// and the total count of active posts for correct pagination.
         /// </summary>
-        public async Task<Result<PagedResult<PostListDto>>> GetPostsPagedAsync(
+        public async Task<Result<object>> GetPostsPagedAsync(
+            string? search = null,
+            string? categorySlug = null,
             int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default)
         {
-            var query = _postRepository.GetActive().OrderByDescending(p => p.CreatedAt);
+            var query = _postRepository.GetFilteredPosts(search, onlyActive: true, categorySlug);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchResult = await HandleSearchScenarioAsync(query, search, pageNumber, pageSize, ct);
+                return Success<object>(searchResult.Value!);
+            }
+
+            if (!string.IsNullOrWhiteSpace(categorySlug))
+            {
+                var categoryExists = await _categoryService.ExistsBySlugAsync(categorySlug, ct);
+                if (!categoryExists)
+                {
+                    return NotFound<object>(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
+                }
+            }
+
             var result = await GetPagedDataAsync(query, pageNumber, pageSize,
                 PostMappingExtensions.ToDtoExpression, ct);
 
-            return Success(result);
+            return Success<object>(result);
         }
 
         /// <summary>
@@ -151,45 +169,6 @@ namespace PostApiService.Services
 
             var result = await GetPagedDataAsync(query, pageNumber, pageSize,
                 PostMappingExtensions.ToAdminPostListDto, ct);
-
-            return Success(result);
-        }
-
-        /// <summary>
-        /// Searches for ACTIVE posts based on a query string matching Title, Description, or Content.
-        /// Results are sorted by creation date (descending) and returned with pagination.
-        /// </summary>
-        public async Task<Result<PagedSearchResult<SearchPostListDto>>> SearchActivePostsPagedAsync(
-            string query, int pageNumber = 1, int pageSize = 10, CancellationToken ct = default)
-        {
-            var queryable = _postRepository.GetActive();
-            return await SearchPostsInternalAsync(queryable, query, pageNumber, pageSize, ct);
-        }
-
-        /// <summary>
-        /// Retrieves a paginated list of active posts belonging to a specific category identified by its slug.
-        /// </summary>
-        public async Task<Result<PagedResult<PostListDto>>> GetActivePostsByCategoryPagedAsync
-            (string slug, int pageNumber, int pageSize, CancellationToken ct = default)
-        {
-            var categoryExists = await _categoryService.ExistsBySlugAsync(slug, ct);
-
-            if (!categoryExists)
-            {
-                return NotFound<PagedResult<PostListDto>>
-                    (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
-            }
-
-            var query = _postRepository.GetActive()
-                .Where(p => p.Category.Slug == slug)
-                .OrderByDescending(p => p.CreatedAt);
-
-            var result = await GetPagedDataAsync(
-                query,
-                pageNumber,
-                pageSize,
-                PostMappingExtensions.ToDtoExpression,
-                ct);
 
             return Success(result);
         }
