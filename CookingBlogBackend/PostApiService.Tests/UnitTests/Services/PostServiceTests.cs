@@ -31,7 +31,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetActivePostsPagedAsync_ShouldReturnCorrectPageSortedByDateDescending()
+        public async Task GetPostsPagedAsync_ShouldReturnCorrectPageSortedByDateDescending()
         {
             // Arrange            
             const int PageNumber = 1;
@@ -54,7 +54,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetActive().Returns(activeQueryableMock);
 
             // Act
-            var result = await _postService.GetActivePostsPagedAsync(PageNumber, PageSize, token);
+            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize, token);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -79,7 +79,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetActivePostsPagedAsync_ShouldReturnSecondPage_WhenMultiplePagesExist()
+        public async Task GetPostsPagedAsync_ShouldReturnSecondPage_WhenMultiplePagesExist()
         {
             // Arrange
             const int PageNumber = 2;
@@ -102,7 +102,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetActive().Returns(mockQueryable);
 
             // Act
-            var result = await _postService.GetActivePostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -123,7 +123,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetActivePostsPagedAsync_ShouldReturnLastPartialPage()
+        public async Task GetPostsPagedAsync_ShouldReturnLastPartialPage()
         {
             // Arrange
             const int PageNumber = 3;
@@ -142,7 +142,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetActive().Returns(mockQueryable);
 
             // Act
-            var result = await _postService.GetActivePostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -166,7 +166,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetActivePostsPagedAsync_ShouldReturnEmptyList_WhenPageNumberIsTooLarge()
+        public async Task GetPostsPagedAsync_ShouldReturnEmptyList_WhenPageNumberIsTooLarge()
         {
             // Arrange
             const int PageNumber = 5;
@@ -184,7 +184,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetActive().Returns(mockQueryable);
 
             // Act
-            var result = await _postService.GetActivePostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -198,7 +198,7 @@ namespace PostApiService.Tests.UnitTests
         }
 
         [Fact]
-        public async Task GetActivePostsPagedAsync_ShouldReturnFullPage_WhenTotalCountEqualsPageSize()
+        public async Task GetPostsPagedAsync_ShouldReturnFullPage_WhenTotalCountEqualsPageSize()
         {
             // Arrange
             const int PageNumber = 1;
@@ -216,7 +216,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetActive().Returns(mockQueryable);
 
             // Act
-            var result = await _postService.GetActivePostsPagedAsync(PageNumber, PageSize);
+            var result = await _postService.GetPostsPagedAsync(PageNumber, PageSize);
 
             // Assert
             Assert.True(result.IsSuccess);
