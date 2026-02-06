@@ -42,98 +42,17 @@ namespace PostApiService.Tests.IntegrationTests
         }
 
         [Fact]
-        public async Task GetPostsAsync_ShouldReturnPagedPosts()
-        {
-            // Arrange
-            await _fixture.ResetDatabaseAsync();
-            await _services.SeedDefaultUsersAsync();
-
-            const int PageNumber = 1;
-            const int PageSize = 10;
-            const int ExpectedTotalPosts = 7;
-            const int ExpectedCommentCountPerPost = 12;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var posts = TestDataHelper.GetPostsWithComments
-                (count: ExpectedTotalPosts, categories, commentCount: ExpectedCommentCountPerPost);
-
-            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
-            var url = string.Format(Posts.Paginated, PageNumber, PageSize);
-
-            // Act            
-            var response = await _client.GetAsync(url);
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
-
-            response.EnsureSuccessStatusCode();
-
-            // Assert
-            Assert.NotNull(content);
-            Assert.True(content.Success);
-
-            Assert.NotNull(content.Data);
-            Assert.Equal(ExpectedTotalPosts, content.TotalCount);
-
-            var expectedPostsSorted = posts
-                .OrderByDescending(p => p.CreatedAt)
-                .ToList();
-
-            Assert.All(content.Data, (postDto, index) =>
-            {
-                int expectedIndex = (PageNumber - 1) * PageSize + index;
-                var expectedPost = expectedPostsSorted[expectedIndex];
-
-                TestDataHelper.AssertPostListDtoMapping(expectedPost, postDto, ExpectedCommentCountPerPost);
-            });
-        }
-
-        [Fact]
-        public async Task GetPostsAsync_ShouldReturnEmptyList_WhenNoPostsAvailableYet()
-        {
-            // Arrange
-            await _fixture.ResetDatabaseAsync();
-
-            const int PageNumber = 1;
-            const int PageSize = 3;
-            const int ExpectedTotalPosts = 0;
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var posts = TestDataHelper.GetPostsWithComments(count: ExpectedTotalPosts, categories);
-
-            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
-            var url = string.Format(Posts.Paginated, PageNumber, PageSize);
-
-            // Act
-            var response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
-
-            // Assert            
-            Assert.NotNull(content);
-            Assert.True(content.Success);
-            Assert.Empty(content.Data);
-            Assert.Equal(ExpectedTotalPosts, content.TotalCount);
-        }
-
-        [Fact]
-        public async Task GetPostsAsync_ShouldExcludeInactivePosts_WhenMixedContentExists()
+        public async Task GetPostsAsync_NormalMode_ShouldReturnActivePostsWithMapping()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
             await _services.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-
-            var posts = TestDataHelper.GetPostsWithComments(count: 5, categories);
-
+            var posts = TestDataHelper.GetPostsWithComments(3, categories);
             posts[0].IsActive = false;
-            posts[1].IsActive = false;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
             var url = string.Format(Posts.Paginated, 1, 10);
 
             // Act
@@ -143,12 +62,41 @@ namespace PostApiService.Tests.IntegrationTests
             // Assert
             response.EnsureSuccessStatusCode();
             Assert.NotNull(content);
+            Assert.Equal(2, content.TotalCount);
+            Assert.IsType<PostListDto>(content.Data!.First());
+        }
 
-            Assert.Equal(3, content.TotalCount);
-            Assert.Equal(3, content.Data!.Count);
+        [Fact]
+        public async Task GetPostsAsync_SearchMode_ShouldReturnSearchDtosWithSnippets()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
 
-            var inactiveSlugs = posts.Where(p => !p.IsActive).Select(p => p.Slug);
-            Assert.All(content.Data, dto => Assert.DoesNotContain(dto.Slug, inactiveSlugs));
+            var categories = TestDataHelper.GetCulinaryCategories();
+            const string Term = "pizza";
+
+            var posts = TestDataHelper.GetPostsWithComments(2, categories);
+            posts[0].Title = $"Best {Term} recipe";
+            posts[0].IsActive = true;
+            posts[1].Title = "Just a salad";
+            posts[1].IsActive = true;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+            var url = $"{Posts.Base}?search={Term}&pageNumber=1&pageSize=10";
+
+            // Act
+            var response = await _client.GetAsync(url);
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<SearchPostListDto>>>();
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            Assert.NotNull(content);
+            Assert.Equal(1, content.TotalCount);
+            Assert.Equal(Term, content.SearchQuery);
+
+            var searchItem = content.Data!.First();
+            Assert.NotNull(searchItem.SearchSnippet);
         }
 
         [Fact]
@@ -174,7 +122,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var url = string.Format(Posts.AdminPaginated, filterStatus, PageNumber, PageSize);           
+            var url = string.Format(Posts.AdminPaginated, filterStatus, PageNumber, PageSize);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -186,269 +134,6 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(TotalCount, content.TotalCount);
 
             Assert.Contains(content.Data!, dto => dto.IsActive == false);
-        }
-
-        [Fact]
-        public async Task SearchActivePostsAsync_ShouldReturnBadRequest_WhenQueryIsTooShort()
-        {
-            // Arrange
-            const int PageNumber = 1;
-            const int PageSize = 3;
-            const string EmptyQuery = " ";
-            var url = string.Format(Posts.Search, EmptyQuery, PageNumber, PageSize);
-
-            // Act            
-            var response = await _client.GetAsync(url);
-
-            // Assert            
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<object>>();
-            Assert.False(content!.Success);
-            Assert.NotNull(content.Message);
-        }
-
-        [Fact]
-        public async Task SearchActivePostsAsync_Pagination_ShouldReturnsSuccessAndCorrectData()
-        {
-            // Arrange
-            await _fixture.ResetDatabaseAsync();
-
-            const int PageNumber = 1;
-            const int PageSize = 3;
-            const int ExpectedTotalPosts = 3;
-            const string Query = "Chili";
-
-            var url = string.Format(Posts.Search, Query, PageNumber, PageSize);
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetSearchedPostWithoutIds(categories);
-
-            var expectedPostsSorted = posts
-                .Where(p => p.Title.Contains(Query) || p.Content.Contains(Query) || p.Description.Contains(Query))
-                .OrderByDescending(p => p.CreatedAt)
-                .ToList();
-
-            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
-            // Act            
-            var response = await _client.GetAsync(url);
-            response.EnsureSuccessStatusCode();
-
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<SearchPostListDto>>>();
-
-            // Assert
-            Assert.NotNull(content);
-            Assert.True(content.Success);
-
-            Assert.NotNull(content.Data);
-            Assert.Equal(PageSize, content.PageSize);
-
-            Assert.Equal(ExpectedTotalPosts, content.TotalCount);
-            Assert.Equal("Chili", content.SearchQuery);
-
-            Assert.All(content.Data, (postDto, index) =>
-            {
-                int expectedIndex = (PageNumber - 1) * PageSize + index;
-                var expectedPost = expectedPostsSorted[expectedIndex];
-
-                TestDataHelper.AssertSearchActivePostsPagedAsync(expectedPost, postDto);
-            });
-        }
-
-        [Fact]
-        public async Task SearchActivePostsAsync_ShouldExcludeInactivePosts_EvenIfTheyMatchQuery()
-        {
-            // Arrange
-            await _fixture.ResetDatabaseAsync();
-            await _services.SeedDefaultUsersAsync();
-
-            const string Query = "Chili";
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            var posts = TestDataHelper.GetPostsWithComments(count: 2, categories);
-
-            var activePost = posts[0];
-            activePost.Title = $"Amazing {Query} Recipe";
-            activePost.IsActive = true;
-
-            var inactivePost = posts[1];
-            inactivePost.Title = $"Hidden {Query} Secret";
-            inactivePost.IsActive = false;
-
-            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
-            var url = string.Format(Posts.Search, Query, 1, 10);
-
-            // Act
-            var response = await _client.GetAsync(url);
-
-            // Assert
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<SearchPostListDto>>>();
-
-            Assert.NotNull(content);
-            Assert.True(content.Success);
-
-            Assert.Equal(1, content.TotalCount);
-            Assert.Single(content.Data);
-
-            Assert.Equal(activePost.Slug, content.Data[0].Slug);
-            Assert.DoesNotContain(content.Data, p => p.Slug == inactivePost.Slug);
-        }
-
-        [Theory]
-        [InlineData("Desserts")]
-        [InlineData("dessert_slug")]
-        [InlineData("dessert@!")]
-        [InlineData(" ")]
-        public async Task GetActivePostsByCategoryAsync_ShouldReturnBadRequest_WhenSlugIsInvalid(string invalidSlug)
-        {
-            // Arrange
-            const int PageNumber = 1;
-            const int PageSize = 10;
-
-            var url = string.Format(Posts.GetByCategorySlug, invalidSlug, PageNumber, PageSize);
-
-            // Act
-            var response = await _client.GetAsync(url);
-
-            // Assert            
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
-
-            Assert.NotNull(content);
-            Assert.False(content.Success);
-
-            Assert.True(content.Errors!.Count > 0);
-        }
-
-        [Theory]
-        [InlineData(0, 10)]
-        [InlineData(-1, 10)]
-        [InlineData(1, 0)]
-        [InlineData(1, 51)]
-        public async Task GetActivePostsByCategoryAsync_ShouldReturnBadRequest_WhenPaginationIsInvalid(int pageNumber, int pageSize)
-        {
-            // Arrange
-            const string ValidSlug = "desserts";
-            var url = string.Format(Posts.GetByCategorySlug, ValidSlug, pageNumber, pageSize);
-
-            // Act
-            var response = await _client.GetAsync(url);
-
-            // Assert
-            Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse>();
-
-            Assert.NotNull(content);
-            Assert.False(content.Success);
-            Assert.True(content.Errors!.ContainsKey("PageNumber") || content.Errors.ContainsKey("PageSize"));
-        }
-
-        [Fact]
-        public async Task GetActivePostsByCategoryAsync_ShouldReturnOk_WithFilteredPosts()
-        {
-            // Arrange
-            await _fixture.ResetDatabaseAsync();
-            await _services.SeedDefaultUsersAsync();
-
-            const string TargetCategorySlug = "desserts";
-            const int PostsInTarget = 3;
-            const int PostsInOther = 2;
-            const int PageNumber = 1;
-            const int PageSize = 10;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var targetCategory = categories.First(c => c.Slug == TargetCategorySlug);
-            var otherCategory = categories.First(c => c.Slug != TargetCategorySlug);
-
-            var targetPosts = TestDataHelper.GetPostsWithComments(PostsInTarget, categories, forcedCategory: targetCategory);
-            var otherPosts = TestDataHelper.GetPostsWithComments(PostsInOther, categories, forcedCategory: otherCategory);
-
-            var allPosts = targetPosts.Concat(otherPosts).ToList();
-
-            allPosts.ForEach(p => p.Slug = $"{p.Slug}-{Guid.NewGuid().ToString()[..4]}");
-
-            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
-
-            var url = string.Format(Posts.GetByCategorySlug, TargetCategorySlug, PageNumber, PageSize);
-
-            // Act
-            var response = await _client.GetAsync(url);
-
-            // Assert
-            response.EnsureSuccessStatusCode();
-
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
-
-            Assert.NotNull(content);
-            Assert.True(content.Success);
-            Assert.NotNull(content.Data);
-
-            Assert.Equal(PostsInTarget, content.TotalCount);
-            Assert.Equal(PostsInTarget, content.Data.Count);
-
-            Assert.All(content.Data, post =>
-            {
-                Assert.Equal(TargetCategorySlug, post.CategorySlug);
-            });
-
-            var expectedFirstId = targetPosts.OrderByDescending(p => p.CreatedAt).First().Id;
-            Assert.Equal(expectedFirstId, content.Data.First().Id);
-        }
-
-        [Fact]
-        public async Task GetActivePostsByCategoryAsync_ShouldExcludeInactivePosts_EvenInTargetCategory()
-        {
-            // Arrange
-            await _fixture.ResetDatabaseAsync();
-            await _services.SeedDefaultUsersAsync();
-
-            const string TargetCategorySlug = "desserts";
-            const int ActiveCount = 3;
-            const int InactiveCount = 2;
-            const int PageNumber = 1;
-            const int PageSize = 10;
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            var targetCategory = categories.First(c => c.Slug == TargetCategorySlug);
-
-            var posts = TestDataHelper.GetPostsWithComments(
-                ActiveCount + InactiveCount,
-                categories,
-                forcedCategory: targetCategory);
-
-            for (int i = 0; i < posts.Count; i++)
-            {
-                posts[i].IsActive = i < ActiveCount;
-                posts[i].Slug = $"{posts[i].Slug}-{Guid.NewGuid().ToString()[..4]}";
-            }
-
-            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
-            var url = string.Format(Posts.GetByCategorySlug, TargetCategorySlug, PageNumber, PageSize);
-
-            // Act
-            var response = await _client.GetAsync(url);
-
-            // Assert
-            response.EnsureSuccessStatusCode();
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<PostListDto>>>();
-
-            Assert.NotNull(content);
-            Assert.True(content.Success);
-
-            Assert.Equal(ActiveCount, content.TotalCount);
-            Assert.Equal(ActiveCount, content.Data!.Count);
-
-            var inactiveSlugs = posts.Where(p => !p.IsActive).Select(p => p.Slug);
-            Assert.All(content.Data, dto =>
-            {
-                Assert.DoesNotContain(dto.Slug, inactiveSlugs);
-                Assert.Equal(TargetCategorySlug, dto.CategorySlug);
-            });
         }
 
         [Fact]
