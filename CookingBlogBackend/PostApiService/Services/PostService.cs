@@ -142,11 +142,14 @@ namespace PostApiService.Services
         }
 
         /// <summary>
-        /// Retrieves a paginated list of all posts for administrative purposes, with optional filtering by active status.
-        /// Results are sorted by creation date (descending) and return detailed information, including administrative metadata.
+        /// Retrieves a paginated list of posts specifically for the administrative dashboard.
+        /// Includes extended metadata such as update timestamps, publication status, and authorship.
+        /// Supports full-text search, filtering by category slug, and filtering by activity status.
         /// </summary>
         public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
-            bool? isActive = null,
+            string? search = null,
+            string? categorySlug = null,
+            bool? onlyActive = null,
             int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default)
@@ -156,16 +159,18 @@ namespace PostApiService.Services
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized<PagedResult<AdminPostListDto>>();
-            }
-
-            var query = _postRepository.AsQueryable();
-
-            if (isActive.HasValue)
+            }           
+            
+            if (!string.IsNullOrWhiteSpace(categorySlug))
             {
-                query = query.Where(p => p.IsActive == isActive.Value);
+                var categoryExists = await _categoryService.ExistsBySlugAsync(categorySlug, ct);
+                if (!categoryExists)
+                {
+                    return NotFound<PagedResult<AdminPostListDto>>(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
+                }
             }
 
-            query = query.OrderByDescending(p => p.CreatedAt);
+            var query = _postRepository.GetFilteredPosts(search, onlyActive, categorySlug);
 
             var result = await GetPagedDataAsync(query, pageNumber, pageSize,
                 PostMappingExtensions.ToAdminPostListDto, ct);

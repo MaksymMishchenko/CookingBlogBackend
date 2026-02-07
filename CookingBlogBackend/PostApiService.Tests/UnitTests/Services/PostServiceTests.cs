@@ -127,45 +127,45 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
 
-            _mockRepository.DidNotReceive().AsQueryable();
+            _mockRepository.DidNotReceive().GetFilteredPosts(null, null, null);
         }
 
         [Theory]
-        [InlineData(true, 10)]
-        [InlineData(false, 5)]
-        [InlineData(null, 15)]
-        public async Task GetAdminPostsPagedAsync_ShouldFilterCorrectlyByIsActive(bool? filterValue, int expectedCount)
+        [MemberData(nameof(TestDataHelper.GetPostFilterData), MemberType = typeof(TestDataHelper))]
+        public async Task GetAdminPostsPagedAsync_ShouldFilterCorrectlyByIsActive
+            (string? search, string? categorySlug, bool? onlyActive, int expectedCount)
         {
-            // Arrange
-            const int ActivePostsCount = 10;
-            const int InactivePostsCount = 5;
-            const int LargePageSize = 50;
+            // Arrange                       
+            const int LargePageSize = 10;
             var ct = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("admin-id");
 
+            _mockCategoryService.ExistsBySlugAsync(Arg.Any<string>(), ct).Returns(true);
+
             var categories = TestDataHelper.GetCulinaryCategories();
-            var activePosts = TestDataHelper.GetPostsWithComments
-               (count: ActivePostsCount, categories, commentCount: 1, generateIds: true);
-            activePosts.ForEach(p => p.IsActive = true);
+            var allPosts = TestDataHelper.GetAdminTestPosts
+               (categories);
 
-            var inactivePosts = TestDataHelper.GetPostsWithComments
-               (count: InactivePostsCount, categories, commentCount: 1, generateIds: true);
-            inactivePosts.ForEach(p => p.IsActive = false);
+            var expectedFilteredList = allPosts
+                .Where(p => string.IsNullOrEmpty(search) || p.Title.Contains(search, StringComparison.OrdinalIgnoreCase))
+                .Where(p => string.IsNullOrEmpty(categorySlug) || p.Category.Slug == categorySlug)
+                .Where(p => !onlyActive.HasValue || p.IsActive == onlyActive.Value)
+                .AsQueryable()
+                .BuildMock();
 
-            var allPosts = activePosts.Concat(inactivePosts).AsQueryable().BuildMock();
-
-            _mockRepository.AsQueryable().Returns(allPosts);
+            _mockRepository.GetFilteredPosts(search, onlyActive, categorySlug)
+                .Returns(expectedFilteredList);
 
             // Act
-            var result = await _postService.GetAdminPostsPagedAsync(
-                isActive: filterValue, pageSize: LargePageSize, ct: ct);
+            var result = await _postService.GetAdminPostsPagedAsync(search,
+                categorySlug, onlyActive, pageSize: LargePageSize, ct: ct);
 
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(expectedCount, result.Value!.Items.Count());
 
-            _mockRepository.Received(1).AsQueryable();
+            _mockRepository.Received(1).GetFilteredPosts(search, onlyActive, categorySlug);
         }
 
         [Fact]
@@ -185,7 +185,8 @@ namespace PostApiService.Tests.UnitTests
             testPost.IsActive = true;
 
             var mockQueryable = posts.AsQueryable().BuildMock();
-            _mockRepository.AsQueryable().Returns(mockQueryable);
+            _mockRepository.GetFilteredPosts(null, null, null)
+                .Returns(mockQueryable);
 
             // Act
             var result = await _postService.GetAdminPostsPagedAsync(ct: ct);
@@ -199,11 +200,13 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.IsType<AdminPostListDto>(dto);
 
-            Assert.Equal(testPost.Category.Name, dto.CategoryName);
-            Assert.Equal(5, dto.CommentCount);
+            Assert.Equal(testPost.Id, dto.Id);
+            Assert.Equal(testPost.Title, dto.Title);            
             Assert.Equal(testPost.IsActive, dto.IsActive);
+            Assert.Equal(testPost.Category.Name, dto.CategoryName);
+            Assert.Equal(testPost.CreatedAt, dto.CreatedAt);
 
-            _mockRepository.Received(1).AsQueryable();
+            _mockRepository.Received(1).GetFilteredPosts(null, null, null);
         }
 
         [Fact]
