@@ -244,7 +244,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             using (context)
             {
-                // Act: просимо тільки неактивні
+                // Act
                 var result = await postService.GetAdminPostsPagedAsync(onlyActive: false);
 
                 // Assert
@@ -301,7 +301,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 // Act
-                var result = await postService.GetActivePostBySlugAsync(requestDto);
+                var result = await postService.GetPostBySlugAsync(requestDto);
 
                 // Assert
                 Assert.True(result.IsSuccess);

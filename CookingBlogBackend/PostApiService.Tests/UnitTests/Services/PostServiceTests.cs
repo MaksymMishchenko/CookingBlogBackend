@@ -201,7 +201,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.IsType<AdminPostListDto>(dto);
 
             Assert.Equal(testPost.Id, dto.Id);
-            Assert.Equal(testPost.Title, dto.Title);            
+            Assert.Equal(testPost.Title, dto.Title);
             Assert.Equal(testPost.IsActive, dto.IsActive);
             Assert.Equal(testPost.Category.Name, dto.CategoryName);
             Assert.Equal(testPost.CreatedAt, dto.CreatedAt);
@@ -267,12 +267,12 @@ namespace PostApiService.Tests.UnitTests
         [InlineData("valid-category", "<h1></h1>")]
         [InlineData("   ", "valid-slug")]
         [InlineData("  ", "  ")]
-        public async Task GetActivePostBySlugAsync_ShouldReturnInvalid_WhenInputsAreEmptyAfterHtmlStriping(string category, string slug)
+        public async Task GetPostBySlugAsync_ShouldReturnInvalid_WhenInputsAreEmptyAfterHtmlStriping(string category, string slug)
         {
             // Act
             var dto = new PostRequestBySlug { Category = category, Slug = slug };
 
-            var result = await _postService.GetActivePostBySlugAsync(dto);
+            var result = await _postService.GetPostBySlugAsync(dto);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -280,21 +280,26 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(PostM.Errors.SlugAndCategoryRequired, result.Message);
             Assert.Equal(PostM.Errors.SlugAndCategoryRequiredCode, result.ErrorCode);
 
-            _mockRepository.DidNotReceive().GetActive();
+            _mockRepository.DidNotReceive().GetFilteredPosts(null, true, category);
         }
 
         [Fact]
-        public async Task GetActivePostBySlugAsync_ShouldReturnNotFound_WhenPostDoesNotExistOrIsInactive()
+        public async Task GetPostBySlugAsync_ShouldReturnNotFound_WhenPostDoesNotExistOrIsInactive()
         {
             // Arrange
             var dto = new PostRequestBySlug { Category = "any-category", Slug = "unknown-slug" };
             var ct = CancellationToken.None;
 
             var emptyData = new List<Post>().AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(emptyData);
+            _mockRepository.GetFilteredPosts(
+                Arg.Any<string>(),
+                Arg.Is(true),
+                Arg.Is<string>(s => s.Trim().ToLowerInvariant() == dto.Category)
+            )
+            .Returns(emptyData);
 
             // Act
-            var result = await _postService.GetActivePostBySlugAsync(dto, ct);
+            var result = await _postService.GetPostBySlugAsync(dto, ct);
 
             // Assert
             Assert.False(result.IsSuccess);
@@ -302,7 +307,11 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
             Assert.Equal(PostM.Errors.PostNotFoundByPathCode, result.ErrorCode);
 
-            _mockRepository.Received(1).GetActive();
+            _mockRepository.Received(1).GetFilteredPosts(
+                Arg.Any<string>(),
+                Arg.Is(true),
+                Arg.Is<string>(s => s.Trim().ToLowerInvariant() == dto.Category)
+            );
         }
 
         [Fact]
@@ -327,17 +336,17 @@ namespace PostApiService.Tests.UnitTests
                 }
             }.AsQueryable().BuildMock();
 
-            _mockRepository.GetActive().Returns(testPosts);
+            _mockRepository.GetFilteredPosts(null, true, requestDto.Category).Returns(testPosts);
 
             // Act            
-            var result = await _postService.GetActivePostBySlugAsync(requestDto);
+            var result = await _postService.GetPostBySlugAsync(requestDto);
 
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
 
-            _mockRepository.Received(1).GetActive();
+            _mockRepository.Received(1).GetFilteredPosts(null, true, requestDto.Category);
         }
 
         [Fact]
@@ -360,10 +369,15 @@ namespace PostApiService.Tests.UnitTests
             };
 
             var mockData = new List<Post> { recipePost }.AsQueryable().BuildMock();
-            _mockRepository.GetActive().Returns(mockData);
+            _mockRepository.GetFilteredPosts(
+                Arg.Any<string>(),
+                Arg.Is(true),
+                Arg.Is<string>(s => s.Trim().ToLowerInvariant() == expectedCategory)
+            )
+            .Returns(mockData);
 
             // Act
-            var result = await _postService.GetActivePostBySlugAsync(requestDto);
+            var result = await _postService.GetPostBySlugAsync(requestDto);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -375,7 +389,11 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(expectedCategory, dto.CategorySlug);
             Assert.Contains("Carbonara", dto.Title);
 
-            _mockRepository.Received(1).GetActive();
+            _mockRepository.Received(1).GetFilteredPosts(
+                Arg.Any<string>(),
+                Arg.Is(true),
+                Arg.Is<string>(s => s.Trim().ToLowerInvariant() == expectedCategory)
+            );
         }
 
         [Fact]

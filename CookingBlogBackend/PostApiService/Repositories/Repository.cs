@@ -21,7 +21,7 @@ namespace PostApiService.Repositories
             return await _dbSet
                 .AsNoTracking()
                 .CountAsync(ct);
-        }       
+        }
 
         public async Task<T?> GetByIdAsync
             (int id, CancellationToken ct = default) => await _dbSet.FindAsync(id, ct);
@@ -56,24 +56,6 @@ namespace PostApiService.Repositories
         }
 
         public IQueryable<T> AsQueryable() => _dbSet.AsQueryable().AsNoTracking();
-
-        public IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate)
-        {
-            return _dbSet
-                .AsQueryable()
-                .AsNoTracking()
-                .Where(predicate);
-        }
-
-        public IQueryable<T> GetActive()
-        {
-            if (typeof(IActivatable).IsAssignableFrom(typeof(T)))
-            {
-                return _dbSet.AsNoTracking().Where(e => ((IActivatable)e).IsActive);
-            }
-
-            return _dbSet.AsNoTracking();
-        }
 
         public async Task<int> SaveChangesAsync(CancellationToken ct = default)
         {

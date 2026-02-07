@@ -14,8 +14,7 @@ namespace PostApiService.Repositories
         Task DeleteAsync(T entity, CancellationToken ct = default);               
        
         IQueryable<T> AsQueryable();
-        IQueryable<T> GetFilteredQueryable(Expression<Func<T, bool>> predicate);
-        public IQueryable<T> GetActive();
+        
         Task<int> SaveChangesAsync(CancellationToken ct = default);
     }
 }

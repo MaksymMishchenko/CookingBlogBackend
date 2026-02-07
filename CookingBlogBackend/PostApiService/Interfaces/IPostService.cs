@@ -21,7 +21,7 @@ namespace PostApiService.Interfaces
             CancellationToken ct = default);
 
         Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default);
-        Task<Result<PostDetailsDto>> GetActivePostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default);
+        Task<Result<PostDetailsDto>> GetPostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default);
         Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default);
         Task<Result<PostAdminDetailsDto>> UpdatePostAsync
             (int postId, PostUpdateDto postDto, CancellationToken ct = default);

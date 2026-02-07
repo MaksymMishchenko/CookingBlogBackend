@@ -65,7 +65,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetActivePostBySlugAsync([FromRoute] PostRequestBySlug dto,
             CancellationToken ct = default)
         {
-            var result = await _postsService.GetActivePostBySlugAsync(dto, ct);
+            var result = await _postsService.GetPostBySlugAsync(dto, ct);
 
             return result.ToActionResult();
         }
