@@ -13,11 +13,13 @@ namespace PostApiService.Interfaces
             CancellationToken ct = default);
 
         Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
-            bool? isActive = null,
+            string? search = null,
+            string? categorySlug = null,
+            bool? onlyActive = null,
             int pageNumber = 1,
             int pageSize = 10,
-            CancellationToken ct = default);        
-        
+            CancellationToken ct = default);
+
         Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default);
         Task<Result<PostDetailsDto>> GetActivePostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default);
         Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default);

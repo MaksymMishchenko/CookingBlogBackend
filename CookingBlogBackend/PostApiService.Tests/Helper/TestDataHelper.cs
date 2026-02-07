@@ -80,7 +80,7 @@ namespace PostApiService.Tests.Helper
                         .Generate(commentCount);
                 })
                 .UseSeed(seed);
-        }
+        }        
 
         public static List<Post> GeneratePostsWithKeyword
             (string keyword, ICollection<Category> categories, int count, bool generateIds = false)
@@ -503,6 +503,37 @@ namespace PostApiService.Tests.Helper
                     }
                 }
             };
+        }
+
+        public static List<Post> GetAdminTestPosts(ICollection<Category> categories)
+        {            
+            var posts = GetPostsWithComments(categories);
+            
+            posts[0].IsActive = true;  
+            posts[1].IsActive = false;
+            posts[2].IsActive = true; 
+            posts[3].IsActive = false;
+            posts[4].IsActive = true;
+
+            return posts;
+        }
+
+        public static IEnumerable<object[]> GetPostFilterData()
+        {                        
+            yield return new object[] { null!, null!, null!, 5 };    
+            yield return new object[] { null!, null!, true, 3 };    
+            yield return new object[] { null!, null!, false, 2 };    
+            
+            yield return new object[] { "Lorem", null!, null!, 5 };  
+            yield return new object[] { "Lorem", null!, true, 3 }; 
+            yield return new object[] { "1", null!, null!, 1 };
+            
+            yield return new object[] { null!, "beverages", null!, 1 };
+            yield return new object[] { null!, "beverages", true, 1 };
+            yield return new object[] { null!, "beverages", false, 0 };
+           
+            yield return new object[] { "Lorem", "desserts", true, 1 };
+            yield return new object[] { "Lorem", "vegetarian", false, 1 };
         }
 
         public static List<Category> GetCulinaryCategories()

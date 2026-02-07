@@ -586,6 +586,72 @@
           "response": []
         },
         {
+          "name": "GetAdminPosts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/posts/admin?search=lorem&onlyActive=true&categorySlug=beverages&pageNumber=1&pageSize=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "posts",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "lorem"
+                },
+                {
+                  "key": "onlyActive",
+                  "value": "true"
+                },
+                {
+                  "key": "categorySlug",
+                  "value": "beverages"
+                },
+                {
+                  "key": "pageNumber",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "UpdatePost",
           "event": [
             {
