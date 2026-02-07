@@ -6,7 +6,6 @@
         string Author,
         string CategoryName,
         DateTime CreatedAt,
-        bool IsActive,
-        int CommentCount
+        bool IsActive       
     );
 }

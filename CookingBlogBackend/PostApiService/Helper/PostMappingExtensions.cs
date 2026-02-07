@@ -41,8 +41,7 @@ namespace PostApiService.Helper
             p.Author,
             p.Category.Name ?? ContentConstants.DefaultCategory,
             p.CreatedAt,
-            p.IsActive,
-            p.Comments.Count
+            p.IsActive           
         );
 
         public static IQueryable<PostDetailsDto> ToDetailsDtoExpression(this IQueryable<Post> query)

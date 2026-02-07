@@ -66,12 +66,12 @@ namespace PostApiService.Repositories
         }
 
         public IQueryable<T> GetActive()
-        {            
+        {
             if (typeof(IActivatable).IsAssignableFrom(typeof(T)))
-            {                
+            {
                 return _dbSet.AsNoTracking().Where(e => ((IActivatable)e).IsActive);
             }
-           
+
             return _dbSet.AsNoTracking();
         }
 

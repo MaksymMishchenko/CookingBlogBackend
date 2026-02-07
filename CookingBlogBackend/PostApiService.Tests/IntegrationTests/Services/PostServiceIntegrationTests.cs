@@ -172,6 +172,89 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task GetAdminPostsPagedAsync_SearchMode_ReturnsCorrectAdminDtos()
+        {
+            // Arrange
+            const string SearchTerm = "burger";
+            const int ExpectedPageSize = 5;
+            const int MatchCount = 3;
+            var ct = CancellationToken.None;
+
+            var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
+            {
+                var matches = _fixture.GeneratePosts(MatchCount, cats, 0);
+                matches.ForEach(p =>
+                {
+                    p.Title = $"{SearchTerm} variant {Guid.NewGuid()}";
+                    p.IsActive = true;
+                    p.Id = 0;
+                });
+
+                var others = _fixture.GeneratePosts(5, cats, 0);
+                others.ForEach(p =>
+                {
+                    p.Title = "Generic soup recipe";
+                    p.IsActive = true;
+                    p.Id = 0;
+                });
+
+                return matches.Concat(others).ToList();
+            });
+
+            using (context)
+            {
+                // Act
+                var result = await postService.GetAdminPostsPagedAsync(
+                    search: SearchTerm,
+                    pageSize: ExpectedPageSize,
+                    ct: ct);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+
+                var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
+
+                Assert.Equal(MatchCount, data.TotalCount);
+                Assert.All(data.Items, item =>
+                {
+                    Assert.Contains(SearchTerm, item.Title.ToLower());
+
+                    Assert.True(item.Id > 0);
+                    Assert.NotNull(item.CategoryName);
+                });
+            }
+        }
+
+        [Fact]
+        public async Task GetAdminPostsPagedAsync_FilterByInactive_ReturnsOnlyInactivePosts()
+        {
+            // Arrange           
+            const int InactiveMatchCount = 2;
+
+            var (context, postService, _, _) = await SetupAsync(cats =>
+            {
+                var active = _fixture.GeneratePosts(5, cats, 0);
+                active.ForEach(p => { p.IsActive = true; p.Id = 0; });
+
+                var inactive = _fixture.GeneratePosts(InactiveMatchCount, cats, 0);
+                inactive.ForEach(p => { p.IsActive = false; p.Id = 0; });
+
+                return active.Concat(inactive).ToList();
+            });
+
+            using (context)
+            {
+                // Act: просимо тільки неактивні
+                var result = await postService.GetAdminPostsPagedAsync(onlyActive: false);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+                Assert.Equal(InactiveMatchCount, result.Value!.TotalCount);
+                Assert.All(result.Value.Items, item => Assert.False(item.IsActive));
+            }
+        }
+
+        [Fact]
         public async Task GetPostByIdAsync_ShouldReturnSuccess_IfPostExistsInDb()
         {
             // Arrange                        

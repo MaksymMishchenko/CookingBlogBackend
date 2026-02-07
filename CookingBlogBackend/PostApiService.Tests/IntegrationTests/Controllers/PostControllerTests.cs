@@ -113,7 +113,9 @@ namespace PostApiService.Tests.IntegrationTests
             const int TotalCount = ActiveCount + InactiveCount;
             const int PageNumber = 1;
             const int PageSize = 10;
-            bool? filterStatus = null;
+            bool? searchStatus = null;
+            bool? categorySlugStatus = null;
+            bool? onlyActiveStatus = null;
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(count: TotalCount, categories);
@@ -122,7 +124,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var url = string.Format(Posts.AdminPaginated, filterStatus, PageNumber, PageSize);
+            var url = string.Format(Posts.AdminPaginated, searchStatus, categorySlugStatus, onlyActiveStatus, PageNumber, PageSize);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -134,6 +136,26 @@ namespace PostApiService.Tests.IntegrationTests
             Assert.Equal(TotalCount, content.TotalCount);
 
             Assert.Contains(content.Data!, dto => dto.IsActive == false);
+        }
+
+        [Fact]
+        public async Task GetAdminPostsAsync_ShouldReturnForbidden_WhenUserIsNotAdmin()
+        {
+            // Arrange
+            bool? searchStatus = null;
+            bool? categorySlugStatus = null;
+            bool? onlyActiveStatus = null;
+
+            await _fixture.ResetDatabaseAsync();
+            _fixture.LoginAsContributor();
+
+            var url = string.Format(Posts.AdminPaginated, searchStatus, categorySlugStatus, onlyActiveStatus, 1, 10);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         }
 
         [Fact]
