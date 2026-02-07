@@ -279,7 +279,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var serviceResult = Result<PostDetailsDto>.Invalid(
                 expectedErrorMessage, expectedErrorCode);
 
-            _mockPostService.GetActivePostBySlugAsync(Arg.Any<PostRequestBySlug>(),
+            _mockPostService.GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(),
                 Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
@@ -294,7 +294,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedErrorMessage, response.Message);
             Assert.Equal(expectedErrorCode, response.ErrorCode);
 
-            await _mockPostService.Received(1).GetActivePostBySlugAsync(Arg.Any<PostRequestBySlug>(),
+            await _mockPostService.Received(1).GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(),
                 Arg.Any<CancellationToken>());
         }
 
@@ -313,7 +313,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var serviceResult = Result<PostDetailsDto>.NotFound(
                 expectedErrorMessage, expectedErrorCode);
 
-            _mockPostService.GetActivePostBySlugAsync(Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>())
+            _mockPostService.GetPostBySlugAsync(Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
@@ -327,7 +327,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedErrorMessage, response.Message);
             Assert.Equal(expectedErrorCode, response.ErrorCode);
 
-            await _mockPostService.Received(1).GetActivePostBySlugAsync
+            await _mockPostService.Received(1).GetPostBySlugAsync
                 (Arg.Any<PostRequestBySlug>(), Arg.Any<CancellationToken>());
         }
 
@@ -345,7 +345,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 (slug: ValidSlug, categorySlug: ValidCategorySlug);
             var serviceResult = Result<PostDetailsDto>.Success(expectedPostDto);
 
-            _mockPostService.GetActivePostBySlugAsync(requestDto, ct)
+            _mockPostService.GetPostBySlugAsync(requestDto, ct)
                 .Returns(serviceResult);
 
             // Act             
@@ -362,7 +362,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(ValidCategorySlug, response.Data.CategorySlug);
             Assert.Equal(expectedPostDto.Title, response.Data.Title);
 
-            await _mockPostService.Received(1).GetActivePostBySlugAsync
+            await _mockPostService.Received(1).GetPostBySlugAsync
                (Arg.Any<PostRequestBySlug>(), ct);
         }
 

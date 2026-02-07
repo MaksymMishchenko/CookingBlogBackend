@@ -159,8 +159,8 @@ namespace PostApiService.Services
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized<PagedResult<AdminPostListDto>>();
-            }           
-            
+            }
+
             if (!string.IsNullOrWhiteSpace(categorySlug))
             {
                 var categoryExists = await _categoryService.ExistsBySlugAsync(categorySlug, ct);
@@ -202,7 +202,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Retrieves the details of a specific active post based on its slug and category slug.
         /// </summary>       
-        public async Task<Result<PostDetailsDto>> GetActivePostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default)
+        public async Task<Result<PostDetailsDto>> GetPostBySlugAsync(PostRequestBySlug dto, CancellationToken ct = default)
         {
             var cleanSlug = dto.Slug.StripHtml().Trim().ToLowerInvariant();
             var cleanCategory = dto.Category.StripHtml().Trim().ToLowerInvariant();
@@ -211,9 +211,10 @@ namespace PostApiService.Services
             {
                 return Invalid<PostDetailsDto>(PostM.Errors.SlugAndCategoryRequired,
                     PostM.Errors.SlugAndCategoryRequiredCode);
-            }
+            }            
 
-            var postDto = await _postRepository.GetActive()
+            var postDto = await _postRepository
+                .GetFilteredPosts(null, onlyActive: true, categorySlug: cleanCategory)
                 .Where(p => p.Slug == cleanSlug && p.Category.Slug == cleanCategory)
                 .ToDetailsDtoExpression()
                 .FirstOrDefaultAsync(ct);

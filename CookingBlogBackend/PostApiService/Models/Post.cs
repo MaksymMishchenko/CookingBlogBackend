@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Models
 {
-    public class Post : IEntity, IActivatable
+    public class Post : IEntity
     {
         [Required]
         public int Id { get; set; }
