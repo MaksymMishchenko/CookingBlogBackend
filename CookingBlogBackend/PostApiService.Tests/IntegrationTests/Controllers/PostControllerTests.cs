@@ -1,5 +1,4 @@
 ﻿using PostApiService.Models.Common;
-using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using System.Net;
 using System.Net.Http.Json;
@@ -97,7 +96,47 @@ namespace PostApiService.Tests.IntegrationTests
 
             var searchItem = content.Data!.First();
             Assert.NotNull(searchItem.SearchSnippet);
-        }        
+        }
+
+        [Fact]
+        public async Task GetCommentsByPostIdAsync_ShouldReturnPaginatedApiResponse()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            const int PostId = 1;
+            const int TotalComments = 12;
+            const int PageSize = 5;
+            const int PageNumber = 1;
+
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: TotalComments);
+            posts[0].IsActive = true;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var url = string.Format(Posts.GetComments, PostId, PageNumber, PageSize);
+
+            // Act
+            var response = await _client.GetAsync(url);
+
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<CommentDto>>>();
+
+            // Assert
+            response.EnsureSuccessStatusCode();
+            Assert.NotNull(content);
+            Assert.True(content.Success);
+
+            Assert.Equal(TotalComments, content.TotalCount);
+            Assert.Equal(PageSize, content.Data!.Count);
+            Assert.Equal(PageNumber, content.PageNumber);
+
+            var firstComment = content.Data.First();
+            Assert.NotNull(firstComment.Content);
+            Assert.NotNull(firstComment.Author);
+        }
 
         [Theory]
         [InlineData("Invalid-Category", "valid-slug")]
@@ -214,7 +253,7 @@ namespace PostApiService.Tests.IntegrationTests
 
             // Assert           
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
-        }        
+        }
     }
 }
 

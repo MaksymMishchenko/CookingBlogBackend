@@ -1,4 +1,5 @@
-﻿using PostApiService.Infrastructure.Common;
+﻿using MockQueryable;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Repositories;
@@ -22,6 +23,59 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext = Substitute.For<IWebContext>();
 
             _service = new CommentService(_mockCommentRepo, _mockSanitizeService, _mockPostRepo, _mockWebContext);
+        }
+
+        [Fact]
+        public async Task GetCommentsByPostIdAsync_PostNotFound_ReturnsNotFoundResult()
+        {
+            // Arrange
+            var postId = 99;
+            _mockPostRepo.IsAvailableForCommentingAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(false);
+
+            // Act
+            var result = await _service.GetCommentsByPostIdAsync(postId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.NotFound, result.Status);
+
+            _mockCommentRepo.DidNotReceive().GetQueryByPostId(Arg.Any<int>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task GetCommentsByPostIdAsync_PostExists_ReturnsPagedComments()
+        {
+            // Arrange
+            var postId = 1;
+            var page = 1;
+            var pageSize = 2;
+
+            _mockPostRepo.IsAvailableForCommentingAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            var commentsList = new List<Comment>
+            {
+                new Comment { Id = 1, Content = "First", UserId = "u1", User = new IdentityUser { UserName = "Max" } },
+                new Comment { Id = 2, Content = "Second", UserId = "u2", User = new IdentityUser { UserName = "Vika" } }
+            };
+
+            var mock = commentsList.AsQueryable().BuildMock();
+
+            _mockCommentRepo.GetQueryByPostId(postId, Arg.Any<CancellationToken>())
+                .Returns(mock);
+
+            // Act
+            var result = await _service.GetCommentsByPostIdAsync(postId, page, pageSize);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.NotNull(result.Value);
+            Assert.Equal(2, result.Value.TotalCount);
+            Assert.Equal(2, result.Value.Items.Count());
+
+            Assert.Equal("Max", result.Value!.Items.ElementAt(0).Author);
+            Assert.Equal("Vika", result.Value!.Items.ElementAt(1).Author);
         }
 
         [Fact]
