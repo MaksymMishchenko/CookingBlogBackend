@@ -13,13 +13,59 @@ namespace PostApiService.Services
         private readonly IPostRepository _postRepository;
 
         public CommentService(ICommentRepository commentRepository,
-             IHtmlSanitizationService sanitizer,
+            IHtmlSanitizationService sanitizer,
             IPostRepository postRepository,
             IWebContext webContext) : base(webContext)
         {
             _commentRepository = commentRepository;
             _sanitizer = sanitizer;
             _postRepository = postRepository;
+        }
+
+        // TODO: TECH DEBT - Centralize pagination logic.
+        // This method duplicates logic found in PostService. 
+        // Move this to BaseRepository.GetPagedAsync to follow the DRY principle.
+        // See GitHub Issue #42: https://github.com/MaksymMishchenko/CookingBlogBackend/issues/42
+        private async Task<PagedResult<CommentDto>> GetPagedCommentsAsync(
+             IQueryable<Comment> query,
+             int pageNumber,
+             int pageSize,
+             CancellationToken ct)
+        {
+            var totalCount = await query.CountAsync(ct);
+
+            var items = await query
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            var dtos = items.Select(c => c.ToCommentDto()).ToList();
+
+            return new PagedResult<CommentDto>(dtos, totalCount, pageNumber, pageSize);
+        }
+
+        /// <summary>
+        /// Retrieves a paginated list of comments for a specific post. Accessible to unauthorized users.
+        /// </summary>
+        public async Task<Result<PagedResult<CommentDto>>> GetCommentsByPostIdAsync(
+            int postId,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            var postExists = await _postRepository.IsAvailableForCommentingAsync(postId, ct);
+            if (!postExists)
+            {
+                Log.Warning(Posts.NotFound, postId);
+
+                return NotFound<PagedResult<CommentDto>>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+            }
+
+            var query = _commentRepository.GetQueryByPostId(postId, ct);
+
+            var pagedResult = await GetPagedCommentsAsync(query, pageNumber, pageSize, ct);
+
+            return Success(pagedResult);
         }
 
         /// <summary>

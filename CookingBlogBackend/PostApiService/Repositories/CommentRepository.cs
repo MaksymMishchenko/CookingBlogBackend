@@ -14,5 +14,14 @@
                 .Include(c => c.User)
                 .FirstOrDefaultAsync(c => c.Id == id, ct);
         }
+
+        public IQueryable<Comment> GetQueryByPostId(int postId, CancellationToken ct = default)
+        {
+            return _context.Comments
+                .AsNoTracking()
+                .Include(c => c.User)
+                .Where(c => c.PostId == postId)
+                .OrderByDescending(c => c.CreatedAt);
+        }
     }
 }
