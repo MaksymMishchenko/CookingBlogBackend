@@ -30,7 +30,7 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             var postId = 99;
-            _mockPostRepo.IsAvailableForCommentingAsync(postId, Arg.Any<CancellationToken>())
+            _mockPostRepo.IsPostActiveAsync(postId, Arg.Any<CancellationToken>())
                 .Returns(false);
 
             // Act
@@ -51,7 +51,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var page = 1;
             var pageSize = 2;
 
-            _mockPostRepo.IsAvailableForCommentingAsync(postId, Arg.Any<CancellationToken>())
+            _mockPostRepo.IsPostActiveAsync(postId, Arg.Any<CancellationToken>())
                 .Returns(true);
 
             var commentsList = new List<Comment>
@@ -131,7 +131,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
             _mockSanitizeService.SanitizeComment(Arg.Any<string>())
                 .Returns(validComment);
-            _mockPostRepo.IsAvailableForCommentingAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+            _mockPostRepo.IsPostActiveAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(false);
 
             // Act
@@ -147,7 +147,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
 
-            await _mockPostRepo.Received(1).IsAvailableForCommentingAsync
+            await _mockPostRepo.Received(1).IsPostActiveAsync
                 (Arg.Any<int>(), Arg.Any<CancellationToken>());
 
             await _mockCommentRepo.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
@@ -166,8 +166,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext.UserId.Returns(userId);
             _mockWebContext.UserName.Returns(userName);
             _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(validComment);
-            _mockPostRepo.IsAvailableForCommentingAsync(Arg.Any<int>(), token)
-                .Returns(true);
+            _mockPostRepo.IsPostActiveAsync(Arg.Any<int>(), token).Returns(true);
 
             // Act 
             var result = await _service.AddCommentAsync(postId, validComment);
@@ -186,7 +185,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
 
-            await _mockPostRepo.Received(1).IsAvailableForCommentingAsync(Arg.Any<int>(), token);
+            await _mockPostRepo.Received(1).IsPostActiveAsync(Arg.Any<int>(), token);
 
             await _mockCommentRepo.Received(1).AddAsync(Arg.Is<Comment>(c =>
                 c.Content == validComment &&

@@ -26,7 +26,7 @@
             return query.OrderByDescending(p => p.CreatedAt);
         }
 
-        public async Task<bool> IsAvailableForCommentingAsync(int postId, CancellationToken ct)
+        public async Task<bool> IsPostActiveAsync(int postId, CancellationToken ct)
         {
             return await _dbSet.AnyAsync(p => p.Id == postId && p.IsActive, ct);
         }
