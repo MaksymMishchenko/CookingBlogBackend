@@ -53,7 +53,7 @@ namespace PostApiService.Services
             int pageSize = 10,
             CancellationToken ct = default)
         {
-            var postExists = await _postRepository.IsAvailableForCommentingAsync(postId, ct);
+            var postExists = await _postRepository.IsPostActiveAsync(postId, ct);
             if (!postExists)
             {
                 Log.Warning(Posts.NotFound, postId);
@@ -94,7 +94,7 @@ namespace PostApiService.Services
                 return Invalid<CommentCreatedDto>(CommentM.Errors.Empty, CommentM.Errors.EmptyCode);
             }
 
-            var postExists = await _postRepository.IsAvailableForCommentingAsync(postId, ct);
+            var postExists = await _postRepository.IsPostActiveAsync(postId, ct);
 
             if (!postExists)
             {
