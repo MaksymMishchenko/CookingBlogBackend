@@ -11,7 +11,7 @@ namespace PostApiService.Helper
                 Author: authorName,
                 Content: comment.Content,
                 CreatedAt: comment.CreatedAt,
-                UserId: comment.UserId               
+                UserId: comment.UserId
             );
         }
 
@@ -22,6 +22,18 @@ namespace PostApiService.Helper
                 Author: authorName,
                 Content: comment.Content,
                 CreatedAt: comment.CreatedAt,
+                UserId: comment.UserId,
+                IsEditedByAdmin: comment.IsEditedByAdmin
+            );
+        }
+
+        public static CommentDto ToCommentDto(this Comment comment)
+        {
+            return new CommentDto(
+                Id: comment.Id,
+                Content: comment.Content,
+                Author: comment?.User?.UserName ?? "Unknown User",
+                CreatedAt: comment!.CreatedAt,
                 UserId: comment.UserId,
                 IsEditedByAdmin: comment.IsEditedByAdmin
             );

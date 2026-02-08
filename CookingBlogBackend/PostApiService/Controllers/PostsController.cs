@@ -8,10 +8,12 @@ namespace PostApiService.Controllers
     public class PostsController : ControllerBase
     {
         private readonly IPostService _postsService;
+        private readonly ICommentService _commentService;
 
-        public PostsController(IPostService postsService)
+        public PostsController(IPostService postsService, ICommentService commentService)
         {
             _postsService = postsService;
+            _commentService = commentService;
         }
 
         /// <summary>
@@ -25,6 +27,18 @@ namespace PostApiService.Controllers
             var result = await _postsService.GetPostsPagedAsync
                 (query.Search, query.CategorySlug, query.PageNumber, query.PageSize, ct);
 
+            return result.ToActionResult();
+        }
+
+        /// <summary>
+        /// Retrieves a paginated list of comments for a specific post.
+        /// </summary>
+        [HttpGet("{postId:int}/comments")]
+        public async Task<IActionResult> GetCommentsByPostIdAsync(
+            int postId, [FromQuery] PaginationQueryParameters query, CancellationToken ct = default)
+        {
+            var result = await _commentService.GetCommentsByPostIdAsync(postId, query.PageNumber, query.PageSize, ct);
+            
             return result.ToActionResult();
         }
 

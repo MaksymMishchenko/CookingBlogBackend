@@ -7,14 +7,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
 {
     public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
     {
-        private readonly InMemoryDatabaseFixture _fixture;        
+        private readonly InMemoryDatabaseFixture _fixture;
         private readonly IdentityUser _testUser;
-        private readonly IWebContext _webContextMock;       
+        private readonly IWebContext _webContextMock;
 
         public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
         {
             _fixture = fixture;
-            _webContextMock = Substitute.For<IWebContext>();            
+            _webContextMock = Substitute.For<IWebContext>();
 
             _testUser = new IdentityUser
             {
@@ -35,7 +35,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             var postRepo = new PostRepository(context);
             var commentRepo = new CommentRepository(context);
-            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();                
+            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
             var catService = new CategoryService(new Repository<Category>(context), postRepo);
             var postService = new PostService(postRepo, _webContextMock, sanitizeServiceMock,
                 catService, new SnippetGeneratorService());
@@ -67,6 +67,29 @@ namespace PostApiService.Tests.IntegrationTests.Services
             await _fixture.SeedDatabaseAsync(context, postsToSeed);
 
             return CreateTestSetup(context, postsToSeed, categories);
+        }
+
+        [Fact]
+        public async Task GetCommentsByPostIdAsync_ShouldReturnDataFromDatabase()
+        {
+            // Arrange
+            const int postId = 1;
+            var (context, _, commentService, _, _) = await SetupAsync(categories =>
+                _fixture.GeneratePosts(1, categories, commentCount: 3));
+
+            using (context)
+            {
+                // Act
+                var result = await commentService.GetCommentsByPostIdAsync(postId, pageNumber: 1, pageSize: 10);
+
+                // Assert
+                Assert.True(result.IsSuccess);
+                var firstComment = result.Value!.Items.First();
+
+                Assert.Equal(3, result.Value.TotalCount);
+                Assert.Equal(_testUser.UserName, firstComment.Author);
+                Assert.NotNull(firstComment.Content);
+            }
         }
 
         [Fact]
