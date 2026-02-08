@@ -13,12 +13,13 @@
             public static class Posts
             {
                 public const string Base = "/api/posts";
-                public const string GetById = "/api/posts/{0}";
+                public const string AdminBase = "/api/admin/posts";
+                public const string GetById = "/api/admin/posts/{0}";
                 public const string GetBySlug = "/api/posts/{0}/{1}";
                 public const string GetByCategorySlug = "/api/posts/category/{0}?pageNumber={1}&pageSize={2}";
                 public const string Search = "/api/posts/search?queryString={0}&pageNumber={1}&pageSize={2}";
-                public const string Paginated = "/api/posts?pageNumber={0}&pageSize={1}";
-                public const string AdminPaginated = "/api/posts/admin?search={0}&categorySlug={1}&onlyActive={2}&pageNumber={3}&pageSize={4}";
+                public const string Paginated = "/api/posts?pageNumber={0}&pageSize={1}";                
+                public const string AdminPaginated = "/api/admin/posts?search={0}&categorySlug={1}&onlyActive={2}&pageNumber={3}&pageSize={4}";
             }
 
             public static class Comments
