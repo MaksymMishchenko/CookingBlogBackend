@@ -414,13 +414,14 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Posts/",
+              "raw": "{{baseUrl}}/api/admin/posts/",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Posts",
+                "admin",
+                "posts",
                 ""
               ]
             }
@@ -469,12 +470,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+              "raw": "{{baseUrl}}/api/admin/posts/{{temp_post_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
+                "admin",
                 "posts",
                 "{{temp_post_id}}"
               ]
@@ -616,14 +618,14 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts/admin?search=lorem&onlyActive=true&categorySlug=beverages&pageNumber=1&pageSize=10",
+              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categorySlug=beverages&onlyActive=true&pageNumber=1&pageSize=10",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "posts",
-                "admin"
+                "admin",
+                "posts"
               ],
               "query": [
                 {
@@ -631,12 +633,12 @@
                   "value": "lorem"
                 },
                 {
-                  "key": "onlyActive",
-                  "value": "true"
-                },
-                {
                   "key": "categorySlug",
                   "value": "beverages"
+                },
+                {
+                  "key": "onlyActive",
+                  "value": "true"
                 },
                 {
                   "key": "pageNumber",
@@ -707,12 +709,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+              "raw": "{{baseUrl}}/api/admin/posts/{{temp_post_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
+                "admin",
                 "posts",
                 "{{temp_post_id}}"
               ]
@@ -919,12 +922,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}",
+              "raw": "{{baseUrl}}/api/admin/posts/{{temp_post_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
+                "admin",
                 "posts",
                 "{{temp_post_id}}"
               ],
