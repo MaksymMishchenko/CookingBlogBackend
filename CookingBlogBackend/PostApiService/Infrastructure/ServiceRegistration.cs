@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
@@ -6,13 +7,14 @@ using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Constants;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
+using PostApiService.Models.Common;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
 using Serilog.Exceptions;
-using Serilog.Settings.Configuration;
 using System.Security.Claims;
 using System.Text;
+using System.Threading.RateLimiting;
 
 namespace PostApiService.Infrastructure
 {
@@ -23,7 +25,7 @@ namespace PostApiService.Infrastructure
         /// </summary>        
         public static void AddAppLogging(this IHostBuilder host, IConfiguration configuration)
         {
-            Log.Logger = new LoggerConfiguration()               
+            Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
                 .Enrich.FromLogContext()
                 .Enrich.WithExceptionDetails()
@@ -61,6 +63,7 @@ namespace PostApiService.Infrastructure
             services.AddScoped<ICommentService, CommentService>();
 
             services.AddExternalTools(configuration);
+            services.AddAppRateLimiting(configuration);
 
             return services;
         }
@@ -78,6 +81,74 @@ namespace PostApiService.Infrastructure
 
             services.Configure<SanitizerConfiguration>(section);
             services.AddSingleton<IHtmlSanitizationService, HtmlSanitizationService>();
+
+            return services;
+        }
+
+        public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
+        {          
+            services.AddOptions<RateLimitOptions>()
+                .Bind(configuration.GetSection(RateLimitSection))
+                .ValidateDataAnnotations()
+                .ValidateOnStart();
+
+            services.AddRateLimiter(options =>
+            {
+                options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+
+                options.AddPolicy(RateLimitOptions.PolicyName, httpContext =>
+                {
+                    var rateOptions = httpContext.RequestServices
+                        .GetRequiredService<IOptions<RateLimitOptions>>().Value;
+
+                    if (httpContext.User.IsInRole(TS.Roles.Admin))
+                    {
+                        return RateLimitPartition.GetNoLimiter(TS.Roles.Admin);
+                    }
+
+                    var userKey = httpContext.User.FindFirstValue(ClaimTypes.NameIdentifier)
+                                  ?? httpContext.Connection.RemoteIpAddress?.ToString()
+                                  ?? "anonymous";
+
+                    return RateLimitPartition.GetFixedWindowLimiter(
+                        partitionKey: userKey,
+                        factory: _ => new FixedWindowRateLimiterOptions
+                        {
+                            PermitLimit = rateOptions.PermitLimit,
+                            Window = TimeSpan.FromMinutes(rateOptions.WindowMinutes),
+                            QueueLimit = 0,
+                            QueueProcessingOrder = QueueProcessingOrder.OldestFirst
+                        });
+                });
+
+                options.OnRejected = async (context, ct) =>
+                {
+                    var rateOptions = context.HttpContext.RequestServices
+                        .GetRequiredService<IOptions<RateLimitOptions>>().Value;
+
+                    Log.Warning(Security.RateLimitExceeded,
+                        context.HttpContext.Connection.RemoteIpAddress,
+                        context.HttpContext.Request.Path,
+                        context.HttpContext.Request.Method);
+
+                    var message = string.Format(
+                        RateLimitOptions.Errors.LimitExceeded,
+                        rateOptions.PermitLimit,
+                        rateOptions.WindowMinutes
+                    );
+
+                    var errorResponse = ApiResponse.CreateErrorResponse(
+                        message: message,
+                        errorCode: RateLimitOptions.Errors.ErrorCode
+                    );
+
+                    context.HttpContext.Response.ContentType = "application/json";
+
+                    context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+                    await context.HttpContext.Response.WriteAsJsonAsync(errorResponse, ct);
+                };
+            });
 
             return services;
         }

@@ -36,6 +36,9 @@
 
             public const string AccessDenied =
                 "Security Alert: User {UserId} attempted unauthorized {Action} on {ResourceType} {ResourceId}. Owner: {OwnerId}, IP: {IP}";
+            
+            public const string RateLimitExceeded =
+                 "Security Alert: Rate limit exceeded. IP: {IP}, Path: {Path}, Method: {Method}";
         }
 
         public static class System

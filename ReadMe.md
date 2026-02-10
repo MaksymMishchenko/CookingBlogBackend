@@ -24,9 +24,15 @@ This repository contains the backend for the CookingBlog project, built with C#.
 * **Identity:** Microsoft Identity Framework
 * **Tokens:** JWT Bearer Authentication
 * **Content Safety:** [HtmlSanitizer](https://github.com/mganss/HtmlSanitizer) (XSS protection for user posts and comments)
+* **Rate Limiting:** ASP.NET Core Rate Limiting Middleware (Fixed Window/Token Bucket policies).
+
+### SEO & Routing
+* **Slug Generation:** Custom logic for SEO-friendly URLs (transliteration and normalization).
+
+Routing: Attribute routing with slug constraints.
 
 ### Testing & Quality Assurance
-* **Unit Testing:** xUnit & [FluentAssertions](https://fluentassertions.com/)
+* **Unit Testing:** xUnit
 * **Integration Testing:** [Testcontainers](https://testcontainers.com/) (spinning up real SQL Server instances in Docker for isolated testing)
 * **Database Lifecycle:** [Respawn](https://github.com/jbogard/Respawn) (intelligent database state reset between test runs)
 * **Data Generation:** [Bogus](https://github.com/bchavez/Bogus) (fake data for seeding and tests)
@@ -116,12 +122,6 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"cov
 * **Test Data Generation**: Bogus library is used for generating realistic test data.
 
 ## Roadmap / To-Do
-* **Security Improvements**: Implement `RateLimiting` for API throttling.
-* **Comment System**: Implement an endpoint to retrieve a paginated list of comments by Post ID.
-* **Post Management (Admin)**: 
-    * Add filtering/sorting for posts by active and inactive status (for frontend display).
-    * Implement dedicated admin endpoints to retrieve all posts (including inactive/drafts).
-* **SEO & Routing**: Implement a method in `PostService` to retrieve posts by **Slug** for SEO-friendly URLs.
 * **Docker**: Containerize the application using multi-stage builds.
 * **Redis**: Implement caching for popular posts to improve performance.
 
