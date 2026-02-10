@@ -24,9 +24,9 @@ public static class TestUserBuilder
 
         claims.AddRange(ExpandPermissions(controller, serializedClaim));
 
-        return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme"));
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme", ClaimTypes.Name, ClaimTypes.Role));
     }
-
+    // ClaimTypes.Name, ClaimTypes.Role
     public static ClaimsPrincipal CreateContributor(string controller = TS.Controller.Comment)
     {
         var serializedClaim = GetContributorPermissionsClaim(controller);
@@ -40,7 +40,23 @@ public static class TestUserBuilder
 
         claims.AddRange(ExpandPermissions(controller, serializedClaim));
 
-        return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme"));
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme", ClaimTypes.Name, ClaimTypes.Role));
+    }
+
+    public static ClaimsPrincipal CreateContributor2(string controller = TS.Controller.Comment)
+    {
+        var serializedClaim = GetContributorPermissionsClaim(controller);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, TestUserData.Contributor2Id),
+            new Claim(ClaimTypes.Name, TestUserData.Contributor2UserName),
+            new Claim(ClaimTypes.Role, TS.Roles.Contributor)
+        };
+
+        claims.AddRange(ExpandPermissions(controller, serializedClaim));
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme", ClaimTypes.Name, ClaimTypes.Role));
     }
 
 
@@ -66,7 +82,7 @@ public static class TestUserBuilder
             await roleManager.CreateAsync(new IdentityRole(TS.Roles.Admin));
 
         if (!await roleManager.RoleExistsAsync(TS.Roles.Contributor))
-            await roleManager.CreateAsync(new IdentityRole(TS.Roles.Contributor));
+            await roleManager.CreateAsync(new IdentityRole(TS.Roles.Contributor));        
 
         var adminUser = new IdentityUser
         {
@@ -84,6 +100,15 @@ public static class TestUserBuilder
             Email = "c@test.com"
         };
         await EnsureUserCreatedAsync(userManager, contributorUser, TestUserData.ContributorPassword, TS.Roles.Contributor,
+            GetContributorPermissionsClaim(TS.Controller.Comment));
+
+        var contributorUser2 = new IdentityUser
+        {
+            Id = TestUserData.Contributor2Id,
+            UserName = TestUserData.Contributor2UserName,
+            Email = "c2@test.com"
+        };
+        await EnsureUserCreatedAsync(userManager, contributorUser2, TestUserData.Contributor2Password, TS.Roles.Contributor,
             GetContributorPermissionsClaim(TS.Controller.Comment));
     }
 

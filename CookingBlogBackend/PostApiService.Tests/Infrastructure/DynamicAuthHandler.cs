@@ -22,6 +22,7 @@ public class DynamicAuthHandler : AuthenticationHandler<AuthenticationSchemeOpti
         {
             TestUserData.AdminKey => TestUserBuilder.CreateAdmin(),
             TestUserData.ContributorKey => TestUserBuilder.CreateContributor(),
+            TestUserData.Contributor2Key => TestUserBuilder.CreateContributor2(),
             _ => null
         };
 

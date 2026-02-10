@@ -1,11 +1,16 @@
 ﻿using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
 using PostApiService.Infrastructure.Common;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using System.Security.Claims;
+using System.Threading.RateLimiting;
 public static class ServiceCollectionExtensions
 {
     public static void AddTestDatabase(this IServiceCollection services, string connectionString)
@@ -55,6 +60,19 @@ public static class ServiceCollectionExtensions
             .Returns("mock-token");
 
         services.AddScoped(_ => tokenServiceMock);
+
+        return services;
+    }
+
+    public static IServiceCollection DisableRateLimiting(this IServiceCollection services)
+    {        
+        services.RemoveAll(typeof(IConfigureOptions<RateLimiterOptions>));
+
+        services.AddRateLimiter(options =>
+        {
+            options.AddPolicy(RateLimitOptions.PolicyName, context =>
+                RateLimitPartition.GetNoLimiter("BypassAll"));
+        });
 
         return services;
     }

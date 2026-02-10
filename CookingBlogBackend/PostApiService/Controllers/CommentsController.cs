@@ -1,4 +1,6 @@
-﻿using PostApiService.Interfaces;
+﻿using Microsoft.AspNetCore.RateLimiting;
+using PostApiService.Infrastructure.Configuration;
+using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -7,6 +9,7 @@ namespace PostApiService.Controllers
     [Controller]
     [Route("api/[controller]")]
     [Authorize(Policy = TS.Policies.ContributorPolicy)]
+    [EnableRateLimiting(RateLimitOptions.PolicyName)]
     public class CommentsController : ControllerBase
     {
         private readonly ICommentService _commentService;
@@ -19,7 +22,7 @@ namespace PostApiService.Controllers
         /// <summary>
         /// Adds a comment to a specific post.
         /// </summary>        
-        [HttpPost("{postId}")]
+        [HttpPost("{postId}")]        
         public async Task<IActionResult> AddCommentAsync
             (int postId, [FromBody] CommentCreateDto comment, CancellationToken ct = default)
         {
@@ -31,7 +34,7 @@ namespace PostApiService.Controllers
         /// <summary>
         /// Updates an existing comment based on the provided comment ID.
         /// </summary>        
-        [HttpPut("{commentId}")]
+        [HttpPut("{commentId}")]        
         public async Task<IActionResult> UpdateCommentAsync
             (int commentId, [FromBody] CommentUpdateDto comment, CancellationToken ct = default)
         {

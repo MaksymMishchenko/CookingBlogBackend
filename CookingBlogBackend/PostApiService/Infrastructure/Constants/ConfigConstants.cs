@@ -7,6 +7,7 @@
         public const string HtmlSanitizer = "HtmlSanitizer";
         public const string UnknownIp = "Unknown";
         public const string UnknownUser = "Unknown User";
+        public const string RateLimitSection = "RateLimiting";
 
         public static class Errors
         {
