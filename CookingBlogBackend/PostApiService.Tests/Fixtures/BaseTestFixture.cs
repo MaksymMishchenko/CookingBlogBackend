@@ -1,9 +1,15 @@
-﻿using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Options;
+using PostApiService.Infrastructure.Configuration;
 using PostApiService.Tests.Infrastructure;
 using Respawn;
+using System.Threading.RateLimiting;
 
 namespace PostApiService.Tests.Fixtures
 {
@@ -50,7 +56,7 @@ namespace PostApiService.Tests.Fixtures
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
             await context.Database.MigrateAsync();
-            await context.Database.EnsureCreatedAsync();           
+            await context.Database.EnsureCreatedAsync();
         }
 
         private async Task InitializeRespawnerAsync()
@@ -64,7 +70,10 @@ namespace PostApiService.Tests.Fixtures
             });
         }
 
-        protected virtual void ConfigureTestServices(IServiceCollection services) { }
+        protected virtual void ConfigureTestServices(IServiceCollection services)
+        {
+            services.DisableRateLimiting();
+        }
 
         public async Task ResetDatabaseAsync()
         {
@@ -81,6 +90,12 @@ namespace PostApiService.Tests.Fixtures
         {
             Client!.DefaultRequestHeaders.Remove(TestUserData.TestUserHeader);
             Client!.DefaultRequestHeaders.Add(TestUserData.TestUserHeader, TestUserData.ContributorKey);
+        }
+
+        public void LoginAsContributor2()
+        {
+            Client!.DefaultRequestHeaders.Remove(TestUserData.TestUserHeader);
+            Client!.DefaultRequestHeaders.Add(TestUserData.TestUserHeader, TestUserData.Contributor2Key);
         }
 
         public virtual async Task DisposeAsync()
