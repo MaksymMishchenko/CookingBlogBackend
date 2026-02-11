@@ -86,7 +86,7 @@ namespace PostApiService.Infrastructure
         }
 
         public static IServiceCollection AddAppRateLimiting(this IServiceCollection services, IConfiguration configuration)
-        {          
+        {
             services.AddOptions<RateLimitOptions>()
                 .Bind(configuration.GetSection(RateLimitSection))
                 .ValidateDataAnnotations()
@@ -237,6 +237,8 @@ namespace PostApiService.Infrastructure
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
+                //if (await cntx.Users.AnyAsync()) return app;
+
                 await cntx.Database.EnsureDeletedAsync();
 
                 if (await cntx.Database.EnsureCreatedAsync())
@@ -304,19 +306,32 @@ namespace PostApiService.Infrastructure
                 if (await cntx.Posts.AnyAsync()) return app;
 
                 var userIds = await cntx.Users
-                    .Select(u => u.Id)
-                    .ToArrayAsync();
+                .Select(u => u.Id)
+                .ToArrayAsync();
 
                 if (userIds.Length == 0)
                 {
                     throw new Exception("SeedData: No users found in database. Seed users first!");
                 }
 
+                if (await cntx.Posts.AnyAsync())
+                {
+                    cntx.Posts.RemoveRange(cntx.Posts);
+                    await cntx.SaveChangesAsync();
+
+                    if (await cntx.Categories.AnyAsync())
+                    {
+                        cntx.Categories.RemoveRange(cntx.Categories);
+                        await cntx.SaveChangesAsync();
+                    }
+                }
+
                 var postsList = SeedData.GetPostsWithComments
-                    (count: 150, commentCount: 20, userIds: userIds);
+                    (count: 150, commentCount: 10, userIds: userIds);
 
                 await cntx.Posts.AddRangeAsync(postsList);
                 await cntx.SaveChangesAsync();
+
             }
             return app;
         }

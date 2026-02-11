@@ -1,15 +1,9 @@
-﻿using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.RateLimiting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Options;
-using PostApiService.Infrastructure.Configuration;
 using PostApiService.Tests.Infrastructure;
 using Respawn;
-using System.Threading.RateLimiting;
 
 namespace PostApiService.Tests.Fixtures
 {
@@ -55,8 +49,7 @@ namespace PostApiService.Tests.Fixtures
             using var scope = Services!.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            await context.Database.MigrateAsync();
-            await context.Database.EnsureCreatedAsync();
+            await context.Database.MigrateAsync();            
         }
 
         private async Task InitializeRespawnerAsync()

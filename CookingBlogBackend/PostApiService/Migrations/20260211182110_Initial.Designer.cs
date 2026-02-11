@@ -11,7 +11,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260128220008_Initial")]
+    [Migration("20260211182110_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
@@ -245,6 +245,9 @@ namespace PostApiService.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
                     b.ToTable("Categories");
                 });
 
@@ -309,8 +312,8 @@ namespace PostApiService.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("nvarchar(250)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
@@ -343,6 +346,8 @@ namespace PostApiService.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("IsActive");
 
                     b.HasIndex("Slug")
                         .IsUnique();

@@ -14,7 +14,7 @@ namespace PostApiService.Models
         public string Title { get; set; } = default!;
 
         [Required]
-        [MaxLength(250)]
+        [MaxLength(1000)]
         public string Description { get; set; } = default!;
 
         [Required]
