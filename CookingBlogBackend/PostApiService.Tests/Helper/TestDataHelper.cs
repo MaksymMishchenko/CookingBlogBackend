@@ -520,20 +520,21 @@ namespace PostApiService.Tests.Helper
 
         public static IEnumerable<object[]> GetPostFilterData()
         {                        
-            yield return new object[] { null!, null!, null!, 5 };    
-            yield return new object[] { null!, null!, true, 3 };    
-            yield return new object[] { null!, null!, false, 2 };    
+            yield return new object[] { null!, null!, null!, 5, null! };    
+            yield return new object[] { null!, null!, true, 3, null! };    
+            yield return new object[] { null!, null!, false, 2, null! };    
             
-            yield return new object[] { "Lorem", null!, null!, 5 };  
-            yield return new object[] { "Lorem", null!, true, 3 }; 
-            yield return new object[] { "1", null!, null!, 1 };
-            
-            yield return new object[] { null!, "beverages", null!, 1 };
-            yield return new object[] { null!, "beverages", true, 1 };
-            yield return new object[] { null!, "beverages", false, 0 };
+            yield return new object[] { "Lorem", null!, null!, 5, null! };  
+            yield return new object[] { "Lorem", null!, true, 3, null! }; 
+            yield return new object[] { "1", null!, null!, 1, null! };
+
+
+            yield return new object[] { null!, "beverages", null!, 1, "Beverages" };
+            yield return new object[] { null!, "beverages", true, 1, "Beverages" };
+            yield return new object[] { null!, "beverages", false, 0, "Beverages" };
            
-            yield return new object[] { "Lorem", "desserts", true, 1 };
-            yield return new object[] { "Lorem", "vegetarian", false, 1 };
+            yield return new object[] { "Lorem", "desserts", true, 1, "Desserts" };
+            yield return new object[] { "Lorem", "vegetarian", false, 1, "Vegetarian" };
         }
 
         public static List<Category> GetCulinaryCategories()

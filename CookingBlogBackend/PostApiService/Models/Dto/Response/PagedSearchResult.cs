@@ -1,8 +1,8 @@
 ﻿namespace PostApiService.Models.Dto.Response
 {
-    public record PagedSearchResult<T>(
-        string Query,
+    public record PagedSearchResult<T>(        
         IEnumerable<T> Items,
+        AppliedFiltersDto AppliedFilters,
         int TotalSearchCount,
         int PageNumber,
         int PageSize,
@@ -10,7 +10,7 @@
     {
         public object GetItems() => Items;
         public int TotalCount => TotalSearchCount;
-        string ISearchPagedResult.Query => Query;
+        AppliedFiltersDto IPagedResult.AppliedFilters => AppliedFilters;
         string ISearchPagedResult.Message => Message!;
     }
 }

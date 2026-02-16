@@ -108,9 +108,14 @@ namespace PostApiService.Tests.UnitTests.Extensions
         {
             // Arrange
             var items = new List<SearchPostListDto> { new(1, "Title", "slug", "snippet", "author", "cat", "cat") };
-            var searchRecord = new PagedSearchResult<SearchPostListDto>(
-                Query: "dessert",
+            var filterDto = new AppliedFiltersDto(
+                Search: "dessert",
+                CategoryName: "cat"
+            );
+
+            var searchRecord = new PagedSearchResult<SearchPostListDto>(                
                 Items: items,
+                filterDto,
                 TotalSearchCount: 1,
                 PageNumber: 1,
                 PageSize: 10,
@@ -126,7 +131,7 @@ namespace PostApiService.Tests.UnitTests.Extensions
             var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
 
             Assert.True(response.Success);
-            Assert.Equal("dessert", response.SearchQuery);
+            Assert.Equal("dessert", response.AppliedFilters!.Search);
             Assert.Equal("Found 1 posts", response.Message);
             Assert.Equal(1, response.TotalCount);
             

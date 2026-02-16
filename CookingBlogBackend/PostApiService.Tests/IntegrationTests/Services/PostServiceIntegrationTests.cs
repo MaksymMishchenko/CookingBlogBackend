@@ -35,13 +35,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var repo = new PostRepository(context);
             var webContextMock = Substitute.For<IWebContext>();
             var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
+            var categoryRepository = Substitute.For<ICategoryRepository>();
             var catService = new CategoryService(new Repository<Category>(context), repo);
 
             webContextMock.UserId.Returns(_testUser.Id);
             sanitizeServiceMock.SanitizePost(Arg.Any<string>()).Returns(x => x.Arg<string>());
             webContextMock.UserName.Returns(_testUser.UserName);
 
-            var service = new PostService(repo, webContextMock, sanitizeServiceMock, catService, new SnippetGeneratorService());
+            var service = new PostService(repo, categoryRepository, webContextMock, sanitizeServiceMock, catService, new SnippetGeneratorService());
 
             return new TestSetup(context, service, posts, categories);
         }
@@ -104,9 +105,11 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 // Assert                
                 Assert.True(result.IsSuccess);
 
-                var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);
+                var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);               
 
                 Assert.Equal(ActiveCount, data.TotalCount);
+                Assert.Null(data.AppliedFilters!.Search);
+                Assert.Null(data.AppliedFilters.CategoryName!);
                 Assert.Equal(expectedActivePosts.Count, data.Items.Count());
 
                 Assert.All(data.Items.Select((item, index) => new { item, index }), x =>
@@ -161,12 +164,13 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 var data = Assert.IsType<PagedSearchResult<SearchPostListDto>>(result.Value);
 
                 Assert.Equal(MatchCount, data.TotalCount);
-                Assert.Equal(SearchTerm, data.Query);
+                Assert.Equal(SearchTerm, data.AppliedFilters.Search);
+                Assert.Null(data.AppliedFilters.CategoryName);
 
                 Assert.All(data.Items, item =>
                 {
-                    Assert.Contains(SearchTerm, item.Title.ToLower());
-                    Assert.NotNull(item.SearchSnippet);
+                    Assert.Contains(SearchTerm, item.Title.ToLower());                    
+                    Assert.NotEmpty(item.SearchSnippet);
                 });
             }
         }
@@ -214,6 +218,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
                 var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
 
+                Assert.Equal(SearchTerm, data.AppliedFilters!.Search);
+                Assert.Null(data.AppliedFilters.CategoryName!);
+
                 Assert.Equal(MatchCount, data.TotalCount);
                 Assert.All(data.Items, item =>
                 {
@@ -247,9 +254,12 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 // Act
                 var result = await postService.GetAdminPostsPagedAsync(onlyActive: false);
 
+                var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
+
                 // Assert
                 Assert.True(result.IsSuccess);
-                Assert.Equal(InactiveMatchCount, result.Value!.TotalCount);
+                Assert.NotNull(data.AppliedFilters);                
+                Assert.Equal(InactiveMatchCount, result!.Value.TotalCount);
                 Assert.All(result.Value.Items, item => Assert.False(item.IsActive));
             }
         }
