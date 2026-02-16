@@ -16,6 +16,7 @@ namespace PostApiService.Tests.UnitTests
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly ICategoryService _mockCategoryService;
+        private readonly ICategoryRepository _mockCategoryRepository;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
         private readonly PostService _postService;
 
@@ -25,8 +26,10 @@ namespace PostApiService.Tests.UnitTests
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<ICategoryService>();
+            _mockCategoryRepository = Substitute.For<ICategoryRepository>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
-            _postService = new PostService(_mockRepository, _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockSnippetGenerator);
+            _postService = new PostService(_mockRepository, _mockCategoryRepository,
+                _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockSnippetGenerator);
         }
 
         [Theory]
@@ -73,7 +76,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.True(result.IsSuccess);
 
             var data = Assert.IsType<PagedSearchResult<SearchPostListDto>>(result.Value);
-            Assert.Equal(SearchTerm, data.Query);
+            Assert.Equal(SearchTerm, data.AppliedFilters.Search);
             Assert.All(data.Items, item => Assert.NotEmpty(item.SearchSnippet));
         }
 
@@ -82,7 +85,10 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string CategorySlug = "cooking";
-            _mockCategoryService.ExistsBySlugAsync(CategorySlug, Arg.Any<CancellationToken>()).Returns(true);
+            const string CategoryName = "Cooking Recipes";
+
+            _mockCategoryRepository.GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<string?>(CategoryName));
 
             var mockQuery = new List<Post>().AsQueryable().BuildMock();
             _mockRepository.GetFilteredPosts(null, true, CategorySlug).Returns(mockQuery);
@@ -91,8 +97,14 @@ namespace PostApiService.Tests.UnitTests
             var result = await _postService.GetPostsPagedAsync(categorySlug: CategorySlug);
 
             // Assert
+            var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);
+
+            Assert.NotNull(data.AppliedFilters);
+            Assert.Equal(CategoryName, data.AppliedFilters.CategoryName);
+            Assert.Null(data.AppliedFilters.Search);
+
             Assert.True(result.IsSuccess);
-            await _mockCategoryService.Received(1).ExistsBySlugAsync(CategorySlug, Arg.Any<CancellationToken>());
+            await _mockCategoryRepository.Received(1).GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -100,12 +112,13 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string FakeCategory = "fake-cat";
-            _mockCategoryService.ExistsBySlugAsync(FakeCategory, Arg.Any<CancellationToken>()).Returns(false);
+            _mockCategoryRepository.GetNameBySlugAsync(FakeCategory, Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult<string?>(null));
 
             // Act
             var result = await _postService.GetPostsPagedAsync(categorySlug: FakeCategory);
 
-            // Assert
+            // Assert            
             Assert.False(result.IsSuccess);
             Assert.Equal(PostM.Errors.CategoryNotFoundCode, result.ErrorCode);
         }
@@ -133,7 +146,7 @@ namespace PostApiService.Tests.UnitTests
         [Theory]
         [MemberData(nameof(TestDataHelper.GetPostFilterData), MemberType = typeof(TestDataHelper))]
         public async Task GetAdminPostsPagedAsync_ShouldFilterCorrectlyByIsActive
-            (string? search, string? categorySlug, bool? onlyActive, int expectedCount)
+            (string? search, string? categorySlug, bool? onlyActive, int expectedCount, string expectedName)
         {
             // Arrange                       
             const int LargePageSize = 10;
@@ -142,6 +155,9 @@ namespace PostApiService.Tests.UnitTests
             _mockWebContext.UserId.Returns("admin-id");
 
             _mockCategoryService.ExistsBySlugAsync(Arg.Any<string>(), ct).Returns(true);
+
+            _mockCategoryRepository.GetNameBySlugAsync(categorySlug, ct)
+               .Returns(Task.FromResult<string?>(expectedName));
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var allPosts = TestDataHelper.GetAdminTestPosts
@@ -162,7 +178,10 @@ namespace PostApiService.Tests.UnitTests
                 categorySlug, onlyActive, pageSize: LargePageSize, ct: ct);
 
             // Assert
+            var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
             Assert.True(result.IsSuccess);
+            Assert.Equal(search, data.AppliedFilters!.Search);
+            Assert.Equal(expectedName, data.AppliedFilters!.CategoryName);
             Assert.Equal(expectedCount, result.Value!.Items.Count());
 
             _mockRepository.Received(1).GetFilteredPosts(search, onlyActive, categorySlug);

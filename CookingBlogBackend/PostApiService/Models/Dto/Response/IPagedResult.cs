@@ -2,7 +2,8 @@
 {
     public interface IPagedResult
     {
-        object GetItems(); 
+        object GetItems();
+        AppliedFiltersDto? AppliedFilters { get; }
         int PageNumber { get; }
         int PageSize { get; }
         int TotalCount { get; }        
