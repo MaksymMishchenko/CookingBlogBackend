@@ -39,6 +39,13 @@ namespace PostApiService.Tests.UnitTests
         int page, int size, int expectedItemsCount, int totalInDb)
         {
             // Arrange
+            var dto = new PostQueryDto(
+                SearchTerm: null,
+                CategorySlug: null,
+                PageNumber: page,
+                PageSize: size
+            );
+
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(totalInDb, categories, generateIds: true);
             var mockQuery = posts.AsQueryable().BuildMock();
@@ -46,7 +53,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetFilteredPosts(null, true, null).Returns(mockQuery);
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(pageNumber: page, pageSize: size);
+            var result = await _postService.GetPostsPagedAsync(dto);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -62,6 +69,13 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string SearchTerm = "pizza";
+            var dto = new PostQueryDto(
+                SearchTerm: SearchTerm,
+                CategorySlug: null,
+                PageNumber: 1,
+                PageSize: 10
+            );
+
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetPostsWithComments(3, categories);
             var mockQuery = posts.AsQueryable().BuildMock();
@@ -70,7 +84,7 @@ namespace PostApiService.Tests.UnitTests
             _mockSnippetGenerator.CreateSnippet(Arg.Any<string>(), SearchTerm, 100).Returns("...pizza...");
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(search: SearchTerm);
+            var result = await _postService.GetPostsPagedAsync(dto);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -87,6 +101,13 @@ namespace PostApiService.Tests.UnitTests
             const string CategorySlug = "cooking";
             const string CategoryName = "Cooking Recipes";
 
+            var dto = new PostQueryDto(
+                SearchTerm: null,
+                CategorySlug: CategorySlug,
+                PageNumber: 1,
+                PageSize: 10
+            );
+
             _mockCategoryRepository.GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<string?>(CategoryName));
 
@@ -94,7 +115,7 @@ namespace PostApiService.Tests.UnitTests
             _mockRepository.GetFilteredPosts(null, true, CategorySlug).Returns(mockQuery);
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(categorySlug: CategorySlug);
+            var result = await _postService.GetPostsPagedAsync(dto);
 
             // Assert
             var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);
@@ -112,11 +133,18 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string FakeCategory = "fake-cat";
+            var dto = new PostQueryDto(
+                SearchTerm: null,
+                CategorySlug: FakeCategory,
+                PageNumber: 1,
+                PageSize: 10
+            );
+
             _mockCategoryRepository.GetNameBySlugAsync(FakeCategory, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<string?>(null));
 
             // Act
-            var result = await _postService.GetPostsPagedAsync(categorySlug: FakeCategory);
+            var result = await _postService.GetPostsPagedAsync(dto);
 
             // Assert            
             Assert.False(result.IsSuccess);
@@ -127,10 +155,18 @@ namespace PostApiService.Tests.UnitTests
         public async Task GetAdminPostsPagedAsync_ShouldReturnUnauthorized_WhenUserIdIsEmpty()
         {
             // Arrange
+            var dto = new PostAdminQueryDto(
+                SearchTerm: null,
+                CategorySlug: null,
+                PageNumber: 1,
+                PageSize: 10,
+                OnlyActive: null
+            );
+
             _mockWebContext.UserId.Returns(string.Empty);
 
             // Act
-            var result = await _postService.GetAdminPostsPagedAsync();
+            var result = await _postService.GetAdminPostsPagedAsync(dto);
 
             // Assert
             Assert.NotNull(result);
@@ -151,6 +187,14 @@ namespace PostApiService.Tests.UnitTests
             // Arrange                       
             const int LargePageSize = 10;
             var ct = CancellationToken.None;
+
+            var dto = new PostAdminQueryDto(
+               SearchTerm: search,
+               CategorySlug: categorySlug,
+               PageNumber: 1,
+               PageSize: LargePageSize,
+               OnlyActive: onlyActive
+            );
 
             _mockWebContext.UserId.Returns("admin-id");
 
@@ -174,8 +218,7 @@ namespace PostApiService.Tests.UnitTests
                 .Returns(expectedFilteredList);
 
             // Act
-            var result = await _postService.GetAdminPostsPagedAsync(search,
-                categorySlug, onlyActive, pageSize: LargePageSize, ct: ct);
+            var result = await _postService.GetAdminPostsPagedAsync(dto, ct);
 
             // Assert
             var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
@@ -195,6 +238,14 @@ namespace PostApiService.Tests.UnitTests
             const int PostCount = 1;
             var ct = CancellationToken.None;
 
+            var queryDto = new PostAdminQueryDto(
+               SearchTerm: null,
+               CategorySlug: null,
+               PageNumber: 1,
+               PageSize: 10,
+               OnlyActive: null
+            );
+
             _mockWebContext.UserId.Returns("admin-id");
 
             var categories = TestDataHelper.GetCulinaryCategories();
@@ -208,7 +259,7 @@ namespace PostApiService.Tests.UnitTests
                 .Returns(mockQueryable);
 
             // Act
-            var result = await _postService.GetAdminPostsPagedAsync(ct: ct);
+            var result = await _postService.GetAdminPostsPagedAsync(queryDto, ct);
 
             // Assert            
             Assert.True(result.IsSuccess);

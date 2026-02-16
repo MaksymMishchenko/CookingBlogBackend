@@ -118,18 +118,13 @@ namespace PostApiService.Services
         /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
         /// and the total count of active posts for correct pagination.
         /// </summary>
-        public async Task<Result<object>> GetPostsPagedAsync(
-            string? search = null,
-            string? categorySlug = null,
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken ct = default)
+        public async Task<Result<object>> GetPostsPagedAsync(PostQueryDto postQuery, CancellationToken ct = default)
         {
             string? categoryName = null;
 
-            if (!string.IsNullOrWhiteSpace(categorySlug))
+            if (!string.IsNullOrWhiteSpace(postQuery.CategorySlug))
             {
-                categoryName = await _catRepository.GetNameBySlugAsync(categorySlug, ct);
+                categoryName = await _catRepository.GetNameBySlugAsync(postQuery.CategorySlug, ct);
 
                 if (categoryName == null)
                 {
@@ -138,19 +133,20 @@ namespace PostApiService.Services
             }
 
             var appliedFilters = new AppliedFilters(
-                SearchTerm: search,
+                SearchTerm: postQuery.SearchTerm,
                 CategoryName: categoryName
             );
 
-            var query = _postRepository.GetFilteredPosts(search, onlyActive: true, categorySlug);
+            var query = _postRepository.GetFilteredPosts(postQuery.SearchTerm, onlyActive: true, postQuery.CategorySlug);
 
-            if (!string.IsNullOrWhiteSpace(search))
+            if (!string.IsNullOrWhiteSpace(postQuery.SearchTerm))
             {
-                var searchResult = await GetPostsWithSnippetsAsync(query, appliedFilters, search, pageNumber, pageSize, ct);
+                var searchResult = await GetPostsWithSnippetsAsync(query, appliedFilters,
+                    postQuery.SearchTerm, postQuery.PageNumber, postQuery.PageSize, ct);
                 return Success<object>(searchResult.Value!);
             }
 
-            var result = await GetPagedDataAsync(query, appliedFilters, pageNumber, pageSize,
+            var result = await GetPagedDataAsync(query, appliedFilters, postQuery.PageNumber, postQuery.PageSize,
                 PostMappingExtensions.ToDtoExpression, ct);
 
             return Success<object>(result);
@@ -162,12 +158,7 @@ namespace PostApiService.Services
         /// Supports full-text search, filtering by category slug, and filtering by activity status.
         /// </summary>
         public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
-            string? search = null,
-            string? categorySlug = null,
-            bool? onlyActive = null,
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken ct = default)
+            PostAdminQueryDto postQuery, CancellationToken ct = default)
         {
             var userId = WebContext.UserId;
 
@@ -178,9 +169,9 @@ namespace PostApiService.Services
 
             string? categoryName = null;
 
-            if (!string.IsNullOrWhiteSpace(categorySlug))
+            if (!string.IsNullOrWhiteSpace(postQuery.CategorySlug))
             {
-                categoryName = await _catRepository.GetNameBySlugAsync(categorySlug, ct);
+                categoryName = await _catRepository.GetNameBySlugAsync(postQuery.CategorySlug, ct);
 
                 if (categoryName == null)
                 {
@@ -188,14 +179,15 @@ namespace PostApiService.Services
                 }
             }
 
-            var query = _postRepository.GetFilteredPosts(search, onlyActive, categorySlug);
+            var query = _postRepository.GetFilteredPosts(postQuery.SearchTerm,
+                postQuery.OnlyActive, postQuery.CategorySlug);
 
             var appliedFilters = new AppliedFilters(
-              SearchTerm: search,
+              SearchTerm: postQuery.SearchTerm,
               CategoryName: categoryName
             );
 
-            var result = await GetPagedDataAsync(query, appliedFilters, pageNumber, pageSize,
+            var result = await GetPagedDataAsync(query, appliedFilters, postQuery.PageNumber, postQuery.PageSize,
                 PostMappingExtensions.ToAdminPostListDto, ct);
 
             return Success(result);

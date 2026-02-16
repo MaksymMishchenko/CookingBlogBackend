@@ -25,9 +25,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange            
             var queryParams = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
+            var dto = queryParams.ToDto();
             var mockData = new PagedResult<PostListDto>(new List<PostListDto>(), 0, 1, 10);
 
-            _mockPostService.GetPostsPagedAsync(null, null, 1, 10, Arg.Any<CancellationToken>())
+            _mockPostService.GetPostsPagedAsync(dto, Arg.Any<CancellationToken>())
                 .Returns(Result<object>.Success(mockData));
 
             // Act
@@ -44,7 +45,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.IsAssignableFrom<IEnumerable<PostListDto>>(response.Data);
             Assert.Empty(response.Data);
 
-            await _mockPostService.Received(1).GetPostsPagedAsync(null, null, 1, 10, Arg.Any<CancellationToken>());
+            await _mockPostService.Received(1).GetPostsPagedAsync(dto, Arg.Any<CancellationToken>());
         }
 
         [Theory]
@@ -63,21 +64,18 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 CategorySlug = categorySlug,
                 PageNumber = 1,
                 PageSize = 10
-            };            
+            };
+
+            var dto = queryParams.ToDto();
 
             var appliedFiltersDto = new AppliedFiltersDto(searchTerm, expectedCategoryName);
-            
+
             object mockData = !string.IsNullOrWhiteSpace(searchTerm)
                 ? new PagedSearchResult<SearchPostListDto>(new List<SearchPostListDto>(), appliedFiltersDto, 0, 1, 10, "Found 0 posts")
                 : new PagedResult<PostListDto>(new List<PostListDto>(), 0, 1, 10, appliedFiltersDto);
 
-            _mockPostService.GetPostsPagedAsync(
-                Arg.Any<string?>(),
-                Arg.Any<string?>(),
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>())
-            .Returns(Result<object>.Success(mockData));
+            _mockPostService.GetPostsPagedAsync(dto, Arg.Any<CancellationToken>())
+                .Returns(Result<object>.Success(mockData));
 
             // Act
             var result = await _postsController.GetPostsAsync(queryParams);
@@ -99,8 +97,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var queryParams = new PostQueryParameters { CategorySlug = invalidCategorySlug };
+            var dto = queryParams.ToDto();
 
-            _mockPostService.GetPostsPagedAsync(null, invalidCategorySlug, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            _mockPostService.GetPostsPagedAsync(dto, Arg.Any<CancellationToken>())
                 .Returns(Result<object>.NotFound(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode));
 
             // Act
@@ -119,7 +118,9 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var queryParams = new PostQueryParameters { CategorySlug = "invalid-cat" };
-            _mockPostService.GetPostsPagedAsync(null, "invalid-cat", Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            var dto = queryParams.ToDto();
+
+            _mockPostService.GetPostsPagedAsync(dto, Arg.Any<CancellationToken>())
                 .Returns(Result<object>.NotFound(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode));
 
             // Act

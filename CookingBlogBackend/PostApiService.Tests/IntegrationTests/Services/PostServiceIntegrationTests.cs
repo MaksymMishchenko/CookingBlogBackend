@@ -1,6 +1,7 @@
 ﻿using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
+using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
 using PostApiService.Services;
@@ -70,6 +71,13 @@ namespace PostApiService.Tests.IntegrationTests.Services
             const int InactiveCount = 5;
             const int ExpectedCommentCountPerPost = 2;
 
+            var queryDto = new PostQueryDto(
+                SearchTerm: null,
+                CategorySlug: null,
+                PageNumber: ExpectedPageNumber,
+                PageSize: ExpectedPageSize
+            );
+
             var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
             {
                 var active = _fixture.GeneratePosts(ActiveCount, cats, ExpectedCommentCountPerPost);
@@ -100,7 +108,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     .ToList();
 
                 // Act                
-                var result = await postService.GetPostsPagedAsync(pageNumber: ExpectedPageNumber, pageSize: ExpectedPageSize);
+                var result = await postService.GetPostsPagedAsync(queryDto);
 
                 // Assert                
                 Assert.True(result.IsSuccess);
@@ -129,8 +137,16 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             // Arrange
             const string SearchTerm = "pizza";
+            const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 5;
             const int MatchCount = 3;
+
+            var queryDto = new PostQueryDto(
+                SearchTerm: SearchTerm,
+                CategorySlug: null,
+                PageNumber: ExpectedPageNumber,
+                PageSize: ExpectedPageSize
+            );
 
             var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
             {
@@ -156,7 +172,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 // Act
-                var result = await postService.GetPostsPagedAsync(search: SearchTerm, pageSize: ExpectedPageSize);
+                var result = await postService.GetPostsPagedAsync(queryDto);
 
                 // Assert
                 Assert.True(result.IsSuccess);
@@ -180,9 +196,18 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             // Arrange
             const string SearchTerm = "burger";
+            const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 5;
             const int MatchCount = 3;
             var ct = CancellationToken.None;
+
+            var queryDto = new PostAdminQueryDto(
+                SearchTerm: SearchTerm,
+                CategorySlug: null,
+                PageNumber: ExpectedPageNumber,
+                PageSize: ExpectedPageSize,
+                OnlyActive: null
+            );
 
             var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
             {
@@ -208,10 +233,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 // Act
-                var result = await postService.GetAdminPostsPagedAsync(
-                    search: SearchTerm,
-                    pageSize: ExpectedPageSize,
-                    ct: ct);
+                var result = await postService.GetAdminPostsPagedAsync(queryDto, ct);
 
                 // Assert
                 Assert.True(result.IsSuccess);
@@ -238,6 +260,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
             // Arrange           
             const int InactiveMatchCount = 2;
 
+            var queryDto = new PostAdminQueryDto(
+                SearchTerm: null,
+                CategorySlug: null,
+                PageNumber: 1,
+                PageSize: 10,
+                OnlyActive: false
+            );
+
             var (context, postService, _, _) = await SetupAsync(cats =>
             {
                 var active = _fixture.GeneratePosts(5, cats, 0);
@@ -252,7 +282,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             using (context)
             {
                 // Act
-                var result = await postService.GetAdminPostsPagedAsync(onlyActive: false);
+                var result = await postService.GetAdminPostsPagedAsync(queryDto);
 
                 var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
 

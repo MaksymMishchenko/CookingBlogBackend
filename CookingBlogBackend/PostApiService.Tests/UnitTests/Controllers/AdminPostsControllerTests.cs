@@ -33,13 +33,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 expectedMessage,
                 expectedErrorCode);
 
-            _mockPostService.GetAdminPostsPagedAsync(
-                    Arg.Any<string>(),
-                    Arg.Any<string>(),
-                    Arg.Any<bool?>(),
-                    Arg.Any<int>(),
-                    Arg.Any<int>(),
-                    ct)
+            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
                 .Returns(authError);
 
             // Act
@@ -76,8 +70,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<AdminPostListDto>>.Success(pagedData);
 
-            _mockPostService.GetAdminPostsPagedAsync(query.Search, query.CategorySlug,
-                query.OnlyActive, query.PageNumber, query.PageSize, ct)
+            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
                 .Returns(pagedResult);
 
             // Act
@@ -90,12 +83,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
 
             await _mockPostService.Received(1).GetAdminPostsPagedAsync(
-                query.Search,
-                query.CategorySlug,
-                query.OnlyActive,
-                ExpectedPageNumber,
-                ExpectedPageSize,
-                ct);
+                Arg.Any<PostAdminQueryDto>(), ct);
         }
 
         [Theory]
@@ -119,13 +107,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 appliedFiltersDto
             );
 
-            _mockPostService.GetAdminPostsPagedAsync(
-                searchTerm,
-                categorySlug,
-                onlyActive,
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>())
+            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
             .Returns(Result<PagedResult<AdminPostListDto>>.Success(mockPagedResult));
 
             // Act            
@@ -158,13 +140,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 CategoryM.Errors.CategoryNotFound,
                 PostM.Errors.CategoryNotFoundCode);
 
-            _mockPostService.GetAdminPostsPagedAsync(
-                Arg.Any<string>(),
-                queryParams.CategorySlug,
-                Arg.Any<bool?>(),
-                Arg.Any<int>(),
-                Arg.Any<int>(),
-                Arg.Any<CancellationToken>())
+            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
