@@ -9,6 +9,8 @@ namespace PostApiService.Models.Dto.Requests
 
         [RegularExpression(@"^[a-z0-9]+(?:-[a-z0-9]+)*$", ErrorMessage = Global.Validation.SlugFormat)]
         [StringLength(100, ErrorMessage = Global.Validation.MaxLength)]
-        public string? CategorySlug { get; set; }       
+        public string? CategorySlug { get; set; }
+
+        public PostQueryDto ToDto() => new(Search, CategorySlug, PageNumber, PageSize);
     }
 }
