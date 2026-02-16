@@ -37,7 +37,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var commentRepo = new CommentRepository(context);
             var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
             var catService = new CategoryService(new Repository<Category>(context), postRepo);
-            var postService = new PostService(postRepo, _webContextMock, sanitizeServiceMock,
+            var categoryRepository = Substitute.For<ICategoryRepository>();
+            var postService = new PostService(postRepo, categoryRepository, _webContextMock, sanitizeServiceMock,
                 catService, new SnippetGeneratorService());
 
             _webContextMock.UserId.Returns(_testUser.Id);

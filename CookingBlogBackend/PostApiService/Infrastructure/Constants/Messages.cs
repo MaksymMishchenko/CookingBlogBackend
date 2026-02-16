@@ -23,8 +23,9 @@
 
             public static class Success
             {
-                public const string SearchResultsFound = "Found {1} posts matching your search '{0}'.";
-                public const string SearchNoResults = "No posts found matching your search '{0}'.";
+                public const string SearchResultsFound = "Found {0} posts matching '{1}'{2}.";
+                public const string SearchNoResults = "No posts found matching '{1}'{2}.";
+                public const string CategoryPart = " in category '{0}'";
                 public const string PostAddedSuccessfully = "Post added successfully.";
                 public const string PostUpdatedSuccessfully = "Post updated successfully.";
                 public const string PostDeletedSuccessfully = "Post deleted successfully.";

@@ -16,17 +16,20 @@ namespace PostApiService.Services
     public class PostService : BaseService, IPostService
     {
         private readonly IPostRepository _postRepository;
+        private readonly ICategoryRepository _catRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly ICategoryService _categoryService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
         public PostService(IPostRepository postRepository,
+            ICategoryRepository catRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
             ICategoryService categoryService,
             ISnippetGeneratorService snippetGenerator) : base(webContext)
         {
             _postRepository = postRepository;
+            _catRepository = catRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
             _snippetGenerator = snippetGenerator;
@@ -34,6 +37,7 @@ namespace PostApiService.Services
 
         private async Task<PagedResult<TDto>> GetPagedDataAsync<TEntity, TDto>(
              IQueryable<TEntity> query,
+             AppliedFilters appliedFilters,
              int pageNumber,
              int pageSize,
              Expression<Func<TEntity, TDto>> projection,
@@ -47,34 +51,37 @@ namespace PostApiService.Services
                 .Select(projection)
                 .ToListAsync(ct);
 
-            return new PagedResult<TDto>(items, totalCount, pageNumber, pageSize);
+            var filtersDto = new AppliedFiltersDto(appliedFilters.SearchTerm, appliedFilters.CategoryName);
+
+            return new PagedResult<TDto>(items, totalCount, pageNumber, pageSize, filtersDto);
         }
 
-        private async Task<Result<PagedSearchResult<SearchPostListDto>>> HandleSearchScenarioAsync(
+        private async Task<Result<PagedSearchResult<SearchPostListDto>>> GetPostsWithSnippetsAsync(
             IQueryable<Post> queryable,
+            AppliedFilters appliedFilters,
             string query,
             int pageNumber,
             int pageSize,
             CancellationToken ct)
         {
-            if (!string.IsNullOrWhiteSpace(query))
-            {
-                queryable = queryable.Where(p =>
-                    p.Title.Contains(query) ||
-                    p.Description.Contains(query) ||
-                    p.Content.Contains(query)
-                );
-            }
-
             var totalCount = await queryable.CountAsync(ct);
-            var message = totalCount == 0
-                ? string.Format(PostM.Success.SearchNoResults, query)
-                : string.Format(PostM.Success.SearchResultsFound, query, totalCount);
+
+            var categoryPart = !string.IsNullOrEmpty(appliedFilters.CategoryName)
+                ? string.Format(PostM.Success.CategoryPart, appliedFilters.CategoryName)
+                : string.Empty;
+
+            var template = totalCount == 0
+                ? PostM.Success.SearchNoResults
+                : PostM.Success.SearchResultsFound;
+
+            var message = string.Format(template, totalCount, appliedFilters.SearchTerm, categoryPart);
+
+            var filtersDto = new AppliedFiltersDto(appliedFilters.SearchTerm, appliedFilters.CategoryName);
 
             if (totalCount == 0)
             {
                 return Success(new PagedSearchResult<SearchPostListDto>(
-                    query, new List<SearchPostListDto>(), totalCount, pageNumber, pageSize, message));
+                    new List<SearchPostListDto>(), filtersDto, totalCount, pageNumber, pageSize, message));
             }
 
             var postsFromDb = await queryable
@@ -104,7 +111,7 @@ namespace PostApiService.Services
             )).ToList();
 
             return Success(new PagedSearchResult<SearchPostListDto>(
-                query, searchPostList, totalCount, pageNumber, pageSize, message));
+                searchPostList, filtersDto, totalCount, pageNumber, pageSize, message));
         }
 
         /// <summary>
@@ -118,24 +125,32 @@ namespace PostApiService.Services
             int pageSize = 10,
             CancellationToken ct = default)
         {
-            var query = _postRepository.GetFilteredPosts(search, onlyActive: true, categorySlug);
-
-            if (!string.IsNullOrWhiteSpace(search))
-            {
-                var searchResult = await HandleSearchScenarioAsync(query, search, pageNumber, pageSize, ct);
-                return Success<object>(searchResult.Value!);
-            }
+            string? categoryName = null;
 
             if (!string.IsNullOrWhiteSpace(categorySlug))
             {
-                var categoryExists = await _categoryService.ExistsBySlugAsync(categorySlug, ct);
-                if (!categoryExists)
+                categoryName = await _catRepository.GetNameBySlugAsync(categorySlug, ct);
+
+                if (categoryName == null)
                 {
                     return NotFound<object>(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
                 }
             }
 
-            var result = await GetPagedDataAsync(query, pageNumber, pageSize,
+            var appliedFilters = new AppliedFilters(
+                SearchTerm: search,
+                CategoryName: categoryName
+            );
+
+            var query = _postRepository.GetFilteredPosts(search, onlyActive: true, categorySlug);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var searchResult = await GetPostsWithSnippetsAsync(query, appliedFilters, search, pageNumber, pageSize, ct);
+                return Success<object>(searchResult.Value!);
+            }
+
+            var result = await GetPagedDataAsync(query, appliedFilters, pageNumber, pageSize,
                 PostMappingExtensions.ToDtoExpression, ct);
 
             return Success<object>(result);
@@ -161,10 +176,13 @@ namespace PostApiService.Services
                 return Unauthorized<PagedResult<AdminPostListDto>>();
             }
 
+            string? categoryName = null;
+
             if (!string.IsNullOrWhiteSpace(categorySlug))
             {
-                var categoryExists = await _categoryService.ExistsBySlugAsync(categorySlug, ct);
-                if (!categoryExists)
+                categoryName = await _catRepository.GetNameBySlugAsync(categorySlug, ct);
+
+                if (categoryName == null)
                 {
                     return NotFound<PagedResult<AdminPostListDto>>(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
                 }
@@ -172,7 +190,12 @@ namespace PostApiService.Services
 
             var query = _postRepository.GetFilteredPosts(search, onlyActive, categorySlug);
 
-            var result = await GetPagedDataAsync(query, pageNumber, pageSize,
+            var appliedFilters = new AppliedFilters(
+              SearchTerm: search,
+              CategoryName: categoryName
+            );
+
+            var result = await GetPagedDataAsync(query, appliedFilters, pageNumber, pageSize,
                 PostMappingExtensions.ToAdminPostListDto, ct);
 
             return Success(result);
@@ -211,7 +234,7 @@ namespace PostApiService.Services
             {
                 return Invalid<PostDetailsDto>(PostM.Errors.SlugAndCategoryRequired,
                     PostM.Errors.SlugAndCategoryRequiredCode);
-            }            
+            }
 
             var postDto = await _postRepository
                 .GetFilteredPosts(null, onlyActive: true, categorySlug: cleanCategory)

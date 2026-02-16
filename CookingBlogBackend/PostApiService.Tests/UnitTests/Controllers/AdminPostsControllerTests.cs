@@ -98,6 +98,56 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 ct);
         }
 
+        [Theory]
+        [InlineData("pizza", "recipes", "Recipes", true)]
+        [InlineData(null, "news", "News", false)]
+        [InlineData("cake", null, null, null)]
+        public async Task GetAdminPostsPagedAsync_WithFilters_ShouldReturnOkWithAppliedFilters(
+            string? searchTerm,
+            string? categorySlug,
+            string? expectedCategoryName,
+            bool? onlyActive)
+        {
+            // Arrange            
+            var appliedFiltersDto = new AppliedFiltersDto(searchTerm, expectedCategoryName);
+
+            var mockPagedResult = new PagedResult<AdminPostListDto>(
+                new List<AdminPostListDto>(),
+                0,
+                1,
+                10,
+                appliedFiltersDto
+            );
+
+            _mockPostService.GetAdminPostsPagedAsync(
+                searchTerm,
+                categorySlug,
+                onlyActive,
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Result<PagedResult<AdminPostListDto>>.Success(mockPagedResult));
+
+            // Act            
+            var result = await _postsController.GetAdminPostsAsync(new PostAdminQueryParameters
+            {
+                Search = searchTerm,
+                CategorySlug = categorySlug,
+                OnlyActive = onlyActive
+            });
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(result);
+
+            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
+
+            Assert.True(response.Success);
+            Assert.NotNull(response.AppliedFilters);
+
+            Assert.Equal(searchTerm, response.AppliedFilters.Search);
+            Assert.Equal(expectedCategoryName, response.AppliedFilters.CategoryName);
+        }
+
         [Fact]
         public async Task GetAdminPostsAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {

@@ -47,18 +47,37 @@ namespace PostApiService.Tests.UnitTests.Controllers
             await _mockPostService.Received(1).GetPostsPagedAsync(null, null, 1, 10, Arg.Any<CancellationToken>());
         }
 
-        [Fact]
-        public async Task GetPostsAsync_InSearchMode_ShouldReturnOkWithPagedSearchResult()
+        [Theory]
+        [InlineData("pizza", "recipes", "Recipes")]
+        [InlineData(null, "desserts", "Desserts")]
+        [InlineData("salad", null, null)]
+        public async Task GetPostsAsync_WithValidFilters_ShouldReturnOkWithFilters(
+            string? searchTerm,
+            string? categorySlug,
+            string? expectedCategoryName)
         {
             // Arrange
-            const string SearchTerm = "pizza";
-            const string ExpectedMessage = "Results found";
-            var queryParams = new PostQueryParameters { Search = SearchTerm, PageNumber = 1, PageSize = 5 };
-            var mockSearchData = new PagedSearchResult<SearchPostListDto>(
-                SearchTerm, new List<SearchPostListDto>(), 0, 1, 5, "Results found");
+            var queryParams = new PostQueryParameters
+            {
+                Search = searchTerm,
+                CategorySlug = categorySlug,
+                PageNumber = 1,
+                PageSize = 10
+            };            
 
-            _mockPostService.GetPostsPagedAsync(SearchTerm, null, 1, 5, Arg.Any<CancellationToken>())
-                .Returns(Result<object>.Success(mockSearchData));
+            var appliedFiltersDto = new AppliedFiltersDto(searchTerm, expectedCategoryName);
+            
+            object mockData = !string.IsNullOrWhiteSpace(searchTerm)
+                ? new PagedSearchResult<SearchPostListDto>(new List<SearchPostListDto>(), appliedFiltersDto, 0, 1, 10, "Found 0 posts")
+                : new PagedResult<PostListDto>(new List<PostListDto>(), 0, 1, 10, appliedFiltersDto);
+
+            _mockPostService.GetPostsPagedAsync(
+                Arg.Any<string?>(),
+                Arg.Any<string?>(),
+                Arg.Any<int>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Result<object>.Success(mockData));
 
             // Act
             var result = await _postsController.GetPostsAsync(queryParams);
@@ -68,14 +87,31 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
 
             Assert.True(response.Success);
+            Assert.NotNull(response.AppliedFilters);
+            Assert.Equal(searchTerm, response.AppliedFilters.Search);
+            Assert.Equal(expectedCategoryName, response.AppliedFilters.CategoryName);
+        }
 
-            Assert.Equal(SearchTerm, response.SearchQuery);
-            Assert.Equal(ExpectedMessage, response.Message);
-            Assert.Equal(0, response.TotalCount);
-            Assert.Equal(1, response.PageNumber);
+        [Theory]
+        [InlineData("invalid-slug")]
+        [InlineData("non-existent-category")]
+        public async Task GetPostsAsync_WithInvalidCategory_ShouldReturnNotFound(string invalidCategorySlug)
+        {
+            // Arrange
+            var queryParams = new PostQueryParameters { CategorySlug = invalidCategorySlug };
 
-            Assert.IsAssignableFrom<IEnumerable<SearchPostListDto>>(response.Data);
-            Assert.Empty(response.Data);
+            _mockPostService.GetPostsPagedAsync(null, invalidCategorySlug, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns(Result<object>.NotFound(CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode));
+
+            // Act
+            var result = await _postsController.GetPostsAsync(queryParams);
+
+            // Assert
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
+            var response = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(response.Success);
+            Assert.Equal(PostM.Errors.CategoryNotFoundCode, response.ErrorCode);
         }
 
         [Fact]

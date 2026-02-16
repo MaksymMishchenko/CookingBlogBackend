@@ -92,7 +92,7 @@ namespace PostApiService.Tests.IntegrationTests
             response.EnsureSuccessStatusCode();
             Assert.NotNull(content);
             Assert.Equal(1, content.TotalCount);
-            Assert.Equal(Term, content.SearchQuery);
+            Assert.Equal(Term, content.AppliedFilters!.Search);
 
             var searchItem = content.Data!.First();
             Assert.NotNull(searchItem.SearchSnippet);

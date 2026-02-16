@@ -46,15 +46,16 @@ namespace PostApiService.Extensions
                      search.PageNumber,
                      search.PageSize,
                      search.TotalCount,
-                     search.Message,
-                     search.Query));
+                     search.AppliedFilters,
+                     search.Message));
                 }
 
                 return new OkObjectResult(ApiResponse<IEnumerable<object>>.CreatePaginatedResponse(
                     items,
                     pageData.PageNumber,
                     pageData.PageSize,
-                    pageData.TotalCount));
+                    pageData.TotalCount,
+                    pageData.AppliedFilters));
             }
 
             return new OkObjectResult(ApiResponse<T>.CreateSuccessResponse(result.Message!, result.Value));

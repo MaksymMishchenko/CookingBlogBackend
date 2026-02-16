@@ -1,4 +1,6 @@
-﻿using System.Text.Json.Serialization;
+﻿using PostApiService.Models.Dto.Requests;
+using PostApiService.Models.Dto.Response;
+using System.Text.Json.Serialization;
 
 namespace PostApiService.Models.Common
 {
@@ -22,7 +24,7 @@ namespace PostApiService.Models.Common
         public int? TotalCount { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string SearchQuery { get; set; } = default!;
+        public AppliedFiltersDto? AppliedFilters { get; set; }
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public string Token { get; set; } = default!;
@@ -82,16 +84,16 @@ namespace PostApiService.Models.Common
         public static ApiResponse<IEnumerable<TData>> CreatePaginatedResponse<TData>(
             IEnumerable<TData> data,
             int pageNumber,
-            int pageSize,
+            int pageSize,            
             int totalCount,
-            string? message = null,
-            string? searchQuery = null)
+            AppliedFiltersDto? appliedFilters = null,
+            string? message = null)
         {
             return new ApiResponse<IEnumerable<TData>>
             {
                 Success = true,
                 Message = message,
-                SearchQuery = searchQuery!,
+                AppliedFilters = appliedFilters,
                 Data = data,
                 PageNumber = pageNumber,
                 PageSize = pageSize,

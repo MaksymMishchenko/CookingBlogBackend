@@ -50,6 +50,7 @@ namespace PostApiService.Infrastructure
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IAuthRepository, AuthRepository>();
             services.AddScoped<IPostRepository, PostRepository>();
+            services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<ICommentRepository, CommentRepository>();
 
             services.AddScoped<IWebContext, WebContext>();
