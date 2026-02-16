@@ -24,8 +24,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetPostsAsync
             ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
         {
-            var result = await _postsService.GetPostsPagedAsync
-                (query.Search, query.CategorySlug, query.PageNumber, query.PageSize, ct);
+            var result = await _postsService.GetPostsPagedAsync(query.ToDto(), ct);
 
             return result.ToActionResult();
         }
