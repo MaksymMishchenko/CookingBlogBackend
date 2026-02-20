@@ -1,5 +1,4 @@
-﻿using PostApiService.Models.Dto.Requests;
-using PostApiService.Models.Dto.Response;
+﻿using PostApiService.Models.Dto.Response;
 using System.Text.Json.Serialization;
 
 namespace PostApiService.Models.Common
@@ -25,9 +24,6 @@ namespace PostApiService.Models.Common
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public AppliedFiltersDto? AppliedFilters { get; set; }
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public string Token { get; set; } = default!;
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public IDictionary<string, string[]>? Errors { get; set; }
@@ -60,16 +56,7 @@ namespace PostApiService.Models.Common
     {
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public T Data { get; set; } = default!;
-
-        public static new ApiResponse<T> CreateSuccessResponse(string message)
-        {
-            return new ApiResponse<T>
-            {
-                Success = true,
-                Message = message
-            };
-        }
+        public T Data { get; set; } = default!;        
 
         public static ApiResponse<T> CreateSuccessResponse(string message, T? data)
         {
@@ -84,7 +71,7 @@ namespace PostApiService.Models.Common
         public static ApiResponse<IEnumerable<TData>> CreatePaginatedResponse<TData>(
             IEnumerable<TData> data,
             int pageNumber,
-            int pageSize,            
+            int pageSize,
             int totalCount,
             AppliedFiltersDto? appliedFilters = null,
             string? message = null)
@@ -98,26 +85,6 @@ namespace PostApiService.Models.Common
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalCount = totalCount
-            };
-        }
-
-        public static ApiResponse<T> CreateSuccessResponse(string message, int entityId)
-        {
-            return new ApiResponse<T>
-            {
-                Success = true,
-                Message = message,
-                EntityId = entityId
-            };
-        }
-
-        public static ApiResponse<T> CreateSuccessResponse(string message, string token)
-        {
-            return new ApiResponse<T>
-            {
-                Success = true,
-                Message = message,
-                Token = !string.IsNullOrEmpty(token) ? token : string.Empty
             };
         }
     }
