@@ -16,7 +16,9 @@ namespace PostApiService.Helper
             p.Category.Slug ?? ContentConstants.DefaultSlugCategory,
             p.CreatedAt,
             p.UpdatedAt,
-            p.Description,
+            p.Description != null && p.Description.Length > 200
+                ? p.Description.Substring(0, 200) + "..."
+                : p.Description ?? string.Empty,
             p.Comments.Count
         );
 

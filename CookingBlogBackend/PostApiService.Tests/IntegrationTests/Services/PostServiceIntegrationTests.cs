@@ -186,7 +186,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.All(data.Items, item =>
                 {
                     Assert.Contains(SearchTerm, item.Title.ToLower());                    
-                    Assert.NotEmpty(item.SearchSnippet);
+                    Assert.NotEmpty(item.SearchSnippet!);
                 });
             }
         }

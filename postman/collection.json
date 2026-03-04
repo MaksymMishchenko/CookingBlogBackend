@@ -560,7 +560,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7",
+              "raw": "{{baseUrl}}/api/posts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7&IsSearchMode=true",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -584,6 +584,10 @@
                 {
                   "key": "pageSize",
                   "value": "7"
+                },
+                {
+                  "key": "IsSearchMode",
+                  "value": "true"
                 }
               ]
             }
