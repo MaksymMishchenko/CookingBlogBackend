@@ -91,7 +91,7 @@ namespace PostApiService.Tests.UnitTests
 
             var data = Assert.IsType<PagedSearchResult<SearchPostListDto>>(result.Value);
             Assert.Equal(SearchTerm, data.AppliedFilters.Search);
-            Assert.All(data.Items, item => Assert.NotEmpty(item.SearchSnippet));
+            Assert.All(data.Items, item => Assert.NotEmpty(item.SearchSnippet!));
         }
 
         [Fact]

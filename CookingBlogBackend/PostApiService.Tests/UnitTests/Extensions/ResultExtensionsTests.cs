@@ -107,7 +107,7 @@ namespace PostApiService.Tests.UnitTests.Extensions
         public void ToActionResult_SearchPagedResult_MapsAllFieldsCorrectly()
         {
             // Arrange
-            var items = new List<SearchPostListDto> { new(1, "Title", "slug", "snippet", "author", "cat", "cat") };
+            var items = new List<SearchPostListDto> { new(1, "Title", "slug", "snippet", "description", "author", "cat", "cat") };
             var filterDto = new AppliedFiltersDto(
                 Search: "dessert",
                 CategoryName: "cat"

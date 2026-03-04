@@ -80,7 +80,7 @@ namespace PostApiService.Tests.Helper
                         .Generate(commentCount);
                 })
                 .UseSeed(seed);
-        }        
+        }
 
         public static List<Post> GeneratePostsWithKeyword
             (string keyword, ICollection<Category> categories, int count, bool generateIds = false)
@@ -217,7 +217,16 @@ namespace PostApiService.Tests.Helper
             Assert.Equal(expectedPost.Slug, actualDto.Slug);
             Assert.Equal(expectedPost.Author, actualDto.Author);
             Assert.Equal(expectedPost.Category.Name, actualDto.Category);
-            Assert.Equal(expectedPost.Description, actualDto.Description);
+
+            const int Limit = 200;
+
+            var cleanedDescription = expectedPost.Description;
+
+            var expectedDescription = cleanedDescription.Length > Limit
+                ? cleanedDescription.Substring(0, Limit) + "..."
+                : cleanedDescription;
+
+            Assert.Equal(expectedDescription, actualDto.Description);
             Assert.Equal(expectedPost.CreatedAt, actualDto.CreatedAt);
             Assert.Equal(expectedPost.UpdatedAt, actualDto.UpdatedAt);
             Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
@@ -281,20 +290,24 @@ namespace PostApiService.Tests.Helper
             };
         }
 
-        public static List<SearchPostListDto> GetSearchedPostListDtos(ICollection<Category> categories)
+        public static List<SearchPostListDto> GetSearchedPostListDtos(
+            ICollection<Category> categories)
         {
             var posts = GetSearchedPost(categories);
 
-            return posts.Select(p => new SearchPostListDto(
-                p.Id,
-                p.Title,
-                p.Slug,
-                p.Content,
-                p.Author,
-                p.Category.Name,
-                p.Category.Slug
-                ))
-                 .ToList();
+            return posts.Select(p =>
+            {                
+                return new SearchPostListDto(
+                    p.Id,
+                    p.Title,
+                    p.Slug,
+                    p.Content,
+                    p.Description,
+                    p.Author,
+                    p.Category.Name,
+                    p.Category.Slug
+                );
+            }).ToList();
         }
 
         public static Post GetSinglePost(ICollection<Category>? categories = null, int? id = 1, bool includeId = true)
@@ -506,12 +519,12 @@ namespace PostApiService.Tests.Helper
         }
 
         public static List<Post> GetAdminTestPosts(ICollection<Category> categories)
-        {            
+        {
             var posts = GetPostsWithComments(categories);
-            
-            posts[0].IsActive = true;  
+
+            posts[0].IsActive = true;
             posts[1].IsActive = false;
-            posts[2].IsActive = true; 
+            posts[2].IsActive = true;
             posts[3].IsActive = false;
             posts[4].IsActive = true;
 
@@ -519,20 +532,20 @@ namespace PostApiService.Tests.Helper
         }
 
         public static IEnumerable<object[]> GetPostFilterData()
-        {                        
-            yield return new object[] { null!, null!, null!, 5, null! };    
-            yield return new object[] { null!, null!, true, 3, null! };    
-            yield return new object[] { null!, null!, false, 2, null! };    
-            
-            yield return new object[] { "Lorem", null!, null!, 5, null! };  
-            yield return new object[] { "Lorem", null!, true, 3, null! }; 
+        {
+            yield return new object[] { null!, null!, null!, 5, null! };
+            yield return new object[] { null!, null!, true, 3, null! };
+            yield return new object[] { null!, null!, false, 2, null! };
+
+            yield return new object[] { "Lorem", null!, null!, 5, null! };
+            yield return new object[] { "Lorem", null!, true, 3, null! };
             yield return new object[] { "1", null!, null!, 1, null! };
 
 
             yield return new object[] { null!, "beverages", null!, 1, "Beverages" };
             yield return new object[] { null!, "beverages", true, 1, "Beverages" };
             yield return new object[] { null!, "beverages", false, 0, "Beverages" };
-           
+
             yield return new object[] { "Lorem", "desserts", true, 1, "Desserts" };
             yield return new object[] { "Lorem", "vegetarian", false, 1, "Vegetarian" };
         }
