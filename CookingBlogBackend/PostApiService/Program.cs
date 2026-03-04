@@ -3,6 +3,7 @@ using PostApiService.Infrastructure;
 using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Constants;
 using PostApiService.Middlewares;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,6 +54,8 @@ builder.Services.AddControllers(options =>
     {
         // Ignores circular references during JSON serialization
         options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 builder.Services.Configure<ApiBehaviorOptions>(options =>
