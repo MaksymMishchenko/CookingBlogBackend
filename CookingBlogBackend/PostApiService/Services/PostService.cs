@@ -59,7 +59,7 @@ namespace PostApiService.Services
         private async Task<Result<PagedSearchResult<SearchPostListDto>>> GetPostsWithSnippetsAsync(
             IQueryable<Post> queryable,
             AppliedFilters appliedFilters,
-            string query,
+            string? query,
             int pageNumber,
             int pageSize,
             CancellationToken ct)
@@ -94,30 +94,48 @@ namespace PostApiService.Services
                     p.Title,
                     p.Slug,
                     p.Content,
+                    p.Description,
                     p.Author,
                     CategoryName = p.Category.Name,
                     CategorySlug = p.Category.Slug
                 })
                 .ToListAsync(ct);
 
-            var searchPostList = postsFromDb.Select(item => new SearchPostListDto(
-                item.Id,
-                item.Title,
-                item.Slug,
-                _snippetGenerator.CreateSnippet(item.Content, query, 100),
-                item.Author,
-                item.CategoryName ?? ContentConstants.DefaultCategory,
-                item.CategorySlug ?? ContentConstants.DefaultSlugCategory
-            )).ToList();
+            var searchPostList = postsFromDb.Select(item =>
+            {
+                bool hasQuery = !string.IsNullOrWhiteSpace(query);
+
+                string? snippet = hasQuery
+                    ? _snippetGenerator.CreateSnippet(item.Content, query!, 100)
+                    : null;
+
+                string? description = !hasQuery
+                    ? (item.Description?.Length > 100 ? item.Description[..100] + "..." : item.Description)
+                    : null;
+
+                return new SearchPostListDto(
+                    item.Id,
+                    item.Title,
+                    item.Slug,
+                    snippet,
+                    description,
+                    item.Author,
+                    item.CategoryName ?? ContentConstants.DefaultCategory,
+                    item.CategorySlug ?? ContentConstants.DefaultSlugCategory
+                );
+            }).ToList();
 
             return Success(new PagedSearchResult<SearchPostListDto>(
                 searchPostList, filtersDto, totalCount, pageNumber, pageSize, message));
         }
 
         /// <summary>
-        /// Retrieves a paginated list of ACTIVE posts, including the aggregated comment count for each post,
-        /// and the total count of active posts for correct pagination.
+        /// Retrieves a paginated list of active posts. 
+        /// Depending on the parameters, returns either standard PostListDto (for home page) 
+        /// or SearchPostListDto with snippets/descriptions (for search page).
         /// </summary>
+        // TODO: Refactor to unify PostListDto and SearchPostListDto to avoid 'object' return type and branching logic.
+        // See: https://github.com/MaksymMishchenko/CookingBlogBackend/issues/49
         public async Task<Result<object>> GetPostsPagedAsync(PostQueryDto postQuery, CancellationToken ct = default)
         {
             string? categoryName = null;
@@ -139,15 +157,26 @@ namespace PostApiService.Services
 
             var query = _postRepository.GetFilteredPosts(postQuery.SearchTerm, onlyActive: true, postQuery.CategorySlug);
 
-            if (!string.IsNullOrWhiteSpace(postQuery.SearchTerm))
+            if (!string.IsNullOrWhiteSpace(postQuery.SearchTerm) || postQuery.IsSearchMode)
             {
-                var searchResult = await GetPostsWithSnippetsAsync(query, appliedFilters,
-                    postQuery.SearchTerm, postQuery.PageNumber, postQuery.PageSize, ct);
+                var searchResult = await GetPostsWithSnippetsAsync(
+                    query,
+                    appliedFilters,
+                    postQuery.SearchTerm,
+                    postQuery.PageNumber,
+                    postQuery.PageSize,
+                    ct);
+
                 return Success<object>(searchResult.Value!);
             }
 
-            var result = await GetPagedDataAsync(query, appliedFilters, postQuery.PageNumber, postQuery.PageSize,
-                PostMappingExtensions.ToDtoExpression, ct);
+            var result = await GetPagedDataAsync(
+                query,
+                appliedFilters,
+                postQuery.PageNumber,
+                postQuery.PageSize,
+                PostMappingExtensions.ToDtoExpression,
+                ct);
 
             return Success<object>(result);
         }

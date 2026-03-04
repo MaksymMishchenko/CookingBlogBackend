@@ -63,7 +63,7 @@ namespace PostApiService
                 .RuleFor(p => p.Id, _ => 0)
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
                 .RuleFor(p => p.Description, f => {
-                    var text = f.Lorem.Sentences(f.Random.Int(5, 10));
+                    var text = f.Lorem.Sentences(f.Random.Int(5, 10), " ");
                     return text.Length > 1000 ? text.Substring(0, 1000) : text;
                 })
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))

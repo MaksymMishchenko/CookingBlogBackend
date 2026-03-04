@@ -11,6 +11,8 @@ namespace PostApiService.Models.Dto.Requests
         [StringLength(100, ErrorMessage = Global.Validation.MaxLength)]
         public string? CategorySlug { get; set; }
 
-        public PostQueryDto ToDto() => new(Search, CategorySlug, PageNumber, PageSize);
+        public bool IsSearchMode { get; set; } = false;
+
+        public PostQueryDto ToDto() => new(Search, CategorySlug, PageNumber, PageSize, IsSearchMode);
     }
 }
