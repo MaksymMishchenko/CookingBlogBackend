@@ -7,28 +7,20 @@ namespace PostApiService.Models.Common
     {
         public bool Success { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? Message { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? EntityId { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? PageNumber { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? PageSize { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? TotalCount { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public AppliedFiltersDto? AppliedFilters { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public IDictionary<string, string[]>? Errors { get; set; }
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? ErrorCode { get; set; }
 
         public static ApiResponse CreateSuccessResponse(string message)
@@ -56,7 +48,7 @@ namespace PostApiService.Models.Common
     {
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
-        public T Data { get; set; } = default!;        
+        public T Data { get; set; } = default!;
 
         public static ApiResponse<T> CreateSuccessResponse(string message, T? data)
         {

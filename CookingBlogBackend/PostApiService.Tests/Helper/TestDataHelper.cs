@@ -288,27 +288,7 @@ namespace PostApiService.Tests.Helper
                     Category = categories.First(c => c.Name == "Vegetarian")
                 },
             };
-        }
-
-        public static List<SearchPostListDto> GetSearchedPostListDtos(
-            ICollection<Category> categories)
-        {
-            var posts = GetSearchedPost(categories);
-
-            return posts.Select(p =>
-            {                
-                return new SearchPostListDto(
-                    p.Id,
-                    p.Title,
-                    p.Slug,
-                    p.Content,
-                    p.Description,
-                    p.Author,
-                    p.Category.Name,
-                    p.Category.Slug
-                );
-            }).ToList();
-        }
+        }        
 
         public static Post GetSinglePost(ICollection<Category>? categories = null, int? id = 1, bool includeId = true)
         {
