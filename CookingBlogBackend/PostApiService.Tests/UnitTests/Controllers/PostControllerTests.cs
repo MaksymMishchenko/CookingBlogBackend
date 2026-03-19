@@ -135,67 +135,104 @@ namespace PostApiService.Tests.UnitTests.Controllers
         }
 
         [Fact]
-        public async Task GetCommentsByPostIdAsync_ShouldReturnOk_WithPagedResult()
+        public async Task GetCommentsByPostIdAsync_ShouldReturnOk_WithCursorPagedResult()
         {
-            // Arrange
+            // Arrange           
             int postId = 1;
-            var queryParams = new PaginationQueryParameters
+            var queryParams = new CommentCursorParameters
             {
-                PageNumber = 1,
+                LastId = null,
                 PageSize = 10
             };
 
-            var expectedPagedResult = new PagedResult<CommentDto>(
-                new List<CommentDto>(), 10, queryParams.PageNumber, queryParams.PageSize);
+            var dtos = new List<CommentDto>
+            {
+                new CommentDto(
+                    Id: 100,
+                    Content: "First Comment",
+                    Author: "John Doe",
+                    CreatedAt: DateTime.UtcNow,
+                    UserId: "user-001",
+                    ReplyToUserName: null,
+                    ParentId: null),
+                new CommentDto(
+                    Id: 99,
+                    Content: "Second Comment",
+                    Author: "Jane Smith",
+                    CreatedAt: DateTime.UtcNow,
+                    UserId: "user-002",
+                    ReplyToUserName: null,
+                    ParentId: null)
+            };
 
-            var serviceResult = Result<PagedResult<CommentDto>>.Success(expectedPagedResult);
+            var scrollResponse = new CommentScrollResponse<CommentDto>(
+                Items: dtos,
+                LastId: 99,
+                HasNextPage: true,
+                TotalCount: 25
+            );
+
+            var serviceResult = Result<CommentScrollResponse<CommentDto>>.Success(scrollResponse);
 
             _mockCommentService.GetCommentsByPostIdAsync(
                     postId,
-                    queryParams.PageNumber,
+                    queryParams.LastId,
                     queryParams.PageSize,
                     Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
-            var actionResult = await _postsController.GetCommentsByPostIdAsync(postId, queryParams);
+            var actionResult = await _postsController.GetCommentsByPostIdAsync(postId, queryParams, CancellationToken.None);
 
             // Assert
             var okResult = Assert.IsType<OkObjectResult>(actionResult);
-            var returnValue = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
 
-            Assert.Equal(expectedPagedResult.TotalCount, returnValue.TotalCount);
+            var apiResponse = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
+
+            Assert.True(apiResponse.Success);
+
+            Assert.Equal(dtos.Count, apiResponse.Data.Count());
+
+            Assert.Equal(99, apiResponse.LastId);
+            Assert.Equal(25, apiResponse.TotalCount);
+            Assert.True(apiResponse.HasNextPage);
 
             await _mockCommentService.Received(1).GetCommentsByPostIdAsync(
-                postId, queryParams.PageNumber, queryParams.PageSize, Arg.Any<CancellationToken>());
+                postId,
+                queryParams.LastId,
+                queryParams.PageSize,
+                Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetCommentsByPostIdAsync_ShouldReturnNotFound_WhenServiceReturnsNotFound()
+        public async Task GetCommentsByPostIdAsync_ShouldReturnNotFound_WhenPostDoesNotExist()
         {
-            // Arrange
-            int postId = 99;
-            var queryParams = new PaginationQueryParameters { PageNumber = 1, PageSize = 10 };
+            // Arrange            
+            int postId = 1;
+            var queryParams = new CommentCursorParameters { LastId = null, PageSize = 10 };
 
             var errorMessage = PostM.Errors.PostNotFound;
             var errorCode = PostM.Errors.PostNotFoundCode;
 
-            var serviceResult = Result<PagedResult<CommentDto>>.NotFound(errorMessage, errorCode);
+            var serviceResult = Result<CommentScrollResponse<CommentDto>>.NotFound(errorMessage, errorCode);
 
             _mockCommentService.GetCommentsByPostIdAsync(
-                    postId, Arg.Any<int>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
+                    postId,
+                    Arg.Any<int?>(),
+                    Arg.Any<int>(),
+                    Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
-            var actionResult = await _postsController.GetCommentsByPostIdAsync(postId, queryParams);
-
-            var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult);
-            var returnValue = Assert.IsType<ApiResponse>(notFoundResult.Value);
+            var actionResult = await _postsController.GetCommentsByPostIdAsync(postId, queryParams, CancellationToken.None);
 
             // Assert
-            Assert.False(returnValue.Success);
-            Assert.Equal(returnValue.Message, errorMessage);
-            Assert.Equal(returnValue.ErrorCode, errorCode);
+            var notFoundResult = Assert.IsType<NotFoundObjectResult>(actionResult);
+            var apiResponse = Assert.IsType<ApiResponse>(notFoundResult.Value);
+
+            Assert.False(apiResponse.Success);
+            Assert.Equal(errorMessage, apiResponse.Message);
+            Assert.Equal(errorCode, apiResponse.ErrorCode);
         }
 
         [Fact]

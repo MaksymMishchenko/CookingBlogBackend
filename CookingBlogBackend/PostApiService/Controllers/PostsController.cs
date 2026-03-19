@@ -28,16 +28,16 @@ namespace PostApiService.Controllers
 
             return result.ToActionResult();
         }
-
+        
         /// <summary>
-        /// Retrieves a paginated list of comments for a specific post.
+        /// Retrieves a stream of comments for a specific post using cursor-based pagination (Infinite Scroll).
         /// </summary>
-        [HttpGet("{postId:int}/comments")]
+        [HttpGet("{postId}/comments")]
         public async Task<IActionResult> GetCommentsByPostIdAsync(
-            int postId, [FromQuery] PaginationQueryParameters query, CancellationToken ct = default)
+            int postId, [FromQuery] CommentCursorParameters query, CancellationToken ct = default)
         {
-            var result = await _commentService.GetCommentsByPostIdAsync(postId, query.PageNumber, query.PageSize, ct);
-            
+            var result = await _commentService.GetCommentsByPostIdAsync(postId, query.LastId, query.PageSize, ct);
+
             return result.ToActionResult();
         }
 
