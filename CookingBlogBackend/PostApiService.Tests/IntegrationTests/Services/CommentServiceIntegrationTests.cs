@@ -107,11 +107,12 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task AddCommentAsync_ShouldAddNewCommentToPostSuccessfully()
+        public async Task AddCommentAsync_ShouldAddNewCommentAndReplySuccessfully()
         {
             // Arrange
-            const int postCount = 10;
-            const int commentCount = 5;
+            const int postCount = 3;
+            const int commentCount = 2;
+
             var (context, _, commentService, _, _) = await SetupAsync(categories =>
                 _fixture.GeneratePosts(postCount, categories, commentCount));
 
@@ -119,19 +120,36 @@ namespace PostApiService.Tests.IntegrationTests.Services
             {
                 var postId = 1;
                 var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
-                var content = "Test comment from Bob";
+
+                var rootContent = "First level comment";
+                var replyContent = "Second level reply (child)";
 
                 // Act
-                await commentService.AddCommentAsync(postId, content);
+                var rootResult = await commentService.AddCommentAsync(postId, rootContent, null);
 
                 // Assert
-                var addedComment = await context.Comments
-                    .FirstOrDefaultAsync(c => c.Content == content);
+                Assert.True(rootResult.IsSuccess);
+                Assert.NotNull(rootResult.Value);
+                var rootId = rootResult.Value.Id;
 
-                Assert.NotNull(addedComment);
-                Assert.Equal(postId, addedComment.PostId);
-                Assert.Equal(_testUser.Id, addedComment.UserId);
-                Assert.Equal(initialCount + 1, await context.Comments.CountAsync(c => c.PostId == postId));
+                var replyResult = await commentService.AddCommentAsync(postId, replyContent, rootId);
+
+                // Assert
+                Assert.True(replyResult.IsSuccess);
+                Assert.NotNull(replyResult.Value);
+
+                var dbRoot = await context.Comments.FirstOrDefaultAsync(c => c.Content == rootContent);
+                var dbReply = await context.Comments.FirstOrDefaultAsync(c => c.Content == replyContent);
+
+                Assert.NotNull(dbRoot);
+                Assert.NotNull(dbReply);
+
+                Assert.Equal(rootId, dbReply.ParentId);
+                Assert.Equal(postId, dbReply.PostId);
+                Assert.Equal(_testUser.Id, dbReply.UserId);
+
+                var finalCount = await context.Comments.CountAsync(c => c.PostId == postId);
+                Assert.Equal(initialCount + 2, finalCount);
             }
         }
 

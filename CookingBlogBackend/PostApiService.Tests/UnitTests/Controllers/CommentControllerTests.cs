@@ -41,11 +41,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
             };
 
             _mockCommentService
-                .AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+                .AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<int?>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
-            var result = await _commentController.AddCommentAsync(1, new CommentCreateDto { Content = "New content" });
+            var result = await _commentController.AddCommentAsync(1, new CommentCreateDto { Content = "New content", ParentId = null });
 
             // Assert
             Assert.IsType(expectedResultType, result);
@@ -60,7 +60,10 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(code, response.ErrorCode);
 
             await _mockCommentService.Received(1)
-                .AddCommentAsync(Arg.Any<int>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
+                .AddCommentAsync(Arg.Any<int>(),
+                Arg.Any<string>(),
+                Arg.Is<int?>(p => p == null),
+                Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -68,13 +71,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
         {
             // Arrange
             var postId = 1;
-            var newComment = TestDataHelper.CreateCommentRequest("Test comment");
+            var newComment = TestDataHelper.CreateCommentRequest("Test comment", null);
             var responseDto = TestDataHelper.CreateCommentResponse();
             var token = CancellationToken.None;
             string successMessage = CommentM.Success.CommentAddedSuccessfully;
 
             var serviceResult = Result<CommentCreatedDto>.Success(responseDto, successMessage);
-            _mockCommentService.AddCommentAsync(postId, newComment.Content, token)
+            _mockCommentService.AddCommentAsync(postId, newComment.Content, newComment.ParentId, token)
                 .Returns(serviceResult);
 
             // Act
@@ -94,7 +97,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(responseDto.Author, data.Author);
             Assert.Equal(responseDto.UserId, data.UserId);
 
-            await _mockCommentService.Received(1).AddCommentAsync(postId, newComment.Content, token);
+            await _mockCommentService.Received(1).AddCommentAsync(postId, newComment.Content, newComment.ParentId, token);
         }
 
         [Theory]

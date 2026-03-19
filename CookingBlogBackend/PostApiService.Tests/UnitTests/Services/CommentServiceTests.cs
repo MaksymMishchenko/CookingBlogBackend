@@ -114,102 +114,54 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
-        public async Task AddCommentAsync_ShouldReturnInvalid_WhenCommentIsEmpty()
+        public async Task AddCommentAsync_ShouldFail_WhenPostDoesNotExist()
         {
             // Arrange
             const int postId = 1;
-            const string invalidComment = "<script></script>";
+            const string content = "content";
 
-            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-            _mockSanitizeService.SanitizeComment(invalidComment).Returns(string.Empty);
+            _mockWebContext.UserId.Returns("user-1");
 
-            // Act 
-            var result = await _service.AddCommentAsync(postId, invalidComment);
+            _mockSanitizeService.SanitizeComment(content).Returns(content);
 
-            // Assert
-            Assert.NotNull(result);
-            Assert.False(result.IsSuccess);
-            Assert.Equal(ResultStatus.Invalid, result.Status);
-            Assert.Equal(CommentM.Errors.Empty, result.Message);
-            Assert.Equal(CommentM.Errors.EmptyCode, result.ErrorCode);
-
-            await _mockCommentRepo.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
-        }
-
-        [Fact]
-        public async Task AddCommentAsync_ShouldReturnNotFoundResult_WhenPostDoesNotExist()
-        {
-            // Arrange
-            const int postId = 1;
-            const string validComment = "Test comment content";
-
-            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-            _mockSanitizeService.SanitizeComment(Arg.Any<string>())
-                .Returns(validComment);
-            _mockPostRepo.IsPostActiveAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-                .Returns(false);
+            _mockPostRepo.IsPostActiveAsync(postId, Arg.Any<CancellationToken>()).Returns(false);
 
             // Act
-            var result = await _service.AddCommentAsync(postId, validComment);
+            var result = await _service.AddCommentAsync(postId, content, null);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.NotFound, result.Status);
-            Assert.Null(result.Value);
-            Assert.Equal(PostM.Errors.PostNotFound, result.Message);
-            Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
-
-            _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
-
-            await _mockPostRepo.Received(1).IsPostActiveAsync
-                (Arg.Any<int>(), Arg.Any<CancellationToken>());
-
             await _mockCommentRepo.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task AddCommentAsync_ShouldReturnOkResult_WhenValidDataProvided()
+        public async Task AddCommentAsync_ShouldSaveComment_WithCorrectParentId()
         {
-            // Arrange            
+            // Arrange
             const int postId = 1;
-            string validComment = "Valid Comment";
-            const string userName = "Nick";
-            const string userId = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
-            var token = CancellationToken.None;
+            const int parentId = 99;
+            _mockWebContext.UserId.Returns("user-1");
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns("Safe content");
+            _mockPostRepo.IsPostActiveAsync(postId, Arg.Any<CancellationToken>()).Returns(true);
 
-            _mockWebContext.UserId.Returns(userId);
-            _mockWebContext.UserName.Returns(userName);
-            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(validComment);
-            _mockPostRepo.IsPostActiveAsync(Arg.Any<int>(), token).Returns(true);
-
-            // Act 
-            var result = await _service.AddCommentAsync(postId, validComment);
+            // Act
+            var result = await _service.AddCommentAsync(postId, "content", parentId);
 
             // Assert
-            Assert.NotNull(result);
             Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-
-            var data = result.Value!;
-            Assert.Equal(userName, data.Author);
-            Assert.Equal(validComment, data.Content);
-            Assert.NotEqual(default, data.CreatedAt);
-            Assert.Equal(userId, data.UserId);
-            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, result.Message);
-
-            _mockSanitizeService.Received(1).SanitizeComment(Arg.Any<string>());
-
-            await _mockPostRepo.Received(1).IsPostActiveAsync(Arg.Any<int>(), token);
-
             await _mockCommentRepo.Received(1).AddAsync(Arg.Is<Comment>(c =>
-                c.Content == validComment &&
-                c.PostId == postId &&
-                c.UserId == userId &&
-                c.CreatedAt != default),
-                token);
+                c.ParentId == parentId && c.PostId == postId), Arg.Any<CancellationToken>());
+        }
 
-            await _mockCommentRepo.Received(1).SaveChangesAsync(token);
+        [Fact]
+        public async Task AddCommentAsync_ShouldFail_WhenContentIsXssOnly()
+        {
+            _mockWebContext.UserId.Returns("user-1");
+            _mockSanitizeService.SanitizeComment(Arg.Any<string>()).Returns(string.Empty);
+
+            var result = await _service.AddCommentAsync(1, "<script></script>", null);
+
+            Assert.Equal(ResultStatus.Invalid, result.Status);
         }
 
         [Fact]

@@ -635,7 +635,7 @@ namespace PostApiService.Tests.Helper
             };
         }
 
-        public static CommentCreateDto CreateCommentRequest(string content = "Default test content") =>
+        public static CommentCreateDto CreateCommentRequest(string content = "Default test content", int? parentId = null) =>
         new() { Content = content };
 
         public static CommentCreatedDto CreateCommentResponse(

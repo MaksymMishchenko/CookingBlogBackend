@@ -97,7 +97,7 @@ namespace PostApiService.Services
         /// Adds a new comment to a post with the given post ID.
         /// </summary>        
         public async Task<Result<CommentCreatedDto>> AddCommentAsync
-            (int postId, string content, CancellationToken ct = default)
+            (int postId, string content, int? parentId, CancellationToken ct = default)
         {
             var userId = WebContext.UserId;
 
@@ -133,6 +133,7 @@ namespace PostApiService.Services
                 Content = sanitizedContent,
                 PostId = postId,
                 UserId = userId,
+                ParentId = parentId,
                 CreatedAt = DateTime.UtcNow
             };
 

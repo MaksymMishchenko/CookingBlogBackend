@@ -7,5 +7,6 @@ namespace PostApiService.Models.Dto.Requests
         [Required(ErrorMessage = Global.Validation.Required)]
         [MaxLength(500, ErrorMessage = Global.Validation.MaxLength)]
         public string Content { get; set; } = default!;
+        public int? ParentId { get; set; } = null;
     }
 }
