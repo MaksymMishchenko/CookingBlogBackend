@@ -39,16 +39,16 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.NotFound, result.Status);
+            Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
 
             _mockCommentRepo.DidNotReceive().GetQueryByPostId(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
-        public async Task GetCommentsByPostIdAsync_PostExists_ReturnsPagedComments()
+        public async Task GetCommentsByPostIdAsync_FirstPage_ReturnsCommentsWithCursor()
         {
             // Arrange
-            var postId = 1;
-            var page = 1;
+            int postId = 1;
             var pageSize = 2;
 
             _mockPostRepo.IsPostActiveAsync(postId, Arg.Any<CancellationToken>())
@@ -56,46 +56,61 @@ namespace PostApiService.Tests.UnitTests.Services
 
             var commentsList = new List<Comment>
             {
-                new Comment { Id = 1, Content = "First", UserId = "u1", User = new IdentityUser { UserName = "Max" } },
-                new Comment { Id = 2, Content = "Second", UserId = "u2", User = new IdentityUser { UserName = "Vika" } }
+                new Comment { Id = 10, Content = "Newest", UserId = "u1", User = new IdentityUser { UserName = "Max" }, ParentId = null },
+                new Comment { Id = 9, Content = "Older", UserId = "u2", User = new IdentityUser { UserName = "Vika" }, ParentId = null },
+                new Comment { Id = 1, Content = "Oldest", UserId = "u3", User = new IdentityUser { UserName = "Oleg" }, ParentId = null }
             };
 
-            var mock = commentsList.AsQueryable().BuildMock();
+            var mockQuery = commentsList.AsQueryable().BuildMock();
 
             _mockCommentRepo.GetQueryByPostId(postId, Arg.Any<CancellationToken>())
-                .Returns(mock);
+                .Returns(mockQuery);
 
             // Act
-            var result = await _service.GetCommentsByPostIdAsync(postId, page, pageSize);
+            var result = await _service.GetCommentsByPostIdAsync(postId, lastId: null, pageSize: pageSize);
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.NotNull(result.Value);
-            Assert.Equal(2, result.Value.TotalCount);
-            Assert.Equal(2, result.Value.Items.Count());
+            var response = result.Value;
 
-            Assert.Equal("Max", result.Value!.Items.ElementAt(0).Author);
-            Assert.Equal("Vika", result.Value!.Items.ElementAt(1).Author);
+            Assert.Equal(2, response!.Items.Count());
+            Assert.Equal(10, response.Items.First().Id);
+            Assert.Equal(9, response.LastId);
+            Assert.True(response.HasNextPage);
         }
 
         [Fact]
-        public async Task AddCommentAsync_ShouldReturnUnauthorized_WhenUserNotAuthenticated()
+        public async Task GetCommentsByPostIdAsync_WithLastId_ReturnsOlderComments()
         {
             // Arrange
-            const int postId = 1;
-            _mockWebContext.UserId.Returns(string.Empty);
+            var postId = 1;
+            var lastId = 10;
+            var pageSize = 5;
 
-            // Act 
-            var result = await _service.AddCommentAsync(postId, "Valid comment content");
+            _mockPostRepo.IsPostActiveAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            var commentsList = new List<Comment>
+            {
+                new Comment { Id = 10, PostId = postId, ParentId = null, User = new IdentityUser() },
+                new Comment { Id = 5, PostId = postId, ParentId = null, User = new IdentityUser { UserName = "User5" } },
+                new Comment { Id = 2, PostId = postId, ParentId = null, User = new IdentityUser { UserName = "User2" } }
+            };
+
+            var mockQuery = commentsList.AsQueryable().BuildMock();
+
+            _mockCommentRepo.GetQueryByPostId(postId, Arg.Any<CancellationToken>())
+                .Returns(mockQuery);
+
+            // Act
+            var result = await _service.GetCommentsByPostIdAsync(postId, lastId: lastId, pageSize: pageSize);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.False(result.IsSuccess);
-            Assert.Equal(ResultStatus.Unauthorized, result.Status);
-            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
-            Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
-
-            await _mockCommentRepo.DidNotReceive().AddAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+            Assert.True(result.IsSuccess);
+            Assert.Equal(2, result!.Value!.Items.Count());
+            Assert.All(result.Value.Items, c => Assert.True(c.Id < lastId));
+            Assert.Equal(5, result.Value.Items.First().Id);
+            Assert.False(result.Value.HasNextPage);
         }
 
         [Fact]

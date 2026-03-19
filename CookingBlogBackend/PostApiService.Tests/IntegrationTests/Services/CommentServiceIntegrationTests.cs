@@ -73,23 +73,36 @@ namespace PostApiService.Tests.IntegrationTests.Services
         [Fact]
         public async Task GetCommentsByPostIdAsync_ShouldReturnDataFromDatabase()
         {
-            // Arrange
-            const int postId = 1;
+            // Arrange                     
+            const int pageSize = 10;
+            const int lastId = 0;
+
             var (context, _, commentService, _, _) = await SetupAsync(categories =>
                 _fixture.GeneratePosts(1, categories, commentCount: 3));
 
             using (context)
             {
-                // Act
-                var result = await commentService.GetCommentsByPostIdAsync(postId, pageNumber: 1, pageSize: 10);
+                var createdPost = await context.Posts.FirstAsync();
+                var realPostId = createdPost.Id;
+
+                // Act                
+                var result = await commentService.GetCommentsByPostIdAsync(realPostId, lastId, pageSize);
 
                 // Assert
                 Assert.True(result.IsSuccess);
-                var firstComment = result.Value!.Items.First();
+                Assert.NotNull(result.Value);
 
-                Assert.Equal(3, result.Value.TotalCount);
+                var scrollResponse = result.Value;
+                var items = scrollResponse.Items.ToList();
+
+                Assert.Equal(3, scrollResponse.TotalCount);
+                Assert.False(scrollResponse.HasNextPage);
+
+                var firstComment = items.First();
                 Assert.Equal(_testUser.UserName, firstComment.Author);
                 Assert.NotNull(firstComment.Content);
+
+                Assert.Equal(items.Last().Id, scrollResponse.LastId);
             }
         }
 

@@ -62,7 +62,8 @@ namespace PostApiService
             return new Faker<Post>()
                 .RuleFor(p => p.Id, _ => 0)
                 .RuleFor(p => p.Title, f => f.Lorem.Sentence(3))
-                .RuleFor(p => p.Description, f => {
+                .RuleFor(p => p.Description, f =>
+                {
                     var text = f.Lorem.Sentences(f.Random.Int(5, 10), " ");
                     return text.Length > 1000 ? text.Substring(0, 1000) : text;
                 })
@@ -79,12 +80,31 @@ namespace PostApiService
                     if (!generateComments)
                         return new List<Comment>();
 
-                    return new Faker<Comment>()
-                        .RuleFor(c => c.Id, _ => 0)
-                        .RuleFor(c => c.PostId, _ => post.Id)
-                        .RuleFor(c => c.Content, fc => fc.Lorem.Sentence(3))
-                        .RuleFor(c => c.UserId, f => userIds != null ? f.PickRandom(userIds) : "adminId")
+                    var roots = new Faker<Comment>()
+                        .RuleFor(c => c.Content, fc => fc.Lorem.Sentence())
+                        .RuleFor(c => c.UserId, fc => f.PickRandom(userIds))
+                        .RuleFor(c => c.CreatedAt, fc => fc.Date.Recent(5).ToUniversalTime())
                         .Generate(commentCount);
+
+                    var allComments = new List<Comment>(roots);
+
+                    foreach (var root in roots)
+                    {
+                        int replyCount = f.Random.Int(0, 3);
+                        if (replyCount > 0)
+                        {
+                            var replies = new Faker<Comment>()
+                                .RuleFor(c => c.Content, fc => fc.Lorem.Sentence())
+                                .RuleFor(c => c.UserId, fc => f.PickRandom(userIds))
+                                .RuleFor(c => c.CreatedAt, fc => fc.Date.Between(root.CreatedAt, DateTime.UtcNow).ToUniversalTime())
+                                .RuleFor(c => c.Parent, _ => root)
+                                .RuleFor(c => c.ReplyToUserName, _ => "User_" + f.PickRandom(userIds).Substring(0, 4))
+                                .Generate(replyCount);
+
+                            allComments.AddRange(replies);
+                        }
+                    }
+                    return allComments;
                 })
                 .UseSeed(seed);
         }

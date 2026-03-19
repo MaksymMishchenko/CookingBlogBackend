@@ -22,50 +22,75 @@ namespace PostApiService.Services
             _postRepository = postRepository;
         }
 
-        // TODO: TECH DEBT - Centralize pagination logic.
-        // This method duplicates logic found in PostService. 
-        // Move this to BaseRepository.GetPagedAsync to follow the DRY principle.
-        // See GitHub Issue #42: https://github.com/MaksymMishchenko/CookingBlogBackend/issues/42
-        private async Task<PagedResult<CommentDto>> GetPagedCommentsAsync(
-             IQueryable<Comment> query,
-             int pageNumber,
-             int pageSize,
-             CancellationToken ct)
-        {
-            var totalCount = await query.CountAsync(ct);
-
-            var items = await query
-                .Skip((pageNumber - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(ct);
-
-            var dtos = items.Select(c => c.ToCommentDto()).ToList();
-
-            return new PagedResult<CommentDto>(dtos, totalCount, pageNumber, pageSize);
-        }
-
         /// <summary>
-        /// Retrieves a paginated list of comments for a specific post. Accessible to unauthorized users.
-        /// </summary>
-        public async Task<Result<PagedResult<CommentDto>>> GetCommentsByPostIdAsync(
+        /// Retrieves a stream of comments for a specific post using cursor-based pagination (Infinite Scroll).
+        /// </summary>        
+        public async Task<Result<CommentScrollResponse<CommentDto>>> GetCommentsByPostIdAsync(
             int postId,
-            int pageNumber = 1,
-            int pageSize = 10,
+            int? lastId = null,
+            int pageSize = 5,
             CancellationToken ct = default)
         {
-            var postExists = await _postRepository.IsPostActiveAsync(postId, ct);
-            if (!postExists)
+            var activePost = await _postRepository.IsPostActiveAsync(postId, ct);
+            if (!activePost)
             {
-                Log.Warning(Posts.NotFound, postId);
-
-                return NotFound<PagedResult<CommentDto>>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+                return NotFound<CommentScrollResponse<CommentDto>>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
 
-            var query = _commentRepository.GetQueryByPostId(postId, ct);
+            var parentQuery = _commentRepository.GetQueryByPostId(postId, ct)
+                .Where(c => c.ParentId == null);
 
-            var pagedResult = await GetPagedCommentsAsync(query, pageNumber, pageSize, ct);
+            if (lastId.HasValue && lastId.Value > 0)
+            {
+                parentQuery = parentQuery.Where(c => c.Id < lastId.Value);
+            }
 
-            return Success(pagedResult);
+            var totalCount = await parentQuery.CountAsync(ct);
+
+            var parents = await parentQuery
+                .OrderByDescending(c => c.Id)
+                .Include(c => c.User)
+                .Take(pageSize + 1)
+                .ToListAsync(ct);
+
+            bool hasNextPage = parents.Count > pageSize;
+            if (hasNextPage) parents.RemoveAt(parents.Count - 1);
+
+            var flatResult = new List<CommentDto>();
+
+            if (parents.Any())
+            {
+                var parentIds = parents.Select(p => p.Id).ToList();
+
+                var replies = await _commentRepository.GetQueryByPostId(postId, ct)
+                    .Where(c => c.ParentId.HasValue && parentIds.Contains(c.ParentId.Value))
+                    .Include(c => c.User)
+                    .OrderBy(c => c.CreatedAt)
+                    .ToListAsync(ct);
+
+                var repliesLookup = replies.ToLookup(r => r.ParentId!.Value);
+
+                foreach (var parent in parents)
+                {
+                    flatResult.Add(parent.ToCommentDto());
+
+                    foreach (var child in repliesLookup[parent.Id])
+                    {
+                        flatResult.Add(child.ToCommentDto());
+                    }
+                }
+            }
+
+            int? newLastId = parents.LastOrDefault()?.Id;
+
+            var response = new CommentScrollResponse<CommentDto>(
+                Items: flatResult,
+                LastId: newLastId,
+                HasNextPage: hasNextPage,
+                TotalCount: totalCount
+            );
+
+            return Success(response);
         }
 
         /// <summary>

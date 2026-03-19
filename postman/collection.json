@@ -618,7 +618,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}/comments?pageNumber=2&pageSize=10",
+              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}/comments?lastId=0&pageSize=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -630,8 +630,8 @@
               ],
               "query": [
                 {
-                  "key": "pageNumber",
-                  "value": "2"
+                  "key": "lastId",
+                  "value": "0"
                 },
                 {
                   "key": "pageSize",
