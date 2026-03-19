@@ -210,7 +210,9 @@ namespace PostApiService.Migrations
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     PostId = table.Column<int>(type: "int", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    IsEditedByAdmin = table.Column<bool>(type: "bit", nullable: false)
+                    IsEditedByAdmin = table.Column<bool>(type: "bit", nullable: false),
+                    ParentId = table.Column<int>(type: "int", nullable: true),
+                    ReplyToUserName = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -220,6 +222,12 @@ namespace PostApiService.Migrations
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
                         principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_Comments_Comments_ParentId",
+                        column: x => x.ParentId,
+                        principalTable: "Comments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Comments_Posts_PostId",
                         column: x => x.PostId,
@@ -278,6 +286,11 @@ namespace PostApiService.Migrations
                 table: "Categories",
                 column: "Slug",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Comments_ParentId",
+                table: "Comments",
+                column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Comments_PostId",

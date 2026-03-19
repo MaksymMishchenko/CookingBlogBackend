@@ -43,6 +43,13 @@
                 .WithMany()
                 .HasForeignKey(c => c.UserId)
                 .OnDelete(DeleteBehavior.NoAction);
+
+            entity.HasOne(c => c.Parent)
+                .WithMany(c => c.Replies)
+                .HasForeignKey(c => c.ParentId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(c => c.ParentId);
         });
     }
 
