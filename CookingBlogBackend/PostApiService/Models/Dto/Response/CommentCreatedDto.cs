@@ -1,10 +1,16 @@
-﻿namespace PostApiService.Models.Dto.Response
+﻿using System.Text.Json.Serialization;
+
+namespace PostApiService.Models.Dto.Response
 {
     public record CommentCreatedDto(
-        int Id,
-        string Author,
-        string Content,
-        DateTime CreatedAt,
-        string UserId       
-    ) : CommentBaseDto(Id, Author, Content, CreatedAt, UserId);
+         int Id,
+         string Author,
+         string Content,
+         DateTime CreatedAt,
+         string UserId,
+         [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)]
+        int? ParentId = null,
+         string? ReplyToUserName = null,
+         bool IsEditedByAdmin = false
+    );
 }
