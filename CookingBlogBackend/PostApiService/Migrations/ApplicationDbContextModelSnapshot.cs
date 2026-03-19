@@ -267,14 +267,22 @@ namespace PostApiService.Migrations
                     b.Property<bool>("IsEditedByAdmin")
                         .HasColumnType("bit");
 
+                    b.Property<int?>("ParentId")
+                        .HasColumnType("int");
+
                     b.Property<int>("PostId")
                         .HasColumnType("int");
+
+                    b.Property<string>("ReplyToUserName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
 
                     b.HasIndex("PostId");
 
@@ -405,6 +413,11 @@ namespace PostApiService.Migrations
 
             modelBuilder.Entity("PostApiService.Models.Comment", b =>
                 {
+                    b.HasOne("PostApiService.Models.Comment", "Parent")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("PostApiService.Models.Post", "Post")
                         .WithMany("Comments")
                         .HasForeignKey("PostId")
@@ -416,6 +429,8 @@ namespace PostApiService.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
+
+                    b.Navigation("Parent");
 
                     b.Navigation("Post");
 
@@ -436,6 +451,11 @@ namespace PostApiService.Migrations
             modelBuilder.Entity("PostApiService.Models.Category", b =>
                 {
                     b.Navigation("Posts");
+                });
+
+            modelBuilder.Entity("PostApiService.Models.Comment", b =>
+                {
+                    b.Navigation("Replies");
                 });
 
             modelBuilder.Entity("PostApiService.Models.Post", b =>

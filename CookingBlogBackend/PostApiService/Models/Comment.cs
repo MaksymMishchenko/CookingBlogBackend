@@ -24,5 +24,14 @@ namespace PostApiService.Models
         public Post? Post { get; set; }
 
         public bool IsEditedByAdmin { get; set; } = false;
+
+        public int? ParentId { get; set; }
+
+        [JsonIgnore]
+        public Comment? Parent { get; set; }
+
+        public string? ReplyToUserName { get; set; }
+
+        public virtual ICollection<Comment> Replies { get; set; } = new List<Comment>();
     }
 }
