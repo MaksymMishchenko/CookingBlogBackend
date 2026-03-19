@@ -175,6 +175,42 @@ namespace PostApiService.Tests.UnitTests.Extensions
             var response = Assert.IsType<ApiResponse<object>>(createdResult.Value);
             Assert.Equal(data, response.Data);
             Assert.Equal("Created successfully", response.Message);
-        }        
+        }
+
+        [Fact]
+        public void ToActionResult_ShouldReturnCursorPaginatedResponse_WhenValueIsICursorPagedResult()
+        {
+            // Arrange
+            var items = new List<string> { "Comment 1", "Comment 2" };
+            const int lastId = 10;
+            const bool hasNextPage = true;
+            const int totalCount = 100;
+            
+            var cursorData = new CommentScrollResponse<string>(
+                Items: items,
+                LastId: lastId,
+                HasNextPage: hasNextPage,
+                TotalCount: totalCount
+            );
+
+            var result = Result<CommentScrollResponse<string>>.Success(cursorData);
+
+            // Act
+            var actionResult = result.ToActionResult();
+
+            // Assert
+            var okResult = Assert.IsType<OkObjectResult>(actionResult);
+            
+            var response = Assert.IsType<ApiResponse<IEnumerable<object>>>(okResult.Value);
+
+            Assert.True(response.Success);
+            Assert.Equal(lastId, response.LastId);
+            Assert.Equal(hasNextPage, response.HasNextPage);
+            Assert.Equal(totalCount, response.TotalCount);
+           
+            var data = Assert.IsAssignableFrom<IEnumerable<object>>(response.Data);
+            Assert.Equal(items.Count, data.Count());
+            Assert.Equal(items[0], data.First());
+        }
     }
 }

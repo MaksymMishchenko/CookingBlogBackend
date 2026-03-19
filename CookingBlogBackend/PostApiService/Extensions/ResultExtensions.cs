@@ -42,12 +42,13 @@ namespace PostApiService.Extensions
                 if (result.Value is ISearchPagedResult search)
                 {
                     return new OkObjectResult(ApiResponse<IEnumerable<object>>.CreatePaginatedResponse(
-                     items,
-                     search.PageNumber,
-                     search.PageSize,
-                     search.TotalCount,
-                     search.AppliedFilters,
-                     search.Message));
+                         items,
+                         search.PageNumber,
+                         search.PageSize,
+                         search.TotalCount,
+                         search.AppliedFilters,
+                         search.Message)
+                    );
                 }
 
                 return new OkObjectResult(ApiResponse<IEnumerable<object>>.CreatePaginatedResponse(
@@ -55,7 +56,20 @@ namespace PostApiService.Extensions
                     pageData.PageNumber,
                     pageData.PageSize,
                     pageData.TotalCount,
-                    pageData.AppliedFilters));
+                    pageData.AppliedFilters)
+                );
+            }
+
+            if (result.Value is ICursorPagedResult cursorData)
+            {
+                var items = (IEnumerable<object>)cursorData.GetItems();
+
+                return new OkObjectResult(ApiResponse<IEnumerable<object>>.CreateCursorPaginatedResponse(
+                    items,
+                    cursorData.LastId,
+                    cursorData.HasNextPage,
+                    cursorData.TotalCount)
+                );
             }
 
             return new OkObjectResult(ApiResponse<T>.CreateSuccessResponse(result.Message!, result.Value));

@@ -1,5 +1,4 @@
 ﻿using PostApiService.Models.Dto.Response;
-using System.Text.Json.Serialization;
 
 namespace PostApiService.Models.Common
 {
@@ -14,6 +13,9 @@ namespace PostApiService.Models.Common
         public int? PageNumber { get; set; }
 
         public int? PageSize { get; set; }
+
+        public int? LastId { get; set; }
+        public bool? HasNextPage { get; set; }
 
         public int? TotalCount { get; set; }
 
@@ -47,7 +49,6 @@ namespace PostApiService.Models.Common
     public class ApiResponse<T> : ApiResponse
     {
 
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
         public T Data { get; set; } = default!;
 
         public static ApiResponse<T> CreateSuccessResponse(string message, T? data)
@@ -77,6 +78,22 @@ namespace PostApiService.Models.Common
                 PageNumber = pageNumber,
                 PageSize = pageSize,
                 TotalCount = totalCount
+            };
+        }
+
+        public static ApiResponse<IEnumerable<TData>> CreateCursorPaginatedResponse<TData>(
+            IEnumerable<TData> data,
+            int? lastId,
+            bool hasNextPage,
+            int totalCount)
+        {
+            return new ApiResponse<IEnumerable<TData>>
+            {
+                Data = data,
+                LastId = lastId,
+                HasNextPage = hasNextPage,
+                TotalCount = totalCount,
+                Success = true
             };
         }
     }

@@ -107,31 +107,33 @@ namespace PostApiService.Tests.IntegrationTests
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            const int PostId = 1;
             const int TotalComments = 12;
+            const int lastId = 0;
             const int PageSize = 5;
-            const int PageNumber = 1;
 
             var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: TotalComments);
             posts[0].IsActive = true;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var url = string.Format(Posts.GetComments, PostId, PageNumber, PageSize);
+            var targetPost = posts[0];
+            int postId = targetPost.Id;
+
+            var url = string.Format(Posts.GetComments, postId, lastId, PageSize);
 
             // Act
             var response = await _client.GetAsync(url);
-
-            var content = await response.Content.ReadFromJsonAsync<ApiResponse<List<CommentDto>>>();
-
-            // Assert
             response.EnsureSuccessStatusCode();
+
+            var content = await response.Content.ReadFromJsonAsync<ApiResponse<IEnumerable<CommentDto>>>();
+
+            // Assert            
             Assert.NotNull(content);
             Assert.True(content.Success);
+            Assert.NotNull(content.Data);
 
             Assert.Equal(TotalComments, content.TotalCount);
-            Assert.Equal(PageSize, content.Data!.Count);
-            Assert.Equal(PageNumber, content.PageNumber);
+            Assert.Equal(PageSize, content.Data.Count());
 
             var firstComment = content.Data.First();
             Assert.NotNull(firstComment.Content);
