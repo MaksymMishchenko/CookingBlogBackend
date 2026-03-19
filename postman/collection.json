@@ -826,7 +826,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{   \r\n    \"Content\": \"Some test comment from user Maks.\"\r\n}",
+              "raw": "{   \r\n    \"Content\": \"Some test comment from user Maks.\",\r\n    \"ParentId\": null\r\n}",
               "options": {
                 "raw": {
                   "language": "json"

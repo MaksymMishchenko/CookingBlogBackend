@@ -8,10 +8,13 @@ namespace PostApiService.Helper
         {
             return new CommentCreatedDto(
                 Id: comment.Id,
-                Author: authorName,
                 Content: comment.Content,
+                Author: authorName ?? "Deleted User",
                 CreatedAt: comment.CreatedAt,
-                UserId: comment.UserId
+                UserId: comment.UserId,
+                ReplyToUserName: comment.ReplyToUserName,
+                ParentId: comment.ParentId,
+                IsEditedByAdmin: comment.IsEditedByAdmin
             );
         }
 

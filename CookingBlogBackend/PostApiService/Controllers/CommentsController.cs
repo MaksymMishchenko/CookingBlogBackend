@@ -22,11 +22,11 @@ namespace PostApiService.Controllers
         /// <summary>
         /// Adds a comment to a specific post.
         /// </summary>        
-        [HttpPost("{postId}")]        
+        [HttpPost("{postId}")]
         public async Task<IActionResult> AddCommentAsync
             (int postId, [FromBody] CommentCreateDto comment, CancellationToken ct = default)
         {
-            var result = await _commentService.AddCommentAsync(postId, comment.Content, ct);
+            var result = await _commentService.AddCommentAsync(postId, comment.Content, comment.ParentId, ct);
 
             return result.ToActionResult();
         }
