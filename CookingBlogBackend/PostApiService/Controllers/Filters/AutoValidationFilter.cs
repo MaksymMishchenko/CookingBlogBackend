@@ -46,7 +46,7 @@ namespace PostApiService.Controllers.Filters
                             ReturnBadRequest(context, nameof(pqp.Search), searchError);
                             return;
                         }
-                    }                    
+                    }
                 }
 
                 if (value is PaginationQueryParameters pg)
@@ -71,7 +71,10 @@ namespace PostApiService.Controllers.Filters
                 .Where(ms => ms.Value!.Errors.Any())
                 .ToDictionary(
                     ms => ms.Key,
-                    ms => ms.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                    ms => ms.Value!.Errors
+                    .Select(e => e.ErrorMessage)
+                    .Distinct()
+                    .ToArray()
                 );
 
             context.Result = new BadRequestObjectResult(
