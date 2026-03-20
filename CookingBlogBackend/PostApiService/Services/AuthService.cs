@@ -97,15 +97,26 @@ namespace PostApiService.Services
             var identityUser = userDto.ToEntity();
 
             var createResult = await _authRepository.CreateAsync(identityUser, userDto.Password, ct);
+
             if (!createResult.Succeeded)
-            {
-                var errorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
+            {                               
+                var errors = createResult.Errors
+                    .GroupBy(e => e.Code.Contains("Password") ? "Password" : "Registration")
+                    .ToDictionary(
+                        g => g.Key,
+                        g => g.Select(e => e.Description).ToArray()
+                    );
+               
                 var errorCodes = string.Join(", ", createResult.Errors.Select(e => e.Code));
+                var rawErrorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
 
-                Log.Warning(Authentication.RegistrationFailed, userDto.Email, errorCodes, errorMsg);
-
-                return Invalid<RegisteredUserDto>(Auth.Registration.Errors.DefaultRegistrationError,
-                    Auth.Registration.Errors.DefaultRegistrationErrorCode);
+                Log.Warning(Authentication.RegistrationFailed, userDto.Email, errorCodes, rawErrorMsg);
+                
+                return Invalid<RegisteredUserDto>(
+                    Auth.Registration.Errors.DefaultRegistrationError,
+                    errors,                                            
+                    Auth.Registration.Errors.DefaultRegistrationErrorCode
+                );
             }
 
             var claimResult = await _authRepository.AddClaimAsync(
