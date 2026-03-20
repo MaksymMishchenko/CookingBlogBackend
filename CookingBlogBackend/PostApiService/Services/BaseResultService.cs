@@ -24,6 +24,8 @@
         protected Result<T> Forbidden<T>(string message, string code) => Result<T>.Forbidden(message, code);
 
         protected Result<T> Invalid<T>(string message, string code) => Result<T>.Invalid(message, code);
+        protected Result<T> Invalid<T>(string message, IDictionary<string, string[]> errors, string? code = null)
+            => Result<T>.Invalid(message, errors, code);
 
         protected Result Conflict(string message, string code) => Result.Conflict(message, code);
 

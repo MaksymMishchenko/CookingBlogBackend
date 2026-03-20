@@ -7,7 +7,11 @@ namespace PostApiService.Extensions
     {
         private static IActionResult MapErrorResult(Result result)
         {
-            var errorResponse = ApiResponse.CreateErrorResponse(result.Message!, errorCode: result.ErrorCode);
+            var errorResponse = ApiResponse.CreateErrorResponse(
+                message: result.Message!,
+                errors: result.Errors,
+                errorCode: result.ErrorCode
+            );
 
             return result.Status switch
             {

@@ -9,8 +9,7 @@ namespace PostApiService.Models.Dto.Requests
         public string UserName { get; init; } = default!;
 
         [Required(ErrorMessage = Global.Validation.Required)]
-        [EmailAddress(ErrorMessage = Global.Validation.InvalidEmail)]
-        [RegularExpression(@"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$", ErrorMessage = Global.Validation.InvalidEmail)]
+        [EmailAddress(ErrorMessage = Global.Validation.InvalidEmail)]        
         public string Email { get; init; } = default!;
 
         [Required(ErrorMessage = Global.Validation.Required)]
