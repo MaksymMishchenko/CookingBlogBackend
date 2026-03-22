@@ -16,7 +16,7 @@ public static class ServiceCollectionExtensions
     public static void AddTestDatabase(this IServiceCollection services, string connectionString)
     {
         services.RemoveAll<DbContextOptions<ApplicationDbContext>>();
-        services.AddDbContext<ApplicationDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddDbContext<ApplicationDbContext>(options => options.UseNpgsql(connectionString));
     }
 
     public static void AddTestAuth(this IServiceCollection services)

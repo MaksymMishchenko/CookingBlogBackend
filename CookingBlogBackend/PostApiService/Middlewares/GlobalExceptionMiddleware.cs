@@ -1,18 +1,20 @@
-﻿using Microsoft.Data.SqlClient;
-using PostApiService.Infrastructure.Constants;
+﻿using PostApiService.Infrastructure.Constants;
 using PostApiService.Models.Common;
 using System.Net;
+using Npgsql;
 
 namespace PostApiService.Middlewares
 {
     public class GlobalExceptionMiddleware
     {
         private readonly RequestDelegate _next;
+        private readonly ILogger<GlobalExceptionMiddleware> _logger;
 
         public GlobalExceptionMiddleware(RequestDelegate next,
             ILogger<GlobalExceptionMiddleware> logger)
         {
             _next = next;
+            _logger = logger;
         }
 
         public async Task InvokeAsync(HttpContext context)
@@ -30,7 +32,7 @@ namespace PostApiService.Middlewares
                     TimeoutException or OperationCanceledException
                         => (HttpStatusCode.RequestTimeout, Global.System.Timeout),
 
-                    SqlException or DbUpdateException
+                    PostgresException or DbUpdateException
                         => (HttpStatusCode.InternalServerError, Global.System.DbUpdateError),
 
                     _ => (HttpStatusCode.InternalServerError, Global.System.DatabaseCriticalError)

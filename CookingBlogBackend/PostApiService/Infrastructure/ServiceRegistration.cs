@@ -42,10 +42,13 @@ namespace PostApiService.Infrastructure
         public static IServiceCollection AddApplicationService(this IServiceCollection services,
             IConfiguration configuration, string connectionString)
         {
+            //services.AddDbContext<ApplicationDbContext>(options =>
+            //{
+            //    options.UseSqlServer(connectionString);
+            //});
+
             services.AddDbContext<ApplicationDbContext>(options =>
-            {
-                options.UseSqlServer(connectionString);
-            });
+                options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")!));
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IAuthRepository, AuthRepository>();
@@ -233,17 +236,19 @@ namespace PostApiService.Infrastructure
         public static async Task<IApplicationBuilder> SeedUserAsync(this WebApplication app)
         {
             using (var scope = app.Services.CreateScope())
-            {
+            {               
                 var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 
-                //if (await cntx.Users.AnyAsync()) return app;
+                if (await cntx.Users.AnyAsync()) return app;
 
-                await cntx.Database.EnsureDeletedAsync();
+                await cntx.Database.MigrateAsync();
 
-                if (await cntx.Database.EnsureCreatedAsync())
-                {
+                //await cntx.Database.EnsureDeletedAsync();                
+
+                //if (await cntx.Database.EnsureCreatedAsync())
+                //{
                     // Creating Role Entities
                     var adminRole = new IdentityRole(TS.Roles.Admin);
                     var contributorRole = new IdentityRole(TS.Roles.Contributor);
@@ -271,7 +276,7 @@ namespace PostApiService.Infrastructure
                     //// Adding Roles to Users
                     await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
                     await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
-                }
+               // }
             }
             return app;
         }
@@ -332,7 +337,6 @@ namespace PostApiService.Infrastructure
 
                 await cntx.Posts.AddRangeAsync(postsList);
                 await cntx.SaveChangesAsync();
-
             }
             return app;
         }
