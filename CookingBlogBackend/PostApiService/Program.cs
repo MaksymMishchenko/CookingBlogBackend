@@ -39,7 +39,7 @@ builder.Services.AddAppJwtAuthentication(jwtConfiguration!);
 builder.Services.AddApplicationAuthorization();
 
 // Register the CORS service to allow cross-origin requests (Access-Control-Allow-Origin) 
-builder.Services.AddAppCors();
+builder.Services.AddAppCors(builder.Configuration);
 
 builder.Services.AddControllers(options =>
 {

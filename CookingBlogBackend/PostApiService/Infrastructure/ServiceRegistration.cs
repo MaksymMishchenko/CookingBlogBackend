@@ -42,11 +42,6 @@ namespace PostApiService.Infrastructure
         public static IServiceCollection AddApplicationService(this IServiceCollection services,
             IConfiguration configuration, string connectionString)
         {
-            //services.AddDbContext<ApplicationDbContext>(options =>
-            //{
-            //    options.UseSqlServer(connectionString);
-            //});
-
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("PostgresConnection")!));
 
@@ -236,7 +231,7 @@ namespace PostApiService.Infrastructure
         public static async Task<IApplicationBuilder> SeedUserAsync(this WebApplication app)
         {
             using (var scope = app.Services.CreateScope())
-            {               
+            {
                 var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -245,38 +240,33 @@ namespace PostApiService.Infrastructure
 
                 await cntx.Database.MigrateAsync();
 
-                //await cntx.Database.EnsureDeletedAsync();                
+                // Creating Role Entities
+                var adminRole = new IdentityRole(TS.Roles.Admin);
+                var contributorRole = new IdentityRole(TS.Roles.Contributor);
 
-                //if (await cntx.Database.EnsureCreatedAsync())
-                //{
-                    // Creating Role Entities
-                    var adminRole = new IdentityRole(TS.Roles.Admin);
-                    var contributorRole = new IdentityRole(TS.Roles.Contributor);
+                // Adding Roles
+                await roleManager.CreateAsync(adminRole);
+                await roleManager.CreateAsync(contributorRole);
 
-                    // Adding Roles
-                    await roleManager.CreateAsync(adminRole);
-                    await roleManager.CreateAsync(contributorRole);
+                // Creating User Entities
+                var adminUser = new IdentityUser() { UserName = "admin", Email = "admin@test.com" };
+                var contributorUser = new IdentityUser() { UserName = "cont", Email = "c@test.com" };
 
-                    // Creating User Entities
-                    var adminUser = new IdentityUser() { UserName = "admin", Email = "admin@test.com" };
-                    var contributorUser = new IdentityUser() { UserName = "cont", Email = "c@test.com" };
+                // Adding Users with Password
+                await userManager.CreateAsync(adminUser, "-Rtyuehe1");
+                await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
 
-                    // Adding Users with Password
-                    await userManager.CreateAsync(adminUser, "-Rtyuehe1");
-                    await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
+                // Adding Claims to Users
+                await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
+                await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
+                await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Comment));
 
-                    // Adding Claims to Users
-                    await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
-                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
-                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Comment));
+                await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
+                await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
 
-                    await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
-                    await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
-
-                    //// Adding Roles to Users
-                    await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
-                    await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
-               // }
+                //// Adding Roles to Users
+                await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
+                await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
             }
             return app;
         }
@@ -344,13 +334,16 @@ namespace PostApiService.Infrastructure
         /// <summary>
         /// Configures CORS (Cross-Origin Resource Sharing) to allow requests from specific origins.       
         /// </summary>       
-        public static IServiceCollection AddAppCors(this IServiceCollection services)
+        public static IServiceCollection AddAppCors(this IServiceCollection services, IConfiguration configuration)
         {
+            var allowedOrigins = configuration.GetSection("AllowedOrigins").Get<string[]>()
+                         ?? new[] { "http://localhost:4200" };
+
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowLocalhost", builder =>
                 {
-                    builder.WithOrigins("http://localhost:4200")
+                    builder.WithOrigins(allowedOrigins)
                            .AllowAnyMethod()
                            .AllowAnyHeader();
                 });
