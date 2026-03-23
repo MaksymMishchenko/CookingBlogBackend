@@ -327,6 +327,7 @@ namespace PostApiService.Infrastructure
 
                 await cntx.Posts.AddRangeAsync(postsList);
                 await cntx.SaveChangesAsync();
+
             }
             return app;
         }

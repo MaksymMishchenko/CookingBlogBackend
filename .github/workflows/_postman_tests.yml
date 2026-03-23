@@ -11,13 +11,18 @@ jobs:
     runs-on: ubuntu-latest
 
     services:
-      sqlserver:
-        image: mcr.microsoft.com/mssql/server:2022-latest
+      postgres:
+        image: postgres:latest
         env:
-          ACCEPT_EULA: "Y"
-          MSSQL_SA_PASSWORD: "Password123!"
+         POSTGRES_PASSWORD: Password123!
+         POSTGRES_DB: CookingBlog
         ports:
-          - 1433:1433
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout code
@@ -42,14 +47,14 @@ jobs:
       - name: Start API in background
         env:
           ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}          
+          JwtConfiguration__SecretKey: ${{ secrets.JWT_SECRET_KEY }}          
           ASPNETCORE_URLS: "https://localhost:7030;http://localhost:5030"
-          ConnectionStrings__DefaultConnection: "Server=127.0.0.1;Database=CookingBlog;User Id=sa;Password=Password123!;Encrypt=False;TrustServerCertificate=True;"
+          ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=CookingBlog;Username=postgres;Password=Password123!"
         run: |
-          echo "Waiting for SQL Server to warm up..."
-          sleep 45                    
-          dotnet run --project CookingBlogBackend/PostApiService/PostApiService.csproj --no-build --launch-profile "https" > api.log 2>&1 &           
-          sleep 30 
+          echo "Waiting for Postgres to warm up..."
+          sleep 15                    
+          dotnet run --project CookingBlogBackend/PostApiService/PostApiService.csproj --no-build > api.log 2>&1 &           
+          sleep 20
 
       - name: Check API Status
         run: |         
