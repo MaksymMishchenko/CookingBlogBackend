@@ -8,7 +8,7 @@ jobs:
   test-before-release:
     uses: ./.github/workflows/_tests.yml
     secrets:
-      SecretKey: ${{ secrets.SecretKey }}
+      SecretKey: ${{ secrets.JWT_SECRET_KEY }}
 
   create-release:
     needs: test-before-release
