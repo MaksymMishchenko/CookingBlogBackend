@@ -7,11 +7,11 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
     [Collection("SharedDatabase")]
     public class CategoryControllerTests
     {
-        private readonly BaseTestFixture _fixture;
+        private readonly ServiceTestFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
 
-        public CategoryControllerTests(BaseTestFixture fixture)
+        public CategoryControllerTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
             _client = fixture.Client!;

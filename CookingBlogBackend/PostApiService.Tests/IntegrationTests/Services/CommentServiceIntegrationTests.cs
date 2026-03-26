@@ -1,237 +1,211 @@
-﻿using PostApiService.Infrastructure.Services;
-using PostApiService.Interfaces;
-using PostApiService.Repositories;
-using PostApiService.Services;
+﻿using PostApiService.Interfaces;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class CommentServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
+    [Collection("SharedDatabase")]
+    public class CommentServiceIntegrationTests
     {
-        private readonly InMemoryDatabaseFixture _fixture;
-        private readonly IdentityUser _testUser;
-        private readonly IWebContext _webContextMock;
+        private readonly ServiceTestFixture _fixture;        
 
-        public CommentServiceIntegrationTests(InMemoryDatabaseFixture fixture)
+        public CommentServiceIntegrationTests(ServiceTestFixture fixture)
         {
-            _fixture = fixture;
-            _webContextMock = Substitute.For<IWebContext>();
-
-            _testUser = new IdentityUser
-            {
-                Id = "testContId",
-                UserName = "TestBob",
-                Email = "bob@test.com"
-            };
-        }
-
-        private record TestSetup(
-          ApplicationDbContext Context,
-          PostService PostService,
-          CommentService CommentService,
-          List<Post> Posts,
-          List<Category> Categories);
-
-        private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
-        {
-            var postRepo = new PostRepository(context);
-            var commentRepo = new CommentRepository(context);
-            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
-            var catService = new CategoryService(new Repository<Category>(context), postRepo);
-            var categoryRepository = Substitute.For<ICategoryRepository>();
-            var postService = new PostService(postRepo, categoryRepository, _webContextMock, sanitizeServiceMock,
-                catService, new SnippetGeneratorService());
-
-            _webContextMock.UserId.Returns(_testUser.Id);
-            sanitizeServiceMock.SanitizeComment(Arg.Any<string>()).Returns(x => x.Arg<string>());
-            _webContextMock.UserName.Returns(_testUser.UserName);
-            _webContextMock.IsAdmin.Returns(false);
-
-            var commentService = new CommentService(commentRepo, sanitizeServiceMock, postRepo, _webContextMock);
-
-            return new TestSetup(context, postService, commentService, posts, categories);
-        }
-
-        private async Task<TestSetup> SetupAsync(Func<List<Category>, List<Post>> dataGenerator)
-        {
-            var context = _fixture.CreateUniqueContext();
-
-            if (!await context.Users.AnyAsync(u => u.Id == _testUser.Id))
-            {
-                context.Users.Add(_testUser);
-                await context.SaveChangesAsync();
-            }
-
-            var categories = TestDataHelper.GetCulinaryCategories();
-            await _fixture.SeedCategoryAsync(context, categories);
-
-            var postsToSeed = dataGenerator(categories);
-            await _fixture.SeedDatabaseAsync(context, postsToSeed);
-
-            return CreateTestSetup(context, postsToSeed, categories);
+            _fixture = fixture;            
         }
 
         [Fact]
-        public async Task GetCommentsByPostIdAsync_ShouldReturnDataFromDatabase()
-        {
-            // Arrange                     
-            const int pageSize = 10;
-            const int lastId = 0;
-
-            var (context, _, commentService, _, _) = await SetupAsync(categories =>
-                _fixture.GeneratePosts(1, categories, commentCount: 3));
-
-            using (context)
-            {
-                var createdPost = await context.Posts.FirstAsync();
-                var realPostId = createdPost.Id;
-
-                // Act                
-                var result = await commentService.GetCommentsByPostIdAsync(realPostId, lastId, pageSize);
-
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.NotNull(result.Value);
-
-                var scrollResponse = result.Value;
-                var items = scrollResponse.Items.ToList();
-
-                Assert.Equal(3, scrollResponse.TotalCount);
-                Assert.False(scrollResponse.HasNextPage);
-
-                var firstComment = items.First();
-                Assert.Equal(_testUser.UserName, firstComment.Author);
-                Assert.NotNull(firstComment.Content);
-
-                Assert.Equal(items.Last().Id, scrollResponse.LastId);
-            }
-        }
-
-        [Fact]
-        public async Task AddCommentAsync_ShouldAddNewCommentAndReplySuccessfully()
+        public async Task GetCommentsByPostIdAsync_ShouldReturnHierarchicalCommentsFlatly()
         {
             // Arrange
-            const int postCount = 3;
-            const int commentCount = 2;
+            const int ExpectedRootCount = 1;
+            const int ExpectedRepliesCount = 2;
+            const int TotalCommentsInHierarchy = ExpectedRootCount + ExpectedRepliesCount;
+            const int TestPageSize = 10;
+            const int InitialLastId = 0;
 
-            var (context, _, commentService, _, _) = await SetupAsync(categories =>
-                _fixture.GeneratePosts(postCount, categories, commentCount));
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            using (context)
-            {
-                var postId = 1;
-                var initialCount = await context.Comments.CountAsync(c => c.PostId == postId);
+            var categories = TestDataHelper.GetCulinaryCategories();
 
-                var rootContent = "First level comment";
-                var replyContent = "Second level reply (child)";
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 0)
+                .WithCommentHierarchy(commentCount: TotalCommentsInHierarchy, userId: TestUserData.AdminId);
 
-                // Act
-                var rootResult = await commentService.AddCommentAsync(postId, rootContent, null);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-                // Assert
-                Assert.True(rootResult.IsSuccess);
-                Assert.NotNull(rootResult.Value);
-                var rootId = rootResult.Value.Id;
+            var targetPost = posts.First();
+            var rootComment = targetPost.Comments.First(c => c.ParentId == null);
+            var replies = rootComment.Replies.OrderBy(r => r.CreatedAt).ToList();
 
-                var replyResult = await commentService.AddCommentAsync(postId, replyContent, rootId);
+            var (service, _, _) = _fixture.GetScopedService<ICommentService>();
 
-                // Assert
-                Assert.True(replyResult.IsSuccess);
-                Assert.NotNull(replyResult.Value);
+            // Act
+            var result = await service.GetCommentsByPostIdAsync(targetPost.Id, InitialLastId, TestPageSize);
 
-                var dbRoot = await context.Comments.FirstOrDefaultAsync(c => c.Content == rootContent);
-                var dbReply = await context.Comments.FirstOrDefaultAsync(c => c.Content == replyContent);
+            // Assert                                
+            Assert.True(result.IsSuccess);
 
-                Assert.NotNull(dbRoot);
-                Assert.NotNull(dbReply);
+            var data = Assert.IsType<CommentScrollResponse<CommentDto>>(result.Value);
+            var items = data.Items.ToList();
 
-                Assert.Equal(rootId, dbReply.ParentId);
-                Assert.Equal(postId, dbReply.PostId);
-                Assert.Equal(_testUser.Id, dbReply.UserId);
+            Assert.Equal(ExpectedRootCount, data.TotalCount);
+            Assert.Equal(TotalCommentsInHierarchy, items.Count);
 
-                var finalCount = await context.Comments.CountAsync(c => c.PostId == postId);
-                Assert.Equal(initialCount + 2, finalCount);
-            }
+            Assert.Equal(rootComment.Content, items[0].Content);
+            Assert.Equal(TestUserData.AdminUserName, items[0].Author);
+            Assert.Null(items[0].ParentId);
+
+            Assert.Equal(replies[0].Content, items[1].Content);
+            Assert.Equal(rootComment.Id, items[1].ParentId);
+
+            Assert.Equal(replies[1].Content, items[2].Content);
+            Assert.Equal(rootComment.Id, items[2].ParentId);
+            Assert.Equal(rootComment.Id, data.LastId);
+        }
+
+        [Fact]
+        public async Task AddCommentAsync_ShouldPersistCommentWithCorrectHierarchy()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (commentService, dbContext, webContext) = _fixture.GetScopedService<ICommentService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var posts = TestDataHelper.GetPostsWithComments(1, TestDataHelper.GetCulinaryCategories(), commentCount: 0);
+            await _fixture.Services!.SeedBlogDataAsync(posts, new List<Category>());
+            int postId = (await dbContext.Posts.FirstAsync()).Id;
+
+            // Act
+            var rootRes = await commentService.AddCommentAsync(postId, "Root", null);
+            var replyRes = await commentService.AddCommentAsync(postId, "Reply", rootRes.Value!.Id);
+
+            // Assert
+            Assert.True(replyRes.IsSuccess);
+
+            var dto = Assert.IsType<CommentCreatedDto>(replyRes.Value);
+
+            Assert.Equal(CommentM.Success.CommentAddedSuccessfully, replyRes.Message);
+            Assert.Equal("Reply", dto.Content);
+
+            var dbReply = await dbContext.Comments.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == dto.Id);
+
+            Assert.NotNull(dbReply);
+            Assert.Equal(rootRes.Value!.Id, dbReply.ParentId);
+            Assert.Equal(webContext.UserId, dbReply.UserId);
         }
 
         [Fact]
         public async Task UpdateCommentAsync_ShouldUpdateContentOfExistingComment()
         {
             // Arrange
-            const int postCount = 1;
-            const int commentCount = 1;
-            const int commentId = 1;
-            string content = "Edited comment content";
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            var (context, _, commentService, _, _) = await SetupAsync(categories =>
-                 _fixture.GeneratePosts(postCount, categories, commentCount));
+            var (commentService, dbContext, webContext) = _fixture.GetScopedService<ICommentService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
 
-            using (context)
-            {
-                // Act
-                await commentService.UpdateCommentAsync(commentId, content);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 1);
+            posts.First().Comments.First().UserId = TestUserData.AdminId;
 
-                // Assert
-                var editedComment = await context.Comments
-                    .FirstOrDefaultAsync(c => c.Id == commentId);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-                Assert.NotNull(editedComment);
-                Assert.Equal(_testUser.Id, editedComment.UserId);
-                Assert.Equal(content, editedComment.Content);
-            }
+            var commentInDb = await dbContext.Comments.AsNoTracking().FirstAsync();
+            const string NewContent = "Edited comment content";
+
+            // Act
+            var result = await commentService.UpdateCommentAsync(commentInDb.Id, NewContent);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CommentM.Success.CommentUpdatedSuccessfully, result.Message);
+
+            var dto = Assert.IsType<CommentUpdatedDto>(result.Value);
+            Assert.Equal(NewContent, dto.Content);
+            Assert.Equal(webContext.UserName, dto.Author);
+
+            var editedComment = await dbContext.Comments.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == commentInDb.Id);
+
+            Assert.NotNull(editedComment);
+            Assert.Equal(NewContent, editedComment.Content);
+            Assert.Equal(TestUserData.AdminId, editedComment.UserId);
         }
 
         [Fact]
-        public async Task DeleteCommentAsync_ShouldRemoveCommentFromDataBase()
+        public async Task DeleteCommentAsync_ShouldRemoveCommentFromDatabase()
         {
             // Arrange
-            const int postCount = 1;
-            const int commentCount = 1;
-            var commentIdToRemove = 1;
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();                      
 
-            var (context, _, commentService, _, _) = await SetupAsync(categories =>
-                 _fixture.GeneratePosts(postCount, categories, commentCount));
+            var (commentService, dbContext, webContext) = _fixture.GetScopedService<ICommentService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
 
-            using (context)
-            {
-                var commentBeforeDelete = await context.Comments.FindAsync(commentIdToRemove);
-                Assert.NotNull(commentBeforeDelete);
-                Assert.Equal(_testUser.Id, commentBeforeDelete.UserId);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 1);
+            posts.First().Comments.First().UserId = TestUserData.AdminId;
 
-                var initialCount = await context.Comments.CountAsync();
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-                // Act
-                await commentService.DeleteCommentAsync(commentIdToRemove);
+            var commentInDb = await dbContext.Comments.AsNoTracking().FirstAsync();
+            int initialCount = await dbContext.Comments.CountAsync();
 
-                // Assert
-                var finalCount = await context.Comments.CountAsync();
+            // Act
+            var result = await commentService.DeleteCommentAsync(commentInDb.Id);
 
-                var removedComment = await context.Comments.FindAsync(commentIdToRemove);
-                Assert.Null(removedComment);
-                Assert.Equal(initialCount - 1, finalCount);
-            }
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
+
+            var finalCount = await dbContext.Comments.CountAsync();
+            var exists = await dbContext.Comments.AnyAsync(c => c.Id == commentInDb.Id);
+
+            Assert.False(exists);
+            Assert.Equal(initialCount - 1, finalCount);
         }
 
         [Fact]
-        public async Task DeletePost_ShouldCascadeDeleteAllAssociatedComments()
+        public async Task DeletePostAsync_ShouldCascadeDeleteAllAssociatedComments()
         {
             // Arrange
-            const int postId = 1;
-            var (context, postService, _, _, _) = await SetupAsync(categories =>
-                _fixture.GeneratePosts(1, categories, commentCount: 3));
+            const int ExpectedCommentsCount = 3;
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            using (context)
-            {
-                var initialCommentsCount = await context.Comments.CountAsync(c => c.PostId == postId);
-                Assert.Equal(3, initialCommentsCount);
+            var (postService, dbContext, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
 
-                // Act
-                var postToDelete = await postService.DeletePostAsync(postId);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: ExpectedCommentsCount);
 
-                // Assert                
-                var remainingCommentsCount = await context.Comments.CountAsync(c => c.PostId == postId);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+            int postId = posts[0].Id;
 
-                Assert.Equal(0, remainingCommentsCount);
-            }
+            var initialCommentsCount = await dbContext.Comments.CountAsync(c => c.PostId == postId);
+            Assert.Equal(ExpectedCommentsCount, initialCommentsCount);
+
+            // Act
+            var result = await postService.DeletePostAsync(postId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            var postExists = await dbContext.Posts.AnyAsync(p => p.Id == postId);
+            var remainingCommentsCount = await dbContext.Comments.CountAsync(c => c.PostId == postId);
+
+            Assert.False(postExists);
+            Assert.Equal(0, remainingCommentsCount);
         }
     }
 }

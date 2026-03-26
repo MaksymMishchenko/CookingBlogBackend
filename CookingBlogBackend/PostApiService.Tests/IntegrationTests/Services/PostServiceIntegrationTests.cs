@@ -1,145 +1,124 @@
 ﻿using PostApiService.Infrastructure.Common;
-using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
-using PostApiService.Repositories;
-using PostApiService.Services;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class PostServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
+    [Collection("SharedDatabase")]
+    public class PostServiceIntegrationTests
     {
-        private readonly InMemoryDatabaseFixture _fixture;
-        private readonly IdentityUser _testUser;
+        private readonly ServiceTestFixture _fixture;
 
-        public PostServiceIntegrationTests(InMemoryDatabaseFixture fixture)
+        public PostServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
-
-            _testUser = new IdentityUser
-            {
-                Id = "testContId",
-                UserName = "TestBob",
-                Email = "bob@test.com"
-            };
-        }
-
-        private record TestSetup(
-            ApplicationDbContext Context,
-            PostService Service,
-            List<Post> Posts,
-            List<Category> Categories);
-
-        private TestSetup CreateTestSetup(ApplicationDbContext context, List<Post> posts, List<Category> categories)
-        {
-            var repo = new PostRepository(context);
-            var webContextMock = Substitute.For<IWebContext>();
-            var sanitizeServiceMock = Substitute.For<IHtmlSanitizationService>();
-            var categoryRepository = Substitute.For<ICategoryRepository>();
-            var catService = new CategoryService(new Repository<Category>(context), repo);
-
-            webContextMock.UserId.Returns(_testUser.Id);
-            sanitizeServiceMock.SanitizePost(Arg.Any<string>()).Returns(x => x.Arg<string>());
-            webContextMock.UserName.Returns(_testUser.UserName);
-
-            var service = new PostService(repo, categoryRepository, webContextMock, sanitizeServiceMock, catService, new SnippetGeneratorService());
-
-            return new TestSetup(context, service, posts, categories);
-        }
-
-        private async Task<TestSetup> SetupAsync(Func<List<Category>, List<Post>> dataGenerator)
-        {
-            var context = _fixture.CreateUniqueContext();
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            await _fixture.SeedCategoryAsync(context, categories);
-
-            var postsToSeed = dataGenerator(categories);
-
-            await _fixture.SeedDatabaseAsync(context, postsToSeed);
-            return CreateTestSetup(context, postsToSeed, categories);
         }
 
         [Fact]
-        public async Task GetPostsPagedAsync_InNormalMode_ShouldReturnPagedResultWithCorrectMapping()
+        public async Task GetPostsPagedAsync_InNormalMode_ShouldReturnPagedResult()
         {
-            // Arrange            
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
             const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 10;
             const int ActiveCount = 15;
             const int InactiveCount = 5;
             const int ExpectedCommentCountPerPost = 2;
 
-            var queryDto = new PostQueryDto(
-                SearchTerm: null,
-                CategorySlug: null,
-                PageNumber: ExpectedPageNumber,
-                PageSize: ExpectedPageSize
-            );
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var active = TestDataHelper.GetPostsWithComments(ActiveCount, categories, commentCount: ExpectedCommentCountPerPost);
 
-            var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
+            active.ForEach(p => { p.IsActive = true; p.Id = 0; });
+
+            var inactive = TestDataHelper.GetPostsWithComments(InactiveCount, categories, commentCount: 0);
+            inactive.ForEach(p =>
             {
-                var active = _fixture.GeneratePosts(ActiveCount, cats, ExpectedCommentCountPerPost);
-                active.ForEach(p =>
-                {
-                    p.IsActive = true;
-                    p.Id = 0;
-                });
-
-                var inactive = _fixture.GeneratePosts(InactiveCount, cats, 0);
-                inactive.ForEach(p =>
-                {
-                    p.IsActive = false;
-                    p.Id = 0;
-                    p.Slug = $"inactive-{Guid.NewGuid()}";
-                });
-
-                return active.Concat(inactive).ToList();
+                p.IsActive = false;
+                p.Id = 0;
+                p.Slug = $"inactive-{Guid.NewGuid()}";
             });
 
-            using (context)
-            {
-                var expectedActivePosts = allSeededPosts
+            var allPosts = active.Concat(inactive).ToList();
+
+            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
+
+            var expectedActivePosts = allPosts
                     .Where(p => p.IsActive)
                     .OrderByDescending(p => p.CreatedAt)
                     .Skip((ExpectedPageNumber - 1) * ExpectedPageSize)
                     .Take(ExpectedPageSize)
                     .ToList();
 
-                // Act                
-                var result = await postService.GetPostsPagedAsync(queryDto);
+            var queryDto = new PostQueryDto(
+                    SearchTerm: null,
+                    CategorySlug: null,
+                    PageNumber: ExpectedPageNumber,
+                    PageSize: ExpectedPageSize
+            );
 
-                // Assert                
-                Assert.True(result.IsSuccess);
+            var (service, _, _) = _fixture.GetScopedService<IPostService>();
 
-                var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);               
+            // Act            
+            var result = await service.GetPostsPagedAsync(queryDto);
 
-                Assert.Equal(ActiveCount, data.TotalCount);
-                Assert.Null(data.AppliedFilters!.Search);
-                Assert.Null(data.AppliedFilters.CategoryName!);
-                Assert.Equal(expectedActivePosts.Count, data.Items.Count());
+            // Assert
+            Assert.True(result.IsSuccess);
 
-                Assert.All(data.Items.Select((item, index) => new { item, index }), x =>
-                {
-                    var expectedPost = expectedActivePosts[x.index];
+            var data = Assert.IsType<PagedResult<PostListDto>>(result.Value);
 
-                    TestDataHelper.AssertPostListDtoMapping(expectedPost, x.item, ExpectedCommentCountPerPost);
+            Assert.Equal(ActiveCount, data.TotalCount);
+            Assert.Null(data.AppliedFilters!.Search);
+            Assert.Null(data.AppliedFilters.CategoryName!);
+            Assert.Equal(expectedActivePosts.Count, data.Items.Count());
 
-                    var original = allSeededPosts.First(p => p.Id == x.item.Id);
-                    Assert.True(original.IsActive);
-                });
-            }
+            Assert.All(data.Items.Select((item, index) => new { item, index }), x =>
+            {
+                var expected = expectedActivePosts[x.index];
+
+                Assert.Equal(expected.Id, x.item.Id);
+                Assert.Equal(expected.Title, x.item.Title);
+                Assert.Equal(expected.Category.Name, x.item.Category);
+            });
         }
 
         [Fact]
-        public async Task GetPostsPagedAsync_SearchMode_ReturnsCorrectSearchDtosAndSnippets()
+        public async Task GetPostsPagedAsync_SearchMode_ShouldReturnCorrectSearchDtosAndSnippets()
         {
             // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
             const string SearchTerm = "pizza";
             const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 5;
             const int MatchCount = 3;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var matches = TestDataHelper.GetPostsWithComments(MatchCount, categories, commentCount: 0);
+            matches.ForEach(p =>
+            {
+                p.Title = $"{SearchTerm} title {Guid.NewGuid()}";
+                p.Content = $"This is a long content about {SearchTerm} to generate a snippet.";
+                p.IsActive = true;
+                p.Id = 0;
+            });
+
+            var others = TestDataHelper.GetPostsWithComments(5, categories, commentCount: 0);
+            others.ForEach(p =>
+            {
+                p.Title = $"Regular healthy salad {Guid.NewGuid()}";
+                p.Content = "Just some greens and oil.";
+                p.IsActive = true;
+                p.Id = 0;
+                p.Slug = $"regular-salad-{Guid.NewGuid()}";
+            });
+
+            var allPosts = matches.Concat(others).ToList();
+            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
 
             var queryDto = new PostQueryDto(
                 SearchTerm: SearchTerm,
@@ -148,58 +127,69 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 PageSize: ExpectedPageSize
             );
 
-            var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
+            var (service, _, _) = _fixture.GetScopedService<IPostService>();
+
+            // Act
+            var result = await service.GetPostsPagedAsync(queryDto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            var data = Assert.IsType<PagedSearchResult<SearchPostListDto>>(result.Value);
+
+            Assert.Equal(MatchCount, data.TotalCount);
+            Assert.Equal(SearchTerm, data.AppliedFilters!.Search);
+            Assert.Null(data.AppliedFilters.CategoryName);
+
+            Assert.All(data.Items, item =>
             {
-                var matches = _fixture.GeneratePosts(MatchCount, cats, 0);
-                matches.ForEach(p =>
-                {
-                    p.Title = $"{SearchTerm} title {Guid.NewGuid()}";
-                    p.IsActive = true;
-                    p.Id = 0;
-                });
-
-                var others = _fixture.GeneratePosts(5, cats, 0);
-                others.ForEach(p =>
-                {
-                    p.Title = "Regular salad";
-                    p.IsActive = true;
-                    p.Id = 0;
-                });
-
-                return matches.Concat(others).ToList();
+                Assert.Contains(SearchTerm, item.Title.ToLower());
+                Assert.NotEmpty(item.SearchSnippet!);
+                Assert.Contains(SearchTerm, item.SearchSnippet!.ToLower());
             });
-
-            using (context)
-            {
-                // Act
-                var result = await postService.GetPostsPagedAsync(queryDto);
-
-                // Assert
-                Assert.True(result.IsSuccess);
-
-                var data = Assert.IsType<PagedSearchResult<SearchPostListDto>>(result.Value);
-
-                Assert.Equal(MatchCount, data.TotalCount);
-                Assert.Equal(SearchTerm, data.AppliedFilters.Search);
-                Assert.Null(data.AppliedFilters.CategoryName);
-
-                Assert.All(data.Items, item =>
-                {
-                    Assert.Contains(SearchTerm, item.Title.ToLower());                    
-                    Assert.NotEmpty(item.SearchSnippet!);
-                });
-            }
         }
 
         [Fact]
-        public async Task GetAdminPostsPagedAsync_SearchMode_ReturnsCorrectAdminDtos()
+        public async Task GetAdminPostsPagedAsync_SearchMode_ShouldReturnCorrectAdminDtos()
         {
             // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
             const string SearchTerm = "burger";
             const int ExpectedPageNumber = 1;
             const int ExpectedPageSize = 5;
             const int MatchCount = 3;
             var ct = CancellationToken.None;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var matches = TestDataHelper.GetPostsWithComments(MatchCount, categories, commentCount: 0);
+            matches.ForEach(p =>
+            {
+                p.Title = $"{SearchTerm} variant {Guid.NewGuid()}";
+                p.IsActive = true;
+                p.Id = 0;
+                p.Slug = $"burger-match-{Guid.NewGuid()}";
+            });
+
+            var others = TestDataHelper.GetPostsWithComments(5, categories, commentCount: 0);
+            others.ForEach(p =>
+            {
+                p.Title = $"Generic soup recipe {Guid.NewGuid()}";
+                p.IsActive = true;
+                p.Id = 0;
+                p.Slug = $"soup-recipe-{Guid.NewGuid()}";
+            });
+
+            var allPosts = matches.Concat(others).ToList();
+
+            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
 
             var queryDto = new PostAdminQueryDto(
                 SearchTerm: SearchTerm,
@@ -209,56 +199,59 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 OnlyActive: null
             );
 
-            var (context, postService, allSeededPosts, _) = await SetupAsync(cats =>
+            // Act
+            var result = await service.GetAdminPostsPagedAsync(queryDto, ct);
+
+            // Assert            
+            Assert.True(result.IsSuccess);
+
+            var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
+
+            Assert.Equal(SearchTerm, data.AppliedFilters!.Search);
+            Assert.Null(data.AppliedFilters.CategoryName);
+            Assert.Equal(MatchCount, data.TotalCount);
+
+            Assert.All(data.Items, item =>
             {
-                var matches = _fixture.GeneratePosts(MatchCount, cats, 0);
-                matches.ForEach(p =>
-                {
-                    p.Title = $"{SearchTerm} variant {Guid.NewGuid()}";
-                    p.IsActive = true;
-                    p.Id = 0;
-                });
-
-                var others = _fixture.GeneratePosts(5, cats, 0);
-                others.ForEach(p =>
-                {
-                    p.Title = "Generic soup recipe";
-                    p.IsActive = true;
-                    p.Id = 0;
-                });
-
-                return matches.Concat(others).ToList();
+                Assert.Contains(SearchTerm, item.Title.ToLower());
+                Assert.True(item.Id > 0);
+                Assert.NotNull(item.CategoryName);
             });
-
-            using (context)
-            {
-                // Act
-                var result = await postService.GetAdminPostsPagedAsync(queryDto, ct);
-
-                // Assert
-                Assert.True(result.IsSuccess);
-
-                var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
-
-                Assert.Equal(SearchTerm, data.AppliedFilters!.Search);
-                Assert.Null(data.AppliedFilters.CategoryName!);
-
-                Assert.Equal(MatchCount, data.TotalCount);
-                Assert.All(data.Items, item =>
-                {
-                    Assert.Contains(SearchTerm, item.Title.ToLower());
-
-                    Assert.True(item.Id > 0);
-                    Assert.NotNull(item.CategoryName);
-                });
-            }
         }
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_FilterByInactive_ReturnsOnlyInactivePosts()
-        {
-            // Arrange           
+        {   // Arrange        
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
             const int InactiveMatchCount = 2;
+            const int ActiveCount = 5;
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            var activePosts = TestDataHelper.GetPostsWithComments(ActiveCount, categories, commentCount: 0);
+            activePosts.ForEach(p =>
+            {
+                p.IsActive = true;
+                p.Id = 0;
+                p.Slug = $"active-{Guid.NewGuid()}";
+            });
+
+            var inactivePosts = TestDataHelper.GetPostsWithComments(InactiveMatchCount, categories, commentCount: 0);
+            inactivePosts.ForEach(p =>
+            {
+                p.IsActive = false;
+                p.Id = 0;
+                p.Slug = $"inactive-{Guid.NewGuid()}";
+            });
+
+            var allPosts = activePosts.Concat(inactivePosts).ToList();
+            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
 
             var queryDto = new PostAdminQueryDto(
                 SearchTerm: null,
@@ -268,222 +261,273 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 OnlyActive: false
             );
 
-            var (context, postService, _, _) = await SetupAsync(cats =>
+            // Act
+            var result = await service.GetAdminPostsPagedAsync(queryDto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
+
+            Assert.Equal(InactiveMatchCount, data.TotalCount);
+
+            Assert.All(data.Items, item =>
             {
-                var active = _fixture.GeneratePosts(5, cats, 0);
-                active.ForEach(p => { p.IsActive = true; p.Id = 0; });
-
-                var inactive = _fixture.GeneratePosts(InactiveMatchCount, cats, 0);
-                inactive.ForEach(p => { p.IsActive = false; p.Id = 0; });
-
-                return active.Concat(inactive).ToList();
+                Assert.False(item.IsActive);
             });
 
-            using (context)
-            {
-                // Act
-                var result = await postService.GetAdminPostsPagedAsync(queryDto);
-
-                var data = Assert.IsType<PagedResult<AdminPostListDto>>(result.Value);
-
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.NotNull(data.AppliedFilters);                
-                Assert.Equal(InactiveMatchCount, result!.Value.TotalCount);
-                Assert.All(result.Value.Items, item => Assert.False(item.IsActive));
-            }
+            Assert.Null(data.AppliedFilters!.Search);
+            Assert.Null(data.AppliedFilters.CategoryName);
         }
 
         [Fact]
         public async Task GetPostByIdAsync_ShouldReturnSuccess_IfPostExistsInDb()
         {
-            // Arrange                        
-            var (context, postService, seededPosts, _) = await SetupAsync(categories =>
-                _fixture.GeneratePosts(25, categories, 5));
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            var targetPost = seededPosts.First();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(25, categories, commentCount: 5);
+            posts.ForEach(p => { p.Id = 0; p.Slug = Guid.NewGuid().ToString(); });
 
-            using (context)
-            {
-                // Act
-                var result = await postService.GetPostByIdAsync(targetPost.Id);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
+            var targetPost = posts.First();
 
-                var data = result.Value;
-                Assert.NotNull(data);
+            var (service, _, _) = _fixture.GetScopedService<IPostService>();
 
-                Assert.Equal(targetPost.Title, data.Title);
-                Assert.Equal(targetPost.Author, data.Author);
-                Assert.Equal(targetPost.Slug, data.Slug);
-            }
+            // Act
+            var result = await service.GetPostByIdAsync(targetPost.Id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            var data = Assert.IsType<PostAdminDetailsDto>(result.Value);
+            Assert.NotNull(data);
+
+            Assert.Equal(targetPost.Title, data.Title);
+            Assert.Equal(targetPost.Author, data.Author);
+            Assert.Equal(targetPost.Slug, data.Slug);
         }
 
         [Fact]
-        public async Task GetActivePostBySlugAsync_ShouldReturnSuccess_IfPostExistsInDbAndIsActive()
+        public async Task GetPostBySlugAsync_ShouldReturnSuccess_IfPostExistsInDbAndIsActive()
         {
-            // Arrange                        
-            const int ExpectedCommentCount = 5;
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            var (context, postService, seededPosts, _) = await SetupAsync(categories =>
+            const int ExpectedCommentCount = 5;
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: ExpectedCommentCount);
+
+            posts.ForEach(p =>
             {
-                var posts = _fixture.GeneratePosts(3, categories, ExpectedCommentCount);
-                posts.ForEach(p => p.IsActive = true);
-                return posts;
+                p.Id = 0;
+                p.IsActive = true;
+                p.Slug = $"slug-{Guid.NewGuid()}";
             });
 
-            var targetPost = seededPosts.First();
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var requestDto = TestDataHelper.CreatePostRequest(targetPost.Category.Slug, targetPost.Slug);
-
-            using (context)
+            var targetPost = posts.First();
+            var requestDto = new PostRequestBySlug
             {
-                // Act
-                var result = await postService.GetPostBySlugAsync(requestDto);
+                Category = targetPost.Category.Slug,
+                Slug = targetPost.Slug
+            };
 
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
+            var (service, _, _) = _fixture.GetScopedService<IPostService>();
 
-                var data = result.Value;
-                Assert.NotNull(data);
+            // Act
+            var result = await service.GetPostBySlugAsync(requestDto);
 
-                Assert.Equal(targetPost.Title, data.Title);
-                Assert.Equal(targetPost.Author, data.Author);
-                Assert.Equal(targetPost.Slug, data.Slug);
-                Assert.Equal(targetPost.Category.Slug, data.CategorySlug);
-                Assert.Equal(targetPost.Category.Name, data.Category);
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
 
-                Assert.Equal(ExpectedCommentCount, data.CommentCount);
-            }
+            var data = Assert.IsType<PostDetailsDto>(result.Value);
+            Assert.NotNull(data);
+
+            Assert.Equal(targetPost.Title, data.Title);
+            Assert.Equal(targetPost.Author, data.Author);
+            Assert.Equal(targetPost.Slug, data.Slug);
+            Assert.Equal(targetPost.Category.Slug, data.CategorySlug);
+            Assert.Equal(targetPost.Category.Name, data.Category);
+            Assert.Equal(ExpectedCommentCount, data.CommentCount);
         }
 
         [Fact]
         public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
         {
             // Arrange           
-            var (context, postService, _, categories) = await SetupAsync(cats => new List<Post>());
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, dbContextBefore, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedBlogDataAsync(new List<Post>(), categories);
 
             var existingCategoryId = categories.First().Id;
 
-            using (context)
-            {
-                var newPost = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
-                var postDto = TestDataHelper.ToPostCreateDto(newPost);
-                var initialCount = await context.Posts.CountAsync();
+            var newPost = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
+            var postDto = TestDataHelper.ToPostCreateDto(newPost);
 
-                // Act
-                var result = await postService.AddPostAsync(postDto);
+            var initialCount = await dbContextBefore.Posts.CountAsync();
 
-                // Assert                
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
+            // Act
+            var result = await service.AddPostAsync(postDto);
 
-                var data = result.Value!;
-                Assert.NotNull(data);
-                Assert.Equal(postDto.Title, data.Title);
-                Assert.Equal(existingCategoryId, data.CategoryId);
+            // Assert                
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
 
-                var addedPostInDb = await context.Posts
-                    .FirstOrDefaultAsync(p => p.Title == postDto.Title);
+            var data = Assert.IsType<PostAdminDetailsDto>(result.Value);
+            Assert.NotNull(data);
+            Assert.Equal(postDto.Title, data.Title);
+            Assert.Equal(existingCategoryId, data.CategoryId);
 
-                Assert.NotNull(addedPostInDb);
-                Assert.True(data.Id > 0);
-                Assert.Equal(data.Id, addedPostInDb.Id);
-                Assert.Equal(postDto.Content, addedPostInDb.Content);
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPostService>();
 
-                var finalCount = await context.Posts.CountAsync();
-                Assert.Equal(initialCount + 1, finalCount);
-            }
+            var addedPostInDb = await dbContextAfter.Posts
+                .FirstOrDefaultAsync(p => p.Id == data.Id);
+
+            Assert.NotNull(addedPostInDb);
+            Assert.True(data.Id > 0);
+            Assert.Equal(postDto.Content, addedPostInDb.Content);
+            Assert.Equal(postDto.Slug, addedPostInDb.Slug);
+
+            var finalCount = await dbContextAfter.Posts.CountAsync();
+            Assert.Equal(initialCount + 1, finalCount);
         }
 
         [Fact]
         public async Task UpdatePostAsync_ShouldUpdateExistingPostSuccessfully()
         {
-            // Arrange                        
-            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
-                _fixture.GeneratePosts(1, cats, 0));
+            // Arrange           
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            var targetPost = seededPosts.First();
+            var (service, dbContextBefore, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 0);
+            posts.ForEach(p => { p.Id = 0; p.Slug = $"original-{Guid.NewGuid()}"; });
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var targetPost = posts.First();
             var updatedTitle = "New Receipt Title";
 
             var updateDto = TestDataHelper.ToPostUpdateDto(targetPost, updatedTitle);
 
-            using (context)
-            {
-                // Act                              
-                var result = await postService.UpdatePostAsync(targetPost.Id, updateDto);
+            // Act                                     
+            var result = await service.UpdatePostAsync(targetPost.Id, updateDto);
 
-                // Assert                
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
+            // Assert                
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
 
-                var postInDb = await context.Posts
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(p => p.Id == targetPost.Id);
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPostService>();
 
-                Assert.NotNull(postInDb);
-                Assert.Equal(updateDto.Title, postInDb.Title);
-                Assert.Equal(updateDto.Content, postInDb.Content);
-                Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
+            var postInDb = await dbContextAfter.Posts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(p => p.Id == targetPost.Id);
 
-                Assert.NotNull(postInDb.UpdatedAt);
-                Assert.True(postInDb.UpdatedAt > DateTime.UtcNow.AddMinutes(-1));
-                Assert.Equal(postInDb.UpdatedAt, result.Value!.UpdatedAt);
+            Assert.NotNull(postInDb);
+            Assert.Equal(updateDto.Title, postInDb.Title);
+            Assert.Equal(updateDto.Content, postInDb.Content);
+            Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
 
-                var totalCount = await context.Posts.CountAsync();
-                Assert.Equal(seededPosts.Count, totalCount);
-            }
+            Assert.NotNull(postInDb.UpdatedAt);
+            Assert.True(postInDb.UpdatedAt > DateTime.UtcNow.AddMinutes(-1));
+
+            var data = Assert.IsType<PostAdminDetailsDto>(result.Value);
+            DateAssert.EqualWithPrecision(postInDb.UpdatedAt, data.UpdatedAt);
+
+            var totalCount = await dbContextAfter.Posts.CountAsync();
+            Assert.Equal(posts.Count, totalCount);
         }
 
         [Fact]
         public async Task DeletePostAsync_ShouldRemovePostSuccessfully()
         {
-            // Arrange                      
-            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
-                _fixture.GeneratePosts(3, cats, 0));
+            // Arrange           
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            var targetPost = seededPosts.First();
-            var initialCount = seededPosts.Count;
+            var (service, dbContextBefore, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
 
-            using (context)
-            {
-                // Act
-                var result = await postService.DeletePostAsync(targetPost.Id);
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: 0);
+            posts.ForEach(p => { p.Id = 0; p.Slug = $"delete-target-{Guid.NewGuid()}"; });
 
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-                var postExists = await context.Posts.AnyAsync(p => p.Id == targetPost.Id);
-                Assert.False(postExists);
+            var targetPost = posts.First();
+            var initialCount = await dbContextBefore.Posts.CountAsync();
 
-                var finalCount = await context.Posts.CountAsync();
-                Assert.Equal(initialCount - 1, finalCount);
-            }
+            // Act
+            var result = await service.DeletePostAsync(targetPost.Id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
+
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPostService>();
+
+            var postExists = await dbContextAfter.Posts.AnyAsync(p => p.Id == targetPost.Id);
+            Assert.False(postExists);
+
+            var finalCount = await dbContextAfter.Posts.CountAsync();
+            Assert.Equal(initialCount - 1, finalCount);
         }
 
         [Fact]
         public async Task DeletePostAsync_ShouldAlsoRemoveAssociatedComments()
         {
             // Arrange           
-            var (context, postService, seededPosts, _) = await SetupAsync(cats =>
-                _fixture.GeneratePosts(1, cats, commentCount: 5));
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            var targetPost = seededPosts.First();
+            var (service, dbContext, webContext) = _fixture.GetScopedService<IPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
 
-            using (context)
-            {
-                // Act
-                await postService.DeletePostAsync(targetPost.Id);
+            const int CommentCount = 5;
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: CommentCount);
+            posts.ForEach(p => { p.Id = 0; p.Slug = $"cascade-delete-{Guid.NewGuid()}"; });
 
-                // Assert               
-                var orphanCommentsExist = await context.Comments.AnyAsync(c => c.PostId == targetPost.Id);
-                Assert.False(orphanCommentsExist);
-            }
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var targetPost = posts.First();
+
+            // Act
+            await service.DeletePostAsync(targetPost.Id);
+
+            // Assert
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPostService>();
+
+            var orphanCommentsExist = await dbContextAfter.Comments.AnyAsync(c => c.PostId == targetPost.Id);
+            Assert.False(orphanCommentsExist);
+
+            var postExists = await dbContextAfter.Posts.AnyAsync(p => p.Id == targetPost.Id);
+            Assert.False(postExists);
         }
     }
 }

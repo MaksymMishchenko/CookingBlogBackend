@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Configuration;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -33,6 +34,19 @@ public static class ServiceCollectionExtensions
             options.DefaultAuthenticateScheme = "DynamicScheme";
             options.DefaultChallengeScheme = "DynamicScheme";
         });
+    }
+
+    public static IServiceCollection AddTestWebContext(this IServiceCollection services)
+    {
+        var descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IWebContext));
+        if (descriptor != null)
+        {
+            services.Remove(descriptor);
+        }
+
+        services.AddScoped<IWebContext, TestWebContext>();
+
+        return services;
     }
 
     public static IServiceCollection AddExceptionMiddlewareMocks(this IServiceCollection services)
@@ -65,7 +79,7 @@ public static class ServiceCollectionExtensions
     }
 
     public static IServiceCollection DisableRateLimiting(this IServiceCollection services)
-    {        
+    {
         services.RemoveAll(typeof(IConfigureOptions<RateLimiterOptions>));
 
         services.AddRateLimiter(options =>

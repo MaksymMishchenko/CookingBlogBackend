@@ -43,7 +43,7 @@ jobs:
       - name: Run Tests with Coverage
         env:
           ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.JWT_SECRET_KEY }}
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
         run: >
           dotnet test CookingBlogBackend/PostApiService.sln 
           --configuration Release 

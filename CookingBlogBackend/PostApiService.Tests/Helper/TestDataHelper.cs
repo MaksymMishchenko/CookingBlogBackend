@@ -37,8 +37,7 @@ namespace PostApiService.Tests.Helper
                         }
                     }
                 }
-            }
-
+            }            
             return posts;
         }
 
@@ -69,7 +68,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.UpdatedAt, f => f.Date.Recent(7).ToUniversalTime())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
-                    if (!generateComments)
+                    if (!generateComments || commentCount <= 0)
                         return new List<Comment>();
 
                     return new Faker<Comment>()
@@ -81,102 +80,7 @@ namespace PostApiService.Tests.Helper
                 })
                 .UseSeed(seed);
         }
-
-        public static List<Post> GeneratePostsWithKeyword
-            (string keyword, ICollection<Category> categories, int count, bool generateIds = false)
-        {
-            int postId = 1;
-            var posts = new List<Post>();
-            var faker = new Faker<Post>("en")
-                .RuleFor(p => p.Id, _ => 0)
-                .RuleFor(p => p.Author, _ => "Author")
-                .RuleFor(p => p.ImageUrl, _ => "image.jpeg")
-                .RuleFor(p => p.MetaTitle, _ => "Meta title")
-                .RuleFor(p => p.MetaDescription, _ => "Meta description")
-                .RuleFor(p => p.Slug, f => f.Lorem.Slug())
-                .RuleFor(p => p.CreatedAt, f => f.Date.Past(1))
-                .RuleFor(p => p.Category, f => f.PickRandom(categories))
-                .RuleFor(p => p.CategoryId, (f, p) => p.Category.Id);
-
-            for (int i = 0; i < count; i++)
-            {
-                var post = faker.Generate();
-
-                if (generateIds)
-                {
-                    post.Id = postId++;
-                }
-
-                post.Title = $"{keyword} Post Title {i}";
-                post.Description = $"A detailed description about {keyword}.";
-                post.Content = $"A detailed content about {keyword}.";
-
-                posts.Add(post);
-            }
-            return posts;
-        }
-
-        public static List<Post> GetPostsForOrLogic(ICollection<Category> categories)
-        {
-            var baseTime = DateTime.UtcNow;
-
-            return new List<Post>
-            {
-                new Post
-                {
-                    Title = "Chili Recipe",
-                    Description = "Simple cooking guide",
-                    Content = "This is a long content about cooking without keywords.",
-                    Author = "Chef John",
-                    CreatedAt = baseTime.AddHours(-1),
-                    ImageUrl = "https://example.com/image1.jpg",
-                    MetaTitle = "Chili Recipe Title",
-                    MetaDescription = "Meta description about chili",
-                    Slug = "chili-recipe-title",
-                    Category = categories.First(c => c.Name == "Beverages")
-                },
-                new Post
-                {
-                    Title = "Secret Dish",
-                    Description = "The Best Chili ever made in Texas",
-                    Content = "Try to guess what is inside this amazing secret dish.",
-                    Author = "Jane Doe",
-                    CreatedAt = baseTime.AddHours(-2),
-                    ImageUrl = "https://example.com/image2.jpg",
-                    MetaTitle = "Secret Dish Meta",
-                    MetaDescription = "Meta description for secret dish",
-                    Slug = "secret-dish-desc",
-                    Category = categories.First(c => c.Name == "Desserts")
-                },
-                new Post
-                {
-                    Title = "Spicy Ingredient",
-                    Description = "Information about spices",
-                    Content = "Actually, the secret ingredient is Chili, you should try it.",
-                    Author = "Admin",
-                    CreatedAt = baseTime.AddHours(-3),
-                    ImageUrl = "https://example.com/image3.jpg",
-                    MetaTitle = "Ingredient Meta",
-                    MetaDescription = "Meta description for ingredient",
-                    Slug = "spicy-ingredient-content",
-                    Category = categories.First(c => c.Name == "Vegetarian")
-                },
-                new Post
-                {
-                    Title = "Healthy Food",
-                    Description = "Fresh Green Salad",
-                    Content = "No spicy things in this recipe, only vegetables.",
-                    Author = "Healthy Life",
-                    CreatedAt = baseTime.AddHours(-4),
-                    ImageUrl = "https://example.com/image4.jpg",
-                    MetaTitle = "Salad Meta",
-                    MetaDescription = "Meta description for salad",
-                    Slug = "healthy-food-salad",
-                    Category = categories.First(c => c.Name == "Breakfast")
-                }
-            };
-        }
-
+       
         public static PostCreateDto ToPostCreateDto(Post post)
         {
             return new PostCreateDto
@@ -192,7 +96,6 @@ namespace PostApiService.Tests.Helper
                 CategoryId = post.CategoryId
             };
         }
-
         public static PostUpdateDto ToPostUpdateDto(Post post, string? newTitle = null)
         {
             return new PostUpdateDto
@@ -209,86 +112,12 @@ namespace PostApiService.Tests.Helper
             };
         }
 
-        public static void AssertPostListDtoMapping(Post expectedPost, PostListDto actualDto, int expectedCommentCount)
-        {
-            Assert.NotNull(actualDto);
-            Assert.Equal(expectedPost.Id, actualDto.Id);
-            Assert.Equal(expectedPost.Title, actualDto.Title);
-            Assert.Equal(expectedPost.Slug, actualDto.Slug);
-            Assert.Equal(expectedPost.Author, actualDto.Author);
-            Assert.Equal(expectedPost.Category.Name, actualDto.Category);
-
-            const int Limit = 200;
-
-            var cleanedDescription = expectedPost.Description;
-
-            var expectedDescription = cleanedDescription.Length > Limit
-                ? cleanedDescription.Substring(0, Limit) + "..."
-                : cleanedDescription;
-
-            Assert.Equal(expectedDescription, actualDto.Description);
-            Assert.Equal(expectedPost.CreatedAt, actualDto.CreatedAt);
-            Assert.Equal(expectedPost.UpdatedAt, actualDto.UpdatedAt);
-            Assert.Equal(expectedCommentCount, actualDto.CommentsCount);
-        }
-
         public static void AssertCategoryAsync(Category expectedCategory, CategoryDto actualDto)
         {
             Assert.NotNull(actualDto);
             Assert.Equal(expectedCategory.Id, actualDto.Id);
             Assert.Equal(expectedCategory.Name, actualDto.Name);
         }
-
-        public static List<Post> GetSearchedPost(ICollection<Category> categories)
-        {
-            return new List<Post>
-            {
-                new Post
-                {
-                    Id = 1,
-                    Title = "Ultimate Classic Chili Cheeseburger Recipe",
-                    Slug = "ultimate-chili-cheeseburger",
-                    Description = "How to grill the perfect juicy patty and melt the cheese.",
-                    Content = "Tips for brioche buns, sharp cheddar, and secret sauce.",
-                    CreatedAt = DateTime.Now.AddHours(-10),
-                    Author = "Chef Mike",
-                    Category = categories.First(c => c.Name == "Breakfast")
-                },
-                new Post
-                {
-                    Id = 2,
-                    Title = "Easy Homemade Chili Cheese Dog Sauce",
-                    Slug = "easy-chili-cheese-dog",
-                    Description = "Stretch and fold technique for thin, foldable crust.",
-                    Content = "High-protein flour, proofing secrets, and oven temps.",
-                    CreatedAt = DateTime.Now.AddHours(-1),
-                    Author = "Peter",
-                    Category = categories.First(c => c.Name == "Healthy Food")
-                },
-                new Post
-                {
-                    Id = 3,
-                    Title = "Authentic Texas Chili (No Beans)",
-                    Slug = "texas-chili-no-beans",
-                    Description = "The official recipe for rich, smoky, bean-free Texas chili.",
-                    Content = "Using chili powder, beef chuck, and dried peppers for depth.",
-                    CreatedAt = DateTime.Now.AddHours(-6),
-                    Author = "Sarah",
-                    Category = categories.First(c => c.Name == "Beverages")
-                },
-                new Post
-                {
-                    Id = 4,
-                    Title = "Quick 30-Minute Chicken Tacos",
-                    Slug = "quick-chicken-tacos",
-                    Description = "Simple seasoning mix and fast pan-searing method.",
-                    Content = "Shredded chicken, lime, and fresh cilantro garnish.",
-                    CreatedAt = DateTime.Now.AddHours(-4),
-                    Author = "Monika",
-                    Category = categories.First(c => c.Name == "Vegetarian")
-                },
-            };
-        }        
 
         public static Post GetSinglePost(ICollection<Category>? categories = null, int? id = 1, bool includeId = true)
         {

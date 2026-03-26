@@ -49,7 +49,7 @@ namespace PostApiService.Tests.Fixtures
             using var scope = Services!.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
-            await context.Database.MigrateAsync();            
+            await context.Database.MigrateAsync();
         }
 
         private async Task InitializeRespawnerAsync()

@@ -9,11 +9,11 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
     [Collection("SharedDatabase")]
     public class CommentControllerTests
     {
-        private readonly BaseTestFixture _fixture;
+        private readonly ServiceTestFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
 
-        public CommentControllerTests(BaseTestFixture fixture)
+        public CommentControllerTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
             _client = fixture.Client!;
