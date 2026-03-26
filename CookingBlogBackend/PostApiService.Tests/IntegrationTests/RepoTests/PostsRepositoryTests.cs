@@ -1,29 +1,16 @@
-﻿using PostApiService.Repositories;
+﻿using Microsoft.Extensions.DependencyInjection;
+using PostApiService.Repositories;
 
 namespace PostApiService.Tests.IntegrationTests.RepoTests
 {
-    public class PostsRepositoryTests : IClassFixture<InMemoryDatabaseFixture>
+    [Collection("SharedDatabase")]
+    public class PostsRepositoryTests
     {
-        private readonly InMemoryDatabaseFixture _fixture;
+        private readonly ServiceTestFixture _fixture;
 
-        public PostsRepositoryTests(InMemoryDatabaseFixture fixture)
+        public PostsRepositoryTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
-        }
-
-        private async Task<(ApplicationDbContext context, PostRepository repo)> SetupRepoAsync(List<Post> postsToSeed)
-        {
-            var context = _fixture.CreateUniqueContext();
-            var categories = TestDataHelper.GetCulinaryCategories();
-
-            await _fixture.SeedCategoryAsync(context, categories);
-
-            if (postsToSeed != null && postsToSeed.Any())
-            {
-                await _fixture.SeedDatabaseAsync(context, postsToSeed);
-            }
-
-            return (context, new PostRepository(context));
         }
 
         [Theory]
@@ -35,53 +22,92 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             string? search, bool? active, string? slug, int expectedCount)
         {
             // Arrange
+            await _fixture.ResetDatabaseAsync();
+
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = _fixture.GeneratePosts(5, categories, 0);
 
-            posts[0].Title = "SpecialQuery Item";
-            posts[0].IsActive = true;
-            posts[0].Category = categories.First(c => c.Slug == "beverages");
+            var activePosts = TestDataHelper.GetPostsWithComments(5, categories, commentCount: 1);
+            activePosts.ForEach(p => { p.IsActive = true; p.Id = 0; });
 
-            posts[1].IsActive = false;
+            activePosts[0].Title = "This is a SpecialQuery item";
+            activePosts[0].Category = categories.First(c => c.Slug == "beverages");
 
-            posts[2].Category = categories.First(c => c.Slug == "desserts");
-            posts[2].IsActive = true;
+            activePosts[1].Category = categories.First(c => c.Slug == "desserts");
 
-            var (context, repo) = await SetupRepoAsync(posts);
-
-            // Act & Assert
-            using (context)
+            var inactivePosts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 0);
+            inactivePosts.ForEach(p =>
             {
-                var result = repo.GetFilteredPosts(search, active, slug).ToList();
+                p.IsActive = false;
+                p.Id = 0;
+                p.Slug = $"inactive-{Guid.NewGuid()}";
+            });
 
-                Assert.Equal(expectedCount, result.Count);
+            var allPosts = activePosts.Concat(inactivePosts).ToList();
+
+            await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
+
+            // Act       
+            using var scope = _fixture.Services!.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
+
+            var result = repo.GetFilteredPosts(search, active, slug).ToList();
+
+            // Assert
+            Assert.Equal(expectedCount, result.Count);
+
+            if (expectedCount > 0 && !string.IsNullOrEmpty(search))
+            {
+                Assert.Contains(result, p =>
+                    p.Title.Contains(search, StringComparison.OrdinalIgnoreCase) ||
+                    p.Description.Contains(search, StringComparison.OrdinalIgnoreCase)
+                );
             }
         }
 
         [Fact]
-        public async Task GetFilteredPosts_ShouldSearchInAllFields()
+        public async Task GetFilteredPosts_ShouldSearchInTitleDescriptionAndContent()
         {
             // Arrange
+            await _fixture.ResetDatabaseAsync();
+
             const string Query = "soups";
-            var (context, repo) = await SetupRepoAsync(new List<Post>());
-            var categories = context.Categories.ToList();
+            var categories = TestDataHelper.GetCulinaryCategories();
 
-            var posts = _fixture.GeneratePosts(3, categories, 0);
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: 0);
 
-            posts[0].Title = $"Something {Query}";
-            posts[1].Description = $"Contains {Query} inside";
-            posts[2].Content = $"End with {Query}";
+            posts[0].Title = $"Best {Query} for winter";
+            posts[0].IsActive = true;
+            posts[0].Id = 0;
 
-            await _fixture.SeedDatabaseAsync(context, posts);
+            posts[1].Description = $"This article is about {Query}";
+            posts[1].IsActive = true;
+            posts[1].Id = 0;
+
+            posts[2].Content = $"You should try this {Query} recipe at home";
+            posts[2].IsActive = true;
+            posts[2].Id = 0;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
             // Act
+            using var scope = _fixture.Services!.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
+
             var result = repo.GetFilteredPosts(Query, null, null).ToList();
 
             // Assert
             Assert.Equal(3, result.Count);
+
             Assert.All(result, p =>
             {
-                Assert.True(p.Title.Contains(Query) || p.Description.Contains(Query) || p.Content.Contains(Query));
+                bool existsInAnyField =
+                    p.Title.Contains(Query, StringComparison.OrdinalIgnoreCase) ||
+                    (p.Description != null && p.Description.Contains(Query, StringComparison.OrdinalIgnoreCase)) ||
+                    p.Content.Contains(Query, StringComparison.OrdinalIgnoreCase);
+
+                Assert.True(existsInAnyField, $"Word '{Query}' not found in any field of post {p.Id}");
             });
         }
     }

@@ -11,9 +11,9 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
     {
         private readonly HttpClient? _client;
         private readonly IServiceProvider? _services;
-        private readonly BaseTestFixture _fixture;
+        private readonly ServiceTestFixture _fixture;
 
-        public AuthControllerTests(BaseTestFixture fixture)
+        public AuthControllerTests(ServiceTestFixture fixture)
         {
             _client = fixture.Client;
             _services = fixture.Services;
