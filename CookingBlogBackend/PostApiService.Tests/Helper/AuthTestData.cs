@@ -23,6 +23,12 @@ namespace PostApiService.Tests.Helper
             Password = "SafePassword123!"
         };
 
+        public static LoginUserDto CreateAdminLoginDto() => new()
+        {
+            UserName = TestUserData.AdminUserName,
+            Password = TestUserData.AdminPassword
+        };
+
         public static LoggedInUserDto CreateLoggedInUserDto(string userName = "testuser", string token = "fake-jwt-token")
         {
             return new LoggedInUserDto(token, userName);

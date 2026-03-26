@@ -47,8 +47,8 @@ jobs:
       - name: Start API in background
         env:
           ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.JWT_SECRET_KEY }}          
-          ASPNETCORE_URLS: "https://localhost:7030;http://localhost:5030"
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}          
+          ASPNETCORE_URLS: "http://localhost:5189"
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=CookingBlog;Username=postgres;Password=Password123!"
         run: |
           echo "Waiting for Postgres to warm up..."
@@ -57,8 +57,9 @@ jobs:
           sleep 20
 
       - name: Check API Status
-        run: |         
-          curl -k -i https://localhost:7030/api/posts || (echo "--- API LOGS ---" && cat api.log && exit 1)
+        run: | 
+          sleep 5        
+          curl -i http://localhost:5189/api/posts || (echo "--- API LOGS ---" && cat api.log && exit 1)
 
       - name: Install Newman
         run: npm install -g newman
@@ -67,6 +68,5 @@ jobs:
         run: |
           newman run postman/collection.json \
           -e postman/environment.json \
-          --env-var "baseUrl=https://localhost:7030" \
-          --reporters cli \
-          --insecure
+          --env-var "baseUrl=http://localhost:5189" \
+          --reporters cli \          

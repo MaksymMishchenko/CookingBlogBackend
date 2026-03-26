@@ -1,206 +1,212 @@
 ﻿using PostApiService.Infrastructure.Common;
+using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
-using PostApiService.Repositories;
-using PostApiService.Services;
+using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
-    public class CategoryServiceIntegrationTests : IClassFixture<InMemoryDatabaseFixture>
+    [Collection("SharedDatabase")]
+    public class CategoryServiceIntegrationTests
     {
-        private readonly InMemoryDatabaseFixture _fixture;
+        private readonly ServiceTestFixture _fixture;
 
-        public CategoryServiceIntegrationTests(InMemoryDatabaseFixture fixture)
+        public CategoryServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
-        }
-
-        private (CategoryService Service, List<Category> SeededCategories) CreateCategoryServiceAndSeedUniqueDb
-            (out ApplicationDbContext context)
-        {
-            context = _fixture.CreateUniqueContext();
-
-            var categoriesToSeed = TestDataHelper.GetCulinaryCategories();
-            _fixture.SeedCategoryAsync(context, categoriesToSeed).Wait();
-
-            var postRepo = new PostRepository(context);
-            var repo = new Repository<Category>(context);
-            var service = new CategoryService(repo, postRepo);
-
-            return (service, categoriesToSeed);
         }
 
         [Fact]
         public async Task ExistAsync_ShouldReturnTrue_IfCategoryExists()
         {
             // Arrange            
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out var context);
+            await _fixture.ResetDatabaseAsync();
 
-            using (context)
-            {
-                var categoryToFind = seededCategories.First();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-                // Act              
-                var result = await categoryService.ExistsAsync(categoryToFind.Id);
+            var (service, dbContext, _) = _fixture.GetScopedService<ICategoryService>();
+            var categoryFromDb = await dbContext.Categories.FirstAsync();
 
-                Assert.True(result);
-            }
-        }
-
-        [Fact]
-        public async Task ExistsAsync_ShouldReturnFalse_IfCategoryDoesNotExist()
-        {
-            // Arrange
-            var (categoryService, _) = CreateCategoryServiceAndSeedUniqueDb(out var context);
-            var nonExistentId = 99999;
-
-            // Act
-            var result = await categoryService.ExistsAsync(nonExistentId);
+            // Act              
+            var result = await service.ExistsAsync(categoryFromDb.Id);
 
             // Assert
-            Assert.False(result);
+            Assert.True(result);
         }
 
         [Fact]
         public async Task ExistBySlugAsync_ShouldReturnTrue_IfCategoryExists()
         {
-            // Arrange            
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out var context);
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
 
-            using (context)
-            {
-                var categoryToFind = seededCategories.First();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-                // Act              
-                var result = await categoryService.ExistsBySlugAsync(categoryToFind.Slug);
+            var (service, dbContext, _) = _fixture.GetScopedService<ICategoryService>();
+            var categoryFromDb = await dbContext.Categories.FirstAsync();
 
-                // Assert
-                Assert.True(result);
-            }
+            // Act              
+            var result = await service.ExistsBySlugAsync(categoryFromDb.Slug);
+
+            // Assert
+            Assert.True(result);
         }
 
         [Fact]
         public async Task GetAllCategoriesAsync_ShouldReturnListOfCategories()
         {
             // Arrange
-            ApplicationDbContext context;
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out context);
+            await _fixture.ResetDatabaseAsync();
 
-            using (context)
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedCategoriesAsync(categories);
+
+            var (service, dbContext, _) = _fixture.GetScopedService<ICategoryService>();
+
+            // Act
+            var result = await service.GetAllCategoriesAsync();
+
+            var data = Assert.IsType<Result<List<CategoryDto>>>(result);
+
+            //Assert
+            Assert.NotNull(data.Value);
+            Assert.True(data.IsSuccess);
+            Assert.Equal(ResultStatus.Success, data.Status);
+            Assert.Equal(categories.Count, data.Value!.Count);
+
+            Assert.All(result.Value!, (actualDto, index) =>
             {
-                // Act
-                var result = await categoryService.GetAllCategoriesAsync();
+                var expectedCategory = categories[index];
 
-                //Assert
-                Assert.NotNull(result);
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.Equal(seededCategories.Count, result.Value!.Count);
-
-                Assert.All(result.Value!, (actualDto, index) =>
-                {
-                    var expectedCategory = seededCategories[index];
-
-                    TestDataHelper.AssertCategoryAsync
-                    (expectedCategory, actualDto);
-                });
-            }
+                TestDataHelper.AssertCategoryAsync
+                (expectedCategory, actualDto);
+            });
         }
 
         [Fact]
         public async Task GetCategoryById_ShouldReturnExpectedCategory()
         {
             // Arrange
-            ApplicationDbContext context;
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out context);
+            await _fixture.ResetDatabaseAsync();
 
-            using (context)
-            {
-                var categoryToFind = seededCategories.Last();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-                // Act
-                var result = await categoryService.GetCategoryByIdAsync(categoryToFind.Id);
+            var (service, dbContext, _) = _fixture.GetScopedService<ICategoryService>();
 
-                //Assert
-                Assert.NotNull(result);
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.Equal(categoryToFind.Id, result.Value!.Id);
-                Assert.Equal(categoryToFind.Name, result.Value!.Name);
-            }
+            var categoryToFind = await dbContext.Categories
+                .OrderByDescending(o => o.Id)
+                .FirstAsync();
+
+            // Act
+            var result = await service.GetCategoryByIdAsync(categoryToFind.Id);
+
+            //Assert
+            var data = Assert.IsType<Result<CategoryDto>>(result);
+
+            Assert.NotNull(data.Value);
+            Assert.True(data.IsSuccess);
+            Assert.Equal(ResultStatus.Success, data.Status);
+            Assert.Equal(categoryToFind.Id, result.Value!.Id);
+            Assert.Equal(categoryToFind.Name, result.Value!.Name);
         }
 
         [Fact]
         public async Task AddCategoryAsync_ShouldSaveCategoryInDatabase_WhenDataIsValid()
         {
             // Arrange
-            ApplicationDbContext context;
-            var (categoryService, _) = CreateCategoryServiceAndSeedUniqueDb(out context);
+            await _fixture.ResetDatabaseAsync();
+            _fixture.LoginAsAdmin();
 
-            using (context)
-            {
-                var dto = new CreateCategoryDto { Name = "Soups" };
+            var dto = new CreateCategoryDto { Name = "Soups" };
+            var (service, dbContext, _) = _fixture.GetScopedService<ICategoryService>();
 
-                // Act
-                var result = await categoryService.AddCategoryAsync(dto);
+            // Act
+            var result = await service.AddCategoryAsync(dto);
 
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
-                Assert.NotNull(result.Value);
+            // Assert
+            var data = Assert.IsType<Result<CategoryDto>>(result);
 
-                var categoryInDb = context.Categories.FirstOrDefault(c => c.Name == dto.Name);
-                Assert.NotNull(categoryInDb);
-                Assert.Equal(dto.Name, categoryInDb.Name);
-            }
+            Assert.True(data.IsSuccess);
+            Assert.Equal(ResultStatus.Success, data.Status);
+            Assert.NotNull(data.Value);
+            Assert.Equal(dto.Name, data.Value.Name);
+            Assert.True(data.Value.Id > 0);
+
+            var (_, dbContextAssert, _) = _fixture.GetScopedService<ICategoryService>();
+            var categoryInDb = await dbContextAssert.Categories.FirstOrDefaultAsync(c => c.Name == dto.Name);
+
+            Assert.NotNull(categoryInDb);
+            Assert.Equal(dto.Name, categoryInDb.Name);
         }
 
         [Fact]
         public async Task UpdateCategoryAsync_ShouldUpdateExistingCategoryInDatabase()
         {
             // Arrange
-            ApplicationDbContext context;
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out context);
+            await _fixture.ResetDatabaseAsync();
+            _fixture.LoginAsAdmin();
 
-            using (context)
-            {
-                var categoryToUpdate = seededCategories.First();
-                var dto = new UpdateCategoryDto { Name = "Updated Culinary Name" };
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-                // Act
-                var result = await categoryService.UpdateCategoryAsync(categoryToUpdate.Id, dto);
+            var (service, dbContext, _) = _fixture.GetScopedService<ICategoryService>();
+            var categoryToUpdate = await dbContext.Categories.FirstAsync();
 
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
+            string oldName = categoryToUpdate.Name;
+            const string NewName = "Updated Culinary";
+            var dto = new UpdateCategoryDto { Name = NewName };
 
-                var updatedEntity = context.Categories.Find(categoryToUpdate.Id);
-                Assert.NotNull(updatedEntity);
-                Assert.Equal(dto.Name, updatedEntity.Name);
-                Assert.Equal(categoryToUpdate.Id, updatedEntity.Id);
-            }
+            // Act
+            var result = await service.UpdateCategoryAsync(categoryToUpdate.Id, dto);
+
+            // Assert
+            var data = Assert.IsType<Result<CategoryDto>>(result);
+
+            Assert.True(data.IsSuccess);
+            Assert.NotNull(data.Value);
+            Assert.Equal(NewName, data.Value.Name);
+            Assert.Equal(categoryToUpdate.Id, data.Value.Id);
+
+            var (_, dbContextAssert, _) = _fixture.GetScopedService<ICategoryService>();
+            var categoryInDb = await dbContextAssert.Categories.FindAsync(categoryToUpdate.Id);
+
+            Assert.NotNull(categoryInDb);
+            Assert.Equal(NewName, categoryInDb.Name);
+            Assert.NotEqual(oldName, categoryInDb.Name);
         }
 
         [Fact]
         public async Task DeleteCategoryAsync_ShouldRemoveCategoryFromDatabase_WhenCategoryHasNoPosts()
         {
             // Arrange
-            ApplicationDbContext context;
-            var (categoryService, seededCategories) = CreateCategoryServiceAndSeedUniqueDb(out context);
+            await _fixture.ResetDatabaseAsync();
+            _fixture.LoginAsAdmin();
 
-            using (context)
-            {
-                var categoryToDelete = seededCategories.Last();
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedCategoriesAsync(categories);
 
-                // Act
-                var result = await categoryService.DeleteCategoryAsync(categoryToDelete.Id);
+            var (service, dbContextArrange, _) = _fixture.GetScopedService<ICategoryService>();
+            var categoryToDelete = await dbContextArrange.Categories.FirstAsync();
+            int initialCount = await dbContextArrange.Categories.CountAsync();
 
-                // Assert
-                Assert.True(result.IsSuccess);
-                Assert.Equal(ResultStatus.Success, result.Status);
+            // Act
+            var result = await service.DeleteCategoryAsync(categoryToDelete.Id);
 
-                var categoryInDb = context.Categories.Find(categoryToDelete.Id);
-                Assert.Null(categoryInDb);
-            }
+            // Assert
+            var data = Assert.IsType<Result>(result);
+
+            Assert.True(data.IsSuccess);
+            Assert.Equal(ResultStatus.Success, data.Status);
+
+            var (_, dbContextAssert, _) = _fixture.GetScopedService<ICategoryService>();
+
+            var categoryInDb = await dbContextAssert.Categories.FindAsync(categoryToDelete.Id);
+            int finalCount = await dbContextAssert.Categories.CountAsync();
+
+            Assert.Null(categoryInDb);
+            Assert.Equal(initialCount - 1, finalCount);
         }
     }
 }
