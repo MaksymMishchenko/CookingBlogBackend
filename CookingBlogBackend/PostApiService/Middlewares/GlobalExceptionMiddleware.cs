@@ -1,4 +1,4 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Npgsql;
 using PostApiService.Infrastructure.Constants;
 using PostApiService.Models.Common;
 using System.Net;
@@ -30,7 +30,7 @@ namespace PostApiService.Middlewares
                     TimeoutException or OperationCanceledException
                         => (HttpStatusCode.RequestTimeout, Global.System.Timeout),
 
-                    SqlException or DbUpdateException
+                    NpgsqlException or DbUpdateException
                         => (HttpStatusCode.InternalServerError, Global.System.DbUpdateError),
 
                     _ => (HttpStatusCode.InternalServerError, Global.System.DatabaseCriticalError)

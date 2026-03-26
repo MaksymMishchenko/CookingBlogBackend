@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
-using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 using PostApiService.Tests.Infrastructure;
 using Respawn;
 
@@ -12,7 +12,7 @@ namespace PostApiService.Tests.Fixtures
         private WebApplicationFactory<Program>? _factory;
 
         private Respawner _respawner = default!;
-        private SqlConnection _connection = default!;
+        private NpgsqlConnection _connection = default!;
 
         public HttpClient? Client { get; private set; }
         public IServiceProvider? Services { get; private set; }
@@ -21,7 +21,7 @@ namespace PostApiService.Tests.Fixtures
         {
             await SharedDbContainer.StartAsync();
 
-            _connection = new SqlConnection(SharedDbContainer.ConnectionString);
+            _connection = new NpgsqlConnection(SharedDbContainer.ConnectionString);
             await _connection.OpenAsync();
 
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
@@ -54,10 +54,15 @@ namespace PostApiService.Tests.Fixtures
 
         private async Task InitializeRespawnerAsync()
         {
+            if (_connection.State != System.Data.ConnectionState.Open)
+            {
+                await _connection.OpenAsync();
+            }
+
             _respawner = await Respawner.CreateAsync(_connection, new RespawnerOptions
             {
-                DbAdapter = DbAdapter.SqlServer,
-                SchemasToInclude = ["dbo"],
+                DbAdapter = DbAdapter.Postgres,
+                SchemasToInclude = ["public"],
                 WithReseed = true,
                 TablesToIgnore = ["__EFMigrationsHistory"]
             });
