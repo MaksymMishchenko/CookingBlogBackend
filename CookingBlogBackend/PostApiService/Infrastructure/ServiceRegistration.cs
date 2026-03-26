@@ -41,10 +41,9 @@ namespace PostApiService.Infrastructure
         /// </summary>        
         public static IServiceCollection AddApplicationService(this IServiceCollection services,
             IConfiguration configuration, string connectionString)
-        {
-            services.AddDbContext<ApplicationDbContext>(options =>
-            {
-                options.UseSqlServer(connectionString);
+        {            
+            services.AddDbContext<ApplicationDbContext>(options => {
+                options.UseNpgsql(connectionString);
             });
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));

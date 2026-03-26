@@ -329,7 +329,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(ExpectedSafeContent, updatedInDb.Content);
 
             Assert.NotNull(updatedInDb.UpdatedAt);
-            Assert.Equal(result.Data.UpdatedAt, updatedInDb.UpdatedAt);
+            DateAssert.EqualWithPrecision(result.Data.UpdatedAt, updatedInDb.UpdatedAt);
         }
 
         [Fact]

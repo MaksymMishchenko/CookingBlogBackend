@@ -1,10 +1,10 @@
-﻿using Testcontainers.MsSql;
+﻿using Testcontainers.PostgreSql;
 
 namespace PostApiService.Tests.Infrastructure
 {
     public static class SharedDbContainer
     {
-        private static readonly MsSqlContainer _container = new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest")
+        private static readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:latest")
             .WithReuse(true)
             .Build();
 
