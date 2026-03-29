@@ -41,8 +41,9 @@ namespace PostApiService.Infrastructure
         /// </summary>        
         public static IServiceCollection AddApplicationService(this IServiceCollection services,
             IConfiguration configuration, string connectionString)
-        {            
-            services.AddDbContext<ApplicationDbContext>(options => {
+        {
+            services.AddDbContext<ApplicationDbContext>(options =>
+            {
                 options.UseNpgsql(connectionString);
             });
 
@@ -233,43 +234,82 @@ namespace PostApiService.Infrastructure
         {
             using (var scope = app.Services.CreateScope())
             {
-                var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-
-                //if (await cntx.Users.AnyAsync()) return app;
-
-                await cntx.Database.EnsureDeletedAsync();
-
-                if (await cntx.Database.EnsureCreatedAsync())
+                var provider = scope.ServiceProvider;
+                var cntx = provider.GetRequiredService<ApplicationDbContext>();
+                var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
+                var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
+                var env = provider.GetRequiredService<IWebHostEnvironment>();
+                var config = provider.GetRequiredService<IConfiguration>();
+                
+                if (env.IsEnvironment("Testing")) return app;
+                
+                if (env.IsProduction() || env.IsStaging())
                 {
-                    // Creating Role Entities
-                    var adminRole = new IdentityRole(TS.Roles.Admin);
-                    var contributorRole = new IdentityRole(TS.Roles.Contributor);
+                    Log.Information("--- {Env}: Applying Migrations ---", env.EnvironmentName);
+                    await cntx.Database.MigrateAsync();
+                }
+                else
+                {
+                    Log.Information("--- Development: Recreating Database ---");
+                    await cntx.Database.EnsureDeletedAsync();
+                    await cntx.Database.EnsureCreatedAsync();
+                }
+                
+                if (!await userManager.Users.AnyAsync())
+                {
+                    Log.Information("--- Seeding Roles ---");
+                    await roleManager.CreateAsync(new IdentityRole(TS.Roles.Admin));
+                    await roleManager.CreateAsync(new IdentityRole(TS.Roles.Contributor));
+                    
+                    var adminEmail = config["SeedSettings:AdminEmail"];
+                    var adminPass = config["SeedSettings:AdminPassword"];
+                    var adminName = config["SeedSettings:AdminUserName"];
 
-                    // Adding Roles
-                    await roleManager.CreateAsync(adminRole);
-                    await roleManager.CreateAsync(contributorRole);
+                    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPass))
+                    {
+                        var adminUser = new IdentityUser { UserName = adminName, Email = adminEmail };
+                        var adminResult = await userManager.CreateAsync(adminUser, adminPass);
 
-                    // Creating User Entities
-                    var adminUser = new IdentityUser() { UserName = "admin", Email = "admin@test.com" };
-                    var contributorUser = new IdentityUser() { UserName = "cont", Email = "c@test.com" };
+                        if (adminResult.Succeeded)
+                        {                           
+                            await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
+                            await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
+                            await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Comment));
 
-                    // Adding Users with Password
-                    await userManager.CreateAsync(adminUser, "-Rtyuehe1");
-                    await userManager.CreateAsync(contributorUser, "-Rtyuehe2");
+                            await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
+                            Log.Information("--- Admin [{Email}] created successfully ---", adminEmail);
+                        }
+                        else
+                        {
+                            Log.Error("--- Failed to create Admin: {Errors} ---", string.Join(", ", adminResult.Errors.Select(e => e.Description)));
+                        }
+                    }
+                   
+                    if (!env.IsProduction())
+                    {
+                        var contEmail = config["SeedSettings:ContEmail"];
+                        var contPass = config["SeedSettings:ContPassword"];
+                        var contName = config["SeedSettings:ContUserName"];
 
-                    // Adding Claims to Users
-                    await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
-                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
-                    await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Comment));
+                        if (!string.IsNullOrEmpty(contEmail) && !string.IsNullOrEmpty(contPass))
+                        {
+                            var contributorUser = new IdentityUser { UserName = contName, Email = contEmail };
+                            var contResult = await userManager.CreateAsync(contributorUser, contPass);
 
-                    await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
-                    await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
+                            if (contResult.Succeeded)
+                            {                                
+                                await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
+                                await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
 
-                    //// Adding Roles to Users
-                    await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
-                    await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
+                                await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
+                                Log.Information("--- Contributor [{Email}] created successfully ---", contEmail);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Log.Information("--- Database already seeded. Skipping ---");
                 }
             }
             return app;
