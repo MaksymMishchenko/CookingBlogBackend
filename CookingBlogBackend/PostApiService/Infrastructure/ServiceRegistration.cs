@@ -337,41 +337,80 @@ namespace PostApiService.Infrastructure
         /// <summary>
         /// Seeds the database with initial data for posts and comments if no posts are already present.        
         /// </summary>        
+        //public static async Task<IApplicationBuilder> SeedDataAsync(this WebApplication app)
+        //{
+        //    using (var scope = app.Services.CreateScope())
+        //    {
+        //        var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        //        if (await cntx.Posts.AnyAsync()) return app;
+
+        //        var userIds = await cntx.Users
+        //        .Select(u => u.Id)
+        //        .ToArrayAsync();
+
+        //        if (userIds.Length == 0)
+        //        {
+        //            throw new Exception("SeedData: No users found in database. Seed users first!");
+        //        }
+
+        //        if (await cntx.Posts.AnyAsync())
+        //        {
+        //            cntx.Posts.RemoveRange(cntx.Posts);
+        //            await cntx.SaveChangesAsync();
+
+        //            if (await cntx.Categories.AnyAsync())
+        //            {
+        //                cntx.Categories.RemoveRange(cntx.Categories);
+        //                await cntx.SaveChangesAsync();
+        //            }
+        //        }
+
+        //        var postsList = SeedData.GetPostsWithComments
+        //            (count: 150, commentCount: 10, userIds: userIds);
+
+        //        await cntx.Posts.AddRangeAsync(postsList);
+        //        await cntx.SaveChangesAsync();
+
+        //    }
+        //    return app;
+        //}
+
         public static async Task<IApplicationBuilder> SeedDataAsync(this WebApplication app)
         {
             using (var scope = app.Services.CreateScope())
             {
-                var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-                if (await cntx.Posts.AnyAsync()) return app;
-
-                var userIds = await cntx.Users
-                .Select(u => u.Id)
-                .ToArrayAsync();
+                var provider = scope.ServiceProvider;
+                var cntx = provider.GetRequiredService<ApplicationDbContext>();
+                var env = provider.GetRequiredService<IWebHostEnvironment>();
+               
+                if (env.IsProduction() || env.IsEnvironment("Testing")) return app;
+                
+                if (await cntx.Posts.AnyAsync())
+                {
+                    Log.Information("--- SeedData: Posts already exist. Skipping ---");
+                    return app;
+                }
+               
+                var userIds = await cntx.Users.Select(u => u.Id).ToArrayAsync();
 
                 if (userIds.Length == 0)
                 {
-                    throw new Exception("SeedData: No users found in database. Seed users first!");
+                    Log.Warning("--- SeedData: No users found. Cannot seed posts! ---");
+                    return app;
                 }
 
-                if (await cntx.Posts.AnyAsync())
-                {
-                    cntx.Posts.RemoveRange(cntx.Posts);
-                    await cntx.SaveChangesAsync();
+                Log.Information("--- SeedData: Generating 150 posts with comments... ---");
 
-                    if (await cntx.Categories.AnyAsync())
-                    {
-                        cntx.Categories.RemoveRange(cntx.Categories);
-                        await cntx.SaveChangesAsync();
-                    }
-                }
-
-                var postsList = SeedData.GetPostsWithComments
-                    (count: 150, commentCount: 10, userIds: userIds);
+                var postsList = SeedData.GetPostsWithComments(
+                    count: 150,
+                    commentCount: 10,
+                    userIds: userIds);
 
                 await cntx.Posts.AddRangeAsync(postsList);
                 await cntx.SaveChangesAsync();
 
+                Log.Information("--- SeedData: Completed Successfully ---");
             }
             return app;
         }
