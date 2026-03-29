@@ -9,6 +9,7 @@ on:
 jobs:
   run-postman:
     runs-on: ubuntu-latest
+    environment: Testing
 
     services:
       postgres:
@@ -47,7 +48,10 @@ jobs:
       - name: Start API in background
         env:
           ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}          
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}   
+          SeedSettings__AdminUserName: ${{ vars.ADMIN_USER_NAME }}
+          SeedSettings__AdminPassword: ${{ vars.ADMIN_PASSWORD }}
+          SeedSettings__AdminEmail: ${{ vars.SEED_ADMIN_EMAIL }}       
           ASPNETCORE_URLS: "http://localhost:5189"
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=CookingBlog;Username=postgres;Password=Password123!"
         run: |
