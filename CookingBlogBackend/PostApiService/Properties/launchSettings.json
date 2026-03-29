@@ -20,6 +20,16 @@
       "dotnetRunMessages": true,
       "applicationUrl": "https://localhost:7030;http://localhost:5189"
     },
+    "Staging-Local": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Staging"
+      },
+      "dotnetRunMessages": true,
+      "applicationUrl": "https://localhost:7030;http://localhost:5189"
+    },
     "Production-Test": {
       "commandName": "Project",
       "launchBrowser": false,

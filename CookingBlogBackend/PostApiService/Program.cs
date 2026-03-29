@@ -75,7 +75,11 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 if (!app.Environment.IsEnvironment("Testing"))
 {
     await app.SeedUserAsync();
-    await app.SeedDataAsync();
+
+    if (!app.Environment.IsProduction())
+    {
+        await app.SeedDataAsync();
+    }
 }
 
 app.UseMiddleware<GlobalExceptionMiddleware>();

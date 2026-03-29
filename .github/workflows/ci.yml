@@ -13,7 +13,7 @@ jobs:
       SecretKey: ${{ secrets.JWT_SECRET_KEY }}
 
   postman-validation:
-    needs: validate
+    needs: validate    
     uses: ./.github/workflows/_postman_tests.yml
     secrets:
       SecretKey: ${{ secrets.JWT_SECRET_KEY }}
