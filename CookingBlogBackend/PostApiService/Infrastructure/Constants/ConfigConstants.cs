@@ -2,7 +2,9 @@
 {
     public static class ConfigConstants
     {
-        public const string DefaultConnection = "DefaultConnection";        
+        public const string DefaultConnection = "DefaultConnection";
+        public const string PostgresHealthCheckName = "PostgreSQL";
+        public const string HealthCheckPath = "/health";
         public const string JwtSection = "JwtConfiguration";
         public const string HtmlSanitizer = "HtmlSanitizer";
         public const string UnknownIp = "Unknown";
