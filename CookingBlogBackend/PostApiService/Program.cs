@@ -61,9 +61,20 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var healthBuilder = builder.Services.AddHealthChecks();
+
+if (!builder.Environment.IsEnvironment("Testing") && !string.IsNullOrEmpty(connectionString))
+{
+    healthBuilder.AddNpgSql(connectionString, name: PostgresHealthCheckName);
+}
+
 var app = builder.Build();
 
+app.MapHealthChecks(HealthCheckPath);
+
 app.UseCors("AllowLocalhost");
+
+app.UseMiddleware<GlobalExceptionMiddleware>();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
@@ -82,10 +93,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
-app.UseMiddleware<GlobalExceptionMiddleware>();
-
 app.UseHttpsRedirection();
-
 app.UseAuthentication();
 app.UseAuthorization();
 

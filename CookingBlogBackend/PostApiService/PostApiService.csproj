@@ -12,6 +12,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="AnyAscii" Version="0.3.3" />
+		<PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.2" />
 		<PackageReference Include="EFCore.NamingConventions" Version="8.0.3" />
 		<PackageReference Include="HtmlSanitizer" Version="9.0.892" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />

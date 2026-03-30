@@ -10,6 +10,43 @@
       "name": "Happy Path Scenario",
       "item": [
         {
+          "name": "HealthCheck",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Health check is Healthy\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "    pm.expect(pm.response.text()).to.include(\"Healthy\");\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Response time is less than 500ms\", function () {\r",
+                  "    pm.expect(pm.response.responseTime).to.be.below(2000);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Register",
           "event": [
             {
