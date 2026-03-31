@@ -12,6 +12,8 @@ using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
 using Serilog.Exceptions;
+using System.Data.Common;
+using System.Net.Sockets;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -232,87 +234,105 @@ namespace PostApiService.Infrastructure
 
         public static async Task<IApplicationBuilder> SeedUserAsync(this WebApplication app)
         {
-            using (var scope = app.Services.CreateScope())
+            using var scope = app.Services.CreateScope();
+            var provider = scope.ServiceProvider;
+
+            var cntx = provider.GetRequiredService<ApplicationDbContext>();
+            var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
+            var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
+            var env = provider.GetRequiredService<IWebHostEnvironment>();
+            var config = provider.GetRequiredService<IConfiguration>();
+
+            if (env.IsEnvironment("Testing")) return app;
+
+            if (env.IsDevelopment())
             {
-                var provider = scope.ServiceProvider;
-                var cntx = provider.GetRequiredService<ApplicationDbContext>();
-                var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
-                var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();
-                var env = provider.GetRequiredService<IWebHostEnvironment>();
-                var config = provider.GetRequiredService<IConfiguration>();
-                
-                if (env.IsEnvironment("Testing")) return app;
-                
-                if (env.IsProduction() || env.IsStaging())
+                await ExecuteWithRetryAsync(async () =>
                 {
-                    Log.Information("--- {Env}: Applying Migrations ---", env.EnvironmentName);
-                    await cntx.Database.MigrateAsync();
-                }
-                else
-                {
-                    Log.Information("--- Development: Recreating Database ---");
+                    Log.Warning("--- Development Mode: Dropping and Recreating Database ---");
                     await cntx.Database.EnsureDeletedAsync();
-                    await cntx.Database.EnsureCreatedAsync();
-                }
-                
-                if (!await userManager.Users.AnyAsync())
+                    await cntx.Database.MigrateAsync();
+                }, "Database Reset");
+            }
+            else
+            {
+                await ExecuteWithRetryAsync(async () =>
+                    await cntx.Database.MigrateAsync(), $"Migration ({env.EnvironmentName})");
+            }
+            await ExecuteWithRetryAsync(async () =>
+            {
+                if (await userManager.Users.AnyAsync())
                 {
-                    Log.Information("--- Seeding Roles ---");
-                    await roleManager.CreateAsync(new IdentityRole(TS.Roles.Admin));
-                    await roleManager.CreateAsync(new IdentityRole(TS.Roles.Contributor));
-                    
-                    var adminEmail = config["SeedSettings:AdminEmail"];
-                    var adminPass = config["SeedSettings:AdminPassword"];
-                    var adminName = config["SeedSettings:AdminUserName"];
-
-                    if (!string.IsNullOrEmpty(adminEmail) && !string.IsNullOrEmpty(adminPass))
-                    {
-                        var adminUser = new IdentityUser { UserName = adminName, Email = adminEmail };
-                        var adminResult = await userManager.CreateAsync(adminUser, adminPass);
-
-                        if (adminResult.Succeeded)
-                        {                           
-                            await userManager.AddClaimAsync(adminUser, new Claim(ClaimTypes.NameIdentifier, adminUser.Id));
-                            await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Post));
-                            await userManager.AddClaimAsync(adminUser, GetAdminClaims(TS.Controller.Comment));
-
-                            await userManager.AddToRoleAsync(adminUser, TS.Roles.Admin);
-                            Log.Information("--- Admin [{Email}] created successfully ---", adminEmail);
-                        }
-                        else
-                        {
-                            Log.Error("--- Failed to create Admin: {Errors} ---", string.Join(", ", adminResult.Errors.Select(e => e.Description)));
-                        }
-                    }
-                   
-                    if (!env.IsProduction())
-                    {
-                        var contEmail = config["SeedSettings:ContEmail"];
-                        var contPass = config["SeedSettings:ContPassword"];
-                        var contName = config["SeedSettings:ContUserName"];
-
-                        if (!string.IsNullOrEmpty(contEmail) && !string.IsNullOrEmpty(contPass))
-                        {
-                            var contributorUser = new IdentityUser { UserName = contName, Email = contEmail };
-                            var contResult = await userManager.CreateAsync(contributorUser, contPass);
-
-                            if (contResult.Succeeded)
-                            {                                
-                                await userManager.AddClaimAsync(contributorUser, new Claim(ClaimTypes.NameIdentifier, contributorUser.Id));
-                                await userManager.AddClaimAsync(contributorUser, GetContributorClaims(TS.Controller.Comment));
-
-                                await userManager.AddToRoleAsync(contributorUser, TS.Roles.Contributor);
-                                Log.Information("--- Contributor [{Email}] created successfully ---", contEmail);
-                            }
-                        }
-                    }
+                    Log.Information("--- Users already exist. Skipping Seed ---");
+                    return;
                 }
-                else
+
+                Log.Information("--- Starting Identity Seeding ---");
+
+                await EnsureRolesAsync(roleManager);
+                await SeedAdminAsync(userManager, config);
+
+                if (!env.IsProduction())
                 {
-                    Log.Information("--- Database already seeded. Skipping ---");
+                    await SeedContributorAsync(userManager, config);
+                }
+
+            }, "Identity Seeding");
+
+            return app;
+        }
+
+        private static async Task EnsureRolesAsync(RoleManager<IdentityRole> roleManager)
+        {
+            var roles = new[] { TS.Roles.Admin, TS.Roles.Contributor };
+            foreach (var role in roles)
+            {
+                if (!await roleManager.RoleExistsAsync(role))
+                {
+                    await roleManager.CreateAsync(new IdentityRole(role));
                 }
             }
-            return app;
+        }
+
+        private static async Task SeedAdminAsync(UserManager<IdentityUser> userManager, IConfiguration config)
+        {
+            var email = config["SeedSettings:AdminEmail"];
+            var pass = config["SeedSettings:AdminPassword"];
+            var name = config["SeedSettings:AdminUserName"];
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass)) return;
+
+            var user = new IdentityUser { UserName = name, Email = email };
+            var result = await userManager.CreateAsync(user, pass);
+
+            if (result.Succeeded)
+            {
+                await userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id));
+                await userManager.AddClaimAsync(user, GetAdminClaims(TS.Controller.Post));
+                await userManager.AddClaimAsync(user, GetAdminClaims(TS.Controller.Comment));
+                await userManager.AddToRoleAsync(user, TS.Roles.Admin);
+                Log.Information("--- Admin [{Email}] created successfully ---", email);
+            }
+        }
+
+        private static async Task SeedContributorAsync(UserManager<IdentityUser> userManager, IConfiguration config)
+        {
+            var email = config["SeedSettings:ContEmail"];
+            var pass = config["SeedSettings:ContPassword"];
+            var name = config["SeedSettings:ContUserName"];
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass)) return;
+
+            var user = new IdentityUser { UserName = name, Email = email };
+            var result = await userManager.CreateAsync(user, pass);
+
+            if (result.Succeeded)
+            {
+                await userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id));
+                await userManager.AddClaimAsync(user, GetContributorClaims(TS.Controller.Comment));
+                await userManager.AddToRoleAsync(user, TS.Roles.Contributor);
+                Log.Information("--- Contributor [{Email}] created successfully ---", email);
+            }
         }
 
         private static Claim GetAdminClaims(string controllerName)
@@ -321,7 +341,8 @@ namespace PostApiService.Infrastructure
                 TS.Permissions.Write,
                 TS.Permissions.Update,
                 TS.Permissions.Delete
-                ));
+                )
+            );
         }
 
         private static Claim GetContributorClaims(string controllerName)
@@ -331,50 +352,9 @@ namespace PostApiService.Infrastructure
                     TS.Permissions.Write,
                     TS.Permissions.Update,
                     TS.Permissions.Delete
-                ));
+                )
+            );
         }
-
-        /// <summary>
-        /// Seeds the database with initial data for posts and comments if no posts are already present.        
-        /// </summary>        
-        //public static async Task<IApplicationBuilder> SeedDataAsync(this WebApplication app)
-        //{
-        //    using (var scope = app.Services.CreateScope())
-        //    {
-        //        var cntx = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-
-        //        if (await cntx.Posts.AnyAsync()) return app;
-
-        //        var userIds = await cntx.Users
-        //        .Select(u => u.Id)
-        //        .ToArrayAsync();
-
-        //        if (userIds.Length == 0)
-        //        {
-        //            throw new Exception("SeedData: No users found in database. Seed users first!");
-        //        }
-
-        //        if (await cntx.Posts.AnyAsync())
-        //        {
-        //            cntx.Posts.RemoveRange(cntx.Posts);
-        //            await cntx.SaveChangesAsync();
-
-        //            if (await cntx.Categories.AnyAsync())
-        //            {
-        //                cntx.Categories.RemoveRange(cntx.Categories);
-        //                await cntx.SaveChangesAsync();
-        //            }
-        //        }
-
-        //        var postsList = SeedData.GetPostsWithComments
-        //            (count: 150, commentCount: 10, userIds: userIds);
-
-        //        await cntx.Posts.AddRangeAsync(postsList);
-        //        await cntx.SaveChangesAsync();
-
-        //    }
-        //    return app;
-        //}
 
         public static async Task<IApplicationBuilder> SeedDataAsync(this WebApplication app)
         {
@@ -383,36 +363,78 @@ namespace PostApiService.Infrastructure
                 var provider = scope.ServiceProvider;
                 var cntx = provider.GetRequiredService<ApplicationDbContext>();
                 var env = provider.GetRequiredService<IWebHostEnvironment>();
-               
+
                 if (env.IsProduction() || env.IsEnvironment("Testing")) return app;
-                
-                if (await cntx.Posts.AnyAsync())
+
+                await ExecuteWithRetryAsync(async () =>
                 {
-                    Log.Information("--- SeedData: Posts already exist. Skipping ---");
-                    return app;
-                }
-               
-                var userIds = await cntx.Users.Select(u => u.Id).ToArrayAsync();
+                    if (await cntx.Posts.AnyAsync())
+                    {
+                        Log.Information("--- SeedData: Posts already exist. Skipping ---");
+                        return;
+                    }
 
-                if (userIds.Length == 0)
-                {
-                    Log.Warning("--- SeedData: No users found. Cannot seed posts! ---");
-                    return app;
-                }
+                    var userIds = await cntx.Users.Select(u => u.Id).ToArrayAsync();
 
-                Log.Information("--- SeedData: Generating 150 posts with comments... ---");
+                    if (userIds.Length == 0)
+                    {
+                        Log.Warning("--- SeedData: No users found. Identity seed might have failed! ---");
+                        return;
+                    }
 
-                var postsList = SeedData.GetPostsWithComments(
-                    count: 150,
-                    commentCount: 10,
-                    userIds: userIds);
+                    Log.Information("--- SeedData: Generating 150 posts with comments... ---");
 
-                await cntx.Posts.AddRangeAsync(postsList);
-                await cntx.SaveChangesAsync();
+                    var postsList = SeedData.GetPostsWithComments(
+                        count: 150,
+                        commentCount: 10,
+                        userIds: userIds);
 
-                Log.Information("--- SeedData: Completed Successfully ---");
+                    await cntx.Posts.AddRangeAsync(postsList);
+                    await cntx.SaveChangesAsync();
+
+                    Log.Information("--- SeedData: 150 posts with comments added successfully ---");
+
+                }, "Fake Data Seeding");
             }
             return app;
+        }
+
+        private static async Task ExecuteWithRetryAsync(
+            Func<Task> action,
+            string taskName,
+            int maxRetries = 5,
+            int initialDelayMs = 2000)
+        {
+            for (int i = 1; i <= maxRetries; i++)
+            {
+                try
+                {
+                    await action();
+                    return;
+                }
+                catch (Exception ex) when (ex is DbException ||
+                    ex is SocketException ||
+                    ex.InnerException is SocketException)
+                {
+                    if (i == maxRetries)
+                    {
+                        Log.Fatal(ex, "--- {TaskName} FATAL: Database unreachable after {Max} attempts ---", taskName, maxRetries);
+                        throw;
+                    }
+
+                    int currentDelay = initialDelayMs * (int)Math.Pow(2, i - 1);
+
+                    Log.Warning("--- {TaskName} failed (Connection issue). Attempt {Attempt}/{Max}. Retrying in {Delay}ms... ---",
+                        taskName, i, maxRetries, currentDelay);
+
+                    await Task.Delay(currentDelay);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error(ex, "--- {TaskName} failed due to a LOGIC error (No Retry) ---", taskName);
+                    throw;
+                }
+            }
         }
 
         /// <summary>
