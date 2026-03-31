@@ -20,6 +20,11 @@ This repository contains the backend for the CookingBlog project, built with C#.
 * **Database:** PostgreSQL
 * **API Documentation:** Swagger / OpenAPI
 
+## DevOps & Deployment
+* **Containerization:** Docker & Docker Compose.
+* **Resilience:** Custom Retry Policy for database connectivity and user seeding.
+* **Health Monitoring:** Integrated Health Checks to ensure service readiness and proper startup sequencing.
+
 ### Security & Authentication
 * **Identity:** Microsoft Identity Framework (User management and Role-based access).
 * **Tokens:** JWT Bearer Authentication.
@@ -50,8 +55,22 @@ git clone https://github.com/MaksymMishchenko/CookingBlogBackend.git
 cd CookingBlogBackend
 ```
 
-### Step 2: Configuration & Secrets
-The project uses the standard .NET configuration hierarchy. While base settings are in appsettings.json and environment-specific overrides are in appsettings.Development.json, sensitive credentials must be configured via User Secrets for local development.
+### Step 2: Database Setup (Choose ONE option)
+
+## Option A: Docker (Recommended)
+If you have Docker installed, you can spin up the database instance instantly:
+
+```
+docker-compose up -d
+```
+
+This starts a PostgreSQL container with all necessary settings. The API is configured to wait for this container to be ready.
+
+## Option B: Manual Installation
+Ensure you have PostgreSQL installed and running on your machine. Create a database named cooking_blog.
+
+### Step 3: Configuration & Secrets
+Sensitive credentials must be configured via User Secrets (Navigate to the PostApiService/ directory):
 
 Navigate to the `PostApiService/` directory and run:
 
@@ -69,18 +88,26 @@ dotnet user-secrets set "JwtConfiguration:SecretKey" "your_secure_32_char_secret
 
 (Note: These settings will override any empty values in your local json files during development).
 
-### Step 3: Database Migration 
-Ensure your PostgreSQL instance is running, then apply the migrations to build the database schema:
-
-```
-dotnet ef database update --project PostApiService
-```
-  
-### Step 4: Running the application
+### Step 4: Run the application
  ```
 dotnet run --project PostApiService
 ```
 Navigate to http://localhost:7030/swagger to view the Swagger documentation.
+
+### Step 5: Quick Start with Docker Compose
+
+If you prefer to run the entire stack (API + Database) without installing PostgreSQL locally:
+
+```
+docker-compose up -d
+```
+
+## Resilience & Startup
+The API handles infrastructure challenges automatically:
+
+- Connection Retry: Built-in policy (5 attempts) to handle "cold starts" of Docker or Cloud databases (Neon).
+- Automated Lifecycle: Every startup applies pending Migrations and seeds Identity/Bogus data (if the DB is empty).
+- Zero-Touch Setup: Just run the app — the environment configures itself.
  
 ## API Documentation & Usage
 
@@ -142,7 +169,6 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"cov
 * **Test Data Generation**: Bogus library is used for generating realistic test data.
 
 ## Roadmap / To-Do
-* **Docker**: Containerize the application using multi-stage builds.
 * **Redis**: Implement caching for popular posts to improve performance.
 
 ## Contact
