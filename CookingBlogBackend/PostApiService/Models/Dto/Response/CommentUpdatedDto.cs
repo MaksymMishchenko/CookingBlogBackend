@@ -7,5 +7,5 @@
         DateTime CreatedAt,
         string UserId,
         bool IsEditedByAdmin
-    ) : CommentBaseDto(Id, Author, Content, CreatedAt, UserId);
+    );
 }

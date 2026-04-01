@@ -1,5 +1,8 @@
 name: Unit & Integration Tests
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_call:
     secrets:
@@ -30,23 +33,26 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore CookingBlogBackend/PostApiService.sln
-
-      - name: Build and Publish                      
-        run: dotnet publish CookingBlogBackend/PostApiService.sln --configuration Release --no-restore -o ./publish
+      
+      - name: Build Solution
+        run: dotnet build CookingBlogBackend/PostApiService.sln --configuration Release --no-restore
+      
+      - name: Run Tests with Coverage
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
+        run: >
+          dotnet test CookingBlogBackend/PostApiService.Tests/PostApiService.Tests.csproj 
+          --configuration Release 
+          --no-build 
+          --verbosity normal 
+          --collect:"XPlat Code Coverage"
+      
+      - name: Publish API
+        run: dotnet publish CookingBlogBackend/PostApiService/PostApiService.csproj --configuration Release --no-build -o ./publish
       
       - name: Upload Build Artifact
         uses: actions/upload-artifact@v4
         with:
           name: published-app
           path: ./publish/
-     
-      - name: Run Tests with Coverage
-        env:
-          ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
-        run: >
-          dotnet test CookingBlogBackend/PostApiService.sln 
-          --configuration Release 
-          --no-build 
-          --verbosity normal 
-          --collect:"XPlat Code Coverage"
