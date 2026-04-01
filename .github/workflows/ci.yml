@@ -1,5 +1,8 @@
 name: CI Pipeline
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   push:
     branches: [dev]
@@ -21,9 +24,8 @@ jobs:
   deploy-staging:
     needs: postman-validation
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
-    environment: Staging
-    runs-on: ubuntu-latest
-    steps:
-      - name: Trigger Render Deploy
-        run: |
-            curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK }}
+    uses: ./.github/workflows/_deploy.yml
+    with:
+      environment: Staging
+    secrets:
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
