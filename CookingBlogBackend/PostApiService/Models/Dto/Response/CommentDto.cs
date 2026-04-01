@@ -7,10 +7,10 @@ namespace PostApiService.Models.Dto.Response
        string Content,
        string Author,
        DateTime CreatedAt,
-       string UserId,
+       string UserId,       
        [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)]
        int? ParentId = null,
        string? ReplyToUserName = null,
        bool IsEditedByAdmin = false
-    ) : CommentBaseDto(Id, Author, Content, CreatedAt, UserId, ParentId);
+    );
 }

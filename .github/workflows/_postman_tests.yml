@@ -1,5 +1,8 @@
 name: Postman Tests
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 on:
   workflow_call:
     secrets:
@@ -73,4 +76,4 @@ jobs:
           newman run postman/collection.json \
           -e postman/environment.json \
           --env-var "baseUrl=http://localhost:5189" \
-          --reporters cli \          
+          --reporters cli \
