@@ -69,10 +69,9 @@ if (!builder.Environment.IsEnvironment("Testing") && !string.IsNullOrEmpty(conne
 }
 
 var app = builder.Build();
+app.UseCors("AllowFrontend");
 
 app.MapHealthChecks(HealthCheckPath);
-
-app.UseCors("AllowLocalhost");
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
