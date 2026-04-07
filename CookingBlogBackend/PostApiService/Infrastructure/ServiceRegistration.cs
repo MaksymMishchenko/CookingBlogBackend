@@ -446,11 +446,12 @@ namespace PostApiService.Infrastructure
             {
                 options.AddPolicy("AllowFrontend", builder =>
                 {
-                    builder.WithOrigins(
-                            "https://cooking-blog-frontend-staging.onrender.com",
-                            "https://cooking-blog-frontend-production.onrender.com",
-                            "http://localhost:4200"
-                        )
+                    //builder.WithOrigins(
+                    //        "https://cooking-blog-frontend-staging.onrender.com",
+                    //        "https://cooking-blog-frontend-production.onrender.com",
+                    //        "http://localhost:4200"
+                    //    )
+                    builder.AllowAnyOrigin()
                            .AllowAnyMethod()
                            .AllowAnyHeader();
                 });
