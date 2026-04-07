@@ -70,9 +70,9 @@ if (!builder.Environment.IsEnvironment("Testing") && !string.IsNullOrEmpty(conne
 
 var app = builder.Build();
 
-app.MapHealthChecks(HealthCheckPath);
-
 app.UseCors("AllowFrontend");
+
+app.MapHealthChecks(HealthCheckPath);
 
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
@@ -93,7 +93,7 @@ if (!app.Environment.IsEnvironment("Testing"))
     }
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 
