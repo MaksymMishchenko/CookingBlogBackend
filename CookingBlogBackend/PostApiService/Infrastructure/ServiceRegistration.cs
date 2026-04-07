@@ -444,9 +444,13 @@ namespace PostApiService.Infrastructure
         {
             services.AddCors(options =>
             {
-                options.AddPolicy("AllowLocalhost", builder =>
+                options.AddPolicy("AllowFrontend", builder =>
                 {
-                    builder.WithOrigins("http://localhost:4200")
+                    builder.WithOrigins(
+                            "https://cooking-blog-frontend-staging.onrender.com",
+                            "https://cooking-blog-frontend-production.onrender.com",
+                            "http://localhost:4200"
+                        )
                            .AllowAnyMethod()
                            .AllowAnyHeader();
                 });
