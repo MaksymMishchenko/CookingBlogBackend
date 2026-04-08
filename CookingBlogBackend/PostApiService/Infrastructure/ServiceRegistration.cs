@@ -232,7 +232,7 @@ namespace PostApiService.Infrastructure
             return services;
         }
 
-        public static async Task<IApplicationBuilder> SeedUserAsync(this WebApplication app)
+        public static async Task<IApplicationBuilder> SeedUsersAsync(this WebApplication app)
         {
             using var scope = app.Services.CreateScope();
             var provider = scope.ServiceProvider;
@@ -259,14 +259,9 @@ namespace PostApiService.Infrastructure
                 await ExecuteWithRetryAsync(async () =>
                     await cntx.Database.MigrateAsync(), $"Migration ({env.EnvironmentName})");
             }
+
             await ExecuteWithRetryAsync(async () =>
             {
-                if (await userManager.Users.AnyAsync())
-                {
-                    Log.Information("--- Users already exist. Skipping Seed ---");
-                    return;
-                }
-
                 Log.Information("--- Starting Identity Seeding ---");
 
                 await EnsureRolesAsync(roleManager);
@@ -300,9 +295,20 @@ namespace PostApiService.Infrastructure
             var pass = config["SeedSettings:AdminPassword"];
             var name = config["SeedSettings:AdminUserName"];
 
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass)) return;
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass))
+            {
+                Log.Warning("--- SeedAdmin: Missing credentials in Configuration! ---");
+                return;
+            }
 
-            var user = new IdentityUser { UserName = name, Email = email };
+            var existingAdmin = await userManager.FindByEmailAsync(email);
+            if (existingAdmin != null)
+            {
+                Log.Information("--- Admin [{Email}] already exists. Skipping ---", email);
+                return;
+            }
+
+            var user = new IdentityUser { UserName = name, Email = email, EmailConfirmed = true };
             var result = await userManager.CreateAsync(user, pass);
 
             if (result.Succeeded)
@@ -313,6 +319,11 @@ namespace PostApiService.Infrastructure
                 await userManager.AddToRoleAsync(user, TS.Roles.Admin);
                 Log.Information("--- Admin [{Email}] created successfully ---", email);
             }
+            else
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                Log.Error("--- Admin creation FAILED: {Errors} ---", errors);
+            }
         }
 
         private static async Task SeedContributorAsync(UserManager<IdentityUser> userManager, IConfiguration config)
@@ -321,9 +332,20 @@ namespace PostApiService.Infrastructure
             var pass = config["SeedSettings:ContPassword"];
             var name = config["SeedSettings:ContUserName"];
 
-            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass)) return;
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass))
+            {
+                Log.Warning("--- SeedContributor: Missing credentials in Configuration! ---");
+                return;
+            }
 
-            var user = new IdentityUser { UserName = name, Email = email };
+            var existingUser = await userManager.FindByEmailAsync(email);
+            if (existingUser != null)
+            {
+                Log.Information("--- Contributor [{Email}] already exists. Skipping ---", email);
+                return;
+            }
+
+            var user = new IdentityUser { UserName = name, Email = email, EmailConfirmed = true };
             var result = await userManager.CreateAsync(user, pass);
 
             if (result.Succeeded)
@@ -332,6 +354,11 @@ namespace PostApiService.Infrastructure
                 await userManager.AddClaimAsync(user, GetContributorClaims(TS.Controller.Comment));
                 await userManager.AddToRoleAsync(user, TS.Roles.Contributor);
                 Log.Information("--- Contributor [{Email}] created successfully ---", email);
+            }
+            else
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                Log.Error("--- Contributor creation FAILED for [{Email}]: {Errors} ---", email, errors);
             }
         }
 
