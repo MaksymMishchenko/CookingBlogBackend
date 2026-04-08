@@ -84,7 +84,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
 
 if (!app.Environment.IsEnvironment("Testing"))
 {
-    await app.SeedUserAsync();
+    await app.SeedUsersAsync();
 
     if (!app.Environment.IsProduction())
     {
