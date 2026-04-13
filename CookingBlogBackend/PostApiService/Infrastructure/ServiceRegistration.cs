@@ -214,20 +214,19 @@ namespace PostApiService.Infrastructure
         public static IServiceCollection AddApplicationAuthorization(this IServiceCollection services)
         {
             services.AddAuthorization(options =>
-            {
-
+            {               
                 options.AddPolicy(TS.Policies.FullControlPolicy, policy =>
                 {
-                    policy.RequireRole(TS.Roles.Admin);
+                    policy.Requirements.Add(new PermissionRequirement(TS.Controller.Post));
                 });
-
+                
                 options.AddPolicy(TS.Policies.ContributorPolicy, policy =>
                 {
-                    policy.Requirements.Add(new ContributorRequirements());
+                    policy.Requirements.Add(new PermissionRequirement(TS.Controller.Comment));
                 });
             });
 
-            services.AddSingleton<IAuthorizationHandler, ContributorRequirementHandler>();
+            services.AddSingleton<IAuthorizationHandler, PermissionHandler>();
 
             return services;
         }
