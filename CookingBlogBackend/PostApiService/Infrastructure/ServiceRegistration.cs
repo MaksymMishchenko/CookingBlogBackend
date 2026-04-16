@@ -227,21 +227,33 @@ namespace PostApiService.Infrastructure
 
                             if (!hasToken)
                             {
-                                errorCode = "AUTH_REQUIRED";
-                                message = "Authorization token is missing.";
+                                errorCode = Auth.LoginM.Errors.TokenMissingErrorCode;
+                                message = Auth.LoginM.Errors.TokenMissing;
                             }
                             else if (isExpired)
                             {
-                                errorCode = "SESSION_EXPIRED";
-                                message = "Your session has expired. Please log in again.";
+                                errorCode = Auth.LoginM.Errors.SessionExpiredErrorCode;
+                                message = Auth.LoginM.Errors.SessionExpired;
                             }
                             else
                             {
-                                errorCode = "INVALID_TOKEN";
-                                message = "The provided token is invalid.";
+                                errorCode = Auth.LoginM.Errors.InvalidTokenErrorCode;
+                                message = Auth.LoginM.Errors.InvalidToken;
                             }
                             
                             var response = ApiResponse.CreateErrorResponse(message, errorCode: errorCode);
+
+                            await context.Response.WriteAsJsonAsync(response);
+                        },
+                        OnForbidden = async context =>
+                        {                            
+                            context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                            context.Response.ContentType = "application/json";
+
+                            var response = ApiResponse.CreateErrorResponse(
+                                Auth.LoginM.Errors.AccessForbidden,
+                                errorCode: Auth.LoginM.Errors.AccessForbiddenErrorCode
+                            );
 
                             await context.Response.WriteAsJsonAsync(response);
                         }
