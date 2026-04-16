@@ -204,7 +204,47 @@ namespace PostApiService.Infrastructure
                         ValidateIssuerSigningKey = true,
                         ValidIssuer = config.Issuer,
                         ValidAudience = config.Audience,
-                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SecretKey))
+                        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(config.SecretKey)),
+                        ClockSkew = TimeSpan.Zero
+                    };
+
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnChallenge = async context =>
+                        {                            
+                            context.HandleResponse();
+
+                            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                            context.Response.ContentType = "application/json";
+                           
+                            var hasToken = context.Request.Headers.ContainsKey("Authorization");
+                           
+                            var isExpired = context.AuthenticateFailure is SecurityTokenExpiredException ||
+                                            (context.ErrorDescription != null && context.ErrorDescription.Contains("expired"));
+
+                            string errorCode;
+                            string message;
+
+                            if (!hasToken)
+                            {
+                                errorCode = "AUTH_REQUIRED";
+                                message = "Authorization token is missing.";
+                            }
+                            else if (isExpired)
+                            {
+                                errorCode = "SESSION_EXPIRED";
+                                message = "Your session has expired. Please log in again.";
+                            }
+                            else
+                            {
+                                errorCode = "INVALID_TOKEN";
+                                message = "The provided token is invalid.";
+                            }
+                            
+                            var response = ApiResponse.CreateErrorResponse(message, errorCode: errorCode);
+
+                            await context.Response.WriteAsJsonAsync(response);
+                        }
                     };
                 });
 
@@ -214,12 +254,12 @@ namespace PostApiService.Infrastructure
         public static IServiceCollection AddApplicationAuthorization(this IServiceCollection services)
         {
             services.AddAuthorization(options =>
-            {               
+            {
                 options.AddPolicy(TS.Policies.FullControlPolicy, policy =>
                 {
                     policy.Requirements.Add(new PermissionRequirement(TS.Controller.Post));
                 });
-                
+
                 options.AddPolicy(TS.Policies.ContributorPolicy, policy =>
                 {
                     policy.Requirements.Add(new PermissionRequirement(TS.Controller.Comment));
