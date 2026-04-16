@@ -80,8 +80,21 @@
                 {
                     public const string InvalidCredentials = "Invalid username or password. Please check your credentials and try again.";
                     public const string InvalidCredentialsErrorCode = "INVALID_CREDENTIALS";
+                    
                     public const string UnauthorizedAccess = "Unauthorized Access";
-                    public const string UnauthorizedAccessCode = "UNAUTHORIZED";                    
+                    public const string UnauthorizedAccessCode = "UNAUTHORIZED";
+
+                    public const string TokenMissing = "Authorization token is missing.";
+                    public const string TokenMissingErrorCode = "AUTH_REQUIRED";
+
+                    public const string SessionExpired = "Your session has expired. Please log in again.";
+                    public const string SessionExpiredErrorCode = "SESSION_EXPIRED";
+
+                    public const string InvalidToken = "The provided token is invalid.";
+                    public const string InvalidTokenErrorCode = "INVALID_TOKEN";
+
+                    public const string AccessForbidden = "Access denied. You do not have the required permissions.";
+                    public const string AccessForbiddenErrorCode = "FORBIDDEN";
                 }
 
                 public static class Success
