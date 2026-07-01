@@ -33,6 +33,7 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
+            p.IsActive,
             p.CreatedAt,
             p.UpdatedAt
         );
@@ -78,6 +79,7 @@ namespace PostApiService.Helper
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
+            p.IsActive,
             p.CreatedAt,
             p.UpdatedAt            
         );
