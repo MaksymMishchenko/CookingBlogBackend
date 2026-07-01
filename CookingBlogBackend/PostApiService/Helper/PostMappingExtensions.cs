@@ -108,7 +108,7 @@ namespace PostApiService.Helper
                     : dto.MetaDescription.StripHtml(),
 
                 CreatedAt = DateTime.UtcNow,
-                IsActive = true
+                IsActive = dto.IsActive
             };
         }
 
