@@ -11,6 +11,7 @@
         string? MetaTitle,
         string? MetaDescription,
         int CategoryId,
+        bool isActive,
         DateTime CreatedAt,
         DateTime? UpdatedAt
     );

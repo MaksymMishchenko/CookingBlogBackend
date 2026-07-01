@@ -385,6 +385,7 @@ namespace PostApiService.Tests.Helper
                 post.MetaTitle,
                 post.MetaDescription,
                 post.CategoryId,
+                post.IsActive,
                 post.CreatedAt,
                 post.UpdatedAt
             );
