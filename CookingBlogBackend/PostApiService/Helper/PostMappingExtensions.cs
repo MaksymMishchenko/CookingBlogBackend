@@ -131,6 +131,7 @@ namespace PostApiService.Helper
                     ? dto.Description.StripHtml()[..197] + "..."
                     : dto.Description.StripHtml())
                 : dto.MetaDescription.StripHtml();
+            entity.IsActive = dto.IsActive!.Value;
         }
     }
 }

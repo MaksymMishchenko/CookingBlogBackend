@@ -32,5 +32,8 @@ namespace PostApiService.Models.Dto.Requests
 
         [Range(1, int.MaxValue, ErrorMessage = Global.Validation.InvalidCategory)]
         public int CategoryId { get; init; }
+
+        [Required(ErrorMessage = Global.Validation.Required)]
+        public bool? IsActive { get; init; }
     }
 }
