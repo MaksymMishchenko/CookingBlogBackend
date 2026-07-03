@@ -65,6 +65,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
+                .RuleFor(p => p.IsActive, f => true)
                 .RuleFor(p => p.UpdatedAt, f => f.Date.Recent(7).ToUniversalTime())
                 .RuleFor(p => p.Comments, (f, post) =>
                 {
@@ -108,7 +109,8 @@ namespace PostApiService.Tests.Helper
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
-                CategoryId = post.CategoryId
+                CategoryId = post.CategoryId,
+                IsActive = post.IsActive
             };
         }
 
@@ -427,7 +429,8 @@ namespace PostApiService.Tests.Helper
                 ImageUrl = "http://example.com/image.jpg",
                 MetaTitle = "Updated Meta Title",
                 MetaDescription = "Updated Meta Description",
-                CategoryId = categoryId
+                CategoryId = categoryId,
+                IsActive = true
             };
         }
 
