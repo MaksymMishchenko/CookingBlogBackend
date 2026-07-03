@@ -1,9 +1,10 @@
 {
   "info": {
-    "_postman_id": "4117c7ac-9b4f-4fe5-80c2-b9f234efdcc1",
+    "_postman_id": "e011de73-4e62-4642-9f0f-7c0027f542c7",
     "name": "CookingBlog Integration Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "40053538"
+    "_exporter_id": "40053538",
+    "_collection_link": "https://go.postman.co/collection/40053538-e011de73-4e62-4642-9f0f-7c0027f542c7?source=collection_link"
   },
   "item": [
     {
@@ -422,7 +423,7 @@
                   "const uniqueTitle = \"Post title \" + timestamp;\r",
                   "const slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r",
                   "\r",
-                  "pm.variables.set(\"unique_post_title\", uniqueTitle);\r",
+                  "pm.variables.set(\"post_title\", uniqueTitle);\r",
                   "pm.variables.set(\"unique_post_slug\", slug);"
                 ],
                 "type": "text/javascript",
@@ -446,7 +447,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"title\": \"{{unique_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": \"{{temp_category_id}}\"\r\n}",
+              "raw": "{\r\n    \"title\": \"{{post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"Peter\",\r\n    \"imageUrl\": \"https://example.com/sample-image.jpg\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"isActive\": true,\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": \"{{temp_category_id}}\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -793,7 +794,7 @@
             "header": [],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": {{temp_category_id}}\r\n}",
+              "raw": "{\r\n    \"title\": \"{{updated_post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"author\": \"John Doe\",\r\n    \"imageUrl\": \"https://example.com/changed-image.jpg\",\r\n    \"metaTitle\": \"Sample changed Meta Title\",\r\n    \"metaDescription\": \"This is a changed sample meta description for SEO purposes.\",\r\n    \"isActive\": true,\r\n    \"slug\": \"{{updated_post_slug}}\",\r\n    \"categoryId\": {{temp_category_id}}\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
