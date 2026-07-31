@@ -34,17 +34,43 @@ namespace PostApiService.Services
         {
             var sanitizer = CreateSanitizer(rules);
 
-            sanitizer.RemovingAttribute += (s, e) =>
+            sanitizer.AllowedTags.UnionWith(new[]
             {
-                if (e.Attribute.Name == "class" && e.Attribute.Value.StartsWith("ql-"))
-                {
-                    e.Cancel = true;
-                }
-            };
+                "h1", "h2", "h3", "h4", "h5", "h6",
+                "p", "span", "strong", "em", "u", "s",
+                "blockquote", "pre", "ol", "ul", "li", "a", "img", "br"
+            });
+
+            sanitizer.AllowedAttributes.UnionWith(new[]
+            {
+                "class", "style", "href", "target", "rel", "src", "alt"
+            });
+
+            sanitizer.AllowedCssProperties.UnionWith(new[]
+            {
+                "color", "background-color", "text-align"
+            });
+
             return sanitizer;
         }
 
+        private static string NormalizeHtml(string html)
+        {
+            return html.Replace("&nbsp;", " ");
+        }
+
         public string SanitizeComment(string html) => _commentSanitizer.Sanitize(html);
-        public string SanitizePost(string html) => _postSanitizer.Sanitize(html);
+
+        public string SanitizePost(string html)
+        {
+            if (string.IsNullOrWhiteSpace(html))
+            {
+                return string.Empty;
+            }
+            
+            var sanitizedHtml = _postSanitizer.Sanitize(html);
+            
+            return NormalizeHtml(sanitizedHtml);
+        }
     }
 }

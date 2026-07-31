@@ -28,22 +28,22 @@ namespace PostApiService.Tests.Services
             };
 
             _optionsMock.Value.Returns(_config);
-        }
-
+        }       
+        
         [Fact]
         public void SanitizePost_ShouldAllowImagesAndHeadings()
         {
             // Arrange
             var service = new HtmlSanitizationService(_optionsMock);
-            string input = "<h1>Title</h1><p>Text</p><img src='image.jpg' alt='test' />";           
-            string expected = "<h1>Title</h1><p>Text</p><img src=\"image.jpg\">";
+            string input = "<h1>Title</h1><p>Text</p><img src='image.jpg' alt='test' />";            
+            string expected = "<h1>Title</h1><p>Text</p><img src=\"image.jpg\" alt=\"test\">";
 
             // Act
             string result = service.SanitizePost(input);
 
             // Assert
             Assert.Equal(expected, result);
-        }        
+        }
 
         [Fact]
         public void SanitizePost_ShouldRemoveTagsAllowedInPostButForbiddenInComment()
