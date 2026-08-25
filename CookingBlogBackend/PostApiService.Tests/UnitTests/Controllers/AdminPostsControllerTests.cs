@@ -10,13 +10,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
 {
     public class AdminPostsControllerTests
     {
-        private readonly IPostService _mockPostService;
+        private readonly IAdminPostService _mockService;
         private readonly AdminPostsController _postsController;
 
         public AdminPostsControllerTests()
         {
-            _mockPostService = Substitute.For<IPostService>();
-            _postsController = new AdminPostsController(_mockPostService);
+            _mockService = Substitute.For<IAdminPostService>();
+            _postsController = new AdminPostsController(_mockService);
         }
 
         [Fact]
@@ -33,7 +33,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 expectedMessage,
                 expectedErrorCode);
 
-            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
                 .Returns(authError);
 
             // Act
@@ -70,7 +70,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<AdminPostListDto>>.Success(pagedData);
 
-            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
                 .Returns(pagedResult);
 
             // Act
@@ -82,7 +82,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(TotalCount, response.TotalCount);
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
 
-            await _mockPostService.Received(1).GetAdminPostsPagedAsync(
+            await _mockService.Received(1).GetAdminPostsPagedAsync(
                 Arg.Any<PostAdminQueryDto>(), ct);
         }
 
@@ -107,7 +107,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 appliedFiltersDto
             );
 
-            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
             .Returns(Result<PagedResult<AdminPostListDto>>.Success(mockPagedResult));
 
             // Act            
@@ -140,7 +140,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 CategoryM.Errors.CategoryNotFound,
                 PostM.Errors.CategoryNotFoundCode);
 
-            _mockPostService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act
@@ -167,7 +167,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var postAdminDetailsDto = TestDataHelper.CreatePostAdminDetailsDto(expectedPost);
             var serviceResult = Result<PostAdminDetailsDto>.Success(postAdminDetailsDto);
 
-            _mockPostService.GetPostByIdAsync(expectedPost.Id, token)
+            _mockService.GetPostByIdAsync(expectedPost.Id, token)
                 .Returns(Task.FromResult(serviceResult));
 
             // Act
@@ -180,7 +180,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.True(response.Success);
             Assert.Equal((int)HttpStatusCode.OK, okResult.StatusCode);
 
-            await _mockPostService.Received(1)
+            await _mockService.Received(1)
                 .GetPostByIdAsync(expectedPost.Id, token);
         }
 
@@ -196,7 +196,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 expectedErrorMessage,
                 PostM.Errors.PostNotFoundCode);
 
-            _mockPostService.GetPostByIdAsync(postId, token)
+            _mockService.GetPostByIdAsync(postId, token)
                 .Returns(serviceResult);
 
             // Act
@@ -210,7 +210,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(expectedErrorMessage, response.Message);
             Assert.Equal(PostM.Errors.PostNotFoundCode, response.ErrorCode);
 
-            await _mockPostService.Received(1).GetPostByIdAsync(postId, token);
+            await _mockService.Received(1).GetPostByIdAsync(postId, token);
         }
 
         [Theory]
@@ -236,7 +236,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 _ => throw new ArgumentException($"Unsupported status: {status}")
             };
 
-            _mockPostService
+            _mockService
                 .AddPostAsync(Arg.Any<PostCreateDto>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
@@ -255,7 +255,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(msg, response.Message);
             Assert.Equal(code, response.ErrorCode);
 
-            await _mockPostService.Received(1)
+            await _mockService.Received(1)
                 .AddPostAsync(Arg.Any<PostCreateDto>(), Arg.Any<CancellationToken>());
         }
 
@@ -275,7 +275,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<PostAdminDetailsDto>.Success(responseDto, successMessage);
 
-            _mockPostService.AddPostAsync(postDto, token)
+            _mockService.AddPostAsync(postDto, token)
                 .Returns(serviceResult);
 
             // Act
@@ -294,7 +294,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(responseDto.Title, data.Title);
             Assert.Equal(responseDto.CategoryId, data.CategoryId);
 
-            await _mockPostService.Received(1).AddPostAsync(postDto, token);
+            await _mockService.Received(1).AddPostAsync(postDto, token);
         }
 
         [Theory]
@@ -320,7 +320,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 _ => throw new ArgumentException($"Unsupported status: {status}")
             };
 
-            _mockPostService
+            _mockService
                 .UpdatePostAsync(Arg.Any<int>(), Arg.Any<PostUpdateDto>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
@@ -339,7 +339,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(msg, response.Message);
             Assert.Equal(code, response.ErrorCode);
 
-            await _mockPostService.Received(1)
+            await _mockService.Received(1)
                 .UpdatePostAsync(Arg.Any<int>(), Arg.Any<PostUpdateDto>(), Arg.Any<CancellationToken>());
         }
 
@@ -354,7 +354,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<PostAdminDetailsDto>.NotFound(errorMessage, errorCode);
 
-            _mockPostService.UpdatePostAsync(1, postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
+            _mockService.UpdatePostAsync(1, postDto, Arg.Any<CancellationToken>()).Returns(serviceResult);
 
             // Act
             var result = await _postsController.UpdatePostAsync(postId, postDto);
@@ -367,7 +367,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(errorMessage, response.Message);
             Assert.Equal((int)HttpStatusCode.NotFound, notFoundResult.StatusCode);
 
-            await _mockPostService.Received(1).UpdatePostAsync(postId, postDto, Arg.Any<CancellationToken>());
+            await _mockService.Received(1).UpdatePostAsync(postId, postDto, Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -386,7 +386,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<PostAdminDetailsDto>.Success(responseDto, successMessage);
 
-            _mockPostService.UpdatePostAsync(postId, postDto, token)
+            _mockService.UpdatePostAsync(postId, postDto, token)
                 .Returns(serviceResult);
 
             // Act
@@ -405,7 +405,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(responseDto.Title, data.Title);
             Assert.Equal(responseDto.Id, data.Id);
 
-            await _mockPostService.Received(1).UpdatePostAsync(postId, postDto, token);
+            await _mockService.Received(1).UpdatePostAsync(postId, postDto, token);
         }
 
         [Theory]
@@ -427,7 +427,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 _ => throw new ArgumentException($"Unsupported status: {status}")
             };
 
-            _mockPostService
+            _mockService
                 .DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
@@ -446,7 +446,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(msg, response.Message);
             Assert.Equal(code, response.ErrorCode);
 
-            await _mockPostService.Received(1)
+            await _mockService.Received(1)
                 .DeletePostAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
@@ -461,7 +461,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var serviceResult = Result<bool>.Success(true, successMessage);
 
-            _mockPostService.DeletePostAsync(postId, token)
+            _mockService.DeletePostAsync(postId, token)
                  .Returns(serviceResult);
 
             // Act
@@ -475,7 +475,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal((int)HttpStatusCode.OK, okObjectResult.StatusCode);
             Assert.Equal(successMessage, response.Message);
 
-            await _mockPostService.Received(1).DeletePostAsync(postId, token);
+            await _mockService.Received(1).DeletePostAsync(postId, token);
         }
     }
 }

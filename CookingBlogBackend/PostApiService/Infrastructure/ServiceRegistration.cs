@@ -62,6 +62,7 @@ namespace PostApiService.Infrastructure
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
             services.AddScoped<IPostService, PostService>();
+            services.AddScoped<IAdminPostService, AdminPostService>();
             services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<ICommentService, CommentService>();
 

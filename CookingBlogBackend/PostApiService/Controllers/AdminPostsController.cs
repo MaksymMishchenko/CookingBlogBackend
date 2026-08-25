@@ -9,11 +9,11 @@ namespace PostApiService.Controllers
     [Authorize(Policy = TS.Policies.FullControlPolicy)]
     public class AdminPostsController : ControllerBase
     {
-        private readonly IPostService _postsService;
+        private readonly IAdminPostService _adminPostService;
 
-        public AdminPostsController(IPostService postsService)
+        public AdminPostsController(IAdminPostService adminPostService)
         {
-            _postsService = postsService;
+            _adminPostService = adminPostService;
         }
 
         /// <summary>
@@ -23,7 +23,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetAdminPostsAsync
             ([FromQuery] PostAdminQueryParameters query, CancellationToken ct = default)
         {
-            var result = await _postsService.GetAdminPostsPagedAsync(query.ToDto(), ct);
+            var result = await _adminPostService.GetAdminPostsPagedAsync(query.ToDto(), ct);
 
             return result.ToActionResult();
         }
@@ -35,7 +35,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> GetPostByIdAsync
             (int id, CancellationToken ct = default)
         {
-            var result = await _postsService.GetPostByIdAsync(id, ct);
+            var result = await _adminPostService.GetPostByIdAsync(id, ct);
 
             return result.ToActionResult();
         }
@@ -47,7 +47,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> AddPostAsync
             ([FromBody] PostCreateDto dto, CancellationToken ct = default)
         {
-            var result = await _postsService.AddPostAsync(dto, ct);
+            var result = await _adminPostService.AddPostAsync(dto, ct);
 
             return result.ToCreatedResult(nameof(GetPostByIdAsync),
                 new { id = result.Value?.Id });
@@ -60,7 +60,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> UpdatePostAsync
             (int postId, [FromBody] PostUpdateDto postDto, CancellationToken ct = default)
         {
-            var result = await _postsService.UpdatePostAsync(postId, postDto, ct);
+            var result = await _adminPostService.UpdatePostAsync(postId, postDto, ct);
 
             return result.ToActionResult();
         }
@@ -72,7 +72,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> DeletePostAsync
             (int postId, CancellationToken ct = default)
         {
-            var result = await _postsService.DeletePostAsync(postId, ct);
+            var result = await _adminPostService.DeletePostAsync(postId, ct);
 
             return result.ToActionResult();
         }
