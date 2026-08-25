@@ -1,5 +1,4 @@
-﻿using Microsoft.IdentityModel.Logging;
-using PostApiService.Helper;
+﻿using PostApiService.Helper;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -9,10 +8,10 @@ namespace PostApiService.Services
 {
     public class CategoryService : BaseResultService, ICategoryService
     {
-        private readonly IRepository<Category> _categoryRepository;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IPostRepository _postRepository;
 
-        public CategoryService(IRepository<Category> categoryRepository,
+        public CategoryService(ICategoryRepository categoryRepository,
             IPostRepository postRepository)
         {
             _categoryRepository = categoryRepository;
@@ -36,7 +35,7 @@ namespace PostApiService.Services
             var dtos = categories
                 .OrderBy(c => c.Id)
                 .Select(c => c.ToDto()).ToList();
-            
+
             return Success(dtos);
         }
 
@@ -53,6 +52,10 @@ namespace PostApiService.Services
             return Success(category.ToDto());
         }
 
+        public Task<string?> GetNameBySlugAsync(string? categorySlug, CancellationToken ct = default)
+        {
+            return _categoryRepository.GetNameBySlugAsync(categorySlug, ct);
+        }
         public async Task<Result<CategoryDto>> AddCategoryAsync
             (CreateCategoryDto categoryDto, CancellationToken ct = default)
         {
@@ -73,7 +76,7 @@ namespace PostApiService.Services
             }
 
             var categoryEntity = CategoryMappingExtensions.ToEntity(categoryDto);
-            categoryEntity.Slug = finalSlug;            
+            categoryEntity.Slug = finalSlug;
 
             await _categoryRepository.AddAsync(categoryEntity, ct);
             await _categoryRepository.SaveChangesAsync(ct);
@@ -85,7 +88,7 @@ namespace PostApiService.Services
             (int categoryId, UpdateCategoryDto categoryDto, CancellationToken ct = default)
         {
             var category = await _categoryRepository
-                .GetByIdAsync(categoryId, ct);           
+                .GetByIdAsync(categoryId, ct);
 
             if (category == null)
             {
@@ -101,7 +104,7 @@ namespace PostApiService.Services
             string finalSlug = StringHelper.GenerateSlug(source);
 
             var alreadyExists = await _categoryRepository.AnyAsync(c =>
-                (c.Name == categoryDto.Name || c.Slug == finalSlug) && c.Id != categoryId, ct);            
+                (c.Name == categoryDto.Name || c.Slug == finalSlug) && c.Id != categoryId, ct);
 
             if (alreadyExists)
             {
@@ -113,11 +116,11 @@ namespace PostApiService.Services
             }
 
             categoryDto.Slug = finalSlug;
-            categoryDto.UpdateEntity(category);            
+            categoryDto.UpdateEntity(category);
             await _categoryRepository.SaveChangesAsync(ct);
 
             var responseDto = category.ToDto();
-            
+
             return Success(responseDto, CategoryM.Success.CategoryUpdatedSuccessfully);
         }
 
@@ -128,8 +131,8 @@ namespace PostApiService.Services
             if (category == null)
             {
                 Log.Warning(Categories.CategoryDoesNotExist, id);
-                
-                return NotFound(CategoryM.Errors.CategoryNotFound, CategoryM.Errors.CategoryNotFoundCode); 
+
+                return NotFound(CategoryM.Errors.CategoryNotFound, CategoryM.Errors.CategoryNotFoundCode);
             }
 
             var hasPosts = await _postRepository.AnyAsync(c => c.CategoryId == id, ct);
@@ -137,15 +140,15 @@ namespace PostApiService.Services
             if (hasPosts)
             {
                 Log.Information(Categories.DeleteBlockedByRelatedPosts, category.Name);
-                
+
                 return Conflict(CategoryM.Errors.CannotDeleteCategoryWithPosts,
                     CategoryM.Errors.CannotDeleteCategoryWithPostsCode);
             }
 
             await _categoryRepository.DeleteAsync(category, ct);
             await _categoryRepository.SaveChangesAsync(ct);
-           
+
             return Success(CategoryM.Success.CategoryDeletedSuccessfully);
-        }      
+        }        
     }
 }

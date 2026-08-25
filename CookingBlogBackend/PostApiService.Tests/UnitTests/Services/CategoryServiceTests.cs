@@ -9,14 +9,14 @@ namespace PostApiService.Tests.UnitTests.Services
 {
     public class CategoryServiceTests
     {
-        private readonly IRepository<Category> _mockCategoryRepo;
+        private readonly ICategoryRepository _mockCategoryRepo;
         private readonly IPostRepository _mockPostRepo;
         private readonly CategoryService _categoryService;
 
         public CategoryServiceTests()
         {
             _mockPostRepo = Substitute.For<IPostRepository>();
-            _mockCategoryRepo = Substitute.For<IRepository<Category>>();
+            _mockCategoryRepo = Substitute.For<ICategoryRepository>();
             _categoryService = new CategoryService(_mockCategoryRepo, _mockPostRepo);
         }
 
