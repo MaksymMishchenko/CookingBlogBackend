@@ -99,7 +99,7 @@ namespace PostApiService.Services
         public async Task<Result<CommentCreatedDto>> AddCommentAsync
             (int postId, string content, int? parentId, CancellationToken ct = default)
         {
-            var userId = WebContext.UserId;
+            var userId = WebContext!.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -150,7 +150,7 @@ namespace PostApiService.Services
         /// </summary>             
         public async Task<Result<CommentUpdatedDto>> UpdateCommentAsync(int commentId, string content, CancellationToken ct = default)
         {
-            var userId = WebContext.UserId;
+            var userId = WebContext!.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
@@ -214,7 +214,7 @@ namespace PostApiService.Services
         /// </summary>       
         public async Task<Result> DeleteCommentAsync(int commentId, CancellationToken ct = default)
         {
-            var userId = WebContext.UserId;
+            var userId = WebContext!.UserId;
 
             if (string.IsNullOrEmpty(userId))
             {
