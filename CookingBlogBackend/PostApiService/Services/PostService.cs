@@ -14,15 +14,15 @@ namespace PostApiService.Services
     public class PostService : BaseService, IPostService
     {
         private readonly IPostRepository _postRepository;
-        private readonly ICategoryRepository _catRepository;
+        private readonly ICategoryService _catService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
         public PostService(IPostRepository postRepository,
-            ICategoryRepository catRepository,            
+            ICategoryService catService,            
             ISnippetGeneratorService snippetGenerator)
         {
             _postRepository = postRepository;
-            _catRepository = catRepository;
+            _catService = catService;
             _snippetGenerator = snippetGenerator;
         }
 
@@ -112,7 +112,7 @@ namespace PostApiService.Services
 
             if (!string.IsNullOrWhiteSpace(postQuery.CategorySlug))
             {
-                categoryName = await _catRepository.GetNameBySlugAsync(postQuery.CategorySlug, ct);
+                categoryName = await _catService.GetNameBySlugAsync(postQuery.CategorySlug, ct);
 
                 if (categoryName == null)
                 {
