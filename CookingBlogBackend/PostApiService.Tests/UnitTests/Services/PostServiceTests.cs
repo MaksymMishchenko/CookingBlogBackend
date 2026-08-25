@@ -11,16 +11,16 @@ namespace PostApiService.Tests.UnitTests
     public class PostServiceTests
     {
         private readonly IPostRepository _mockRepository;
-        private readonly ICategoryRepository _mockCategoryRepository;
+        private readonly ICategoryService _mockCategoryService;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
         private readonly PostService _postService;
 
         public PostServiceTests()
         {
             _mockRepository = Substitute.For<IPostRepository>();
-            _mockCategoryRepository = Substitute.For<ICategoryRepository>();
+            _mockCategoryService = Substitute.For<ICategoryService>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
-            _postService = new PostService(_mockRepository, _mockCategoryRepository, _mockSnippetGenerator);
+            _postService = new PostService(_mockRepository, _mockCategoryService, _mockSnippetGenerator);
         }
 
         [Theory]
@@ -99,7 +99,7 @@ namespace PostApiService.Tests.UnitTests
                 PageSize: 10
             );
 
-            _mockCategoryRepository.GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>())
+            _mockCategoryService.GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<string?>(CategoryName));
 
             var mockQuery = new List<Post>().AsQueryable().BuildMock();
@@ -116,7 +116,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Null(data.AppliedFilters.Search);
 
             Assert.True(result.IsSuccess);
-            await _mockCategoryRepository.Received(1).GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>());
+            await _mockCategoryService.Received(1).GetNameBySlugAsync(CategorySlug, Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -131,7 +131,7 @@ namespace PostApiService.Tests.UnitTests
                 PageSize: 10
             );
 
-            _mockCategoryRepository.GetNameBySlugAsync(FakeCategory, Arg.Any<CancellationToken>())
+            _mockCategoryService.GetNameBySlugAsync(FakeCategory, Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult<string?>(null));
 
             // Act
