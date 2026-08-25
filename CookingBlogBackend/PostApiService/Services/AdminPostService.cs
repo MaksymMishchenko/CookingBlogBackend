@@ -10,19 +10,16 @@ namespace PostApiService.Services
     public class AdminPostService : BaseService, IAdminPostService
     {
         private readonly IPostRepository _postRepository;
-        private readonly ICategoryRepository _catRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly ICategoryService _categoryService;
 
         public AdminPostService(IPostRepository postRepository,
-            ICategoryRepository catRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
             ICategoryService categoryService
             ) : base(webContext)
         {
             _postRepository = postRepository;
-            _catRepository = catRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
         }
@@ -46,7 +43,7 @@ namespace PostApiService.Services
 
             if (!string.IsNullOrWhiteSpace(postQuery.CategorySlug))
             {
-                categoryName = await _catRepository.GetNameBySlugAsync(postQuery.CategorySlug, ct);
+                categoryName = await _categoryService.GetNameBySlugAsync(postQuery.CategorySlug, ct);
 
                 if (categoryName == null)
                 {

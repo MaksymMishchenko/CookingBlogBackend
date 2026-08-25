@@ -15,8 +15,7 @@ namespace PostApiService.Tests.UnitTests.Services
         private readonly IPostRepository _mockRepository;
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
-        private readonly ICategoryService _mockCategoryService;
-        private readonly ICategoryRepository _mockCategoryRepository;
+        private readonly ICategoryService _mockCategoryService;       
         private readonly AdminPostService _adminPostService;
 
         public AdminPostServiceTests()
@@ -24,9 +23,8 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository = Substitute.For<IPostRepository>();
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
-            _mockCategoryService = Substitute.For<ICategoryService>();
-            _mockCategoryRepository = Substitute.For<ICategoryRepository>();
-            _adminPostService = new AdminPostService(_mockRepository, _mockCategoryRepository,
+            _mockCategoryService = Substitute.For<ICategoryService>();            
+            _adminPostService = new AdminPostService(_mockRepository,
                 _mockWebContext, _mockSanitizationService, _mockCategoryService);
         }
 
@@ -79,7 +77,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockCategoryService.ExistsBySlugAsync(Arg.Any<string>(), ct).Returns(true);
 
-            _mockCategoryRepository.GetNameBySlugAsync(categorySlug, ct)
+            _mockCategoryService.GetNameBySlugAsync(categorySlug, ct)
                .Returns(Task.FromResult<string?>(expectedName));
 
             var categories = TestDataHelper.GetCulinaryCategories();

@@ -6,14 +6,15 @@ namespace PostApiService.Interfaces
 {
     public interface ICategoryService
     {
-        public Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default);
+        Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default);
         Task<bool> ExistsAsync(int id, CancellationToken ct = default);
         Task<bool> ExistsBySlugAsync(string slug, CancellationToken ct = default);
-        public Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken ct = default);
-        public Task<Result<CategoryDto>> AddCategoryAsync
+        Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken ct = default);
+        Task<string?> GetNameBySlugAsync(string? categorySlug, CancellationToken ct = default);
+        Task<Result<CategoryDto>> AddCategoryAsync
             (CreateCategoryDto categoryDto, CancellationToken ct = default);
-        public Task<Result<CategoryDto>> UpdateCategoryAsync
+        Task<Result<CategoryDto>> UpdateCategoryAsync
             (int categoryId, UpdateCategoryDto categoryDto, CancellationToken ct = default);
-        public Task<Result> DeleteCategoryAsync(int id, CancellationToken ct = default);
+        Task<Result> DeleteCategoryAsync(int id, CancellationToken ct = default);
     }
 }
