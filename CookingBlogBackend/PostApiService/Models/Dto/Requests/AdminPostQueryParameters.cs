@@ -1,6 +1,6 @@
 ﻿namespace PostApiService.Models.Dto.Requests
 {
-    public class AdminPostQueryParameters : PostQueryParameters
+    public class AdminPostQueryParameters : PublicPostQueryParameters
     {
         public bool? OnlyActive { get; set; }
 

@@ -9,13 +9,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
 {
     public class PostControllerTests
     {
-        private readonly IPostService _mockPostService;
+        private readonly IPublicPostService _mockPostService;
         private readonly ICommentService _mockCommentService;
         private readonly PublicPostsController _postsController;
 
         public PostControllerTests()
         {
-            _mockPostService = Substitute.For<IPostService>();
+            _mockPostService = Substitute.For<IPublicPostService>();
             _mockCommentService = Substitute.For<ICommentService>();
             _postsController = new PublicPostsController(_mockPostService, _mockCommentService);
         }
@@ -24,7 +24,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetPostsAsync_InNormalMode_ShouldReturnOkWithPagedResult()
         {
             // Arrange            
-            var queryParams = new PostQueryParameters { PageNumber = 1, PageSize = 10 };
+            var queryParams = new PublicPostQueryParameters { PageNumber = 1, PageSize = 10 };
             var dto = queryParams.ToDto();
             var mockData = new PagedResult<PostListDto>(new List<PostListDto>(), 0, 1, 10);
 
@@ -58,7 +58,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             string? expectedCategoryName)
         {
             // Arrange
-            var queryParams = new PostQueryParameters
+            var queryParams = new PublicPostQueryParameters
             {
                 Search = searchTerm,
                 CategorySlug = categorySlug,
@@ -96,7 +96,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetPostsAsync_WithInvalidCategory_ShouldReturnNotFound(string invalidCategorySlug)
         {
             // Arrange
-            var queryParams = new PostQueryParameters { CategorySlug = invalidCategorySlug };
+            var queryParams = new PublicPostQueryParameters { CategorySlug = invalidCategorySlug };
             var dto = queryParams.ToDto();
 
             _mockPostService.GetPostsPagedAsync(dto, Arg.Any<CancellationToken>())
@@ -117,7 +117,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetPostsAsync_ShouldReturnNotFound_WhenServiceReturnsNotFound()
         {
             // Arrange
-            var queryParams = new PostQueryParameters { CategorySlug = "invalid-cat" };
+            var queryParams = new PublicPostQueryParameters { CategorySlug = "invalid-cat" };
             var dto = queryParams.ToDto();
 
             _mockPostService.GetPostsPagedAsync(dto, Arg.Any<CancellationToken>())

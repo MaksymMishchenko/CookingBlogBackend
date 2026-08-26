@@ -2,7 +2,7 @@
 
 namespace PostApiService.Models.Dto.Requests
 {
-    public class PostQueryParameters : PaginationQueryParameters
+    public class PublicPostQueryParameters : PaginationQueryParameters
     {
         [StringLength(100, MinimumLength = 3, ErrorMessage = Global.Validation.LengthRange)]
         public string? Search { get; set; }
@@ -13,6 +13,6 @@ namespace PostApiService.Models.Dto.Requests
 
         public bool IsSearchMode { get; set; } = false;
 
-        public PostQueryDto ToDto() => new(Search, CategorySlug, PageNumber, PageSize, IsSearchMode);
+        public PublicPostQueryDto ToDto() => new(Search, CategorySlug, PageNumber, PageSize, IsSearchMode);
     }
 }

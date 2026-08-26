@@ -7,10 +7,10 @@ namespace PostApiService.Controllers
     [Route("api/[controller]")]
     public class PublicPostsController : ControllerBase
     {
-        private readonly IPostService _postsService;
+        private readonly IPublicPostService _postsService;
         private readonly ICommentService _commentService;
 
-        public PublicPostsController(IPostService postsService, ICommentService commentService)
+        public PublicPostsController(IPublicPostService postsService, ICommentService commentService)
         {
             _postsService = postsService;
             _commentService = commentService;
@@ -22,7 +22,7 @@ namespace PostApiService.Controllers
         /// </summary>         
         [HttpGet]
         public async Task<IActionResult> GetPostsAsync
-            ([FromQuery] PostQueryParameters query, CancellationToken ct = default)
+            ([FromQuery] PublicPostQueryParameters query, CancellationToken ct = default)
         {
             var result = await _postsService.GetPostsPagedAsync(query.ToDto(), ct);
 

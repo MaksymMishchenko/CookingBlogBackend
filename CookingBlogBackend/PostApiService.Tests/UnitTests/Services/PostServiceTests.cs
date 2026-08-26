@@ -13,14 +13,14 @@ namespace PostApiService.Tests.UnitTests
         private readonly IPostRepository _mockRepository;
         private readonly ICategoryService _mockCategoryService;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
-        private readonly PostService _postService;
+        private readonly PublicPostService _postService;
 
         public PostServiceTests()
         {
             _mockRepository = Substitute.For<IPostRepository>();
             _mockCategoryService = Substitute.For<ICategoryService>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
-            _postService = new PostService(_mockRepository, _mockCategoryService, _mockSnippetGenerator);
+            _postService = new PublicPostService(_mockRepository, _mockCategoryService, _mockSnippetGenerator);
         }
 
         [Theory]
@@ -30,7 +30,7 @@ namespace PostApiService.Tests.UnitTests
         int page, int size, int expectedItemsCount, int totalInDb)
         {
             // Arrange
-            var dto = new PostQueryDto(
+            var dto = new PublicPostQueryDto(
                 SearchTerm: null,
                 CategorySlug: null,
                 PageNumber: page,
@@ -60,7 +60,7 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string SearchTerm = "pizza";
-            var dto = new PostQueryDto(
+            var dto = new PublicPostQueryDto(
                 SearchTerm: SearchTerm,
                 CategorySlug: null,
                 PageNumber: 1,
@@ -92,7 +92,7 @@ namespace PostApiService.Tests.UnitTests
             const string CategorySlug = "cooking";
             const string CategoryName = "Cooking Recipes";
 
-            var dto = new PostQueryDto(
+            var dto = new PublicPostQueryDto(
                 SearchTerm: null,
                 CategorySlug: CategorySlug,
                 PageNumber: 1,
@@ -124,7 +124,7 @@ namespace PostApiService.Tests.UnitTests
         {
             // Arrange
             const string FakeCategory = "fake-cat";
-            var dto = new PostQueryDto(
+            var dto = new PublicPostQueryDto(
                 SearchTerm: null,
                 CategorySlug: FakeCategory,
                 PageNumber: 1,

@@ -11,13 +11,13 @@ namespace PostApiService.Services
     // TODO (TechDebt): #30 Transition to a dedicated mapping service (e.g., AutoMapper or Mapperly).
     // Current implementation relies on static PostMappingExtensions, which is becoming hard to maintain 
     // as the number of DTO variations increases.
-    public class PostService : BaseService, IPostService
+    public class PublicPostService : BaseService, IPublicPostService
     {
         private readonly IPostRepository _postRepository;
         private readonly ICategoryService _catService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
-        public PostService(IPostRepository postRepository,
+        public PublicPostService(IPostRepository postRepository,
             ICategoryService catService,            
             ISnippetGeneratorService snippetGenerator)
         {
@@ -106,7 +106,7 @@ namespace PostApiService.Services
         /// </summary>
         // TODO: Refactor to unify PostListDto and SearchPostListDto to avoid 'object' return type and branching logic.
         // See: https://github.com/MaksymMishchenko/CookingBlogBackend/issues/49
-        public async Task<Result<object>> GetPostsPagedAsync(PostQueryDto postQuery, CancellationToken ct = default)
+        public async Task<Result<object>> GetPostsPagedAsync(PublicPostQueryDto postQuery, CancellationToken ct = default)
         {
             string? categoryName = null;
 
