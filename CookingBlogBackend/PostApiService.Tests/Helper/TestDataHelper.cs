@@ -37,7 +37,7 @@ namespace PostApiService.Tests.Helper
                         }
                     }
                 }
-            }            
+            }
             return posts;
         }
 
@@ -81,7 +81,7 @@ namespace PostApiService.Tests.Helper
                 })
                 .UseSeed(seed);
         }
-       
+
         public static PostCreateDto ToPostCreateDto(Post post)
         {
             return new PostCreateDto
@@ -361,16 +361,29 @@ namespace PostApiService.Tests.Helper
             yield return new object[] { "Lorem", "vegetarian", false, 1, "Vegetarian" };
         }
 
+        //public static List<Category> GetCulinaryCategories()
+        //{
+        //    return new List<Category>
+        //    {
+        //        new Category { Name = "Breakfast", Slug = StringHelper.GenerateSlug("Breakfast") },
+        //        new Category { Name = "Main Course", Slug = StringHelper.GenerateSlug("Main Course") },
+        //        new Category { Name = "Desserts", Slug = StringHelper.GenerateSlug("Desserts") },
+        //        new Category { Name = "Healthy Food", Slug = StringHelper.GenerateSlug("Healthy Food") },
+        //        new Category { Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
+        //        new Category { Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
+        //    };
+        //}
+
         public static List<Category> GetCulinaryCategories()
         {
             return new List<Category>
             {
-                new Category { Name = "Breakfast", Slug = StringHelper.GenerateSlug("Breakfast") },
-                new Category { Name = "Main Course", Slug = StringHelper.GenerateSlug("Main Course") },
-                new Category { Name = "Desserts", Slug = StringHelper.GenerateSlug("Desserts") },
-                new Category { Name = "Healthy Food", Slug = StringHelper.GenerateSlug("Healthy Food") },
-                new Category { Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
-                new Category { Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
+                new Category { Id = 1, Name = "Breakfast", Slug = StringHelper.GenerateSlug("Breakfast") },
+                new Category { Id = 2, Name = "Main Course", Slug = StringHelper.GenerateSlug("Main Course") },
+                new Category { Id = 3, Name = "Desserts", Slug = StringHelper.GenerateSlug("Desserts") },
+                new Category { Id = 4, Name = "Healthy Food", Slug = StringHelper.GenerateSlug("Healthy Food") },
+                new Category { Id = 5, Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
+                new Category { Id = 6, Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
             };
         }
 
