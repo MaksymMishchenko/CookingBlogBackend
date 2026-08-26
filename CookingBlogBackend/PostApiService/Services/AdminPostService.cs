@@ -51,7 +51,7 @@ namespace PostApiService.Services
                 }
             }
 
-            var query = _postRepository.GetFilteredPosts(postQuery.SearchTerm,
+            var query = _postRepository.GetPublicFilteredPosts(postQuery.SearchTerm,
                 postQuery.OnlyActive, postQuery.CategorySlug);
 
             var appliedFilters = new AppliedFilters(

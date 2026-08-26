@@ -125,7 +125,7 @@ namespace PostApiService.Services
                 CategoryName: categoryName
             );
 
-            var query = _postRepository.GetFilteredPosts(postQuery.SearchTerm, onlyActive: true, postQuery.CategorySlug);
+            var query = _postRepository.GetPublicFilteredPosts(postQuery.SearchTerm, onlyActive: true, postQuery.CategorySlug);
 
             if (!string.IsNullOrWhiteSpace(postQuery.SearchTerm) || postQuery.IsSearchMode)
             {
@@ -166,7 +166,7 @@ namespace PostApiService.Services
             }
 
             var postDto = await _postRepository
-                .GetFilteredPosts(null, onlyActive: true, categorySlug: cleanCategory)
+                .GetPublicFilteredPosts(null, onlyActive: true, categorySlug: cleanCategory)
                 .Where(p => p.Slug == cleanSlug && p.Category.Slug == cleanCategory)
                 .ToDetailsDtoExpression()
                 .FirstOrDefaultAsync(ct);
