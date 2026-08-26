@@ -11,13 +11,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
     {
         private readonly IPostService _mockPostService;
         private readonly ICommentService _mockCommentService;
-        private readonly PostsController _postsController;
+        private readonly PublicPostsController _postsController;
 
         public PostControllerTests()
         {
             _mockPostService = Substitute.For<IPostService>();
             _mockCommentService = Substitute.For<ICommentService>();
-            _postsController = new PostsController(_mockPostService, _mockCommentService);
+            _postsController = new PublicPostsController(_mockPostService, _mockCommentService);
         }
 
         [Fact]
