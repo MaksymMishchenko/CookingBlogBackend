@@ -52,14 +52,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
                     .Take(ExpectedPageSize)
                     .ToList();
 
-            var queryDto = new PostQueryDto(
+            var queryDto = new PublicPostQueryDto(
                     SearchTerm: null,
                     CategorySlug: null,
                     PageNumber: ExpectedPageNumber,
                     PageSize: ExpectedPageSize
             );
 
-            var (service, _, _) = _fixture.GetScopedService<IPostService>();
+            var (service, _, _) = _fixture.GetScopedService<IPublicPostService>();
 
             // Act            
             var result = await service.GetPostsPagedAsync(queryDto);
@@ -120,14 +120,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var allPosts = matches.Concat(others).ToList();
             await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
 
-            var queryDto = new PostQueryDto(
+            var queryDto = new PublicPostQueryDto(
                 SearchTerm: SearchTerm,
                 CategorySlug: null,
                 PageNumber: ExpectedPageNumber,
                 PageSize: ExpectedPageSize
             );
 
-            var (service, _, _) = _fixture.GetScopedService<IPostService>();
+            var (service, _, _) = _fixture.GetScopedService<IPublicPostService>();
 
             // Act
             var result = await service.GetPostsPagedAsync(queryDto);
@@ -176,7 +176,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Slug = targetPost.Slug
             };
 
-            var (service, _, _) = _fixture.GetScopedService<IPostService>();
+            var (service, _, _) = _fixture.GetScopedService<IPublicPostService>();
 
             // Act
             var result = await service.GetPostBySlugAsync(requestDto);
