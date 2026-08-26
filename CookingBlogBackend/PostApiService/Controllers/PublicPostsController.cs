@@ -5,12 +5,12 @@ namespace PostApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class PostsController : ControllerBase
+    public class PublicPostsController : ControllerBase
     {
         private readonly IPostService _postsService;
         private readonly ICommentService _commentService;
 
-        public PostsController(IPostService postsService, ICommentService commentService)
+        public PublicPostsController(IPostService postsService, ICommentService commentService)
         {
             _postsService = postsService;
             _commentService = commentService;

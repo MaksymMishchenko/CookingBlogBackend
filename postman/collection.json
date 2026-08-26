@@ -560,13 +560,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts/{{temp_category_slug}}/{{unique_post_slug}}",
+              "raw": "{{baseUrl}}/api/publicposts/{{temp_category_slug}}/{{unique_post_slug}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "posts",
+                "publicposts",
                 "{{temp_category_slug}}",
                 "{{unique_post_slug}}"
               ]
@@ -598,13 +598,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7&IsSearchMode=true",
+              "raw": "{{baseUrl}}/api/publicposts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7&IsSearchMode=true",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "posts"
+                "publicposts"
               ],
               "query": [
                 {
@@ -656,13 +656,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}/comments?lastId=0&pageSize=10",
+              "raw": "{{baseUrl}}/api/publicposts/{{temp_post_id}}/comments?lastId=0&pageSize=10",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "posts",
+                "publicposts",
                 "{{temp_post_id}}",
                 "comments"
               ],
@@ -711,7 +711,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categorySlug=beverages&onlyActive=true&pageNumber=1&pageSize=10",
+              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categoryId=1&onlyActive=true&pageNumber=1&pageSize=10",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -726,8 +726,8 @@
                   "value": "lorem"
                 },
                 {
-                  "key": "categorySlug",
-                  "value": "beverages"
+                  "key": "categoryId",
+                  "value": "1"
                 },
                 {
                   "key": "onlyActive",
