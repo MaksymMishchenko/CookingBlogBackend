@@ -30,7 +30,7 @@ namespace PostApiService.Services
         /// Supports full-text search, filtering by category slug, and filtering by activity status.
         /// </summary>
         public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
-            PostAdminQueryDto postQuery, CancellationToken ct = default)
+            AdminPostQueryDto postQuery, CancellationToken ct = default)
         {
             var userId = WebContext!.UserId;
 
