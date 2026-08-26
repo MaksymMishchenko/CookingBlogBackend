@@ -110,5 +110,43 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
                 Assert.True(existsInAnyField, $"Word '{Query}' not found in any field of post {p.Id}");
             });
         }
+
+        [Fact]
+        public async Task GetAdminFilteredPosts_ShouldFilterByCategoryIdAndActiveStatus_WhenParametersProvided()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();            
+            //categories[0].Id = 1;
+            //categories[1].Id = 2;
+
+            var posts = TestDataHelper.GetPostsWithComments(2, categories, commentCount: 0);
+
+            posts[0].Title = "Admin Tech Post";
+            posts[0].IsActive = true;
+            posts[0].CategoryId = 1;
+            posts[0].Category = categories[0];
+            posts[0].Id = 0;
+
+            posts[1].Title = "Admin Life Post";
+            posts[1].IsActive = true;
+            posts[1].CategoryId = 2;
+            posts[1].Category = categories[1];
+            posts[1].Id = 0;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            // Act
+            using var scope = _fixture.Services!.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
+
+            var result = repo.GetAdminFilteredPosts(search: null, onlyActive: true, categoryId: 1).ToList();
+
+            // Assert
+            Assert.Single(result);
+            Assert.Equal("Admin Tech Post", result[0].Title);
+            Assert.Equal(1, result[0].CategoryId);
+        }
     }
 }

@@ -33,6 +33,16 @@
             return query.OrderByDescending(p => p.CreatedAt);
         }
 
+        public IQueryable<Post> GetAdminFilteredPosts(string? search, bool? onlyActive, int? categoryId)
+        {
+            var query = ApplyCommonFilters(search, onlyActive);
+
+            if (categoryId.HasValue)
+                query = query.Where(p => p.CategoryId == categoryId.Value);
+
+            return query.OrderByDescending(p => p.CreatedAt);
+        }
+
         public async Task<bool> IsPostActiveAsync(int postId, CancellationToken ct)
         {
             return await _dbSet.AnyAsync(p => p.Id == postId && p.IsActive, ct);
