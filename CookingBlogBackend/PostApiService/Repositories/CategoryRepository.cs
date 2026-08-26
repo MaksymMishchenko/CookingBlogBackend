@@ -12,5 +12,17 @@
                 .Select(c => c.Name)
                 .FirstOrDefaultAsync(ct);
         }
+
+        public async Task<string?> GetNameByIdAsync(int? id, CancellationToken ct)
+        {
+            if (!id.HasValue)
+                return null;
+
+            return await _dbSet
+                .AsNoTracking()
+                .Where(c => c.Id == id.Value)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync(ct);
+        }
     }
 }
