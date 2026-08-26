@@ -56,6 +56,12 @@ namespace PostApiService.Services
         {
             return _categoryRepository.GetNameBySlugAsync(categorySlug, ct);
         }
+
+        public async Task<string?> GetNameByIdAsync(int? id, CancellationToken ct)
+        {
+            return await _categoryRepository.GetNameByIdAsync(id, ct);
+        }
+
         public async Task<Result<CategoryDto>> AddCategoryAsync
             (CreateCategoryDto categoryDto, CancellationToken ct = default)
         {
@@ -149,6 +155,6 @@ namespace PostApiService.Services
             await _categoryRepository.SaveChangesAsync(ct);
 
             return Success(CategoryM.Success.CategoryDeletedSuccessfully);
-        }        
+        }
     }
 }
