@@ -23,7 +23,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAdminPostsAsync_ShouldReturnUnauthorized_WhenServiceReturnsUnauthorized()
         {
             // Arrange
-            var query = new PostAdminQueryParameters();
+            var query = new AdminPostQueryParameters();
             var ct = CancellationToken.None;
 
             var expectedMessage = Auth.LoginM.Errors.UnauthorizedAccess;
@@ -33,7 +33,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 expectedMessage,
                 expectedErrorCode);
 
-            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<AdminPostQueryDto>(), ct)
                 .Returns(authError);
 
             // Act
@@ -55,7 +55,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             const int TotalCount = 0;
             var ct = CancellationToken.None;
 
-            var query = new PostAdminQueryParameters
+            var query = new AdminPostQueryParameters
             {
                 OnlyActive = false,
                 PageNumber = ExpectedPageNumber,
@@ -70,7 +70,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             var pagedResult = Result<PagedResult<AdminPostListDto>>.Success(pagedData);
 
-            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), ct)
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<AdminPostQueryDto>(), ct)
                 .Returns(pagedResult);
 
             // Act
@@ -83,7 +83,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             Assert.Equal(ExpectedPageNumber, response.PageNumber);
 
             await _mockService.Received(1).GetAdminPostsPagedAsync(
-                Arg.Any<PostAdminQueryDto>(), ct);
+                Arg.Any<AdminPostQueryDto>(), ct);
         }
 
         [Theory]
@@ -107,11 +107,11 @@ namespace PostApiService.Tests.UnitTests.Controllers
                 appliedFiltersDto
             );
 
-            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<AdminPostQueryDto>(), Arg.Any<CancellationToken>())
             .Returns(Result<PagedResult<AdminPostListDto>>.Success(mockPagedResult));
 
             // Act            
-            var result = await _postsController.GetAdminPostsAsync(new PostAdminQueryParameters
+            var result = await _postsController.GetAdminPostsAsync(new AdminPostQueryParameters
             {
                 Search = searchTerm,
                 CategorySlug = categorySlug,
@@ -134,13 +134,13 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAdminPostsAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {
             // Arrange
-            var queryParams = new PostAdminQueryParameters { CategorySlug = "invalid-slug" };
+            var queryParams = new AdminPostQueryParameters { CategorySlug = "invalid-slug" };
 
             var serviceResult = Result<PagedResult<AdminPostListDto>>.NotFound(
                 CategoryM.Errors.CategoryNotFound,
                 PostM.Errors.CategoryNotFoundCode);
 
-            _mockService.GetAdminPostsPagedAsync(Arg.Any<PostAdminQueryDto>(), Arg.Any<CancellationToken>())
+            _mockService.GetAdminPostsPagedAsync(Arg.Any<AdminPostQueryDto>(), Arg.Any<CancellationToken>())
                 .Returns(serviceResult);
 
             // Act

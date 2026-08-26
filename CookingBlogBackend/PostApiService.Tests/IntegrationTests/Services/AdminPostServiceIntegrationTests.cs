@@ -56,7 +56,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
 
-            var queryDto = new PostAdminQueryDto(
+            var queryDto = new AdminPostQueryDto(
                 SearchTerm: SearchTerm,
                 CategorySlug: null,
                 PageNumber: ExpectedPageNumber,
@@ -118,7 +118,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var allPosts = activePosts.Concat(inactivePosts).ToList();
             await _fixture.Services!.SeedBlogDataAsync(allPosts, categories);
 
-            var queryDto = new PostAdminQueryDto(
+            var queryDto = new AdminPostQueryDto(
                 SearchTerm: null,
                 CategorySlug: null,
                 PageNumber: 1,

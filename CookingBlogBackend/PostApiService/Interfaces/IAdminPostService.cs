@@ -6,7 +6,7 @@ namespace PostApiService.Interfaces
     public interface IAdminPostService
     {        
         Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
-            PostAdminQueryDto postQuery, CancellationToken ct = default);
+            AdminPostQueryDto postQuery, CancellationToken ct = default);
 
         Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default);       
 
