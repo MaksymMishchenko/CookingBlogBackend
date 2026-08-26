@@ -6,13 +6,13 @@ using System.Net.Http.Json;
 namespace PostApiService.Tests.IntegrationTests
 {
     [Collection("SharedDatabase")]
-    public class PostControllerTests
+    public class PublicPostsControllerTests
     {
         private readonly ServiceTestFixture _fixture;
         private readonly HttpClient _client;
         private readonly IServiceProvider _services;
 
-        public PostControllerTests(ServiceTestFixture fixture)
+        public PublicPostsControllerTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
             _client = fixture.Client!;
