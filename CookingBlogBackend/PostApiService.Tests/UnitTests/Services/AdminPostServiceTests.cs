@@ -15,7 +15,7 @@ namespace PostApiService.Tests.UnitTests.Services
         private readonly IPostRepository _mockRepository;
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
-        private readonly ICategoryService _mockCategoryService;       
+        private readonly ICategoryService _mockCategoryService;
         private readonly AdminPostService _adminPostService;
 
         public AdminPostServiceTests()
@@ -23,10 +23,10 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository = Substitute.For<IPostRepository>();
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
-            _mockCategoryService = Substitute.For<ICategoryService>();            
+            _mockCategoryService = Substitute.For<ICategoryService>();
             _adminPostService = new AdminPostService(_mockRepository,
                 _mockWebContext, _mockSanitizationService, _mockCategoryService);
-        }
+        }        
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_ShouldReturnUnauthorized_WhenUserIdIsEmpty()
@@ -34,7 +34,7 @@ namespace PostApiService.Tests.UnitTests.Services
             // Arrange
             var dto = new AdminPostQueryDto(
                 SearchTerm: null,
-                CategorySlug: null,
+                CategoryId: null,
                 PageNumber: 1,
                 PageSize: 10,
                 OnlyActive: null
@@ -53,13 +53,13 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
 
-            _mockRepository.DidNotReceive().GetPublicFilteredPosts(null, null, null);
+            _mockRepository.DidNotReceive().GetAdminFilteredPosts(null, null, null);
         }
 
         [Theory]
         [MemberData(nameof(TestDataHelper.GetPostFilterData), MemberType = typeof(TestDataHelper))]
         public async Task GetAdminPostsPagedAsync_ShouldFilterCorrectlyByIsActive
-            (string? search, string? categorySlug, bool? onlyActive, int expectedCount, string expectedName)
+            (string? search, int? categoryId, bool? onlyActive, int expectedCount, string expectedName)
         {
             // Arrange                       
             const int LargePageSize = 10;
@@ -67,7 +67,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             var dto = new AdminPostQueryDto(
                SearchTerm: search,
-               CategorySlug: categorySlug,
+               CategoryId: categoryId,
                PageNumber: 1,
                PageSize: LargePageSize,
                OnlyActive: onlyActive
@@ -75,23 +75,20 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns("admin-id");
 
-            _mockCategoryService.ExistsBySlugAsync(Arg.Any<string>(), ct).Returns(true);
-
-            _mockCategoryService.GetNameBySlugAsync(categorySlug, ct)
+            _mockCategoryService.GetNameByIdAsync(categoryId, ct)
                .Returns(Task.FromResult<string?>(expectedName));
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var allPosts = TestDataHelper.GetAdminTestPosts
-               (categories);
+            var allPosts = TestDataHelper.GetAdminTestPosts(categories);
 
             var expectedFilteredList = allPosts
                 .Where(p => string.IsNullOrEmpty(search) || p.Title.Contains(search, StringComparison.OrdinalIgnoreCase))
-                .Where(p => string.IsNullOrEmpty(categorySlug) || p.Category.Slug == categorySlug)
+                .Where(p => !categoryId.HasValue || p.CategoryId == categoryId.Value)
                 .Where(p => !onlyActive.HasValue || p.IsActive == onlyActive.Value)
                 .AsQueryable()
                 .BuildMock();
 
-            _mockRepository.GetPublicFilteredPosts(search, onlyActive, categorySlug)
+            _mockRepository.GetAdminFilteredPosts(search, onlyActive, categoryId)
                 .Returns(expectedFilteredList);
 
             // Act
@@ -104,7 +101,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(expectedName, data.AppliedFilters!.CategoryName);
             Assert.Equal(expectedCount, result.Value!.Items.Count());
 
-            _mockRepository.Received(1).GetPublicFilteredPosts(search, onlyActive, categorySlug);
+            _mockRepository.Received(1).GetAdminFilteredPosts(search, onlyActive, categoryId);
         }
 
         [Fact]
@@ -117,7 +114,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             var queryDto = new AdminPostQueryDto(
                SearchTerm: null,
-               CategorySlug: null,
+               CategoryId: null,
                PageNumber: 1,
                PageSize: 10,
                OnlyActive: null
@@ -132,13 +129,13 @@ namespace PostApiService.Tests.UnitTests.Services
             testPost.IsActive = true;
 
             var mockQueryable = posts.AsQueryable().BuildMock();
-            _mockRepository.GetPublicFilteredPosts(null, null, null)
+            _mockRepository.GetAdminFilteredPosts(null, null, null)
                 .Returns(mockQueryable);
 
             // Act
             var result = await _adminPostService.GetAdminPostsPagedAsync(queryDto, ct);
 
-            // Assert            
+            // Assert         
             Assert.True(result.IsSuccess);
             Assert.Equal(ResultStatus.Success, result.Status);
 
@@ -150,10 +147,11 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(testPost.Id, dto.Id);
             Assert.Equal(testPost.Title, dto.Title);
             Assert.Equal(testPost.IsActive, dto.IsActive);
+            Assert.Equal(testPost.CategoryId, dto.CategoryId);
             Assert.Equal(testPost.Category.Name, dto.CategoryName);
             Assert.Equal(testPost.CreatedAt, dto.CreatedAt);
 
-            _mockRepository.Received(1).GetPublicFilteredPosts(null, null, null);
+            _mockRepository.Received(1).GetAdminFilteredPosts(null, null, null);
         }
 
         [Fact]

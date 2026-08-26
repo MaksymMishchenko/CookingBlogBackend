@@ -84,15 +84,15 @@ namespace PostApiService.Tests.UnitTests.Controllers
 
             await _mockService.Received(1).GetAdminPostsPagedAsync(
                 Arg.Any<AdminPostQueryDto>(), ct);
-        }
+        }        
 
         [Theory]
-        [InlineData("pizza", "recipes", "Recipes", true)]
-        [InlineData(null, "news", "News", false)]
+        [InlineData("pizza", 1, "Recipes", true)]
+        [InlineData(null, 2, "News", false)]
         [InlineData("cake", null, null, null)]
         public async Task GetAdminPostsPagedAsync_WithFilters_ShouldReturnOkWithAppliedFilters(
             string? searchTerm,
-            string? categorySlug,
+            int? categoryId,
             string? expectedCategoryName,
             bool? onlyActive)
         {
@@ -114,7 +114,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
             var result = await _postsController.GetAdminPostsAsync(new AdminPostQueryParameters
             {
                 Search = searchTerm,
-                CategorySlug = categorySlug,
+                CategoryId = categoryId,
                 OnlyActive = onlyActive
             });
 
@@ -134,7 +134,7 @@ namespace PostApiService.Tests.UnitTests.Controllers
         public async Task GetAdminPostsAsync_ShouldReturnNotFound_WhenCategoryDoesNotExist()
         {
             // Arrange
-            var queryParams = new AdminPostQueryParameters { CategorySlug = "invalid-slug" };
+            var queryParams = new AdminPostQueryParameters { CategoryId = 999 };
 
             var serviceResult = Result<PagedResult<AdminPostListDto>>.NotFound(
                 CategoryM.Errors.CategoryNotFound,
