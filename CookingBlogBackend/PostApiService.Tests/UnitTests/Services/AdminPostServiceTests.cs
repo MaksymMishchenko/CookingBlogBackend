@@ -53,7 +53,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
 
-            _mockRepository.DidNotReceive().GetFilteredPosts(null, null, null);
+            _mockRepository.DidNotReceive().GetPublicFilteredPosts(null, null, null);
         }
 
         [Theory]
@@ -91,7 +91,7 @@ namespace PostApiService.Tests.UnitTests.Services
                 .AsQueryable()
                 .BuildMock();
 
-            _mockRepository.GetFilteredPosts(search, onlyActive, categorySlug)
+            _mockRepository.GetPublicFilteredPosts(search, onlyActive, categorySlug)
                 .Returns(expectedFilteredList);
 
             // Act
@@ -104,7 +104,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(expectedName, data.AppliedFilters!.CategoryName);
             Assert.Equal(expectedCount, result.Value!.Items.Count());
 
-            _mockRepository.Received(1).GetFilteredPosts(search, onlyActive, categorySlug);
+            _mockRepository.Received(1).GetPublicFilteredPosts(search, onlyActive, categorySlug);
         }
 
         [Fact]
@@ -132,7 +132,7 @@ namespace PostApiService.Tests.UnitTests.Services
             testPost.IsActive = true;
 
             var mockQueryable = posts.AsQueryable().BuildMock();
-            _mockRepository.GetFilteredPosts(null, null, null)
+            _mockRepository.GetPublicFilteredPosts(null, null, null)
                 .Returns(mockQueryable);
 
             // Act
@@ -153,7 +153,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(testPost.Category.Name, dto.CategoryName);
             Assert.Equal(testPost.CreatedAt, dto.CreatedAt);
 
-            _mockRepository.Received(1).GetFilteredPosts(null, null, null);
+            _mockRepository.Received(1).GetPublicFilteredPosts(null, null, null);
         }
 
         [Fact]

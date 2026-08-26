@@ -41,7 +41,7 @@ namespace PostApiService.Tests.UnitTests
             var posts = TestDataHelper.GetPostsWithComments(totalInDb, categories, generateIds: true);
             var mockQuery = posts.AsQueryable().BuildMock();
 
-            _mockRepository.GetFilteredPosts(null, true, null).Returns(mockQuery);
+            _mockRepository.GetPublicFilteredPosts(null, true, null).Returns(mockQuery);
 
             // Act
             var result = await _postService.GetPostsPagedAsync(dto);
@@ -71,7 +71,7 @@ namespace PostApiService.Tests.UnitTests
             var posts = TestDataHelper.GetPostsWithComments(3, categories);
             var mockQuery = posts.AsQueryable().BuildMock();
 
-            _mockRepository.GetFilteredPosts(SearchTerm, true, null).Returns(mockQuery);
+            _mockRepository.GetPublicFilteredPosts(SearchTerm, true, null).Returns(mockQuery);
             _mockSnippetGenerator.CreateSnippet(Arg.Any<string>(), SearchTerm, 100).Returns("...pizza...");
 
             // Act
@@ -103,7 +103,7 @@ namespace PostApiService.Tests.UnitTests
                 .Returns(Task.FromResult<string?>(CategoryName));
 
             var mockQuery = new List<Post>().AsQueryable().BuildMock();
-            _mockRepository.GetFilteredPosts(null, true, CategorySlug).Returns(mockQuery);
+            _mockRepository.GetPublicFilteredPosts(null, true, CategorySlug).Returns(mockQuery);
 
             // Act
             var result = await _postService.GetPostsPagedAsync(dto);
@@ -159,7 +159,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(PostM.Errors.SlugAndCategoryRequired, result.Message);
             Assert.Equal(PostM.Errors.SlugAndCategoryRequiredCode, result.ErrorCode);
 
-            _mockRepository.DidNotReceive().GetFilteredPosts(null, true, category);
+            _mockRepository.DidNotReceive().GetPublicFilteredPosts(null, true, category);
         }
 
         [Fact]
@@ -170,7 +170,7 @@ namespace PostApiService.Tests.UnitTests
             var ct = CancellationToken.None;
 
             var emptyData = new List<Post>().AsQueryable().BuildMock();
-            _mockRepository.GetFilteredPosts(
+            _mockRepository.GetPublicFilteredPosts(
                 Arg.Any<string>(),
                 Arg.Is(true),
                 Arg.Is<string>(s => s.Trim().ToLowerInvariant() == dto.Category)
@@ -186,7 +186,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
             Assert.Equal(PostM.Errors.PostNotFoundByPathCode, result.ErrorCode);
 
-            _mockRepository.Received(1).GetFilteredPosts(
+            _mockRepository.Received(1).GetPublicFilteredPosts(
                 Arg.Any<string>(),
                 Arg.Is(true),
                 Arg.Is<string>(s => s.Trim().ToLowerInvariant() == dto.Category)
@@ -215,7 +215,7 @@ namespace PostApiService.Tests.UnitTests
                 }
             }.AsQueryable().BuildMock();
 
-            _mockRepository.GetFilteredPosts(null, true, requestDto.Category).Returns(testPosts);
+            _mockRepository.GetPublicFilteredPosts(null, true, requestDto.Category).Returns(testPosts);
 
             // Act            
             var result = await _postService.GetPostBySlugAsync(requestDto);
@@ -225,7 +225,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(PostM.Errors.PostNotFoundByPath, result.Message);
 
-            _mockRepository.Received(1).GetFilteredPosts(null, true, requestDto.Category);
+            _mockRepository.Received(1).GetPublicFilteredPosts(null, true, requestDto.Category);
         }
 
         [Fact]
@@ -248,7 +248,7 @@ namespace PostApiService.Tests.UnitTests
             };
 
             var mockData = new List<Post> { recipePost }.AsQueryable().BuildMock();
-            _mockRepository.GetFilteredPosts(
+            _mockRepository.GetPublicFilteredPosts(
                 Arg.Any<string>(),
                 Arg.Is(true),
                 Arg.Is<string>(s => s.Trim().ToLowerInvariant() == expectedCategory)
@@ -268,7 +268,7 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(expectedCategory, dto.CategorySlug);
             Assert.Contains("Carbonara", dto.Title);
 
-            _mockRepository.Received(1).GetFilteredPosts(
+            _mockRepository.Received(1).GetPublicFilteredPosts(
                 Arg.Any<string>(),
                 Arg.Is(true),
                 Arg.Is<string>(s => s.Trim().ToLowerInvariant() == expectedCategory)

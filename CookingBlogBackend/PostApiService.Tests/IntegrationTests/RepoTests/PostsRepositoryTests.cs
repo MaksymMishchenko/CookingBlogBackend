@@ -18,7 +18,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
         [InlineData(null, false, null, 1)]
         [InlineData(null, null, "desserts", 1)]
         [InlineData("NonExistent", null, null, 0)]
-        public async Task GetFilteredPosts_VarietyTests(
+        public async Task GetPublicFilteredPosts_VarietyTests(
             string? search, bool? active, string? slug, int expectedCount)
         {
             // Arrange
@@ -52,7 +52,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             using var scope = _fixture.Services!.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
 
-            var result = repo.GetFilteredPosts(search, active, slug).ToList();
+            var result = repo.GetPublicFilteredPosts(search, active, slug).ToList();
 
             // Assert
             Assert.Equal(expectedCount, result.Count);
@@ -67,7 +67,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
         }
 
         [Fact]
-        public async Task GetFilteredPosts_ShouldSearchInTitleDescriptionAndContent()
+        public async Task GetPublicFilteredPosts_ShouldSearchInTitleDescriptionAndContent()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -95,7 +95,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             using var scope = _fixture.Services!.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
 
-            var result = repo.GetFilteredPosts(Query, null, null).ToList();
+            var result = repo.GetPublicFilteredPosts(Query, null, null).ToList();
 
             // Assert
             Assert.Equal(3, result.Count);

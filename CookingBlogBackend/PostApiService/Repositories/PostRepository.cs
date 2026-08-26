@@ -4,15 +4,12 @@
     {
         public PostRepository(ApplicationDbContext context) : base(context) { }
 
-        public IQueryable<Post> GetFilteredPosts(string? search, bool? onlyActive, string? categorySlug)
+        private IQueryable<Post> ApplyCommonFilters(string? search, bool? onlyActive)
         {
             var query = _dbSet.AsNoTracking().Include(p => p.Category).AsQueryable();
 
             if (onlyActive.HasValue)
                 query = query.Where(p => p.IsActive == onlyActive.Value);
-
-            if (!string.IsNullOrWhiteSpace(categorySlug))
-                query = query.Where(p => p.Category.Slug == categorySlug);
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -22,6 +19,16 @@
                     p.Description.ToLower().Contains(q) ||
                     p.Content.ToLower().Contains(q));
             }
+
+            return query;
+        }
+
+        public IQueryable<Post> GetPublicFilteredPosts(string? search, bool? onlyActive, string? categorySlug)
+        {
+            var query = ApplyCommonFilters(search, onlyActive);
+
+            if (!string.IsNullOrWhiteSpace(categorySlug))
+                query = query.Where(p => p.Category.Slug == categorySlug);
 
             return query.OrderByDescending(p => p.CreatedAt);
         }
