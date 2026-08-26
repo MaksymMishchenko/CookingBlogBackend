@@ -30,7 +30,7 @@ namespace PostApiService.Controllers.Filters
                     return;
                 }
 
-                if (value is PostQueryParameters pqp)
+                if (value is PublicPostQueryParameters pqp)
                 {
                     if (pqp.PageNumber < 1 || pqp.PageSize < 1)
                     {

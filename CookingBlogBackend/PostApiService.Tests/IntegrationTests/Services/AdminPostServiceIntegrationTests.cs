@@ -211,7 +211,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(postDto.Title, data.Title);
             Assert.Equal(existingCategoryId, data.CategoryId);
 
-            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPostService>();
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPublicPostService>();
 
             var addedPostInDb = await dbContextAfter.Posts
                 .FirstOrDefaultAsync(p => p.Id == data.Id);
@@ -305,7 +305,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(ResultStatus.Success, result.Status);
             Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
 
-            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPostService>();
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPublicPostService>();
 
             var postExists = await dbContextAfter.Posts.AnyAsync(p => p.Id == targetPost.Id);
             Assert.False(postExists);
