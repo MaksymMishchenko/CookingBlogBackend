@@ -6,5 +6,5 @@
        int PageNumber,
        int PageSize,
        bool? OnlyActive = null
-    ) : PublicPostQueryDto(SearchTerm, CategorySlug, PageNumber, PageSize);
+    );
 }
