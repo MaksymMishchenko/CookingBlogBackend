@@ -2,7 +2,7 @@
 {
     public record AdminPostQueryDto(
        string? SearchTerm,
-       string? CategorySlug,
+       int? CategoryId,
        int PageNumber,
        int PageSize,
        bool? OnlyActive = null

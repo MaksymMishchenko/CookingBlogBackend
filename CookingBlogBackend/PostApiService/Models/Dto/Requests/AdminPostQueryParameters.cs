@@ -3,8 +3,8 @@
     public class AdminPostQueryParameters : BasePostQueryParameters
     {
         public bool? OnlyActive { get; set; }
-        public string? CategorySlug { get; set; }
+        public int? CategoryId { get; set; }
 
-        public AdminPostQueryDto ToDto() => new(Search, CategorySlug, PageNumber, PageSize, OnlyActive);
+        public AdminPostQueryDto ToDto() => new(Search, CategoryId, PageNumber, PageSize, OnlyActive);
     }
 }

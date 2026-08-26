@@ -42,6 +42,7 @@ namespace PostApiService.Helper
             p.Id,
             p.Title,
             p.Author,
+            p.CategoryId,
             p.Category.Name ?? ContentConstants.DefaultCategory,
             p.CreatedAt,
             p.IsActive           
