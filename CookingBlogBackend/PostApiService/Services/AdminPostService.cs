@@ -41,9 +41,9 @@ namespace PostApiService.Services
 
             string? categoryName = null;
 
-            if (!string.IsNullOrWhiteSpace(postQuery.CategorySlug))
+            if (postQuery.CategoryId.HasValue)
             {
-                categoryName = await _categoryService.GetNameBySlugAsync(postQuery.CategorySlug, ct);
+                categoryName = await _categoryService.GetNameByIdAsync(postQuery.CategoryId.Value, ct);
 
                 if (categoryName == null)
                 {
@@ -51,8 +51,8 @@ namespace PostApiService.Services
                 }
             }
 
-            var query = _postRepository.GetPublicFilteredPosts(postQuery.SearchTerm,
-                postQuery.OnlyActive, postQuery.CategorySlug);
+            var query = _postRepository.GetAdminFilteredPosts(postQuery.SearchTerm,
+                postQuery.OnlyActive, postQuery.CategoryId);
 
             var appliedFilters = new AppliedFilters(
               SearchTerm: postQuery.SearchTerm,

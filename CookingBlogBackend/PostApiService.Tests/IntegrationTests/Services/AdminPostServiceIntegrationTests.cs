@@ -12,7 +12,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public AdminPostServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
-        }
+        }        
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_SearchMode_ShouldReturnCorrectAdminDtos()
@@ -58,7 +58,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var queryDto = new AdminPostQueryDto(
                 SearchTerm: SearchTerm,
-                CategorySlug: null,
+                CategoryId: null,
                 PageNumber: ExpectedPageNumber,
                 PageSize: ExpectedPageSize,
                 OnlyActive: null
@@ -80,6 +80,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             {
                 Assert.Contains(SearchTerm, item.Title.ToLower());
                 Assert.True(item.Id > 0);
+                Assert.True(item.CategoryId > 0);
                 Assert.NotNull(item.CategoryName);
             });
         }
@@ -120,7 +121,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var queryDto = new AdminPostQueryDto(
                 SearchTerm: null,
-                CategorySlug: null,
+                CategoryId: null,
                 PageNumber: 1,
                 PageSize: 10,
                 OnlyActive: false

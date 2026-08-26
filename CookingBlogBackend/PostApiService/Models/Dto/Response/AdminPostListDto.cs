@@ -4,6 +4,7 @@
         int Id,
         string Title,
         string Author,
+        int? CategoryId,
         string CategoryName,
         DateTime CreatedAt,
         bool IsActive       

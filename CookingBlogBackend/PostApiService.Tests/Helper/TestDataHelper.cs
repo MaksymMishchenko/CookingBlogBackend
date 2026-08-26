@@ -185,6 +185,19 @@ namespace PostApiService.Tests.Helper
 
         public static List<Post> GetPostsWithComments(ICollection<Category> categories, string userId = "testContId")
         {
+            var beverages = categories.First(c => c.Name == "Beverages");
+            var vegetarian = categories.First(c => c.Name == "Vegetarian");
+            var desserts = categories.First(c => c.Name == "Desserts");
+            var breakfast = categories.First(c => c.Name == "Breakfast");
+            var healthyFood = categories.First(c => c.Name == "Healthy Food");
+
+            List<Comment> CreateDefaultComments(int postId) => new()
+            {
+                new Comment { Content = "Post comment content 1", PostId = postId, UserId = userId },
+                new Comment { Content = "Post comment content 2", PostId = postId, UserId = userId },
+                new Comment { Content = "Post comment content 3", PostId = postId, UserId = userId }
+            };
+
             return new List<Post> {
                 new Post {
                     Title = "Title Lorem ipsum dolor sit amet 1",
@@ -195,24 +208,9 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 1",
                     MetaDescription = "Meta lorem ipsum dolor 1",
                     Slug = "post-slug-1",
-                    Category = categories.First(c => c.Name == "Beverages"),
-                    Comments = new List<Comment>{
-                        new Comment{
-                            Content = "Post comment content 1",
-                            PostId = 1,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 2",
-                            PostId = 1,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 3",
-                            PostId = 1,
-                            UserId = userId
-                        }
-                    }
+                    Category = beverages,
+                    CategoryId = beverages.Id,
+                    Comments = CreateDefaultComments(1)
                 },
                 new Post {
                     Title = "Title Lorem ipsum dolor sit amet 2",
@@ -223,24 +221,9 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 2",
                     MetaDescription = "Meta lorem ipsum dolor 2",
                     Slug = "post-slug-2",
-                    Category = categories.First(c => c.Name == "Vegetarian"),
-                    Comments = new List<Comment>{
-                        new Comment{
-                            Content = "Post comment content 1",
-                            PostId = 2,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 2",
-                            PostId = 2,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 3",
-                            PostId = 2,
-                            UserId = userId
-                        }
-                    }
+                    Category = vegetarian,
+                    CategoryId = vegetarian.Id,
+                    Comments = CreateDefaultComments(2)
                 },
                 new Post {
                     Title = "Title Lorem ipsum dolor sit amet 3",
@@ -251,24 +234,9 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 3",
                     MetaDescription = "Meta lorem ipsum dolor 3",
                     Slug = "post-slug-3",
-                    Category = categories.First(c => c.Name == "Desserts"),
-                    Comments = new List<Comment>{
-                        new Comment{
-                            Content = "Post comment content 1",
-                            PostId = 3,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 2",
-                            PostId = 3,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 3",
-                            PostId = 3,
-                            UserId = userId
-                        }
-                    }
+                    Category = desserts,
+                    CategoryId = desserts.Id,
+                    Comments = CreateDefaultComments(3)
                 },
                 new Post {
                     Title = "Title Lorem ipsum dolor sit amet 4",
@@ -279,24 +247,9 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 4",
                     MetaDescription = "Meta lorem ipsum dolor 4",
                     Slug = "post-slug-4",
-                    Category = categories.First(c => c.Name == "Breakfast"),
-                    Comments = new List<Comment>{
-                        new Comment{
-                            Content = "Post comment content 1",
-                            PostId = 4,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 2",
-                            PostId = 4,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 3",
-                            PostId = 4,
-                            UserId = userId
-                        }
-                    }
+                    Category = breakfast,
+                    CategoryId = breakfast.Id,
+                    Comments = CreateDefaultComments(4)
                 },
                 new Post {
                     Title = "Title Lorem ipsum dolor sit amet 5",
@@ -307,24 +260,9 @@ namespace PostApiService.Tests.Helper
                     MetaTitle = "Meta title dolor sit amet 5",
                     MetaDescription = "Meta lorem ipsum dolor 5",
                     Slug = "post-slug-5",
-                    Category = categories.First(c => c.Name == "Healthy Food"),
-                    Comments = new List<Comment>{
-                        new Comment{
-                            Content = "Post comment content 1",
-                            PostId = 5,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 2",
-                            PostId = 5,
-                            UserId = userId
-                        },
-                        new Comment{
-                            Content = "Post comment content 3",
-                            PostId = 5,
-                            UserId = userId
-                        }
-                    }
+                    Category = healthyFood,
+                    CategoryId = healthyFood.Id,
+                    Comments = CreateDefaultComments(5)
                 }
             };
         }
@@ -341,7 +279,7 @@ namespace PostApiService.Tests.Helper
 
             return posts;
         }
-
+               
         public static IEnumerable<object[]> GetPostFilterData()
         {
             yield return new object[] { null!, null!, null!, 5, null! };
@@ -352,27 +290,13 @@ namespace PostApiService.Tests.Helper
             yield return new object[] { "Lorem", null!, true, 3, null! };
             yield return new object[] { "1", null!, null!, 1, null! };
 
+            yield return new object[] { null!, 5, null!, 1, "Beverages" };
+            yield return new object[] { null!, 5, true, 1, "Beverages" };
+            yield return new object[] { null!, 5, false, 0, "Beverages" };
 
-            yield return new object[] { null!, "beverages", null!, 1, "Beverages" };
-            yield return new object[] { null!, "beverages", true, 1, "Beverages" };
-            yield return new object[] { null!, "beverages", false, 0, "Beverages" };
-
-            yield return new object[] { "Lorem", "desserts", true, 1, "Desserts" };
-            yield return new object[] { "Lorem", "vegetarian", false, 1, "Vegetarian" };
+            yield return new object[] { "Lorem", 3, true, 1, "Desserts" };
+            yield return new object[] { "Lorem", 6, false, 1, "Vegetarian" };
         }
-
-        //public static List<Category> GetCulinaryCategories()
-        //{
-        //    return new List<Category>
-        //    {
-        //        new Category { Name = "Breakfast", Slug = StringHelper.GenerateSlug("Breakfast") },
-        //        new Category { Name = "Main Course", Slug = StringHelper.GenerateSlug("Main Course") },
-        //        new Category { Name = "Desserts", Slug = StringHelper.GenerateSlug("Desserts") },
-        //        new Category { Name = "Healthy Food", Slug = StringHelper.GenerateSlug("Healthy Food") },
-        //        new Category { Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
-        //        new Category { Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
-        //    };
-        //}
 
         public static List<Category> GetCulinaryCategories()
         {
