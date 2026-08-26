@@ -21,7 +21,7 @@ namespace PostApiService.Controllers
         /// Supports filtering by activity status and includes post statistics (e.g., comment counts).       
         [HttpGet]
         public async Task<IActionResult> GetAdminPostsAsync
-            ([FromQuery] PostAdminQueryParameters query, CancellationToken ct = default)
+            ([FromQuery] AdminPostQueryParameters query, CancellationToken ct = default)
         {
             var result = await _adminPostService.GetAdminPostsPagedAsync(query.ToDto(), ct);
 

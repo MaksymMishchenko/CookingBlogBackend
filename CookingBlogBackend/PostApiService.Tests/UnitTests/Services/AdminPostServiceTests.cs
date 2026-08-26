@@ -32,7 +32,7 @@ namespace PostApiService.Tests.UnitTests.Services
         public async Task GetAdminPostsPagedAsync_ShouldReturnUnauthorized_WhenUserIdIsEmpty()
         {
             // Arrange
-            var dto = new PostAdminQueryDto(
+            var dto = new AdminPostQueryDto(
                 SearchTerm: null,
                 CategorySlug: null,
                 PageNumber: 1,
@@ -65,7 +65,7 @@ namespace PostApiService.Tests.UnitTests.Services
             const int LargePageSize = 10;
             var ct = CancellationToken.None;
 
-            var dto = new PostAdminQueryDto(
+            var dto = new AdminPostQueryDto(
                SearchTerm: search,
                CategorySlug: categorySlug,
                PageNumber: 1,
@@ -115,7 +115,7 @@ namespace PostApiService.Tests.UnitTests.Services
             const int PostCount = 1;
             var ct = CancellationToken.None;
 
-            var queryDto = new PostAdminQueryDto(
+            var queryDto = new AdminPostQueryDto(
                SearchTerm: null,
                CategorySlug: null,
                PageNumber: 1,

@@ -1,6 +1,6 @@
 ﻿namespace PostApiService.Models.Dto.Requests
 {
-    public record PostAdminQueryDto(
+    public record AdminPostQueryDto(
        string? SearchTerm,
        string? CategorySlug,
        int PageNumber,
