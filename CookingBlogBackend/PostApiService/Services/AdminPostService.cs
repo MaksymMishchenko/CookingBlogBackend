@@ -52,7 +52,7 @@ namespace PostApiService.Services
             }
 
             var query = _postRepository.GetAdminFilteredPosts(postQuery.SearchTerm,
-                postQuery.OnlyActive, postQuery.CategoryId);
+                postQuery.OnlyActive, postQuery.CategoryId);            
 
             var appliedFilters = new AppliedFilters(
               SearchTerm: postQuery.SearchTerm,

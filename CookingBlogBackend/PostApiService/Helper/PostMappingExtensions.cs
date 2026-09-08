@@ -42,10 +42,12 @@ namespace PostApiService.Helper
             p.Id,
             p.Title,
             p.Author,
+            p.Slug,
+            p.Category != null ? p.Category.Slug : string.Empty,
             p.CategoryId,
-            p.Category.Name ?? ContentConstants.DefaultCategory,
+            p.Category != null ? p.Category.Name ?? ContentConstants.DefaultCategory : ContentConstants.DefaultCategory,
             p.CreatedAt,
-            p.IsActive           
+            p.IsActive
         );
 
         public static IQueryable<PostDetailsDto> ToDetailsDtoExpression(this IQueryable<Post> query)
@@ -82,7 +84,7 @@ namespace PostApiService.Helper
             p.CategoryId,
             p.IsActive,
             p.CreatedAt,
-            p.UpdatedAt            
+            p.UpdatedAt
         );
 
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)
