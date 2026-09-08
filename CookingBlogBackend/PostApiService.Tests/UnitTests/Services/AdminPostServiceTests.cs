@@ -146,9 +146,11 @@ namespace PostApiService.Tests.UnitTests.Services
 
             Assert.Equal(testPost.Id, dto.Id);
             Assert.Equal(testPost.Title, dto.Title);
+            Assert.Equal(testPost.Slug, dto.Slug);
             Assert.Equal(testPost.IsActive, dto.IsActive);
             Assert.Equal(testPost.CategoryId, dto.CategoryId);
             Assert.Equal(testPost.Category.Name, dto.CategoryName);
+            Assert.Equal(testPost.Category.Slug, dto.CategorySlug);
             Assert.Equal(testPost.CreatedAt, dto.CreatedAt);
 
             _mockRepository.Received(1).GetAdminFilteredPosts(null, null, null);

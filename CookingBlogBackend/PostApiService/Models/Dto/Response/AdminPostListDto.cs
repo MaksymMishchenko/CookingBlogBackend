@@ -4,6 +4,8 @@
         int Id,
         string Title,
         string Author,
+        string Slug,
+        string CategorySlug,
         int? CategoryId,
         string CategoryName,
         DateTime CreatedAt,
