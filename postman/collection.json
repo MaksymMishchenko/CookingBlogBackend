@@ -711,7 +711,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categoryId=1&onlyActive=true&pageNumber=1&pageSize=10",
+              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categoryId=1&onlyActive=true&pageNumber=1&pageSize=10&sortBy=title&sortDirection=asc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -740,6 +740,14 @@
                 {
                   "key": "pageSize",
                   "value": "10"
+                },
+                {
+                  "key": "sortBy",
+                  "value": "title"
+                },
+                {
+                  "key": "sortDirection",
+                  "value": "asc"
                 }
               ]
             }

@@ -61,7 +61,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 CategoryId: null,
                 PageNumber: ExpectedPageNumber,
                 PageSize: ExpectedPageSize,
-                OnlyActive: null
+                SortBy: null,
+                SortDirection: null,
+                OnlyActive: null                
             );
 
             // Act
@@ -124,6 +126,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 CategoryId: null,
                 PageNumber: 1,
                 PageSize: 10,
+                SortBy: null,
+                SortDirection: null,
                 OnlyActive: false
             );
 
