@@ -37,6 +37,8 @@ namespace PostApiService.Tests.UnitTests.Services
                 CategoryId: null,
                 PageNumber: 1,
                 PageSize: 10,
+                SortBy: null,
+                SortDirection: null,
                 OnlyActive: null
             );
 
@@ -53,7 +55,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
 
-            _mockRepository.DidNotReceive().GetAdminFilteredPosts(null, null, null);
+            _mockRepository.DidNotReceive().GetAdminFilteredAndSortedPosts(null, null, null, null, null);
         }
 
         [Theory]
@@ -70,6 +72,8 @@ namespace PostApiService.Tests.UnitTests.Services
                CategoryId: categoryId,
                PageNumber: 1,
                PageSize: LargePageSize,
+               SortBy: null,
+               SortDirection: null,
                OnlyActive: onlyActive
             );
 
@@ -88,7 +92,7 @@ namespace PostApiService.Tests.UnitTests.Services
                 .AsQueryable()
                 .BuildMock();
 
-            _mockRepository.GetAdminFilteredPosts(search, onlyActive, categoryId)
+            _mockRepository.GetAdminFilteredAndSortedPosts(search, onlyActive, categoryId, null, null)
                 .Returns(expectedFilteredList);
 
             // Act
@@ -101,7 +105,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(expectedName, data.AppliedFilters!.CategoryName);
             Assert.Equal(expectedCount, result.Value!.Items.Count());
 
-            _mockRepository.Received(1).GetAdminFilteredPosts(search, onlyActive, categoryId);
+            _mockRepository.Received(1).GetAdminFilteredAndSortedPosts(search, onlyActive, categoryId, null, null);
         }
 
         [Fact]
@@ -117,6 +121,8 @@ namespace PostApiService.Tests.UnitTests.Services
                CategoryId: null,
                PageNumber: 1,
                PageSize: 10,
+               SortBy: null,
+               SortDirection: null,
                OnlyActive: null
             );
 
@@ -129,7 +135,7 @@ namespace PostApiService.Tests.UnitTests.Services
             testPost.IsActive = true;
 
             var mockQueryable = posts.AsQueryable().BuildMock();
-            _mockRepository.GetAdminFilteredPosts(null, null, null)
+            _mockRepository.GetAdminFilteredAndSortedPosts(null, null, null, null, null)
                 .Returns(mockQueryable);
 
             // Act
@@ -153,7 +159,42 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(testPost.Category.Slug, dto.CategorySlug);
             Assert.Equal(testPost.CreatedAt, dto.CreatedAt);
 
-            _mockRepository.Received(1).GetAdminFilteredPosts(null, null, null);
+            _mockRepository.Received(1).GetAdminFilteredAndSortedPosts(null, null, null, null, null);
+        }
+
+        [Fact]
+        public async Task GetAdminPostsPagedAsync_ShouldPassSortingParametersToRepository()
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            const string expectedSortBy = "title";
+            const string expectedSortDirection = "asc";
+
+            var dto = new AdminPostQueryDto(
+                SearchTerm: null,
+                CategoryId: null,
+                PageNumber: 1,
+                PageSize: 10,
+                SortBy: expectedSortBy,
+                SortDirection: expectedSortDirection,
+                OnlyActive: null
+            );
+
+            _mockWebContext.UserId.Returns("admin-id");
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetAdminTestPosts(categories);
+            var mockQueryable = posts.AsQueryable().BuildMock();
+
+            _mockRepository.GetAdminFilteredAndSortedPosts(null, null, null, expectedSortBy, expectedSortDirection)
+                .Returns(mockQueryable);
+
+            // Act
+            var result = await _adminPostService.GetAdminPostsPagedAsync(dto, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            _mockRepository.Received(1).GetAdminFilteredAndSortedPosts(null, null, null, expectedSortBy, expectedSortDirection);
         }
 
         [Fact]

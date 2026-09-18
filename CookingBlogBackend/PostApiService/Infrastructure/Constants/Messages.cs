@@ -161,6 +161,8 @@
                 public const string SearchQueryRequired = "Search query string is required and cannot be empty.";
                 public const string SearchQueryTooShort = "Query string must be at least {0} characters long.";
                 public const string SearchQueryTooLong = "Query string cannot exceed {0} characters.";
+                public const string InvalidSortField = "Invalid sort field. Allowed values: title, createdAt.";
+                public const string InvalidSortDirection = "Invalid sort direction. Allowed values: asc, desc.";
             }
 
             public static class System

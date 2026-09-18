@@ -36,6 +36,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             const int PageSize = 10;
             bool? searchStatus = null;
             bool? categorySlugStatus = null;
+            const string DefaultSortBy = "createdAt";
+            const string DefaultSortDirection = "desc";
             bool? onlyActiveStatus = null;
 
             var categories = TestDataHelper.GetCulinaryCategories();
@@ -45,7 +47,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var url = string.Format(Posts.AdminPaginated, searchStatus, categorySlugStatus, onlyActiveStatus, PageNumber, PageSize);
+            var url = string.Format(Posts.AdminPaginated, searchStatus, categorySlugStatus, onlyActiveStatus, PageNumber, PageSize, DefaultSortBy, DefaultSortDirection);
 
             // Act
             var response = await _client.GetAsync(url);
@@ -56,7 +58,11 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(content);
             Assert.Equal(TotalCount, content.TotalCount);
 
-            Assert.Contains(content.Data!, dto => dto.IsActive == false);
+            Assert.Contains(content.Data!, dto => dto.IsActive == false);            
+
+            var dates = content.Data!.Select(d => d.CreatedAt).ToList();
+            var sortedDates = dates.OrderByDescending(d => d).ToList();
+            Assert.Equal(sortedDates, dates);
         }
 
         [Fact]
@@ -70,7 +76,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             await _fixture.ResetDatabaseAsync();
             _fixture.LoginAsContributor();
 
-            var url = string.Format(Posts.AdminPaginated, searchStatus, categorySlugStatus, onlyActiveStatus, 1, 10);
+            var url = string.Format(Posts.AdminPaginated, searchStatus, categorySlugStatus, onlyActiveStatus, 1, 10, null, null);
 
             // Act
             var response = await _client.GetAsync(url);

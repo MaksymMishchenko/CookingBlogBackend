@@ -27,7 +27,7 @@ namespace PostApiService.Services
         /// <summary>
         /// Retrieves a paginated list of posts specifically for the administrative dashboard.
         /// Includes extended metadata such as update timestamps, publication status, and authorship.
-        /// Supports full-text search, filtering by category slug, and filtering by activity status.
+        /// Supports full-text search, filtering by category, filtering by activity status, and sorting.
         /// </summary>
         public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
             AdminPostQueryDto postQuery, CancellationToken ct = default)
@@ -51,8 +51,13 @@ namespace PostApiService.Services
                 }
             }
 
-            var query = _postRepository.GetAdminFilteredPosts(postQuery.SearchTerm,
-                postQuery.OnlyActive, postQuery.CategoryId);            
+            var query = _postRepository.GetAdminFilteredAndSortedPosts(
+                postQuery.SearchTerm,
+                postQuery.OnlyActive,
+                postQuery.CategoryId,
+                postQuery.SortBy,
+                postQuery.SortDirection
+            );
 
             var appliedFilters = new AppliedFilters(
               SearchTerm: postQuery.SearchTerm,

@@ -5,6 +5,8 @@
        int? CategoryId,
        int PageNumber,
        int PageSize,
+       string? SortBy,
+       string? SortDirection,
        bool? OnlyActive = null
     );
 }

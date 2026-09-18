@@ -32,15 +32,24 @@
 
             return query.OrderByDescending(p => p.CreatedAt);
         }
-
-        public IQueryable<Post> GetAdminFilteredPosts(string? search, bool? onlyActive, int? categoryId)
+        public IQueryable<Post> GetAdminFilteredAndSortedPosts
+            (string? search, bool? onlyActive, int? categoryId, string? sortBy, string? sortDirection)
         {
             var query = ApplyCommonFilters(search, onlyActive);
 
             if (categoryId.HasValue)
-                query = query.Where(p => p.CategoryId == categoryId.Value);
+                query = query.Where(p => p.CategoryId == categoryId.Value);           
 
-            return query.OrderByDescending(p => p.CreatedAt);
+            query = (sortBy, sortDirection?.ToLower()) switch
+            {
+                ("title", "asc") => query.OrderBy(p => p.Title),
+                ("title", "desc") => query.OrderByDescending(p => p.Title),
+                ("createdAt", "asc") => query.OrderBy(p => p.CreatedAt),
+                ("createdAt", "desc") => query.OrderByDescending(p => p.CreatedAt),
+                _ => query.OrderByDescending(p => p.CreatedAt)
+            };
+
+            return query;
         }
 
         public async Task<bool> IsPostActiveAsync(int postId, CancellationToken ct)

@@ -4,7 +4,7 @@
     {
         IQueryable<Post> GetPublicFilteredPosts(string? search, bool? onlyActive, string? categorySlug);
 
-        IQueryable<Post> GetAdminFilteredPosts(string? search, bool? onlyActive, int? categoryId);
+        IQueryable<Post> GetAdminFilteredAndSortedPosts(string? search, bool? onlyActive, int? categoryId, string? sortBy, string? sortDirection);
 
         Task<bool> IsPostActiveAsync(int postId, CancellationToken ct);
     }

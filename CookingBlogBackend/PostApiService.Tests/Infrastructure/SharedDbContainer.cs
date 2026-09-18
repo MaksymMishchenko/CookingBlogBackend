@@ -4,7 +4,7 @@ namespace PostApiService.Tests.Infrastructure
 {
     public static class SharedDbContainer
     {
-        private static readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:latest")
+        private static readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:15-alpine")            
             .WithReuse(true)
             .Build();
 

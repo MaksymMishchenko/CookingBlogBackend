@@ -111,29 +111,72 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             });
         }
 
+        //[Fact]
+        //public async Task GetAdminFilteredPosts_ShouldFilterByCategoryIdAndActiveStatus_WhenParametersProvided()
+        //{
+        //    // Arrange
+        //    await _fixture.ResetDatabaseAsync();
+
+        //    var categories = TestDataHelper.GetCulinaryCategories();                        
+
+        //    var posts = TestDataHelper.GetPostsWithComments(2, categories, commentCount: 0);
+
+        //    posts[0].Title = "Admin Tech Post";
+        //    posts[0].IsActive = true;
+        //    posts[0].CategoryId = 1;
+        //    posts[0].Category = categories[0];
+        //    posts[0].Id = 0;
+
+        //    posts[1].Title = "Admin Life Post";
+        //    posts[1].IsActive = true;
+        //    posts[1].CategoryId = 2;
+        //    posts[1].Category = categories[1];
+        //    posts[1].Id = 0;
+
+        //    await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+        //    // Act
+        //    using var scope = _fixture.Services!.CreateScope();
+        //    var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
+
+        //    var result = repo.GetAdminFilteredAndSortedPosts(search: null, onlyActive: true, categoryId: 1).ToList();
+
+        //    // Assert
+        //    Assert.Single(result);
+        //    Assert.Equal("Admin Tech Post", result[0].Title);
+        //    Assert.Equal(1, result[0].CategoryId);
+        //}
+
         [Fact]
-        public async Task GetAdminFilteredPosts_ShouldFilterByCategoryIdAndActiveStatus_WhenParametersProvided()
+        public async Task GetAdminFilteredAndSortedPosts_ShouldFilterAndSortCorrectly_WhenParametersProvided()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
 
-            var categories = TestDataHelper.GetCulinaryCategories();            
-            //categories[0].Id = 1;
-            //categories[1].Id = 2;
+            var categories = TestDataHelper.GetCulinaryCategories();
 
-            var posts = TestDataHelper.GetPostsWithComments(2, categories, commentCount: 0);
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: 0);
 
-            posts[0].Title = "Admin Tech Post";
+            posts[0].Title = "B Post";
             posts[0].IsActive = true;
             posts[0].CategoryId = 1;
             posts[0].Category = categories[0];
+            posts[0].CreatedAt = DateTime.UtcNow.AddDays(-2);
             posts[0].Id = 0;
 
-            posts[1].Title = "Admin Life Post";
+            posts[1].Title = "A Post";
             posts[1].IsActive = true;
-            posts[1].CategoryId = 2;
-            posts[1].Category = categories[1];
+            posts[1].CategoryId = 1;
+            posts[1].Category = categories[0];
+            posts[1].CreatedAt = DateTime.UtcNow.AddDays(-1);
             posts[1].Id = 0;
+
+            posts[2].Title = "C Post";
+            posts[2].IsActive = false;
+            posts[2].CategoryId = 1;
+            posts[2].Category = categories[0];
+            posts[2].CreatedAt = DateTime.UtcNow;
+            posts[2].Id = 0;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
@@ -141,12 +184,18 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             using var scope = _fixture.Services!.CreateScope();
             var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
 
-            var result = repo.GetAdminFilteredPosts(search: null, onlyActive: true, categoryId: 1).ToList();
+            var result = repo.GetAdminFilteredAndSortedPosts(
+                search: null,
+                onlyActive: true,
+                categoryId: 1,
+                sortBy: "title",
+                sortDirection: "asc"
+            ).ToList();
 
             // Assert
-            Assert.Single(result);
-            Assert.Equal("Admin Tech Post", result[0].Title);
-            Assert.Equal(1, result[0].CategoryId);
+            Assert.Equal(2, result.Count);
+            Assert.Equal("A Post", result[0].Title);
+            Assert.Equal("B Post", result[1].Title);
         }
     }
 }
