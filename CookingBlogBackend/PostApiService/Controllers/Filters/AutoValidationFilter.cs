@@ -62,6 +62,45 @@ namespace PostApiService.Controllers.Filters
                         return;
                     }
                 }
+
+                if (value is AdminPostQueryParameters adqp)
+                {
+                    if (adqp.PageNumber < 1 || adqp.PageSize < 1)
+                    {
+                        ReturnBadRequest(context, nameof(adqp.PageNumber), Global.Validation.InvalidPageParameters);
+                        return;
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(adqp.Search))
+                    {
+                        var searchError = ValidateSearchString(adqp.Search);
+                        if (searchError != null)
+                        {
+                            ReturnBadRequest(context, nameof(adqp.Search), searchError);
+                            return;
+                        }
+                    }
+                    
+                    if (!string.IsNullOrWhiteSpace(adqp.SortBy))
+                    {
+                        var allowedSortFields = new[] { "title", "createdat" };
+                        if (!allowedSortFields.Contains(adqp.SortBy.ToLower()))
+                        {
+                            ReturnBadRequest(context, nameof(adqp.SortBy), Global.Validation.InvalidSortField);
+                            return;
+                        }
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(adqp.SortDirection))
+                    {
+                        var allowedDirections = new[] { "asc", "desc" };
+                        if (!allowedDirections.Contains(adqp.SortDirection.ToLower()))
+                        {
+                            ReturnBadRequest(context, nameof(adqp.SortDirection), Global.Validation.InvalidSortDirection);
+                            return;
+                        }
+                    }
+                }
             }
         }
 
