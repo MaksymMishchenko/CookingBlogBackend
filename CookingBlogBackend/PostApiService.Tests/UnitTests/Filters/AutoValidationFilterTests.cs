@@ -37,7 +37,7 @@ namespace PostApiService.Tests.Filters
         public void OnActionExecuting_ShouldHandleInvalidModelState_Automatically()
         {
             // Arrange
-            var context = CreateContext(new Dictionary<string, object?>());            
+            var context = CreateContext(new Dictionary<string, object?>());
             context.ModelState.AddModelError("Title", "Title is required");
 
             // Act
@@ -47,6 +47,70 @@ namespace PostApiService.Tests.Filters
             var result = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(result.Value);
             Assert.Contains("Title is required", response.Errors!["Title"]);
+        }
+
+        [Fact]
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenPageNumberOrSizeIsInvalid()
+        {
+            // Arrange
+            var queryParams = new PaginationQueryParameters { PageNumber = 0, PageSize = 5 };
+            var context = CreateContext(new Dictionary<string, object?> { { "query", queryParams } });
+
+            // Act
+            _filter.OnActionExecuting(context);
+
+            // Assert
+            var result = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(result.Value);
+            Assert.Equal(Global.Validation.InvalidPageParameters, response.Errors!["PageNumber"][0]);
+        }
+
+        [Fact]
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenPageSizeExceedsLimit()
+        {
+            // Arrange
+            var queryParams = new PaginationQueryParameters { PageNumber = 1, PageSize = 15 };
+            var context = CreateContext(new Dictionary<string, object?> { { "query", queryParams } });
+
+            // Act
+            _filter.OnActionExecuting(context);
+
+            // Assert
+            var result = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(result.Value);
+            Assert.Equal(string.Format(Global.Validation.PageSizeExceeded, 10), response.Errors!["PageSize"][0]);
+        }
+
+        [Fact]
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenSearchContainsForbiddenCharacters()
+        {
+            // Arrange
+            var queryParams = new PublicPostQueryParameters { Search = "SQL' injection--" };
+            var context = CreateContext(new Dictionary<string, object?> { { "query", queryParams } });
+
+            // Act
+            _filter.OnActionExecuting(context);
+
+            // Assert
+            var result = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(result.Value);
+            Assert.Equal(Global.Validation.SearchQueryForbiddenCharacters, response.Errors!["Search"][0]);
+        }
+
+        [Fact]
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenSearchHasNoLettersOrDigits()
+        {
+            // Arrange
+            var queryParams = new PublicPostQueryParameters { Search = "---" };
+            var context = CreateContext(new Dictionary<string, object?> { { "query", queryParams } });
+
+            // Act
+            _filter.OnActionExecuting(context);
+
+            // Assert
+            var result = Assert.IsType<BadRequestObjectResult>(context.Result);
+            var response = Assert.IsType<ApiResponse>(result.Value);
+            Assert.Equal(Global.Validation.SearchQueryMustContainLetterOrDigit, response.Errors!["Search"][0]);
         }
 
         [Fact]
