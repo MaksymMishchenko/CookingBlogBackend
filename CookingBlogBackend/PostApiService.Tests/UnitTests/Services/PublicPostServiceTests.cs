@@ -8,14 +8,14 @@ using PostApiService.Services;
 
 namespace PostApiService.Tests.UnitTests
 {
-    public class PostServiceTests
+    public class PublicPostServiceTests
     {
         private readonly IPostRepository _mockRepository;
         private readonly ICategoryService _mockCategoryService;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
         private readonly PublicPostService _postService;
 
-        public PostServiceTests()
+        public PublicPostServiceTests()
         {
             _mockRepository = Substitute.For<IPostRepository>();
             _mockCategoryService = Substitute.For<ICategoryService>();

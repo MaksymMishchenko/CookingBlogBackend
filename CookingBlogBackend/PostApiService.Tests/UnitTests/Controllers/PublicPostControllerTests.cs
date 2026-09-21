@@ -7,13 +7,13 @@ using PostApiService.Models.Dto.Response;
 
 namespace PostApiService.Tests.UnitTests.Controllers
 {
-    public class PostControllerTests
+    public class PublicPostControllerTests
     {
         private readonly IPublicPostService _mockPostService;
         private readonly ICommentService _mockCommentService;
         private readonly PublicPostsController _postsController;
 
-        public PostControllerTests()
+        public PublicPostControllerTests()
         {
             _mockPostService = Substitute.For<IPublicPostService>();
             _mockCommentService = Substitute.For<ICommentService>();
