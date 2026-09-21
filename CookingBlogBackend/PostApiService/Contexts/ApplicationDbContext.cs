@@ -30,6 +30,11 @@
                 .WithMany(c => c.Posts)
                 .HasForeignKey(p => p.CategoryId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(p => p.Author)
+                .WithMany()
+                .HasForeignKey(p => p.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<Comment>(entity =>

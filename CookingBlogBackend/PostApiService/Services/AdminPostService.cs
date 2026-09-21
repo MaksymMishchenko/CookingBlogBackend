@@ -139,14 +139,21 @@ namespace PostApiService.Services
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
             }
 
-            var postEntity = postDto.ToEntity(sanitizedContent);
+            var postEntity = postDto.ToEntity(sanitizedContent, userId);
 
             await _postRepository.AddAsync(postEntity, ct);
             await _postRepository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Created, postEntity.Title, postEntity.Id);
 
-            var responseDto = postEntity.MapToAdminDto();
+            var createdPost = await _postRepository.GetByIdWithAuthorsAsync(postEntity.Id, ct);
+
+            if (createdPost == null)
+            {
+                return NotFound<PostAdminDetailsDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+            }
+
+            var responseDto = createdPost.MapToAdminDto();
 
             return Success(responseDto, PostM.Success.PostAddedSuccessfully);
         }
@@ -177,14 +184,14 @@ namespace PostApiService.Services
                 return Invalid<PostAdminDetailsDto>(PostM.Errors.Empty, PostM.Errors.EmptyCode);
             }
 
-            var postEntity = await _postRepository.GetByIdAsync(postId, ct);
+            var postEntity = await _postRepository.GetByIdWithAuthorsAsync(postId, ct);
 
             if (postEntity == null)
             {
                 Log.Warning(Posts.NotFound, postId);
 
                 return NotFound<PostAdminDetailsDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
-            }
+            }            
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();

@@ -38,7 +38,9 @@ namespace PostApiService.Tests.UnitTests
             );
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(totalInDb, categories, generateIds: true);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(totalInDb, categories, adminIds: adminIds, generateIds: true);
             var mockQuery = posts.AsQueryable().BuildMock();
 
             _mockRepository.GetPublicFilteredPosts(null, true, null).Returns(mockQuery);
@@ -68,7 +70,9 @@ namespace PostApiService.Tests.UnitTests
             );
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(3, categories);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds);
             var mockQuery = posts.AsQueryable().BuildMock();
 
             _mockRepository.GetPublicFilteredPosts(SearchTerm, true, null).Returns(mockQuery);

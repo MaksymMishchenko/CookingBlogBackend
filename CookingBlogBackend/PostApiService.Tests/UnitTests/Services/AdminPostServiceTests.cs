@@ -1,4 +1,5 @@
 ﻿using MockQueryable;
+using PostApiService.Helper;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
@@ -129,8 +130,10 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext.UserId.Returns("admin-id");
 
             var categories = TestDataHelper.GetCulinaryCategories();
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
             var posts = TestDataHelper.GetPostsWithComments(
-                count: PostCount, categories, commentCount: ExpectedCommentCount, generateIds: true);
+                count: PostCount, categories, adminIds: adminIds, commentCount: ExpectedCommentCount, generateIds: true);
             var testPost = posts.First();
             testPost.IsActive = true;
 
@@ -205,9 +208,17 @@ namespace PostApiService.Tests.UnitTests.Services
             var token = CancellationToken.None;
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, generateComments: false, generateIds: true);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, adminIds: adminIds, generateComments: false, generateIds: true);
 
             var expectedPost = testPosts.First(p => p.Id == postId);
+
+            expectedPost.Author = new Microsoft.AspNetCore.Identity.IdentityUser
+            {
+                Id = expectedPost.AuthorId,
+                UserName = TestUserData.AdminUserName
+            };
 
             var mockQueryable = testPosts.AsQueryable().BuildMock();
             _mockRepository.AsQueryable().Returns(mockQueryable);
@@ -223,7 +234,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             Assert.Equal(expectedPost.Id, result.Value.Id);
             Assert.Equal(expectedPost.Title, result.Value.Title);
-            Assert.Equal(expectedPost.Author, result.Value.Author);
+            Assert.Equal(expectedPost.Author.UserName, result.Value.Author);
 
             _mockRepository.Received(1).AsQueryable();
         }
@@ -380,6 +391,13 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
 
+            var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
+            savedPost.Title = postCreateDto.Title.StripHtml();
+            savedPost.Slug = postCreateDto.Slug.StripHtml();
+
+            _mockRepository.GetByIdWithAuthorsAsync(Arg.Any<int>(), ct)
+                .Returns(savedPost);
+
             // Act
             var result = await _adminPostService.AddPostAsync(postCreateDto, ct);
 
@@ -403,6 +421,10 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
             _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token).Returns(true);
+
+            var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
+            _mockRepository.GetByIdWithAuthorsAsync(Arg.Any<int>(), token)
+                .Returns(savedPost);
 
             // Act
             var result = await _adminPostService.AddPostAsync(postCreateDto, token);
@@ -485,7 +507,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns((Post?)null);
 
             // Act
@@ -498,7 +520,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(PostM.Errors.PostNotFound, result.Message);
             Assert.Equal(PostM.Errors.PostNotFoundCode, result.ErrorCode);
 
-            await _mockRepository.Received(1).GetByIdAsync(postId, Arg.Any<CancellationToken>());
+            await _mockRepository.Received(1).GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -512,8 +534,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post());
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { Id = postId, AuthorId = "3f2504e0-4f89-11d3-9a0c-0305e82c3301" });
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(),
                 Arg.Any<CancellationToken>()).Returns(true);
 
@@ -540,8 +562,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns("user-id");
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { CategoryId = 99 });
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
                 .Returns(false);
@@ -576,8 +598,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns("user-id");
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post());
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
 
@@ -603,8 +625,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns("user-id");
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post());
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
 

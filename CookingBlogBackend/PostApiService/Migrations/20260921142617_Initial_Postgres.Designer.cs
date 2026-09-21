@@ -11,8 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260324165823_InitialPostgres")]
-    partial class InitialPostgres
+    [Migration("20260921142617_Initial_Postgres")]
+    partial class Initial_Postgres
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -300,10 +300,9 @@ namespace PostApiService.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Author")
+                    b.Property<string>("AuthorId")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<int>("CategoryId")
                         .HasColumnType("integer");
@@ -350,6 +349,8 @@ namespace PostApiService.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AuthorId");
 
                     b.HasIndex("CategoryId");
 
@@ -440,11 +441,19 @@ namespace PostApiService.Migrations
 
             modelBuilder.Entity("PostApiService.Models.Post", b =>
                 {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "Author")
+                        .WithMany()
+                        .HasForeignKey("AuthorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("PostApiService.Models.Category", "Category")
                         .WithMany("Posts")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Author");
 
                     b.Navigation("Category");
                 });

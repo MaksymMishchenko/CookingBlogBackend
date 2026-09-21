@@ -26,7 +26,23 @@ public static class TestUserBuilder
 
         return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme", ClaimTypes.Name, ClaimTypes.Role));
     }
-    // ClaimTypes.Name, ClaimTypes.Role
+
+    public static ClaimsPrincipal CreateAdmin2(string controller = TS.Controller.Post)
+    {
+        var serializedClaim = GetAdminPermissionsClaim(controller);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, TestUserData.Admin2Id),
+            new Claim(ClaimTypes.Name, TestUserData.Admin2UserName),
+            new Claim(ClaimTypes.Role, TS.Roles.Admin)
+        };
+
+        claims.AddRange(ExpandPermissions(controller, serializedClaim));
+
+        return new ClaimsPrincipal(new ClaimsIdentity(claims, "DynamicScheme", ClaimTypes.Name, ClaimTypes.Role));
+    }
+
     public static ClaimsPrincipal CreateContributor(string controller = TS.Controller.Comment)
     {
         var serializedClaim = GetContributorPermissionsClaim(controller);
@@ -82,7 +98,7 @@ public static class TestUserBuilder
             await roleManager.CreateAsync(new IdentityRole(TS.Roles.Admin));
 
         if (!await roleManager.RoleExistsAsync(TS.Roles.Contributor))
-            await roleManager.CreateAsync(new IdentityRole(TS.Roles.Contributor));        
+            await roleManager.CreateAsync(new IdentityRole(TS.Roles.Contributor));
 
         var adminUser = new IdentityUser
         {
@@ -91,6 +107,15 @@ public static class TestUserBuilder
             Email = "admin@test.com"
         };
         await EnsureUserCreatedAsync(userManager, adminUser, TestUserData.AdminPassword, TS.Roles.Admin,
+            GetAdminPermissionsClaim(TS.Controller.Post), GetAdminPermissionsClaim(TS.Controller.Comment));
+
+        var adminUser2 = new IdentityUser
+        {
+            Id = TestUserData.Admin2Id,
+            UserName = TestUserData.Admin2UserName,
+            Email = "admin2@test.com"
+        };
+        await EnsureUserCreatedAsync(userManager, adminUser2, TestUserData.Admin2Password, TS.Roles.Admin,
             GetAdminPermissionsClaim(TS.Controller.Post), GetAdminPermissionsClaim(TS.Controller.Comment));
 
         var contributorUser = new IdentityUser

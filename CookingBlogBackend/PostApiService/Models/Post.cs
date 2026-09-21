@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PostApiService.Models
 {
@@ -22,10 +23,14 @@ namespace PostApiService.Models
         public string Content { get; set; } = default!;
 
         [Required]
-        [MaxLength(50)]
-        public string Author { get; set; } = default!;
+        public string AuthorId { get; set; } = default!;
+
+        [ValidateNever]
+        [ForeignKey(nameof(AuthorId))]
+        public virtual IdentityUser Author { get; set; } = default!;
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         public DateTime? UpdatedAt { get; set; }
 
         [Required]

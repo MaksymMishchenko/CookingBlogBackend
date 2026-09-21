@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PostApiService.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialPostgres : Migration
+    public partial class Initial_Postgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -180,7 +180,7 @@ namespace PostApiService.Migrations
                     Title = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     Content = table.Column<string>(type: "character varying(2500)", maxLength: 2500, nullable: false),
-                    Author = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    AuthorId = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     ImageUrl = table.Column<string>(type: "text", nullable: false),
@@ -193,6 +193,12 @@ namespace PostApiService.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Posts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Posts_AspNetUsers_AuthorId",
+                        column: x => x.AuthorId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Posts_Categories_CategoryId",
                         column: x => x.CategoryId,
@@ -302,6 +308,11 @@ namespace PostApiService.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Posts_AuthorId",
+                table: "Posts",
+                column: "AuthorId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Posts_CategoryId",
                 table: "Posts",
                 column: "CategoryId");
@@ -343,10 +354,10 @@ namespace PostApiService.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Posts");
 
             migrationBuilder.DropTable(
-                name: "Posts");
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "Categories");

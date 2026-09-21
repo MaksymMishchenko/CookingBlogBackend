@@ -55,6 +55,7 @@ namespace PostApiService.Services
             }
 
             var postsFromDb = await queryable
+                .Include(p => p.Author)
                 .OrderByDescending(p => p.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
@@ -65,7 +66,7 @@ namespace PostApiService.Services
                     p.Slug,
                     p.Content,
                     p.Description,
-                    p.Author,
+                    AuthorName = p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
                     CategoryName = p.Category.Name,
                     CategorySlug = p.Category.Slug
                 })
@@ -89,7 +90,7 @@ namespace PostApiService.Services
                     item.Slug,
                     snippet,
                     description,
-                    item.Author,
+                    item.AuthorName,
                     item.CategoryName ?? ContentConstants.DefaultCategory,
                     item.CategorySlug ?? ContentConstants.DefaultSlugCategory
                 );

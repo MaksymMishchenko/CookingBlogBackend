@@ -11,7 +11,7 @@ namespace PostApiService.Helper
             p.Id,
             p.Title,
             p.Slug,
-            p.Author,
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
             p.Category.Name ?? ContentConstants.DefaultCategory,
             p.Category.Slug ?? ContentConstants.DefaultSlugCategory,
             p.CreatedAt,
@@ -27,7 +27,7 @@ namespace PostApiService.Helper
             p.Title,
             p.Description,
             p.Content,
-            p.Author,
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
             p.ImageUrl,
             p.Slug,
             p.MetaTitle,
@@ -41,7 +41,7 @@ namespace PostApiService.Helper
         public static Expression<Func<Post, AdminPostListDto>> ToAdminPostListDto => p => new AdminPostListDto(
             p.Id,
             p.Title,
-            p.Author,
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
             p.Slug,
             p.Category != null ? p.Category.Slug : string.Empty,
             p.CategoryId,
@@ -57,7 +57,7 @@ namespace PostApiService.Helper
                 p.Title,
                 p.Description,
                 p.Content,
-                p.Author,
+                p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
                 p.ImageUrl,
                 p.Slug,
                 p.MetaTitle,
@@ -76,7 +76,7 @@ namespace PostApiService.Helper
             p.Title,
             p.Description,
             p.Content,
-            p.Author,
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
             p.ImageUrl,
             p.Slug,
             p.MetaTitle,
@@ -87,7 +87,7 @@ namespace PostApiService.Helper
             p.UpdatedAt
         );
 
-        public static Post ToEntity(this PostCreateDto dto, string sanitizedContent)
+        public static Post ToEntity(this PostCreateDto dto, string sanitizedContent, string userId)
         {
             var title = dto.Title.StripHtml();
             var description = dto.Description.StripHtml();
@@ -97,7 +97,7 @@ namespace PostApiService.Helper
                 Title = title,
                 Description = description,
                 Content = sanitizedContent,
-                Author = dto.Author.StripHtml(),
+                AuthorId = userId,
                 ImageUrl = dto.ImageUrl,
                 Slug = dto.Slug.StripHtml(),
                 CategoryId = dto.CategoryId,
@@ -119,8 +119,7 @@ namespace PostApiService.Helper
         {
             entity.Title = dto.Title.StripHtml();
             entity.Description = dto.Description.StripHtml();
-            entity.Content = sanitizedContent;
-            entity.Author = dto.Author.StripHtml();
+            entity.Content = sanitizedContent;            
             entity.ImageUrl = dto.ImageUrl;
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId;

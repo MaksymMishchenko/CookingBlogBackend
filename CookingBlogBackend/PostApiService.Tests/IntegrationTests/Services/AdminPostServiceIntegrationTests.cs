@@ -34,7 +34,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            var matches = TestDataHelper.GetPostsWithComments(MatchCount, categories, commentCount: 0);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+
+            var matches = TestDataHelper.GetPostsWithComments(MatchCount, categories, adminIds: adminIds, commentCount: 0);
             matches.ForEach(p =>
             {
                 p.Title = $"{SearchTerm} variant {Guid.NewGuid()}";
@@ -43,7 +45,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 p.Slug = $"burger-match-{Guid.NewGuid()}";
             });
 
-            var others = TestDataHelper.GetPostsWithComments(5, categories, commentCount: 0);
+            var others = TestDataHelper.GetPostsWithComments(5, categories, adminIds: adminIds, commentCount: 0);
             others.ForEach(p =>
             {
                 p.Title = $"Generic soup recipe {Guid.NewGuid()}";
@@ -102,7 +104,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             const int ActiveCount = 5;
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            var activePosts = TestDataHelper.GetPostsWithComments(ActiveCount, categories, commentCount: 0);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var activePosts = TestDataHelper.GetPostsWithComments(ActiveCount, categories, adminIds: adminIds, commentCount: 0);
             activePosts.ForEach(p =>
             {
                 p.IsActive = true;
@@ -110,7 +113,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 p.Slug = $"active-{Guid.NewGuid()}";
             });
 
-            var inactivePosts = TestDataHelper.GetPostsWithComments(InactiveMatchCount, categories, commentCount: 0);
+            var inactivePosts = TestDataHelper.GetPostsWithComments(InactiveMatchCount, categories, adminIds: adminIds, commentCount: 0);
             inactivePosts.ForEach(p =>
             {
                 p.IsActive = false;
@@ -158,12 +161,15 @@ namespace PostApiService.Tests.IntegrationTests.Services
             await _fixture.Services!.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(25, categories, commentCount: 5);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(25, categories, adminIds: adminIds, commentCount: 5);
             posts.ForEach(p => { p.Id = 0; p.Slug = Guid.NewGuid().ToString(); });
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
             var targetPost = posts.First();
+            var targetId = targetPost.Id;
 
             var (service, _, _) = _fixture.GetScopedService<IAdminPostService>();
 
@@ -178,7 +184,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.NotNull(data);
 
             Assert.Equal(targetPost.Title, data.Title);
-            Assert.Equal(targetPost.Author, data.Author);
+            Assert.False(string.IsNullOrEmpty(data.Author));
             Assert.Equal(targetPost.Slug, data.Slug);
         }
 
@@ -243,7 +249,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             webContext.IsAdmin = true;
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 0);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: 0);
             posts.ForEach(p => { p.Id = 0; p.Slug = $"original-{Guid.NewGuid()}"; });
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -294,7 +302,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             webContext.IsAdmin = true;
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: 0);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds, commentCount: 0);
             posts.ForEach(p => { p.Id = 0; p.Slug = $"delete-target-{Guid.NewGuid()}"; });
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -333,7 +343,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             const int CommentCount = 5;
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: CommentCount);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: CommentCount);
             posts.ForEach(p => { p.Id = 0; p.Slug = $"cascade-delete-{Guid.NewGuid()}"; });
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
