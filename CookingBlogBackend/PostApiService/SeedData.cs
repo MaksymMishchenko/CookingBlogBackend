@@ -5,42 +5,11 @@ namespace PostApiService
 {
     public static class SeedData
     {
-        public static List<Post> GetPostsWithComments(int count = 10,
-            bool useNewSeed = false,
-            bool generateComments = true,
-            int commentCount = 1,
-            string[] userIds = null!,
-            bool generateIds = false)
-        {
-            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, userIds, generateIds).Generate(count);
-
-            if (generateIds)
-            {
-                int postId = 1;
-                int commentId = 1;
-
-                foreach (var post in posts)
-                {
-                    post.Id = postId++;
-
-                    if (post.Comments != null)
-                    {
-                        foreach (var comment in post.Comments)
-                        {
-                            comment.Id = commentId++;
-                            comment.PostId = post.Id;
-                        }
-                    }
-                }
-            }
-
-            return posts;
-        }
-
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             bool generateComments,
             int commentCount,
             string[] userIds = null!,
+            string[] authorIds = null!,
             bool generateIds = false)
         {
             var culinaryCategories = new[]
@@ -69,7 +38,7 @@ namespace PostApiService
                 })
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
                 .RuleFor(p => p.Category, f => f.PickRandom(culinaryCategories))
-                .RuleFor(p => p.Author, f => f.Person.FullName)
+                .RuleFor(p => p.AuthorId, f => f.PickRandom(authorIds))
                 .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(8))
@@ -107,6 +76,39 @@ namespace PostApiService
                     return allComments;
                 })
                 .UseSeed(seed);
+        }
+
+        public static List<Post> GetPostsWithComments(int count = 10,
+            bool useNewSeed = false,
+            bool generateComments = true,
+            int commentCount = 1,
+            string[] userIds = null!,
+            string[] authorIds = null!,
+            bool generateIds = false)
+        {
+            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, userIds, authorIds, generateIds).Generate(count);
+
+            if (generateIds)
+            {
+                int postId = 1;
+                int commentId = 1;
+
+                foreach (var post in posts)
+                {
+                    post.Id = postId++;
+
+                    if (post.Comments != null)
+                    {
+                        foreach (var comment in post.Comments)
+                        {
+                            comment.Id = commentId++;
+                            comment.PostId = post.Id;
+                        }
+                    }
+                }
+            }
+
+            return posts;
         }
     }
 }
