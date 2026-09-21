@@ -6,11 +6,11 @@ using PostApiService.Models.Dto.Response;
 namespace PostApiService.Tests.IntegrationTests.Services
 {
     [Collection("SharedDatabase")]
-    public class PostServiceIntegrationTests
+    public class PublicPostServiceIntegrationTests
     {
         private readonly ServiceTestFixture _fixture;
 
-        public PostServiceIntegrationTests(ServiceTestFixture fixture)
+        public PublicPostServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
         }
