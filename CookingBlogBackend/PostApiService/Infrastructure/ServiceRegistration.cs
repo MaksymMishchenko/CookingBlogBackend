@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using Bogus;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using PostApiService.Helper;
@@ -146,11 +147,9 @@ namespace PostApiService.Infrastructure
                         errorCode: RateLimitOptions.Errors.ErrorCode
                     );
 
-                    context.HttpContext.Response.ContentType = "application/json";
-
                     context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
 
-                    await context.HttpContext.Response.WriteAsJsonAsync(errorResponse, ct);
+                    await context.HttpContext.Response.WriteApiResponseAsync(errorResponse, ct);
                 };
             });
 
@@ -212,14 +211,13 @@ namespace PostApiService.Infrastructure
                     options.Events = new JwtBearerEvents
                     {
                         OnChallenge = async context =>
-                        {                            
+                        {
                             context.HandleResponse();
 
                             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
-                            context.Response.ContentType = "application/json";
-                           
+
                             var hasToken = context.Request.Headers.ContainsKey("Authorization");
-                           
+
                             var isExpired = context.AuthenticateFailure is SecurityTokenExpiredException ||
                                             (context.ErrorDescription != null && context.ErrorDescription.Contains("expired"));
 
@@ -241,22 +239,21 @@ namespace PostApiService.Infrastructure
                                 errorCode = Auth.LoginM.Errors.InvalidTokenErrorCode;
                                 message = Auth.LoginM.Errors.InvalidToken;
                             }
-                            
-                            var response = ApiResponse.CreateErrorResponse(message, errorCode: errorCode);
 
-                            await context.Response.WriteAsJsonAsync(response);
+                            var errorResponse = ApiResponse.CreateErrorResponse(message, errorCode: errorCode);
+
+                            await context.HttpContext.Response.WriteApiResponseAsync(errorResponse);
                         },
                         OnForbidden = async context =>
-                        {                            
+                        {
                             context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                            context.Response.ContentType = "application/json";
 
-                            var response = ApiResponse.CreateErrorResponse(
+                            var errorResponse = ApiResponse.CreateErrorResponse(
                                 Auth.LoginM.Errors.AccessForbidden,
                                 errorCode: Auth.LoginM.Errors.AccessForbiddenErrorCode
                             );
 
-                            await context.Response.WriteAsJsonAsync(response);
+                            await context.HttpContext.Response.WriteApiResponseAsync(errorResponse, context.HttpContext.RequestAborted);
                         }
                     };
                 });
@@ -322,6 +319,7 @@ namespace PostApiService.Infrastructure
                 if (!env.IsProduction())
                 {
                     await SeedContributorAsync(userManager, config);
+                    await SeedMultipleContributorsAsync(userManager, count: 10);
                 }
 
             }, "Identity Seeding");
@@ -337,6 +335,35 @@ namespace PostApiService.Infrastructure
                 if (!await roleManager.RoleExistsAsync(role))
                 {
                     await roleManager.CreateAsync(new IdentityRole(role));
+                }
+            }
+        }
+
+        private static async Task SeedMultipleContributorsAsync(UserManager<IdentityUser> userManager, int count = 10)
+        {
+            var faker = new Faker<IdentityUser>()
+                .RuleFor(u => u.UserName, f => f.Internet.UserName())
+                .RuleFor(u => u.Email, f => f.Internet.Email())
+                .RuleFor(u => u.EmailConfirmed, _ => true);
+
+            for (int i = 0; i < count; i++)
+            {
+                var fakeUser = faker.Generate();
+                var existing = await userManager.FindByEmailAsync(fakeUser.Email!);
+
+                if (existing == null)
+                {
+                    var result = await userManager.CreateAsync(fakeUser, "Password123!");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(fakeUser, TS.Roles.Contributor);
+                        Log.Information("--- SeedContributors [{Email}] created successfully ---", fakeUser.Email);
+                    }
+                    else
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        Log.Error("--- Extra Admin creation FAILED for [{Email}]: {Errors} ---", fakeUser.Email, errors);
+                    }
                 }
             }
         }
@@ -441,6 +468,7 @@ namespace PostApiService.Infrastructure
             {
                 var provider = scope.ServiceProvider;
                 var cntx = provider.GetRequiredService<ApplicationDbContext>();
+                var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
                 var env = provider.GetRequiredService<IWebHostEnvironment>();
 
                 if (env.IsProduction() || env.IsEnvironment("Testing")) return app;
@@ -461,12 +489,24 @@ namespace PostApiService.Infrastructure
                         return;
                     }
 
+                    var adminUsers = await userManager.GetUsersInRoleAsync(TS.Roles.Admin);
+                    var contUsers = await userManager.GetUsersInRoleAsync(TS.Roles.Contributor);
+
+                    var authorIds = adminUsers.Concat(contUsers).Select(u => u.Id).ToArray();
+
+                    if (authorIds.Length == 0)
+                    {
+                        Log.Warning("--- SeedData: No author users found! Cannot seed posts. ---");
+                        return;
+                    }
+
                     Log.Information("--- SeedData: Generating 150 posts with comments... ---");
 
                     var postsList = SeedData.GetPostsWithComments(
                         count: 150,
                         commentCount: 10,
-                        userIds: userIds);
+                        userIds: userIds,
+                        authorIds: authorIds);
 
                     await cntx.Posts.AddRangeAsync(postsList);
                     await cntx.SaveChangesAsync();
