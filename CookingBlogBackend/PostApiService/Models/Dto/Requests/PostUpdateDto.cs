@@ -11,10 +11,7 @@ namespace PostApiService.Models.Dto.Requests
         public string Description { get; init; } = default!;
 
         [Required(ErrorMessage = Global.Validation.Required)]
-        public string Content { get; init; } = default!;
-
-        [Required(ErrorMessage = Global.Validation.Required)]
-        public string Author { get; init; } = default!;
+        public string Content { get; init; } = default!;        
 
         [Required(ErrorMessage = Global.Validation.Required)]
         [Url(ErrorMessage = Global.Validation.InvalidUrl)]

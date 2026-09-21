@@ -48,7 +48,9 @@ namespace PostApiService.Tests.IntegrationTests
             await _services.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(3, categories);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds);
             posts[0].IsActive = false;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -75,7 +77,8 @@ namespace PostApiService.Tests.IntegrationTests
             var categories = TestDataHelper.GetCulinaryCategories();
             const string Term = "pizza";
 
-            var posts = TestDataHelper.GetPostsWithComments(2, categories);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(2, categories, adminIds: adminIds);
             posts[0].Title = $"Best {Term} recipe";
             posts[0].IsActive = true;
             posts[1].Title = "Just a salad";
@@ -111,7 +114,8 @@ namespace PostApiService.Tests.IntegrationTests
             const int lastId = 0;
             const int PageSize = 5;
 
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: TotalComments);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: TotalComments);
             posts[0].IsActive = true;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -179,7 +183,7 @@ namespace PostApiService.Tests.IntegrationTests
             await _services.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
@@ -205,7 +209,7 @@ namespace PostApiService.Tests.IntegrationTests
             await _services.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
             var expectedPost = posts.First();
@@ -240,7 +244,8 @@ namespace PostApiService.Tests.IntegrationTests
             var categories = TestDataHelper.GetCulinaryCategories();
             var category = categories.First();
 
-            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, forcedCategory: category);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, adminIds: adminIds, forcedCategory: category);
             var inactivePost = posts.First();
 
             inactivePost.IsActive = false;

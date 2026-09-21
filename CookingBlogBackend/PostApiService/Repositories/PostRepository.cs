@@ -56,5 +56,12 @@
         {
             return await _dbSet.AnyAsync(p => p.Id == postId && p.IsActive, ct);
         }
+
+        public async Task<Post?> GetByIdWithAuthorsAsync(int id, CancellationToken ct = default)
+        {
+            return await _dbSet
+                .Include(p => p.Author)                
+                .FirstOrDefaultAsync(p => p.Id == id, ct);
+        }
     }
 }

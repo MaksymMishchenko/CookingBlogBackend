@@ -86,7 +86,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             const string HackCode = "Test comment content<script>Hack code</script>";
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
@@ -177,7 +177,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             _fixture.LoginAsContributor();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
@@ -248,7 +248,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             _fixture.LoginAsContributor();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 

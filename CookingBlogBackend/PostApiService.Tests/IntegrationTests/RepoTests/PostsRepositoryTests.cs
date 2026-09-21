@@ -28,7 +28,8 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            var activePosts = TestDataHelper.GetPostsWithComments(5, categories, commentCount: 1);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var activePosts = TestDataHelper.GetPostsWithComments(5, categories, adminIds: adminIds, commentCount: 1);
             activePosts.ForEach(p => { p.IsActive = true; p.Id = 0; });
 
             activePosts[0].Title = "This is a SpecialQuery item";
@@ -36,7 +37,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
 
             activePosts[1].Category = categories.First(c => c.Slug == "desserts");
 
-            var inactivePosts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 0);
+            var inactivePosts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: 0);
             inactivePosts.ForEach(p =>
             {
                 p.IsActive = false;
@@ -71,11 +72,13 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
             const string Query = "soups";
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: 0);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds, commentCount: 0);
 
             posts[0].Title = $"Best {Query} for winter";
             posts[0].IsActive = true;
@@ -111,51 +114,17 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             });
         }
 
-        //[Fact]
-        //public async Task GetAdminFilteredPosts_ShouldFilterByCategoryIdAndActiveStatus_WhenParametersProvided()
-        //{
-        //    // Arrange
-        //    await _fixture.ResetDatabaseAsync();
-
-        //    var categories = TestDataHelper.GetCulinaryCategories();                        
-
-        //    var posts = TestDataHelper.GetPostsWithComments(2, categories, commentCount: 0);
-
-        //    posts[0].Title = "Admin Tech Post";
-        //    posts[0].IsActive = true;
-        //    posts[0].CategoryId = 1;
-        //    posts[0].Category = categories[0];
-        //    posts[0].Id = 0;
-
-        //    posts[1].Title = "Admin Life Post";
-        //    posts[1].IsActive = true;
-        //    posts[1].CategoryId = 2;
-        //    posts[1].Category = categories[1];
-        //    posts[1].Id = 0;
-
-        //    await _fixture.Services!.SeedBlogDataAsync(posts, categories);
-
-        //    // Act
-        //    using var scope = _fixture.Services!.CreateScope();
-        //    var repo = scope.ServiceProvider.GetRequiredService<IPostRepository>();
-
-        //    var result = repo.GetAdminFilteredAndSortedPosts(search: null, onlyActive: true, categoryId: 1).ToList();
-
-        //    // Assert
-        //    Assert.Single(result);
-        //    Assert.Equal("Admin Tech Post", result[0].Title);
-        //    Assert.Equal(1, result[0].CategoryId);
-        //}
-
         [Fact]
         public async Task GetAdminFilteredAndSortedPosts_ShouldFilterAndSortCorrectly_WhenParametersProvided()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            var posts = TestDataHelper.GetPostsWithComments(3, categories, commentCount: 0);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds, commentCount: 0);
 
             posts[0].Title = "B Post";
             posts[0].IsActive = true;
@@ -196,6 +165,39 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
             Assert.Equal(2, result.Count);
             Assert.Equal("A Post", result[0].Title);
             Assert.Equal("B Post", result[1].Title);
+        }
+
+        [Fact]
+        public async Task GetByIdWithAuthorsAsync_ShouldReturnPostWithAuthor_WhenPostExists()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            string[] adminIds = new[] { TestUserData.AdminId };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: 0);
+
+            posts[0].Title = "Post with Author Test";
+            posts[0].IsActive = true;
+            posts[0].Id = 0;
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            using var arrangeScope = _fixture.Services!.CreateScope();
+            var arrangeRepo = arrangeScope.ServiceProvider.GetRequiredService<IPostRepository>();
+            var createdPost = arrangeRepo.GetAdminFilteredAndSortedPosts(null, null, null, null, null).First();
+
+            // Act       
+            using var actScope = _fixture.Services!.CreateScope();
+            var actRepo = actScope.ServiceProvider.GetRequiredService<IPostRepository>();
+            var result = await actRepo.GetByIdWithAuthorsAsync(createdPost.Id);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.Equal("Post with Author Test", result.Title);
+            Assert.NotNull(result.Author);
+            Assert.Equal(TestUserData.AdminId, result.Author.Id);
         }
     }
 }

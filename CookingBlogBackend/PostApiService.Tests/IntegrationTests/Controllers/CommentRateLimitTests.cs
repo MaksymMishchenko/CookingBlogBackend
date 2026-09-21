@@ -31,7 +31,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             _fixture.LoginAsContributor2();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
@@ -67,7 +67,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             _fixture.LoginAsAdmin();
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(categories);
+            var posts = TestDataHelper.GetPostsWithComments(categories, authorId: TestUserData.AdminId);
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
             var postId = posts.First().Id;

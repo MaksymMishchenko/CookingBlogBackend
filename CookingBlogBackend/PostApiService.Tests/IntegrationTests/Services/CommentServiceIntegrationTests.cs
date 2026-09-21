@@ -6,11 +6,11 @@ namespace PostApiService.Tests.IntegrationTests.Services
     [Collection("SharedDatabase")]
     public class CommentServiceIntegrationTests
     {
-        private readonly ServiceTestFixture _fixture;        
+        private readonly ServiceTestFixture _fixture;
 
         public CommentServiceIntegrationTests(ServiceTestFixture fixture)
         {
-            _fixture = fixture;            
+            _fixture = fixture;
         }
 
         [Fact]
@@ -28,7 +28,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 0)
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: 0)
                 .WithCommentHierarchy(commentCount: TotalCommentsInHierarchy, userId: TestUserData.AdminId);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -75,7 +76,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             webContext.UserName = TestUserData.AdminUserName;
             webContext.IsAdmin = true;
 
-            var posts = TestDataHelper.GetPostsWithComments(1, TestDataHelper.GetCulinaryCategories(), commentCount: 0);
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, TestDataHelper.GetCulinaryCategories(), adminIds: adminIds, commentCount: 0);
             await _fixture.Services!.SeedBlogDataAsync(posts, new List<Category>());
             int postId = (await dbContext.Posts.FirstAsync()).Id;
 
@@ -112,7 +114,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             webContext.IsAdmin = true;
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 1);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: 1);
             posts.First().Comments.First().UserId = TestUserData.AdminId;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -144,7 +148,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
-            await _fixture.Services!.SeedDefaultUsersAsync();                      
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
             var (commentService, dbContext, webContext) = _fixture.GetScopedService<ICommentService>();
             webContext.UserId = TestUserData.AdminId;
@@ -152,7 +156,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             webContext.IsAdmin = true;
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: 1);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: 1);
             posts.First().Comments.First().UserId = TestUserData.AdminId;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -187,7 +193,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             webContext.IsAdmin = true;
 
             var categories = TestDataHelper.GetCulinaryCategories();
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, commentCount: ExpectedCommentsCount);
+
+            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: ExpectedCommentsCount);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
             int postId = posts[0].Id;
