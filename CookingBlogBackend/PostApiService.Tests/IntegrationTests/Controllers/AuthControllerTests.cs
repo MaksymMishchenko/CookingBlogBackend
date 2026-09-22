@@ -91,7 +91,10 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
         [InlineData(TestUserData.ContributorUserName, TestUserData.ContributorPassword)]
         public async Task OnLogin_ShouldAuthenticateUser_GenerateTokenSuccessfully(string userName, string password)
         {
-            // Arrange            
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services!.SeedDefaultUsersAsync();
+
             var loginUser = new LoginUserDto { UserName = userName, Password = password };
             var url = Authentication.Login;
 
@@ -109,6 +112,63 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             var tokenParts = loginResult.Data.Token.Split('.');
             Assert.Equal(3, tokenParts.Length);
+        }
+
+        [Fact]
+        public async Task GetAuthors_ShouldReturnUnauthorized_WhenUserIsNotAuthenticated()
+        {
+            // Arrange            
+            _client!.DefaultRequestHeaders.Remove(TestUserData.TestUserHeader);
+            var url = Authentication.Authors;
+
+            // Act
+            var response = await _client!.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetAuthors_ShouldReturnForbidden_WhenUserIsNotAdmin()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services!.SeedDefaultUsersAsync();
+
+            _fixture.LoginAsContributor();
+            var url = Authentication.Authors;
+
+            // Act
+            var response = await _client!.GetAsync(url);
+
+            // Assert
+            Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task GetAuthors_ShouldReturnAuthorsList_WhenUserIsAdmin()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _services!.SeedDefaultUsersAsync();
+
+            _fixture.LoginAsAdmin();
+            var url = Authentication.Authors;
+
+            // Act
+            var response = await _client!.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var result = await response.Content.ReadFromJsonAsync<ApiResponse<List<AuthorsDto>>>();
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(result.Success);
+            Assert.Equal(Auth.AdminM.Success.ContributorsRetrievedSuccessfully, result.Message);
+            Assert.NotNull(result.Data);
+            Assert.NotEmpty(result.Data);
+
+            Assert.Contains(result.Data, a => a.UserName == TestUserData.AdminUserName);
         }
     }
 }

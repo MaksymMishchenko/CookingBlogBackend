@@ -68,5 +68,33 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.NotNull(data.Value!.Token);
             Assert.Equal(loginDto.UserName, data.Value!.UserName);
         }
+
+        [Fact]
+        public async Task GetAuthorsAsync_ShouldReturnAuthors_WhenAuthorsExist()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedAdminAsync();
+
+            var (service, _, _) = _fixture.GetScopedService<IAuthService>();
+
+            // Act
+            var result = await service.GetAuthorsAsync();
+
+            // Assert
+            var data = Assert.IsType<Result<List<AuthorsDto>>>(result);
+
+            Assert.True(data.IsSuccess);
+            Assert.Equal(ResultStatus.Success, data.Status);
+            Assert.NotNull(data.Value);
+            Assert.NotEmpty(data.Value);
+            
+            var adminDto = data.Value.FirstOrDefault();
+            Assert.NotNull(adminDto);
+            Assert.False(string.IsNullOrEmpty(adminDto.Id));
+            Assert.False(string.IsNullOrEmpty(adminDto.UserName));
+
+            Assert.Equal(Auth.AdminM.Success.ContributorsRetrievedSuccessfully, data.Message);
+        }
     }
 }

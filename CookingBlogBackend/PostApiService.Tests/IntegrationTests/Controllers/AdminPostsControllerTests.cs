@@ -38,12 +38,12 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             bool? categorySlugStatus = null;
             const string DefaultSortBy = "createdAt";
             const string DefaultSortDirection = "desc";
-            bool? onlyActiveStatus = null;            
+            bool? onlyActiveStatus = null;
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(count: TotalCount, categories, adminIds: adminIds);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(count: TotalCount, categories, authorIds: authorIds);
 
             posts.First().IsActive = false;
 
@@ -60,7 +60,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.NotNull(content);
             Assert.Equal(TotalCount, content.TotalCount);
 
-            Assert.Contains(content.Data!, dto => dto.IsActive == false);            
+            Assert.Contains(content.Data!, dto => dto.IsActive == false);
 
             var dates = content.Data!.Select(d => d.CreatedAt).ToList();
             var sortedDates = dates.OrderByDescending(d => d).ToList();
@@ -146,7 +146,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             Assert.Equal(realId, content.Data.Id);
             Assert.Equal(expectedPost!.Title, data.Title);
             Assert.Equal(expectedPost.Description, data.Description);
-            Assert.Equal(expectedPost.MetaTitle, data.MetaTitle);            
+            Assert.Equal(expectedPost.MetaTitle, data.MetaTitle);
             Assert.Equal(expectedPost.Category.Id, data.CategoryId);
         }
 
@@ -182,7 +182,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var invalidPostDto = new PostCreateDto
             {
                 Title = "",
-                Content = "Valid content"                
+                Content = "Valid content"
             };
 
             // Act
@@ -260,7 +260,7 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
             var invalidPost = new PostUpdateDto
             {
                 Title = "Valid Title",
-                Content = ""                
+                Content = ""
             };
 
             var url = string.Format(Posts.GetById, postId);
@@ -432,8 +432,8 @@ namespace PostApiService.Tests.IntegrationTests.Controllers
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, adminIds: adminIds, commentCount: 3);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, authorIds: authorIds, commentCount: 3);
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
