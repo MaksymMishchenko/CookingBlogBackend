@@ -9,14 +9,14 @@ namespace PostApiService.Tests.Helper
     {
         public static List<Post> GetPostsWithComments(int count,
             ICollection<Category>? categories,
-            string[] adminIds,
+            string[] authorIds,
             bool useNewSeed = false,
             bool generateComments = true,
             int commentCount = 1,
             bool generateIds = false,
             Category? forcedCategory = null)
         {
-            var posts = GetPostFaker(useNewSeed, categories!, adminIds, generateComments, commentCount, generateIds, forcedCategory).Generate(count);
+            var posts = GetPostFaker(useNewSeed, categories!, authorIds, generateComments, commentCount, generateIds, forcedCategory).Generate(count);
 
             if (generateIds)
             {
@@ -44,7 +44,7 @@ namespace PostApiService.Tests.Helper
 
         private static Faker<Post> GetPostFaker(bool useNewSeed,
             ICollection<Category> categories,
-            string[] adminIds,
+            string[] authorIds,
             bool generateComments,
             int commentCount,
             bool generateIds,
@@ -62,7 +62,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
                 .RuleFor(p => p.Category, f => forcedCategory ?? f.PickRandom(categories))
-                .RuleFor(p => p.AuthorId, f => f.PickRandom(adminIds))
+                .RuleFor(p => p.AuthorId, f => f.PickRandom(authorIds))
                 .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))

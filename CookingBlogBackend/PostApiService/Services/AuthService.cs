@@ -99,22 +99,22 @@ namespace PostApiService.Services
             var createResult = await _authRepository.CreateAsync(identityUser, userDto.Password, ct);
 
             if (!createResult.Succeeded)
-            {                               
+            {
                 var errors = createResult.Errors
                     .GroupBy(e => e.Code.Contains("Password") ? "Password" : "Registration")
                     .ToDictionary(
                         g => g.Key,
                         g => g.Select(e => e.Description).ToArray()
                     );
-               
+
                 var errorCodes = string.Join(", ", createResult.Errors.Select(e => e.Code));
                 var rawErrorMsg = string.Join(", ", createResult.Errors.Select(e => e.Description));
 
                 Log.Warning(Authentication.RegistrationFailed, userDto.Email, errorCodes, rawErrorMsg);
-                
+
                 return Invalid<RegisteredUserDto>(
                     Auth.Registration.Errors.DefaultRegistrationError,
-                    errors,                                            
+                    errors,
                     Auth.Registration.Errors.DefaultRegistrationErrorCode
                 );
             }
@@ -159,5 +159,19 @@ namespace PostApiService.Services
 
             return Success(responseDto, Auth.LoginM.Success.LoginSuccess);
         }
+
+        /// <summary>
+        /// Retrieves all Admin and Contributor role users and projects them into lightweight DTOs.
+        /// </summary>
+        public async Task<Result<List<AuthorsDto>>> GetAuthorsAsync(CancellationToken ct = default)
+        {
+            var adminUsers = await _authRepository.GetAuthorsAsync(ct);
+
+            var adminDtos = adminUsers
+                .Select(u => new AuthorsDto(u.Id, u.UserName!))
+                .ToList();
+
+            return Success(adminDtos, Auth.AdminM.Success.ContributorsRetrievedSuccessfully);
+        }        
     }
 }

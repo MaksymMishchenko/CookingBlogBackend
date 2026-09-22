@@ -7,7 +7,10 @@ namespace PostApiService.Interfaces
     {
         Task<Result<RegisteredUserDto>> RegisterUserAsync(
             RegisterUserDto userDto, CancellationToken ct = default);
+
         Task<Result<LoggedInUserDto>> AuthenticateAsync(LoginUserDto credentials,
             CancellationToken ct = default);
+
+        Task<Result<List<AuthorsDto>>> GetAuthorsAsync(CancellationToken ct = default);
     }
 }
