@@ -1,15 +1,19 @@
-﻿using System.Security.Claims;
+﻿using PostApiService.Models.TypeSafe;
+using System.Security.Claims;
 
 namespace PostApiService.Repositories
 {
     public class AuthRepository : IAuthRepository
     {
-        private readonly UserManager<IdentityUser> _userManager;        
+        private readonly UserManager<IdentityUser> _userManager;
+        private readonly ApplicationDbContext _context;
 
         public AuthRepository(UserManager<IdentityUser> userManager,
+            ApplicationDbContext context,
             IHttpContextAccessor httpContextAccessor)
         {
-            _userManager = userManager;            
+            _userManager = userManager;
+            _context = context;
         }
 
         public async Task<IdentityResult> AddClaimAsync(IdentityUser user,
@@ -48,6 +52,19 @@ namespace PostApiService.Repositories
         public async Task<IList<string>> GetRolesAsync(IdentityUser user, CancellationToken ct = default)
         {
             return await _userManager.GetRolesAsync(user);
-        }        
+        }
+
+        public async Task<List<IdentityUser>> GetAuthorsAsync(CancellationToken ct = default)
+        {
+            var targetRoles = new[] { TS.Roles.Admin, TS.Roles.Contributor };
+
+            return await _context.Users
+                .Join(_context.UserRoles, user => user.Id, userRole => userRole.UserId, (user, userRole) => new { user, userRole })
+                .Join(_context.Roles, x => x.userRole.RoleId, role => role.Id, (x, role) => new { x.user, role })
+                .Where(x => targetRoles.Contains(x.role.Name))
+                .Select(x => x.user)
+                .Distinct()
+                .ToListAsync(ct);
+        }
     }
 }

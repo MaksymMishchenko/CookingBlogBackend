@@ -30,12 +30,12 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var active = TestDataHelper.GetPostsWithComments(ActiveCount, categories, adminIds: adminIds, commentCount: ExpectedCommentCountPerPost);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var active = TestDataHelper.GetPostsWithComments(ActiveCount, categories, authorIds: authorIds, commentCount: ExpectedCommentCountPerPost);
 
             active.ForEach(p => { p.IsActive = true; p.Id = 0; });
 
-            var inactive = TestDataHelper.GetPostsWithComments(InactiveCount, categories, adminIds: adminIds, commentCount: 0);
+            var inactive = TestDataHelper.GetPostsWithComments(InactiveCount, categories, authorIds: authorIds, commentCount: 0);
             inactive.ForEach(p =>
             {
                 p.IsActive = false;
@@ -100,8 +100,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var matches = TestDataHelper.GetPostsWithComments(MatchCount, categories, adminIds: adminIds, commentCount: 0);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var matches = TestDataHelper.GetPostsWithComments(MatchCount, categories, authorIds: authorIds, commentCount: 0);
             matches.ForEach(p =>
             {
                 p.Title = $"{SearchTerm} title {Guid.NewGuid()}";
@@ -110,7 +110,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 p.Id = 0;
             });
 
-            var others = TestDataHelper.GetPostsWithComments(5, categories, adminIds: adminIds, commentCount: 0);
+            var others = TestDataHelper.GetPostsWithComments(5, categories, authorIds: authorIds, commentCount: 0);
             others.ForEach(p =>
             {
                 p.Title = $"Regular healthy salad {Guid.NewGuid()}";
@@ -150,7 +150,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.NotEmpty(item.SearchSnippet!);
                 Assert.Contains(SearchTerm, item.SearchSnippet!.ToLower());
             });
-        }        
+        }
 
         [Fact]
         public async Task GetPostBySlugAsync_ShouldReturnSuccess_IfPostExistsInDbAndIsActive()
@@ -162,8 +162,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             const int ExpectedCommentCount = 5;
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds, commentCount: ExpectedCommentCount);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, authorIds: authorIds, commentCount: ExpectedCommentCount);
 
             posts.ForEach(p =>
             {
@@ -199,6 +199,6 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(targetPost.Category.Slug, data.CategorySlug);
             Assert.Equal(targetPost.Category.Name, data.Category);
             Assert.Equal(ExpectedCommentCount, data.CommentCount);
-        }        
+        }
     }
 }

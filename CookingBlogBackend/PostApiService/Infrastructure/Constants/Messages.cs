@@ -99,7 +99,15 @@
 
                 public static class Success
                 {
-                    public const string LoginSuccess = "User logged in successfully";
+                    public const string LoginSuccess = "User logged in successfully";                    
+                }                
+            }
+
+            public static class AdminM
+            {
+                public static class Success
+                {
+                    public const string ContributorsRetrievedSuccessfully = "Contributor users retrieved successfully.";
                 }
             }
 

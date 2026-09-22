@@ -49,8 +49,8 @@ namespace PostApiService.Tests.IntegrationTests
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(3, categories, adminIds: adminIds);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(3, categories, authorIds: authorIds);
             posts[0].IsActive = false;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -77,8 +77,8 @@ namespace PostApiService.Tests.IntegrationTests
             var categories = TestDataHelper.GetCulinaryCategories();
             const string Term = "pizza";
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(2, categories, adminIds: adminIds);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(2, categories, authorIds: authorIds);
             posts[0].Title = $"Best {Term} recipe";
             posts[0].IsActive = true;
             posts[1].Title = "Just a salad";
@@ -114,8 +114,8 @@ namespace PostApiService.Tests.IntegrationTests
             const int lastId = 0;
             const int PageSize = 5;
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(1, categories, adminIds: adminIds, commentCount: TotalComments);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, authorIds: authorIds, commentCount: TotalComments);
             posts[0].IsActive = true;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
@@ -244,8 +244,8 @@ namespace PostApiService.Tests.IntegrationTests
             var categories = TestDataHelper.GetCulinaryCategories();
             var category = categories.First();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, adminIds: adminIds, forcedCategory: category);
+            string[] authorIds = new[] { TestUserData.AdminId };
+            var posts = TestDataHelper.GetPostsWithComments(count: 1, categories, authorIds: authorIds, forcedCategory: category);
             var inactivePost = posts.First();
 
             inactivePost.IsActive = false;

@@ -27,7 +27,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockCategoryService = Substitute.For<ICategoryService>();
             _adminPostService = new AdminPostService(_mockRepository,
                 _mockWebContext, _mockSanitizationService, _mockCategoryService);
-        }        
+        }
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_ShouldReturnUnauthorized_WhenUserIdIsEmpty()
@@ -131,9 +131,9 @@ namespace PostApiService.Tests.UnitTests.Services
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
             var posts = TestDataHelper.GetPostsWithComments(
-                count: PostCount, categories, adminIds: adminIds, commentCount: ExpectedCommentCount, generateIds: true);
+                count: PostCount, categories, authorIds: authorIds, commentCount: ExpectedCommentCount, generateIds: true);
             var testPost = posts.First();
             testPost.IsActive = true;
 
@@ -209,8 +209,8 @@ namespace PostApiService.Tests.UnitTests.Services
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] adminIds = new[] { TestUserData.AdminId, TestUserData.Admin2Id };
-            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, adminIds: adminIds, generateComments: false, generateIds: true);
+            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 5, categories, authorIds: authorIds, generateComments: false, generateIds: true);
 
             var expectedPost = testPosts.First(p => p.Id == postId);
 
