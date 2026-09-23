@@ -709,14 +709,19 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.sendRequest({\r\n    url: pm.environment.get(\"baseUrl\") + \"/api/Auth/Authors\",\r\n    method: 'GET',\r\n    header: {\r\n        'Authorization': 'Bearer ' + pm.environment.get(\"jwtToken\"),\r\n        'Content-Type': 'application/json'\r\n    }\r\n}, function (res) {\r\n    if (res.code === 200) {\r\n        var responseData = res.json();\r\n        var authors = Array.isArray(responseData) ? responseData : (responseData.value || responseData.data || responseData.items);\r\n        \r\n        if (authors && authors.length > 0) {\r\n            var authorId = authors[0].id || authors[0].userId;\r\n            pm.environment.set(\"dynamic_author_id\", authorId);            \r\n        }\r\n    }\r\n});"
+                ]
               }
             }
           ],
@@ -734,7 +739,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categoryId=1&onlyActive=true&pageNumber=1&pageSize=10&sortBy=title&sortDirection=asc",
+              "raw": "{{baseUrl}}/api/admin/posts?search=lorem&categoryId=1&onlyActive=true&pageNumber=1&pageSize=10&sortBy=title&sortDirection=asc&authorId={{dynamic_author_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -771,6 +776,10 @@
                 {
                   "key": "sortDirection",
                   "value": "asc"
+                },
+                {
+                  "key": "authorId",
+                  "value": "{{dynamic_author_id}}"
                 }
               ]
             }
