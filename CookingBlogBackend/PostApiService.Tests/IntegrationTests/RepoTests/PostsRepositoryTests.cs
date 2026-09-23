@@ -123,29 +123,42 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
-            string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
-            var posts = TestDataHelper.GetPostsWithComments(3, categories, authorIds: authorIds, commentCount: 0);
-
-            posts[0].Title = "B Post";
+            string targetAuthorId = TestUserData.ContributorId;
+            string otherAuthorId = TestUserData.AdminId;
+            
+            var posts = TestDataHelper.GetPostsWithComments(4, categories, authorIds: new[] { targetAuthorId, otherAuthorId }, commentCount: 0);
+           
+            posts[0].Title = "B Post by Target Author";
             posts[0].IsActive = true;
             posts[0].CategoryId = 1;
             posts[0].Category = categories[0];
+            posts[0].AuthorId = targetAuthorId;
             posts[0].CreatedAt = DateTime.UtcNow.AddDays(-2);
             posts[0].Id = 0;
-
-            posts[1].Title = "A Post";
+            
+            posts[1].Title = "A Post by Target Author";
             posts[1].IsActive = true;
             posts[1].CategoryId = 1;
             posts[1].Category = categories[0];
+            posts[1].AuthorId = targetAuthorId;
             posts[1].CreatedAt = DateTime.UtcNow.AddDays(-1);
             posts[1].Id = 0;
-
-            posts[2].Title = "C Post";
+            
+            posts[2].Title = "Draft Post by Target Author";
             posts[2].IsActive = false;
             posts[2].CategoryId = 1;
             posts[2].Category = categories[0];
+            posts[2].AuthorId = targetAuthorId;
             posts[2].CreatedAt = DateTime.UtcNow;
             posts[2].Id = 0;
+            
+            posts[3].Title = "Post by Other Author";
+            posts[3].IsActive = true;
+            posts[3].CategoryId = 1;
+            posts[3].Category = categories[0];
+            posts[3].AuthorId = otherAuthorId;
+            posts[3].CreatedAt = DateTime.UtcNow;
+            posts[3].Id = 0;
 
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
@@ -158,13 +171,17 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
                 onlyActive: true,
                 categoryId: 1,
                 sortBy: "title",
-                sortDirection: "asc"
+                sortDirection: "asc",
+                authorId: targetAuthorId
             ).ToList();
 
             // Assert
             Assert.Equal(2, result.Count);
-            Assert.Equal("A Post", result[0].Title);
-            Assert.Equal("B Post", result[1].Title);
+            Assert.Equal("A Post by Target Author", result[0].Title);
+            Assert.Equal("B Post by Target Author", result[1].Title);
+            
+            Assert.All(result, p => Assert.Equal(targetAuthorId, p.AuthorId));
+            Assert.All(result, p => Assert.True(p.IsActive));
         }
 
         [Fact]
@@ -186,7 +203,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
 
             using var arrangeScope = _fixture.Services!.CreateScope();
             var arrangeRepo = arrangeScope.ServiceProvider.GetRequiredService<IPostRepository>();
-            var createdPost = arrangeRepo.GetAdminFilteredAndSortedPosts(null, null, null, null, null).First();
+            var createdPost = arrangeRepo.GetAdminFilteredAndSortedPosts(null, null, null, null, null, null).First();
 
             // Act       
             using var actScope = _fixture.Services!.CreateScope();
