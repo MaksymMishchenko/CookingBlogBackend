@@ -56,7 +56,8 @@ namespace PostApiService.Services
                 postQuery.OnlyActive,
                 postQuery.CategoryId,
                 postQuery.SortBy,
-                postQuery.SortDirection
+                postQuery.SortDirection,
+                postQuery.AuthorId
             );
 
             var appliedFilters = new AppliedFilters(

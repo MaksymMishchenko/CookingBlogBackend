@@ -6,10 +6,12 @@
 
         public int? CategoryId { get; set; }
 
+        public string? AuthorId { get; set; }
+
         public string? SortBy { get; set; }
 
         public string? SortDirection { get; set; }
 
-        public AdminPostQueryDto ToDto() => new(Search, CategoryId, PageNumber, PageSize, SortBy, SortDirection, OnlyActive);
+        public AdminPostQueryDto ToDto() => new(Search, CategoryId, AuthorId, PageNumber, PageSize, SortBy, SortDirection, OnlyActive);
     }
 }

@@ -12,7 +12,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public AdminPostServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
-        }
+        }        
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_SearchMode_ShouldReturnCorrectAdminDtos()
@@ -65,7 +65,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 PageSize: ExpectedPageSize,
                 SortBy: null,
                 SortDirection: null,
-                OnlyActive: null
+                OnlyActive: null,
+                AuthorId: null
             );
 
             // Act
@@ -87,7 +88,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.True(item.CategoryId > 0);
                 Assert.NotNull(item.CategoryName);
             });
-        }
+        }        
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_FilterByInactive_ReturnsOnlyInactivePosts()
@@ -131,7 +132,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 PageSize: 10,
                 SortBy: null,
                 SortDirection: null,
-                OnlyActive: false
+                OnlyActive: false,
+                AuthorId: null
             );
 
             // Act

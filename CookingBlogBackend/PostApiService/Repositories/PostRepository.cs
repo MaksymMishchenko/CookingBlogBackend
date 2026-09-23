@@ -33,12 +33,15 @@
             return query.OrderByDescending(p => p.CreatedAt);
         }
         public IQueryable<Post> GetAdminFilteredAndSortedPosts
-            (string? search, bool? onlyActive, int? categoryId, string? sortBy, string? sortDirection)
+            (string? search, bool? onlyActive, int? categoryId, string? sortBy, string? sortDirection, string? authorId)
         {
             var query = ApplyCommonFilters(search, onlyActive);
 
             if (categoryId.HasValue)
-                query = query.Where(p => p.CategoryId == categoryId.Value);           
+                query = query.Where(p => p.CategoryId == categoryId.Value);
+
+            if (!string.IsNullOrWhiteSpace(authorId))
+                query = query.Where(p => p.AuthorId == authorId);
 
             query = (sortBy, sortDirection?.ToLower()) switch
             {
