@@ -5,7 +5,6 @@ namespace PostApiService.Tests.Infrastructure
     public static class SharedDbContainer
     {
         private static readonly PostgreSqlContainer _container = new PostgreSqlBuilder("postgres:15-alpine")            
-            //.WithReuse(true)
             .Build();
 
         private static readonly Lazy<Task> _initializer = new(() => _container.StartAsync());
