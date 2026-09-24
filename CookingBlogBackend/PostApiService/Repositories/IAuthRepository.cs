@@ -16,8 +16,6 @@ namespace PostApiService.Repositories
 
         Task<IList<string>> GetRolesAsync(IdentityUser user, CancellationToken ct = default);
 
-        Task<bool> CheckPasswordAsync(IdentityUser user, string password, CancellationToken ct = default);
-
-        Task<List<IdentityUser>> GetAuthorsAsync(CancellationToken ct = default);
+        Task<bool> CheckPasswordAsync(IdentityUser user, string password, CancellationToken ct = default);        
     }
 }

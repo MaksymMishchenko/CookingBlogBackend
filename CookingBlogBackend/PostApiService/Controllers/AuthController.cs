@@ -1,6 +1,5 @@
 ﻿using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
-using PostApiService.Models.TypeSafe;
 
 namespace PostApiService.Controllers
 {
@@ -37,18 +36,6 @@ namespace PostApiService.Controllers
             CancellationToken ct = default)
         {
             var result = await _authService.AuthenticateAsync(credentials, ct);
-
-            return result.ToActionResult();
-        }
-
-        /// <summary>
-        /// Retrieves all users for filtering purposes.
-        /// </summary>
-        [Authorize(Roles = TS.Roles.Admin)]
-        [HttpGet("Authors")]
-        public async Task<IActionResult> GetContributorAuthors(CancellationToken ct = default)
-        {
-            var result = await _authService.GetAuthorsAsync(ct);
 
             return result.ToActionResult();
         }

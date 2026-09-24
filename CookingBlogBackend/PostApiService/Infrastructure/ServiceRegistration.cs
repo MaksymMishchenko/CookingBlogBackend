@@ -52,6 +52,7 @@ namespace PostApiService.Infrastructure
 
             services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
             services.AddScoped<IAuthRepository, AuthRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IPostRepository, PostRepository>();
             services.AddScoped<ICategoryRepository, CategoryRepository>();
             services.AddScoped<ICommentRepository, CommentRepository>();
@@ -60,6 +61,7 @@ namespace PostApiService.Infrastructure
             services.AddHttpContextAccessor();
 
             services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
             services.AddScoped<IPublicPostService, PublicPostService>();

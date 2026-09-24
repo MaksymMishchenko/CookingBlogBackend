@@ -9,8 +9,6 @@ namespace PostApiService.Interfaces
             RegisterUserDto userDto, CancellationToken ct = default);
 
         Task<Result<LoggedInUserDto>> AuthenticateAsync(LoginUserDto credentials,
-            CancellationToken ct = default);
-
-        Task<Result<List<AuthorsDto>>> GetAuthorsAsync(CancellationToken ct = default);
+            CancellationToken ct = default);     
     }
 }

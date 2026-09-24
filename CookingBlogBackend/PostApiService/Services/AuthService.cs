@@ -158,20 +158,6 @@ namespace PostApiService.Services
             var responseDto = token.ToLoggedInUserDto(user.UserName!);
 
             return Success(responseDto, Auth.LoginM.Success.LoginSuccess);
-        }
-
-        /// <summary>
-        /// Retrieves all Admin and Contributor role users and projects them into lightweight DTOs.
-        /// </summary>
-        public async Task<Result<List<AuthorsDto>>> GetAuthorsAsync(CancellationToken ct = default)
-        {
-            var adminUsers = await _authRepository.GetAuthorsAsync(ct);
-
-            var adminDtos = adminUsers
-                .Select(u => new AuthorsDto(u.Id, u.UserName!))
-                .ToList();
-
-            return Success(adminDtos, Auth.AdminM.Success.ContributorsRetrievedSuccessfully);
-        }        
+        }                
     }
 }
