@@ -75,6 +75,14 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped(_ => tokenServiceMock);
 
+        services.RemoveAll(typeof(IUserService));
+        var userServiceMock = Substitute.For<IUserService>();
+        
+        userServiceMock.GetAdminAndContributorUsersAsync(Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(Result<List<AuthorsDto>>.Success(new List<AuthorsDto>(), "Success")));
+
+        services.AddScoped(_ => userServiceMock);
+
         return services;
     }
 
@@ -95,5 +103,6 @@ public static class ServiceCollectionExtensions
     {
         services.GetRequiredService<IAuthService>().ClearReceivedCalls();
         services.GetRequiredService<ITokenService>().ClearReceivedCalls();
+        services.GetRequiredService<IUserService>().ClearReceivedCalls();
     }
 }

@@ -250,39 +250,5 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockAuthRepository.Received(1)
                 .CheckPasswordAsync(identityUser, loginDto.Password, ct);
         }
-
-        [Fact]
-        public async Task GetAuthorsAsync_ShouldReturnSuccess_WithAuthorsList()
-        {
-            // Arrange
-            var ct = CancellationToken.None;
-            var users = new List<IdentityUser>
-            {
-                new IdentityUser { Id = "1", UserName = "admin1" },
-                new IdentityUser { Id = "2", UserName = "admin2" }
-            };
-
-            _mockAuthRepository.GetAuthorsAsync(ct)
-                .Returns(Task.FromResult(users));
-
-            // Act
-            var result = await _authService.GetAuthorsAsync(ct);
-
-            // Assert
-            Assert.True(result.IsSuccess);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            Assert.NotNull(result.Value);
-            Assert.Equal(2, result.Value.Count);
-
-            Assert.Equal("1", result.Value[0].Id);
-            Assert.Equal("admin1", result.Value[0].UserName);
-
-            Assert.Equal("2", result.Value[1].Id);
-            Assert.Equal("admin2", result.Value[1].UserName);
-
-            Assert.Equal(Auth.AdminM.Success.ContributorsRetrievedSuccessfully, result.Message);
-
-            await _mockAuthRepository.Received(1).GetAuthorsAsync(ct);
-        }
     }
 }
