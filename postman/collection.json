@@ -171,7 +171,7 @@
           "response": []
         },
         {
-          "name": "GetAllAuthors",
+          "name": "GetAdminAndContributorUsers",
           "request": {
             "auth": {
               "type": "bearer",
@@ -720,7 +720,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.sendRequest({\r\n    url: pm.environment.get(\"baseUrl\") + \"/api/Auth/Authors\",\r\n    method: 'GET',\r\n    header: {\r\n        'Authorization': 'Bearer ' + pm.environment.get(\"jwtToken\"),\r\n        'Content-Type': 'application/json'\r\n    }\r\n}, function (res) {\r\n    if (res.code === 200) {\r\n        var responseData = res.json();\r\n        var authors = Array.isArray(responseData) ? responseData : (responseData.value || responseData.data || responseData.items);\r\n        \r\n        if (authors && authors.length > 0) {\r\n            var authorId = authors[0].id || authors[0].userId;\r\n            pm.environment.set(\"dynamic_author_id\", authorId);            \r\n        }\r\n    }\r\n});"
+                  "pm.sendRequest({\r\n    url: pm.environment.get(\"baseUrl\") + \"/api/User/Authors\",\r\n    method: 'GET',\r\n    header: {\r\n        'Authorization': 'Bearer ' + pm.environment.get(\"jwtToken\"),\r\n        'Content-Type': 'application/json'\r\n    }\r\n}, function (res) {\r\n    if (res.code === 200) {\r\n        var responseData = res.json();\r\n        var authors = Array.isArray(responseData) ? responseData : (responseData.value || responseData.data || responseData.items);\r\n        \r\n        if (authors && authors.length > 0) {\r\n            var authorId = authors[0].id || authors[0].userId;\r\n            pm.environment.set(\"dynamic_author_id\", authorId);            \r\n        }\r\n    }\r\n});"
                 ]
               }
             }
