@@ -4,15 +4,15 @@ using PostApiService.Services;
 
 namespace PostApiService.Tests.UnitTests.Services
 {
-    public class UserServiceTests
+    public class AdminUserServiceTests
     {
         private readonly IUserRepository _mockUserRepository;
-        private readonly UserService _userService;
+        private readonly AdminUserService _userService;
 
-        public UserServiceTests()
+        public AdminUserServiceTests()
         {
             _mockUserRepository = Substitute.For<IUserRepository>();
-            _userService = new UserService(_mockUserRepository);
+            _userService = new AdminUserService(_mockUserRepository);
         }
 
         [Fact]
@@ -44,7 +44,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal("2", result.Value[1].Id);
             Assert.Equal("admin2", result.Value[1].UserName);
 
-            Assert.Equal(Auth.AdminM.Success.ContributorsRetrievedSuccessfully, result.Message);
+            Assert.Equal(UserM.Success.AdminAndContributorUsersRetrievedSuccessfully, result.Message);
 
             await _mockUserRepository.Received(1).GetAdminAndContributorUsersAsync(ct);
         }

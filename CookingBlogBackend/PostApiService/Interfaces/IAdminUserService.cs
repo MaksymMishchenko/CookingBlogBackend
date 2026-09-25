@@ -2,7 +2,7 @@
 
 namespace PostApiService.Interfaces
 {
-    public interface IUserService
+    public interface IAdminUserService
     {
         Task<Result<List<AuthorsDto>>> GetAdminAndContributorUsersAsync(CancellationToken ct = default);
     }

@@ -80,7 +80,7 @@
                 {
                     public const string InvalidCredentials = "Invalid username or password. Please check your credentials and try again.";
                     public const string InvalidCredentialsErrorCode = "INVALID_CREDENTIALS";
-                    
+
                     public const string UnauthorizedAccess = "Unauthorized Access";
                     public const string UnauthorizedAccessCode = "UNAUTHORIZED";
 
@@ -99,15 +99,7 @@
 
                 public static class Success
                 {
-                    public const string LoginSuccess = "User logged in successfully";                    
-                }                
-            }
-
-            public static class AdminM
-            {
-                public static class Success
-                {
-                    public const string ContributorsRetrievedSuccessfully = "Contributor users retrieved successfully.";
+                    public const string LoginSuccess = "User logged in successfully";
                 }
             }
 
@@ -117,10 +109,10 @@
                 {
                     public const string InvalidRegistrationData = "Invalid registration data. Please check the provided information.";
                     public const string InvalidRegistrationDataCode = "REG_INVALID_DATA";
-                    public const string DefaultRegistrationError = "An error occurred during registration. Please check your data or try again later.";                   
+                    public const string DefaultRegistrationError = "An error occurred during registration. Please check your data or try again later.";
                     public const string DefaultRegistrationErrorCode = "REGISTRATION_FAILED";
                     public const string UserAlreadyExists = "Username or email is already taken.";
-                    public const string UserAlreadyExistsCode = "REG_USER_ALREADY_EXISTS";                   
+                    public const string UserAlreadyExistsCode = "REG_USER_ALREADY_EXISTS";
                     public const string ClaimAssignmentFailed = "Failed to assign claim to user.";
                     public const string ClaimAssignmentFailedCode = "REG_CLAIM_FAILED";
                 }
@@ -136,7 +128,7 @@
                 public static class Errors
                 {
                     public const string SecretKeyNullOrEmpty = "Secret key cannot be null or empty.";
-                    public const string TokenExpirationInvalid = "Token expiration time must be greater than zero.";                    
+                    public const string TokenExpirationInvalid = "Token expiration time must be greater than zero.";
                     public const string GenerationFailed = "An unexpected error occurred.";
                 }
             }
@@ -180,6 +172,14 @@
                 public const string Timeout = "The request timed out.";
                 public const string DatabaseError = "Database error.";
                 public const string RequestCancelled = "The operation was canceled.";
+            }
+        }
+
+        public static class UserM
+        {
+            public static class Success
+            {
+                public const string AdminAndContributorUsersRetrievedSuccessfully = "Admin and contributor users retrieved successfully.";
             }
         }
     }
