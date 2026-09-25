@@ -61,7 +61,7 @@ namespace PostApiService.Infrastructure
             services.AddHttpContextAccessor();
 
             services.AddScoped<IAuthService, AuthService>();
-            services.AddScoped<IUserService, UserService>();
+            services.AddScoped<IAdminUserService, AdminUserService>();
             services.AddScoped<ITokenService, TokenService>();
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
             services.AddScoped<IPublicPostService, PublicPostService>();

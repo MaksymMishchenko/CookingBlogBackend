@@ -4,11 +4,11 @@ using PostApiService.Repositories;
 
 namespace PostApiService.Services
 {
-    public class UserService: BaseResultService, IUserService
+    public class AdminUserService: BaseResultService, IAdminUserService
     {
         private readonly IUserRepository _userRepository;
 
-        public UserService(IUserRepository userRepository)
+        public AdminUserService(IUserRepository userRepository)
         {
             _userRepository = userRepository;
         }
@@ -24,7 +24,7 @@ namespace PostApiService.Services
                 .Select(u => new AuthorsDto(u.Id, u.UserName!))
                 .ToList();
 
-            return Success(adminDtos, Auth.AdminM.Success.ContributorsRetrievedSuccessfully);
+            return Success(adminDtos, UserM.Success.AdminAndContributorUsersRetrievedSuccessfully);
         }
     }
 }
