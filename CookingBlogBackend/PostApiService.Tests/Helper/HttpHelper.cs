@@ -5,8 +5,7 @@
         public static class Urls
         {
             public static class Categories
-            {
-                public const string Base = "/api/category";
+            {                
                 public const string AdminBase = "/api/admin/categories";
                 public const string GetById = "/api/admin/categories/{0}";
             }            
