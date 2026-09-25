@@ -6,37 +6,16 @@ using PostApiService.Repositories;
 
 namespace PostApiService.Services
 {
-    public class CategoryService : BaseResultService, ICategoryService
+    public class AdminCategoryService : BaseResultService, IAdminCategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
         private readonly IPostRepository _postRepository;
 
-        public CategoryService(ICategoryRepository categoryRepository,
+        public AdminCategoryService(ICategoryRepository categoryRepository,
             IPostRepository postRepository)
         {
             _categoryRepository = categoryRepository;
             _postRepository = postRepository;
-        }
-
-        public async Task<bool> ExistsAsync(int id, CancellationToken ct = default)
-        {
-            return await _categoryRepository.AnyAsync(c => c.Id == id, ct);
-        }
-
-        public async Task<bool> ExistsBySlugAsync(string slug, CancellationToken ct = default)
-        {
-            return await _categoryRepository.AnyAsync(c => c.Slug == slug, ct);
-        }
-
-        public async Task<Result<List<CategoryDto>>> GetAllCategoriesAsync(CancellationToken ct = default)
-        {
-            var categories = await _categoryRepository.GetAllAsync(ct);
-
-            var dtos = categories
-                .OrderBy(c => c.Id)
-                .Select(c => c.ToDto()).ToList();
-
-            return Success(dtos);
         }
 
         public async Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken ct = default)
@@ -50,16 +29,6 @@ namespace PostApiService.Services
             }
 
             return Success(category.ToDto());
-        }
-
-        public Task<string?> GetNameBySlugAsync(string? categorySlug, CancellationToken ct = default)
-        {
-            return _categoryRepository.GetNameBySlugAsync(categorySlug, ct);
-        }
-
-        public async Task<string?> GetNameByIdAsync(int? id, CancellationToken ct)
-        {
-            return await _categoryRepository.GetNameByIdAsync(id, ct);
         }
 
         public async Task<Result<CategoryDto>> AddCategoryAsync

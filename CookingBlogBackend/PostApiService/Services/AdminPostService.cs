@@ -11,12 +11,12 @@ namespace PostApiService.Services
     {
         private readonly IPostRepository _postRepository;
         private readonly IHtmlSanitizationService _sanitizer;
-        private readonly ICategoryService _categoryService;
+        private readonly IPublicCategoryService _categoryService;
 
         public AdminPostService(IPostRepository postRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
-            ICategoryService categoryService
+            IPublicCategoryService categoryService
             ) : base(webContext)
         {
             _postRepository = postRepository;

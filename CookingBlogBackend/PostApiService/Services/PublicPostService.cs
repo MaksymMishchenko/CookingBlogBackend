@@ -14,11 +14,11 @@ namespace PostApiService.Services
     public class PublicPostService : BaseService, IPublicPostService
     {
         private readonly IPostRepository _postRepository;
-        private readonly ICategoryService _catService;
+        private readonly IPublicCategoryService _catService;
         private readonly ISnippetGeneratorService _snippetGenerator;
 
         public PublicPostService(IPostRepository postRepository,
-            ICategoryService catService,            
+            IPublicCategoryService catService,            
             ISnippetGeneratorService snippetGenerator)
         {
             _postRepository = postRepository;
