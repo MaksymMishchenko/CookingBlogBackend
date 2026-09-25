@@ -6,9 +6,9 @@ namespace PostApiService.Controllers
     [Route("api/[controller]")]
     public class CategoryController : ControllerBase
     {
-        private readonly ICategoryService _categoryService;
+        private readonly IPublicCategoryService _categoryService;
 
-        public CategoryController(ICategoryService categoryService)
+        public CategoryController(IPublicCategoryService categoryService)
         {
             _categoryService = categoryService;
         }

@@ -7,13 +7,13 @@ namespace PostApiService.Controllers
     [ApiController]
     [Route("api/admin/categories")]
     [Authorize(Policy = TS.Policies.FullControlPolicy)]
-    public class AdminCategoriesController : Controller
+    public class AdminCategoryController : Controller
     {
-        private readonly ICategoryService _categoryService;
+        private readonly IAdminCategoryService _adminCategoryService;
 
-        public AdminCategoriesController(ICategoryService categoryService)
+        public AdminCategoryController(IAdminCategoryService adminCategoryService)
         {
-            _categoryService = categoryService;
+            _adminCategoryService = adminCategoryService;
         }
 
         /// <summary>
@@ -22,7 +22,7 @@ namespace PostApiService.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCategoryByIdAsync(int id, CancellationToken ct = default)
         {
-            var result = await _categoryService.GetCategoryByIdAsync(id, ct);
+            var result = await _adminCategoryService.GetCategoryByIdAsync(id, ct);
 
             return result.ToActionResult();
         }
@@ -34,7 +34,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> AddСategoryAsync
             ([FromBody] CreateCategoryDto categoryDto, CancellationToken ct = default)
         {
-            var result = await _categoryService.AddCategoryAsync(categoryDto, ct);
+            var result = await _adminCategoryService.AddCategoryAsync(categoryDto, ct);
 
             return result.ToCreatedResult(nameof(GetCategoryByIdAsync),
                 new { id = result.Value?.Id });
@@ -47,7 +47,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> UpdateCategoryAsync
             (int id, [FromBody] UpdateCategoryDto categoryDto, CancellationToken ct = default)
         {
-            var result = await _categoryService.UpdateCategoryAsync(id, categoryDto, ct);
+            var result = await _adminCategoryService.UpdateCategoryAsync(id, categoryDto, ct);
 
             return result.ToActionResult();
         }
@@ -59,7 +59,7 @@ namespace PostApiService.Controllers
         public async Task<IActionResult> DeleteCategoryAsync
             (int id, CancellationToken ct = default)
         {
-            var result = await _categoryService.DeleteCategoryAsync(id, ct);
+            var result = await _adminCategoryService.DeleteCategoryAsync(id, ct);
 
             return result.ToActionResult();
         }
