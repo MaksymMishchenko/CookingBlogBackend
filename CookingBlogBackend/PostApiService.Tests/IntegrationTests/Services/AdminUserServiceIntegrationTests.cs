@@ -5,11 +5,11 @@ using PostApiService.Models.Dto.Response;
 namespace PostApiService.Tests.IntegrationTests.Services
 {
     [Collection("SharedDatabase")]
-    public class UserServiceIntegrationTests
+    public class AdminUserServiceIntegrationTests
     {
         private readonly ServiceTestFixture _fixture;
 
-        public UserServiceIntegrationTests(ServiceTestFixture fixture)
+        public AdminUserServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
         }
@@ -21,7 +21,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             await _fixture.ResetDatabaseAsync();
             await _fixture.Services!.SeedAdminAsync();
 
-            var (service, _, _) = _fixture.GetScopedService<IUserService>();
+            var (service, _, _) = _fixture.GetScopedService<IAdminUserService>();
 
             // Act
             var result = await service.GetAdminAndContributorUsersAsync();
@@ -39,7 +39,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.False(string.IsNullOrEmpty(adminDto.Id));
             Assert.False(string.IsNullOrEmpty(adminDto.UserName));
 
-            Assert.Equal(Auth.AdminM.Success.ContributorsRetrievedSuccessfully, data.Message);
+            Assert.Equal(UserM.Success.AdminAndContributorUsersRetrievedSuccessfully, data.Message);
         }
     }
 }

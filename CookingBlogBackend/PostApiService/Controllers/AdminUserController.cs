@@ -5,19 +5,19 @@ namespace PostApiService.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UserController : Controller
+    [Authorize(Roles = TS.Roles.Admin)]
+    public class AdminUserController : Controller
     {
-        private readonly IUserService _userService;
+        private readonly IAdminUserService _userService;
 
-        public UserController(IUserService userService)
+        public AdminUserController(IAdminUserService userService)
         {
             _userService = userService;
         }
 
         /// <summary>
         /// Retrieves all users for filtering purposes.
-        /// </summary>
-        [Authorize(Roles = TS.Roles.Admin)]
+        /// </summary>        
         [HttpGet("Authors")]
         public async Task<IActionResult> GetAdminAndContributorUsersAsync(CancellationToken ct = default)
         {
