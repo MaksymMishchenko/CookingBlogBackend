@@ -11,14 +11,14 @@ namespace PostApiService.Tests.UnitTests
     public class PublicPostServiceTests
     {
         private readonly IPostRepository _mockRepository;
-        private readonly ICategoryService _mockCategoryService;
+        private readonly IPublicCategoryService _mockCategoryService;
         private readonly ISnippetGeneratorService _mockSnippetGenerator;
         private readonly PublicPostService _postService;
 
         public PublicPostServiceTests()
         {
             _mockRepository = Substitute.For<IPostRepository>();
-            _mockCategoryService = Substitute.For<ICategoryService>();
+            _mockCategoryService = Substitute.For<IPublicCategoryService>();
             _mockSnippetGenerator = Substitute.For<ISnippetGeneratorService>();
             _postService = new PublicPostService(_mockRepository, _mockCategoryService, _mockSnippetGenerator);
         }

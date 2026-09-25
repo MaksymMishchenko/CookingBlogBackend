@@ -66,7 +66,8 @@ namespace PostApiService.Infrastructure
             services.AddTransient<ISnippetGeneratorService, SnippetGeneratorService>();
             services.AddScoped<IPublicPostService, PublicPostService>();
             services.AddScoped<IAdminPostService, AdminPostService>();
-            services.AddScoped<ICategoryService, CategoryService>();
+            services.AddScoped<IPublicCategoryService, PublicCategoryService>();
+            services.AddScoped<IAdminCategoryService, AdminCategoryService>();
             services.AddScoped<ICommentService, CommentService>();
 
             services.AddExternalTools(configuration);
