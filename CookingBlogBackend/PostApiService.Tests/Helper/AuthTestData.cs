@@ -14,9 +14,6 @@ namespace PostApiService.Tests.Helper
                 Password = "-Rtyuehe2-"
             };
 
-        public static RegisteredUserDto CreateRegisteredUserDto(string id = "1", string userName = "correctUser", string email = "correctEmail@test.com")
-            => new(id, userName, email);
-
         public static LoginUserDto CreateUserLoginDto() => new()
         {
             UserName = "testuser",

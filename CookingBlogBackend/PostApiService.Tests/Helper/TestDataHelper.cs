@@ -90,7 +90,7 @@ namespace PostApiService.Tests.Helper
             {
                 Title = post.Title,
                 Description = post.Description,
-                Content = post.Content,                
+                Content = post.Content,
                 ImageUrl = post.ImageUrl,
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
@@ -105,7 +105,7 @@ namespace PostApiService.Tests.Helper
             {
                 Title = newTitle ?? post.Title,
                 Description = post.Description,
-                Content = post.Content,                
+                Content = post.Content,
                 ImageUrl = post.ImageUrl,
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
@@ -120,58 +120,7 @@ namespace PostApiService.Tests.Helper
             Assert.NotNull(actualDto);
             Assert.Equal(expectedCategory.Id, actualDto.Id);
             Assert.Equal(expectedCategory.Name, actualDto.Name);
-        }
-
-        public static Post GetSinglePost(ICollection<Category>? categories = null,
-            int? id = 1,
-            bool includeId = true,
-            string authorId = "test-admin-id")
-        {
-            int finalId = 0;
-
-            if (includeId && id.HasValue)
-            {
-                finalId = id.Value;
-            }
-
-            var category = categories!.First(c => c.Name == "Desserts");
-
-            return new Post
-            {
-                Id = finalId,
-                Title = "Lorem ipsum dolor sit amet",
-                Content = "Lorem Ipsum is simply dummy text of the printing and typesetting industry.",
-                AuthorId = authorId,
-                Description = "Test description",
-                MetaTitle = "Test meta title",
-                MetaDescription = "Test meta description",
-                ImageUrl = "http://example.com/img/img.jpg",
-                Slug = "post-slug",
-                CategoryId = category.Id,
-                Category = null!
-            };
-        }
-
-        public static Post GetCreatePostDto(string content,
-            ICollection<Category>? categories = null,
-            string authorId = "test-admin-id")
-        {
-            var category = categories!.First(c => c.Name == "Desserts");
-
-            return new Post
-            {
-                Title = "Lorem ipsum dolor sit amet",
-                Content = content,
-                AuthorId = authorId,
-                Description = "Test description",
-                MetaTitle = "Test meta title",
-                MetaDescription = "Test meta description",
-                ImageUrl = "http://example.com/img/img.jpg",
-                Slug = "post-slug",
-                CategoryId = category.Id,
-                Category = null!
-            };
-        }
+        }        
 
         public static Post GetSinglePostWithCategoryId(int categoryId, string authorId = "test-admin-id")
         {
@@ -287,7 +236,7 @@ namespace PostApiService.Tests.Helper
 
             return posts;
         }
-               
+
         public static IEnumerable<object[]> GetPostFilterData()
         {
             yield return new object[] { null!, null!, null!, 5, null! };
@@ -317,26 +266,7 @@ namespace PostApiService.Tests.Helper
                 new Category { Id = 5, Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
                 new Category { Id = 6, Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
             };
-        }
-
-        public static PostAdminDetailsDto CreatePostAdminDetailsDto(Post post)
-        {
-            return new PostAdminDetailsDto(
-                post.Id,
-                post.Title,
-                post.Description,
-                post.Content,
-                post.Author != null ? post.Author.UserName ?? "Test Author" : "Test Author",
-                post.ImageUrl,
-                post.Slug,
-                post.MetaTitle,
-                post.MetaDescription,
-                post.CategoryId,
-                post.IsActive,
-                post.CreatedAt,
-                post.UpdatedAt
-            );
-        }
+        }        
 
         public static PostCreateDto GetPostCreateDto(
             string title = "Test Post Title",
@@ -349,7 +279,7 @@ namespace PostApiService.Tests.Helper
                 Title = title,
                 Slug = slug,
                 Content = content,
-                Description = "Test Post Description",                
+                Description = "Test Post Description",
                 ImageUrl = "http://example.com/image.jpg",
                 MetaTitle = "Test Meta Title",
                 MetaDescription = "Test Meta Description",
@@ -368,37 +298,14 @@ namespace PostApiService.Tests.Helper
                 Title = title,
                 Slug = slug,
                 Content = content,
-                Description = "Updated Description",                
+                Description = "Updated Description",
                 ImageUrl = "http://example.com/image.jpg",
                 MetaTitle = "Updated Meta Title",
                 MetaDescription = "Updated Meta Description",
                 CategoryId = categoryId,
                 IsActive = true
             };
-        }
-
-        public static PostDetailsDto GetPostDetailsDto(
-        string slug = "test-post-slug",
-        string categorySlug = "test-category-slug",
-        string title = "Test Post Title")
-        {
-            return new PostDetailsDto(
-                Id: 1,
-                Title: title,
-                Description: "Test Description for SEO and social preview.",
-                Content: "<h1>Main Content</h1><p>Full post content goes here.</p>",
-                Author: "Admin",
-                ImageUrl: "https://example.com/images/post.jpg",
-                Slug: slug,
-                MetaTitle: "SEO Meta Title",
-                MetaDescription: "SEO Meta Description",
-                Category: "Test Category Name",
-                CategorySlug: categorySlug,
-                CreatedAt: DateTime.UtcNow,
-                UpdatedAt: null,
-                CommentCount: 5
-            );
-        }
+        }        
 
         public static PostRequestBySlug CreatePostRequest(
         string category = "pasta",
@@ -412,21 +319,7 @@ namespace PostApiService.Tests.Helper
         }
 
         public static CommentCreateDto CreateCommentRequest(string content = "Default test content", int? parentId = null) =>
-        new() { Content = content };
-
-        public static CommentCreatedDto CreateCommentResponse(
-            int id = 1,
-            string author = "Bob",
-            string content = "Default test content",
-            string userId = "TestUserId") =>
-            new(id, author, content, DateTime.UtcNow, userId);
-
-        public static CommentUpdatedDto UpdateCommentResponse(
-            int id = 1,
-            string author = "Bob",
-            string content = "Default test content",
-            string userId = "TestUserId") =>
-            new(id, author, content, DateTime.UtcNow, userId, false);
+        new() { Content = content };        
 
         public static Post ToEntity(PostCreateDto dto, string sanitizedContent, string userId)
         {
