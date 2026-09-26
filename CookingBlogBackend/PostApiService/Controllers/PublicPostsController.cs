@@ -4,7 +4,7 @@ using PostApiService.Models.Dto.Requests;
 namespace PostApiService.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/posts")]
     public class PublicPostsController : ControllerBase
     {
         private readonly IPublicPostService _postsService;
