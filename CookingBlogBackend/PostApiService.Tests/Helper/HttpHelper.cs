@@ -14,12 +14,7 @@
                 public const string Login = "/api/auth/login";
 
                 public const string Register = "/api/auth/register";                
-            }
-
-            public static class User
-            {                
-                public const string Authors = "/api/user/authors";
-            }
+            }           
         }
     }
 }

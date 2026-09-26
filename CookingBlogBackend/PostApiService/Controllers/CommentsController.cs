@@ -7,7 +7,7 @@ using PostApiService.Models.TypeSafe;
 namespace PostApiService.Controllers
 {
     [Controller]
-    [Route("api/[controller]")]
+    [Route("api/comments")]
     [Authorize(Policy = TS.Policies.ContributorPolicy)]
     [EnableRateLimiting(RateLimitOptions.PolicyName)]
     public class CommentsController : ControllerBase

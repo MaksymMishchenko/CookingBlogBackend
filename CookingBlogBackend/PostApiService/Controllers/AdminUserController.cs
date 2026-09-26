@@ -4,8 +4,8 @@ using PostApiService.Models.TypeSafe;
 namespace PostApiService.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize(Roles = TS.Roles.Admin)]
+    [Route("api/admin/users")]
+    [Authorize(Policy = TS.Policies.FullControlPolicy)]
     public class AdminUserController : Controller
     {
         private readonly IAdminUserService _userService;
