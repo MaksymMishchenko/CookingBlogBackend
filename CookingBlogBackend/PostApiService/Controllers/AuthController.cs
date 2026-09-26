@@ -4,7 +4,7 @@ using PostApiService.Models.Dto.Requests;
 namespace PostApiService.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
