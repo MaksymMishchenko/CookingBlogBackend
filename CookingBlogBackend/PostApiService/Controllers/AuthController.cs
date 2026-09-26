@@ -4,7 +4,7 @@ using PostApiService.Models.Dto.Requests;
 namespace PostApiService.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/auth")]
     public class AuthController : Controller
     {
         private readonly IAuthService _authService;
@@ -18,7 +18,7 @@ namespace PostApiService.Controllers
         /// Registers a new user in the system by accepting user credentials.               
         /// </summary>        
         [AllowAnonymous]
-        [HttpPost("Register")]
+        [HttpPost("register")]
         public async Task<IActionResult> RegisterUser([FromBody] RegisterUserDto userDto,
             CancellationToken ct = default)
         {
@@ -31,7 +31,7 @@ namespace PostApiService.Controllers
         /// Authenticates a user based on the provided credentials and returns the authentication result.
         /// </summary>       
         [AllowAnonymous]
-        [HttpPost("Login")]
+        [HttpPost("login")]
         public async Task<IActionResult> LoginUserAsync([FromBody] LoginUserDto credentials,
             CancellationToken ct = default)
         {
