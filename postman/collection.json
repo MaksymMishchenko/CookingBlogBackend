@@ -53,33 +53,19 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
               }
             },
             {
               "listen": "prerequest",
               "script": {
-                "exec": [
-                  "const user = \"user_\" + Date.now();\r",
-                  "const email = \"test_\" + Date.now() + \"@example.com\";\r",
-                  "\r",
-                  "// Фіксуємо у змінні\r",
-                  "pm.variables.set(\"userName\", user);\r",
-                  "pm.variables.set(\"email\", email);\r",
-                  "\r",
-                  "// Виводимо в консоль, щоб бачити, що ПОВИННО піти на сервер\r",
-                  "console.log(\"Setting for request -> User: \" + user + \", Email: \" + email);"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "const user = \"user_\" + Date.now();\r\nconst email = \"test_\" + Date.now() + \"@example.com\";\r\n\r\n// Фіксуємо у змінні\r\npm.variables.set(\"userName\", user);\r\npm.variables.set(\"email\", email);\r\n\r\n// Виводимо в консоль, щоб бачити, що ПОВИННО піти на сервер\r\nconsole.log(\"Setting for request -> User: \" + user + \", Email: \" + email);"
+                ]
               }
             }
           ],
@@ -96,13 +82,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Auth/register",
+              "raw": "{{baseUrl}}/api/auth/register",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Auth",
+                "auth",
                 "register"
               ]
             }
@@ -115,32 +101,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "if (pm.response.code === 200) {\r",
-                  "    var jsonResponse = pm.response.json();    \r",
-                  "    pm.environment.set(\"jwtToken\", jsonResponse.data.token); \r",
-                  "} else {\r",
-                  "    console.error(\"Error fetching token: \", pm.response.status);\r",
-                  "}\r",
-                  "\r",
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
                 "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                  "if (pm.response.code === 200) {\r\n    var jsonResponse = pm.response.json();    \r\n    pm.environment.set(\"jwtToken\", jsonResponse.data.token); \r\n} else {\r\n    console.error(\"Error fetching token: \", pm.response.status);\r\n}\r\n\r\npm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
               }
             }
           ],
@@ -157,14 +121,14 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Auth/Login",
+              "raw": "{{baseUrl}}/api/auth/login",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Auth",
-                "Login"
+                "auth",
+                "login"
               ]
             }
           },
@@ -195,14 +159,15 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Auth/Authors",
+              "raw": "{{baseUrl}}/api/admin/users/authors",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Auth",
-                "Authors"
+                "admin",
+                "users",
+                "authors"
               ]
             }
           },
@@ -214,14 +179,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
               }
             }
           ],
@@ -229,13 +190,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/Category",
+              "raw": "{{baseUrl}}/api/categories",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Category"
+                "categories"
               ]
             }
           },
@@ -554,25 +515,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);   \r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
                 "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);   \r\n});"
+                ]
               }
             }
           ],
@@ -583,13 +529,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/publicposts/{{temp_category_slug}}/{{unique_post_slug}}",
+              "raw": "{{baseUrl}}/api/posts/{{temp_category_slug}}/{{unique_post_slug}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "publicposts",
+                "posts",
                 "{{temp_category_slug}}",
                 "{{unique_post_slug}}"
               ]
@@ -603,14 +549,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
               }
             }
           ],
@@ -621,13 +563,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/publicposts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7&IsSearchMode=true",
+              "raw": "{{baseUrl}}/api/posts?search=lorem&categorySlug=breakfast&pageNumber=1&pageSize=7&IsSearchMode=true",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "publicposts"
+                "posts"
               ],
               "query": [
                 {
@@ -661,14 +603,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
               }
             }
           ],
@@ -679,13 +617,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/publicposts/{{temp_post_id}}/comments?lastId=0&pageSize=10",
+              "raw": "{{baseUrl}}/api/posts/{{temp_post_id}}/comments?lastId=0&pageSize=10",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "publicposts",
+                "posts",
                 "{{temp_post_id}}",
                 "comments"
               ],
@@ -720,7 +658,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.sendRequest({\r\n    url: pm.environment.get(\"baseUrl\") + \"/api/User/Authors\",\r\n    method: 'GET',\r\n    header: {\r\n        'Authorization': 'Bearer ' + pm.environment.get(\"jwtToken\"),\r\n        'Content-Type': 'application/json'\r\n    }\r\n}, function (res) {\r\n    if (res.code === 200) {\r\n        var responseData = res.json();\r\n        var authors = Array.isArray(responseData) ? responseData : (responseData.value || responseData.data || responseData.items);\r\n        \r\n        if (authors && authors.length > 0) {\r\n            var authorId = authors[0].id || authors[0].userId;\r\n            pm.environment.set(\"dynamic_author_id\", authorId);            \r\n        }\r\n    }\r\n});"
+                  "pm.sendRequest({\r\n    url: pm.environment.get(\"baseUrl\") + \"/api/admin/users/authors\",\r\n    method: 'GET',\r\n    header: {\r\n        'Authorization': 'Bearer ' + pm.environment.get(\"jwtToken\"),\r\n        'Content-Type': 'application/json'\r\n    }\r\n}, function (res) {\r\n    if (res.code === 200) {\r\n        var responseData = res.json();\r\n        var authors = Array.isArray(responseData) ? responseData : (responseData.value || responseData.data || responseData.items);\r\n        \r\n        if (authors && authors.length > 0) {\r\n            var authorId = authors[0].id || authors[0].userId;\r\n            pm.environment.set(\"dynamic_author_id\", authorId);            \r\n        }\r\n    }\r\n});"
                 ]
               }
             }
@@ -851,30 +789,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "const jsonData = pm.response.json();\r",
-                  "\r",
-                  "pm.test(\"Status code is 200\", function () {    \r",
-                  "    pm.response.to.have.status(200);  \r",
-                  "    const commentId = jsonData.data.id;        \r",
-                  "    pm.expect(commentId).to.not.be.undefined;            \r",
-                  "    pm.environment.set(\"temp_comment_id\", commentId);    \r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
-              }
-            },
-            {
-              "listen": "prerequest",
-              "script": {
                 "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                  "const jsonData = pm.response.json();\r\n\r\npm.test(\"Status code is 200\", function () {    \r\n    pm.response.to.have.status(200);  \r\n    const commentId = jsonData.data.id;        \r\n    pm.expect(commentId).to.not.be.undefined;            \r\n    pm.environment.set(\"temp_comment_id\", commentId);    \r\n});"
+                ]
               }
             }
           ],
@@ -901,13 +819,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Comments/{{temp_post_id}}",
+              "raw": "{{baseUrl}}/api/comments/{{temp_post_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Comments",
+                "comments",
                 "{{temp_post_id}}"
               ]
             }
@@ -920,14 +838,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                ]
               }
             }
           ],
@@ -954,13 +868,13 @@
               }
             },
             "url": {
-              "raw": "{{baseUrl}}/api/Comments/{{temp_comment_id}}",
+              "raw": "{{baseUrl}}/api/comments/{{temp_comment_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Comments",
+                "comments",
                 "{{temp_comment_id}}"
               ]
             }
@@ -973,15 +887,10 @@
             {
               "listen": "test",
               "script": {
-                "exec": [
-                  "pm.test(\"Status code is 200\", function () {\r",
-                  "    pm.response.to.have.status(200);\r",
-                  "    pm.environment.unset(\"temp_comment_id\");\r",
-                  "});"
-                ],
                 "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n    pm.environment.unset(\"temp_comment_id\");\r\n});"
+                ]
               }
             }
           ],
@@ -999,13 +908,13 @@
             "method": "DELETE",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/Comments/{{temp_comment_id}}",
+              "raw": "{{baseUrl}}/api/comments/{{temp_comment_id}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "Comments",
+                "comments",
                 "{{temp_comment_id}}"
               ]
             }
