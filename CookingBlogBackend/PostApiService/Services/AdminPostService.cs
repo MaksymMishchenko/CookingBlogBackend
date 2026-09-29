@@ -12,6 +12,7 @@ namespace PostApiService.Services
         private readonly IPostRepository _postRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly IPublicCategoryService _categoryService;
+        private readonly IWebContext _webContext;
 
         public AdminPostService(IPostRepository postRepository,
             IWebContext webContext,
@@ -22,6 +23,7 @@ namespace PostApiService.Services
             _postRepository = postRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
+            _webContext = webContext;
         }
 
         /// <summary>
@@ -39,11 +41,17 @@ namespace PostApiService.Services
                 return Unauthorized<PagedResult<AdminPostListDto>>();
             }
 
+            bool isAdmin = _webContext.IsAdmin;
+
+            var updatedQuery = isAdmin
+                 ? postQuery
+                 : postQuery with { AuthorId = userId };
+
             string? categoryName = null;
 
-            if (postQuery.CategoryId.HasValue)
+            if (updatedQuery.CategoryId.HasValue)
             {
-                categoryName = await _categoryService.GetNameByIdAsync(postQuery.CategoryId.Value, ct);
+                categoryName = await _categoryService.GetNameByIdAsync(updatedQuery.CategoryId.Value, ct);
 
                 if (categoryName == null)
                 {
@@ -52,12 +60,12 @@ namespace PostApiService.Services
             }
 
             var query = _postRepository.GetAdminFilteredAndSortedPosts(
-                postQuery.SearchTerm,
-                postQuery.OnlyActive,
-                postQuery.CategoryId,
-                postQuery.SortBy,
-                postQuery.SortDirection,
-                postQuery.AuthorId
+                updatedQuery.SearchTerm,
+                updatedQuery.OnlyActive,
+                updatedQuery.CategoryId,
+                updatedQuery.SortBy,
+                updatedQuery.SortDirection,
+                updatedQuery.AuthorId
             );
 
             var appliedFilters = new AppliedFilters(
@@ -192,7 +200,7 @@ namespace PostApiService.Services
                 Log.Warning(Posts.NotFound, postId);
 
                 return NotFound<PostAdminDetailsDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
-            }            
+            }
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();
