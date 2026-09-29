@@ -1,5 +1,4 @@
-﻿using PostApiService.Models.TypeSafe;
-using System.Security.Claims;
+﻿using System.Security.Claims;
 
 namespace PostApiService.Repositories
 {
@@ -52,6 +51,11 @@ namespace PostApiService.Repositories
         public async Task<IList<string>> GetRolesAsync(IdentityUser user, CancellationToken ct = default)
         {
             return await _userManager.GetRolesAsync(user);
-        }        
+        }
+
+        public async Task<IdentityResult> AddToRoleAsync(IdentityUser user, string role, CancellationToken ct = default)
+        {
+            return await _userManager.AddToRoleAsync(user, role);
+        }
     }
 }

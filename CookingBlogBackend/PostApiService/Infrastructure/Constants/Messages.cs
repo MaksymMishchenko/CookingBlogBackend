@@ -113,6 +113,8 @@
                     public const string DefaultRegistrationErrorCode = "REGISTRATION_FAILED";
                     public const string UserAlreadyExists = "Username or email is already taken.";
                     public const string UserAlreadyExistsCode = "REG_USER_ALREADY_EXISTS";
+                    public const string RoleAssignmentFailed = "Failed to assign role to user.";
+                    public const string RoleAssignmentFailedCode = "REG_ROLE_FAILED";
                     public const string ClaimAssignmentFailed = "Failed to assign claim to user.";
                     public const string ClaimAssignmentFailedCode = "REG_CLAIM_FAILED";
                 }

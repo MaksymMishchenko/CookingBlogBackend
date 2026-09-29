@@ -64,7 +64,7 @@ namespace PostApiService.Tests.Fixtures
                 DbAdapter = DbAdapter.Postgres,
                 SchemasToInclude = ["public"],
                 WithReseed = true,
-                TablesToIgnore = ["__EFMigrationsHistory"]
+                TablesToIgnore = ["__EFMigrationsHistory", "AspNetRoles"]
             });
         }
 

@@ -9,6 +9,7 @@ namespace PostApiService
             bool generateComments,
             int commentCount,
             string[] userIds = null!,
+            string[] usernames = null!,
             string[] authorIds = null!,
             bool generateIds = false)
         {
@@ -67,7 +68,10 @@ namespace PostApiService
                                 .RuleFor(c => c.UserId, fc => f.PickRandom(userIds))
                                 .RuleFor(c => c.CreatedAt, fc => fc.Date.Between(root.CreatedAt, DateTime.UtcNow).ToUniversalTime())
                                 .RuleFor(c => c.Parent, _ => root)
-                                .RuleFor(c => c.ReplyToUserName, _ => "User_" + f.PickRandom(userIds).Substring(0, 4))
+                                .RuleFor(c => c.ReplyToUserName, _ =>
+                                    (usernames != null && usernames.Length > 0)
+                                        ? f.PickRandom(usernames)
+                                        : f.Internet.UserName())
                                 .Generate(replyCount);
 
                             allComments.AddRange(replies);
@@ -83,10 +87,11 @@ namespace PostApiService
             bool generateComments = true,
             int commentCount = 1,
             string[] userIds = null!,
+            string[] usernames = null!,
             string[] authorIds = null!,
             bool generateIds = false)
         {
-            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, userIds, authorIds, generateIds).Generate(count);
+            var posts = GetPostFaker(useNewSeed, generateComments, commentCount, userIds, usernames, authorIds, generateIds).Generate(count);
 
             if (generateIds)
             {

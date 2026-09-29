@@ -321,7 +321,9 @@ namespace PostApiService.Infrastructure
 
                 if (!env.IsProduction())
                 {
+                    await SeedMultipleUsersAsync(userManager, count: 5);
                     await SeedContributorAsync(userManager, config);
+                    await SeedUserAsync(userManager, config);
                     await SeedMultipleContributorsAsync(userManager, count: 10);
                 }
 
@@ -332,12 +334,41 @@ namespace PostApiService.Infrastructure
 
         private static async Task EnsureRolesAsync(RoleManager<IdentityRole> roleManager)
         {
-            var roles = new[] { TS.Roles.Admin, TS.Roles.Contributor };
+            var roles = new[] { TS.Roles.Admin, TS.Roles.Contributor, TS.Roles.User };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
                 {
                     await roleManager.CreateAsync(new IdentityRole(role));
+                }
+            }
+        }
+
+        private static async Task SeedMultipleUsersAsync(UserManager<IdentityUser> userManager, int count = 10)
+        {
+            var faker = new Faker<IdentityUser>()
+                .RuleFor(u => u.UserName, f => f.Internet.UserName())
+                .RuleFor(u => u.Email, f => f.Internet.Email())
+                .RuleFor(u => u.EmailConfirmed, _ => true);
+
+            for (int i = 0; i < count; i++)
+            {
+                var fakeUser = faker.Generate();
+                var existing = await userManager.FindByEmailAsync(fakeUser.Email!);
+
+                if (existing == null)
+                {
+                    var result = await userManager.CreateAsync(fakeUser, "Password123!");
+                    if (result.Succeeded)
+                    {
+                        await userManager.AddToRoleAsync(fakeUser, TS.Roles.User);
+                        Log.Information("--- SeedUsers [{Email}] created successfully ---", fakeUser.Email);
+                    }
+                    else
+                    {
+                        var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                        Log.Error("--- User creation FAILED for [{Email}]: {Errors} ---", fakeUser.Email, errors);
+                    }
                 }
             }
         }
@@ -365,7 +396,7 @@ namespace PostApiService.Infrastructure
                     else
                     {
                         var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                        Log.Error("--- Extra Admin creation FAILED for [{Email}]: {Errors} ---", fakeUser.Email, errors);
+                        Log.Error("--- Contributor creation FAILED for [{Email}]: {Errors} ---", fakeUser.Email, errors);
                     }
                 }
             }
@@ -433,6 +464,7 @@ namespace PostApiService.Infrastructure
             if (result.Succeeded)
             {
                 await userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id));
+                await userManager.AddClaimAsync(user, GetContributorClaims(TS.Controller.Post));
                 await userManager.AddClaimAsync(user, GetContributorClaims(TS.Controller.Comment));
                 await userManager.AddToRoleAsync(user, TS.Roles.Contributor);
                 Log.Information("--- Contributor [{Email}] created successfully ---", email);
@@ -441,6 +473,42 @@ namespace PostApiService.Infrastructure
             {
                 var errors = string.Join(", ", result.Errors.Select(e => e.Description));
                 Log.Error("--- Contributor creation FAILED for [{Email}]: {Errors} ---", email, errors);
+            }
+        }
+
+        private static async Task SeedUserAsync(UserManager<IdentityUser> userManager, IConfiguration config)
+        {
+            var email = config["SeedSettings:UsrEmail"];
+            var pass = config["SeedSettings:UsrPassword"];
+            var name = config["SeedSettings:UsrUserName"];
+
+            if (string.IsNullOrEmpty(email) || string.IsNullOrEmpty(pass))
+            {
+                Log.Warning("--- SeedUser: Missing credentials in Configuration! ---");
+                return;
+            }
+
+            var existingUser = await userManager.FindByEmailAsync(email);
+            if (existingUser != null)
+            {
+                Log.Information("--- User [{Email}] already exists. Skipping ---", email);
+                return;
+            }
+
+            var user = new IdentityUser { UserName = name, Email = email, EmailConfirmed = true };
+            var result = await userManager.CreateAsync(user, pass);
+
+            if (result.Succeeded)
+            {
+                await userManager.AddClaimAsync(user, new Claim(ClaimTypes.NameIdentifier, user.Id));
+                await userManager.AddClaimAsync(user, GetUserClaims(TS.Controller.Comment));
+                await userManager.AddToRoleAsync(user, TS.Roles.User);
+                Log.Information("--- User [{Email}] created successfully ---", email);
+            }
+            else
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                Log.Error("--- User creation FAILED for [{Email}]: {Errors} ---", email, errors);
             }
         }
 
@@ -455,6 +523,17 @@ namespace PostApiService.Infrastructure
         }
 
         private static Claim GetContributorClaims(string controllerName)
+        {
+            return new Claim(controllerName,
+                ClaimHelper.SerializePermissions(
+                    TS.Permissions.Write,
+                    TS.Permissions.Update,
+                    TS.Permissions.Delete
+                )
+            );
+        }
+
+        private static Claim GetUserClaims(string controllerName)
         {
             return new Claim(controllerName,
                 ClaimHelper.SerializePermissions(
@@ -485,6 +564,7 @@ namespace PostApiService.Infrastructure
                     }
 
                     var userIds = await cntx.Users.Select(u => u.Id).ToArrayAsync();
+                    var usernames = await cntx.Users.Select(u => u.UserName!).ToArrayAsync();
 
                     if (userIds.Length == 0)
                     {
@@ -494,7 +574,6 @@ namespace PostApiService.Infrastructure
 
                     var adminUsers = await userManager.GetUsersInRoleAsync(TS.Roles.Admin);
                     var contUsers = await userManager.GetUsersInRoleAsync(TS.Roles.Contributor);
-
                     var authorIds = adminUsers.Concat(contUsers).Select(u => u.Id).ToArray();
 
                     if (authorIds.Length == 0)
@@ -509,6 +588,7 @@ namespace PostApiService.Infrastructure
                         count: 150,
                         commentCount: 10,
                         userIds: userIds,
+                        usernames: usernames,
                         authorIds: authorIds);
 
                     await cntx.Posts.AddRangeAsync(postsList);
