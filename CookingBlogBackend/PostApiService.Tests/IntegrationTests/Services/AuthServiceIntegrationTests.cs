@@ -22,7 +22,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             await _fixture.ResetDatabaseAsync();
 
             var (service, _, _) = _fixture.GetScopedService<IAuthService>();
-            var userManagerBefore = _fixture.GetUserManager();
+            var userManagerBefore = _fixture.GetUserManager();            
+
             int initialCount = await userManagerBefore.Users.CountAsync();
             var registerDto = AuthTestData.CreateRegisterUserDto();
 

@@ -6,6 +6,8 @@
         {
             public const string Admin = "Admin";
             public const string Contributor = "Contributor";
+
+            public const string User = "User";
         }
 
         public static class Controller

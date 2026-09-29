@@ -55,6 +55,9 @@
             public const string RegistrationFailed =
                 "User registration failed. Email: {Email}, Codes: {Codes}, Message: {Message}";
 
+            public const string RoleAssignmentFailed =
+                "Security failure: Could not assign role to user {UserId} ({Email})";
+
             public const string ClaimAssignmentFailed =
                 "Security failure: Could not assign claims to user {UserId} ({Email})";
 
