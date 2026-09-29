@@ -20,7 +20,7 @@ namespace PostApiService.Services
             _tokenService = tokenService;
         }
 
-        private static Claim GetContributorClaims(string controllerName)
+        private static Claim CreateDefaultPermissionClaim(string controllerName)
         {
             return new Claim(controllerName,
                 ClaimHelper.SerializePermissions(
@@ -119,8 +119,18 @@ namespace PostApiService.Services
                 );
             }
 
+            var roleResult = await _authRepository.AddToRoleAsync(identityUser, TS.Roles.User, ct);
+
+            if (!roleResult.Succeeded)
+            {
+                Log.Error(Authentication.RoleAssignmentFailed, identityUser.Id, userDto.Email);
+
+                return Error<RegisteredUserDto>(Auth.Registration.Errors.RoleAssignmentFailed,
+                    Auth.Registration.Errors.RoleAssignmentFailedCode);
+            }
+
             var claimResult = await _authRepository.AddClaimAsync(
-                identityUser, GetContributorClaims(TS.Controller.Comment), ct);
+                identityUser, CreateDefaultPermissionClaim(TS.Controller.Comment), ct);
 
             // TODO (TechDebt): #24 Implement TransactionScope or Rollback logic.           
             if (!claimResult.Succeeded)

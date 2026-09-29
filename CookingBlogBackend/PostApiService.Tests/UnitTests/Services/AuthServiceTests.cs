@@ -2,6 +2,7 @@
 using PostApiService.Interfaces;
 using PostApiService.Repositories;
 using System.Security.Claims;
+using PostApiService.Models.TypeSafe;
 using AuthService = PostApiService.Services.AuthService;
 
 namespace PostApiService.Tests.UnitTests.Services
@@ -83,6 +84,9 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockAuthRepository.CreateAsync(Arg.Any<IdentityUser>(), registerDto.Password, ct)
                 .Returns(IdentityResult.Success);
 
+            _mockAuthRepository.AddToRoleAsync(Arg.Any<IdentityUser>(), TS.Roles.User, Arg.Any<CancellationToken>())
+                .Returns(IdentityResult.Success);
+
             _mockAuthRepository.AddClaimAsync(Arg.Any<IdentityUser>(), Arg.Any<Claim>(), ct)
                 .Returns(IdentityResult.Success);
 
@@ -154,6 +158,9 @@ namespace PostApiService.Tests.UnitTests.Services
                 .Returns(Task.FromResult<IdentityUser?>(null));
 
             _mockAuthRepository.CreateAsync(Arg.Any<IdentityUser>(), registerDto.Password, Arg.Any<CancellationToken>())
+                .Returns(IdentityResult.Success);
+
+            _mockAuthRepository.AddToRoleAsync(Arg.Any<IdentityUser>(), TS.Roles.User, Arg.Any<CancellationToken>())
                 .Returns(IdentityResult.Success);
 
             _mockAuthRepository.AddClaimAsync(
