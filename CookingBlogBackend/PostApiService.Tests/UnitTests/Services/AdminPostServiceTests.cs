@@ -61,6 +61,46 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Theory]
+        [InlineData(true, "some-other-id", "some-other-id")]
+        [InlineData(false, "some-other-id", "my-actual-id")]
+        public async Task GetAdminPostsPagedAsync_ShouldEnforceAuthorFiltering_BasedOnRole(
+            bool isAdmin, string? inputAuthorId, string expectedRepoAuthorId)
+        {
+            // Arrange
+            var ct = CancellationToken.None;
+            var currentUserId = "my-actual-id";
+
+            var dto = new AdminPostQueryDto(
+               SearchTerm: null,
+               CategoryId: null,
+               AuthorId: inputAuthorId,
+               PageNumber: 1,
+               PageSize: 10,
+               SortBy: null,
+               SortDirection: null,
+               OnlyActive: null
+            );
+
+            _mockWebContext.UserId.Returns(currentUserId);
+            _mockWebContext.IsAdmin.Returns(isAdmin);
+
+            var mockQueryable = TestDataHelper.GetAdminTestPosts(TestDataHelper.GetCulinaryCategories()).AsQueryable().BuildMock();
+            
+            _mockRepository.GetAdminFilteredAndSortedPosts(
+                null, null, null, null, null, expectedRepoAuthorId)
+                .Returns(mockQueryable);
+
+            // Act
+            var result = await _adminPostService.GetAdminPostsPagedAsync(dto, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            _mockRepository.Received(1).GetAdminFilteredAndSortedPosts(
+                null, null, null, null, null, expectedRepoAuthorId);
+        }
+
+        [Theory]
         [MemberData(nameof(TestDataHelper.GetPostFilterData), MemberType = typeof(TestDataHelper))]
         public async Task GetAdminPostsPagedAsync_ShouldFilterCorrectlyByIsActive
             (string? search, int? categoryId, bool? onlyActive, int expectedCount, string expectedName)
@@ -95,7 +135,13 @@ namespace PostApiService.Tests.UnitTests.Services
                 .AsQueryable()
                 .BuildMock();
 
-            _mockRepository.GetAdminFilteredAndSortedPosts(search, onlyActive, categoryId, null, null, null)
+            _mockRepository.GetAdminFilteredAndSortedPosts(
+                Arg.Is(search),
+                Arg.Is(onlyActive),
+                Arg.Is(categoryId),
+                Arg.Any<string?>(),
+                Arg.Any<string?>(),
+                Arg.Any<string?>())
                 .Returns(expectedFilteredList);
 
             // Act
@@ -108,7 +154,14 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(expectedName, data.AppliedFilters!.CategoryName);
             Assert.Equal(expectedCount, result.Value!.Items.Count());
 
-            _mockRepository.Received(1).GetAdminFilteredAndSortedPosts(search, onlyActive, categoryId, null, null, null);
+            _mockRepository.Received(1).GetAdminFilteredAndSortedPosts(
+                Arg.Is(search),
+                Arg.Is(onlyActive),
+                Arg.Is(categoryId),
+                Arg.Any<string?>(),
+                Arg.Any<string?>(),
+                Arg.Any<string?>()
+            );
         }
 
         [Fact]
@@ -131,6 +184,7 @@ namespace PostApiService.Tests.UnitTests.Services
             );
 
             _mockWebContext.UserId.Returns("admin-id");
+            _mockWebContext.IsAdmin.Returns(true);
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
@@ -140,7 +194,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var testPost = posts.First();
             testPost.IsActive = true;
 
-            var mockQueryable = posts.AsQueryable().BuildMock();
+            var mockQueryable = posts.BuildMock();
             _mockRepository.GetAdminFilteredAndSortedPosts(null, null, null, null, null, null)
                 .Returns(mockQueryable);
 
@@ -188,6 +242,7 @@ namespace PostApiService.Tests.UnitTests.Services
             );
 
             _mockWebContext.UserId.Returns("admin-id");
+            _mockWebContext.IsAdmin.Returns(true);
 
             var categories = TestDataHelper.GetCulinaryCategories();
             var posts = TestDataHelper.GetAdminTestPosts(categories);
