@@ -20,6 +20,8 @@ namespace PostApiService.Infrastructure.Services
 
         public bool IsAdmin => User?.IsInRole(TS.Roles.Admin) ?? false;
 
+        public bool IsContributor => User?.IsInRole(TS.Roles.Contributor) ?? false;
+
         public string IpAddress => _accessor.HttpContext?.Connection?.RemoteIpAddress?.ToString()
                                    ?? UnknownIp;
     }

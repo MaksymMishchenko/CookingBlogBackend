@@ -6,5 +6,6 @@
         string? UserId { get; }
         string UserName { get; }
         bool IsAdmin { get; }
+        bool IsContributor { get; }
     }
 }

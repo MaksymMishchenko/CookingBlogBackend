@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PostApiService.Infrastructure.Services;
+using PostApiService.Models.TypeSafe;
 using System.Security.Claims;
 
 namespace PostApiService.Tests.Helper
@@ -12,6 +13,7 @@ namespace PostApiService.Tests.Helper
         private string? _manualUserName;
         private string? _manualIpAddress;
         private bool? _manualIsAdmin;
+        private bool? _manualIsContributor;
 
         public TestWebContext(IHttpContextAccessor accessor)
         {
@@ -38,8 +40,14 @@ namespace PostApiService.Tests.Helper
 
         public bool IsAdmin
         {
-            get => _manualIsAdmin ?? _accessor.HttpContext?.User?.IsInRole("Admin") ?? false;
+            get => _manualIsAdmin ?? _accessor.HttpContext?.User?.IsInRole(TS.Roles.Admin) ?? false;
             set => _manualIsAdmin = value;
+        }
+
+        public bool IsContributor
+        {
+            get => _manualIsContributor ?? _accessor.HttpContext?.User?.IsInRole(TS.Roles.Contributor) ?? false;
+            set => _manualIsContributor = value;
         }
     }
 }
