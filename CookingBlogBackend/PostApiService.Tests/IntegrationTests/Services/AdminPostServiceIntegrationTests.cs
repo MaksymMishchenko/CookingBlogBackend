@@ -12,7 +12,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
         public AdminPostServiceIntegrationTests(ServiceTestFixture fixture)
         {
             _fixture = fixture;
-        }        
+        }
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_SearchMode_ShouldReturnCorrectAdminDtos()
@@ -88,7 +88,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.True(item.CategoryId > 0);
                 Assert.NotNull(item.CategoryName);
             });
-        }        
+        }
 
         [Fact]
         public async Task GetAdminPostsPagedAsync_FilterByInactive_ReturnsOnlyInactivePosts()
@@ -156,7 +156,37 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
-        public async Task GetPostByIdAsync_ShouldReturnSuccess_IfPostExistsInDb()
+        public async Task GetPostByIdAsync_ShouldReturnSuccess_WhenAdminRequestsAnyPost()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            string[] authorIds = new[] { TestUserData.ContributorId };
+            var posts = TestDataHelper.GetPostsWithComments(5, categories, authorIds: authorIds, commentCount: 2);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var targetPost = posts.First();
+
+            _fixture.LoginAsAdmin();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
+
+            // Act
+            var result = await service.GetPostByIdAsync(targetPost.Id);
+
+            // Assert            
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.NotNull(result.Value);
+            Assert.Equal(targetPost.Title, result.Value.Title);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnSuccess_WhenContributorRequestsOwnPost()
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
@@ -165,15 +195,17 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var categories = TestDataHelper.GetCulinaryCategories();
 
             string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
-            var posts = TestDataHelper.GetPostsWithComments(25, categories, authorIds: authorIds, commentCount: 5);
-            posts.ForEach(p => { p.Id = 0; p.Slug = Guid.NewGuid().ToString(); });
-
+            var posts = TestDataHelper.GetPostsWithComments(5, categories, authorIds: authorIds, commentCount: 2);
             await _fixture.Services!.SeedBlogDataAsync(posts, categories);
 
-            var targetPost = posts.First();
-            var targetId = targetPost.Id;
+            var targetPost = posts.First(p => p.AuthorId == TestUserData.ContributorId);
 
-            var (service, _, _) = _fixture.GetScopedService<IAdminPostService>();
+            _fixture.LoginAsContributor();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IAdminPostService>();
+
+            webContext.UserId = TestUserData.ContributorId;
+            webContext.IsAdmin = false;
 
             // Act
             var result = await service.GetPostByIdAsync(targetPost.Id);
@@ -181,13 +213,37 @@ namespace PostApiService.Tests.IntegrationTests.Services
             // Assert
             Assert.True(result.IsSuccess);
             Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.NotNull(result.Value);
+            Assert.Equal(targetPost.Id, result.Value.Id);
+        }
 
-            var data = Assert.IsType<PostAdminDetailsDto>(result.Value);
-            Assert.NotNull(data);
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnForbidden_WhenContributorRequestsForeignPost()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
 
-            Assert.Equal(targetPost.Title, data.Title);
-            Assert.False(string.IsNullOrEmpty(data.Author));
-            Assert.Equal(targetPost.Slug, data.Slug);
+            var categories = TestDataHelper.GetCulinaryCategories();
+
+            string[] contIds = new[] { TestUserData.Contributor2Id };
+            var posts = TestDataHelper.GetPostsWithComments(5, categories, authorIds: contIds, commentCount: 2);
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+
+            var foreignPost = posts.First();
+
+            _fixture.LoginAsContributor();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            webContext.UserId = TestUserData.ContributorId;
+            webContext.IsAdmin = false;
+
+            // Act
+            var result = await service.GetPostByIdAsync(foreignPost.Id);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
         }
 
         [Fact]

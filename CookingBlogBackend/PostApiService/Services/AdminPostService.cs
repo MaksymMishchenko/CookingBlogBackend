@@ -84,6 +84,13 @@ namespace PostApiService.Services
         /// </summary>       
         public async Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default)
         {
+            var userId = WebContext!.UserId;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized<PostAdminDetailsDto>();
+            }            
+
             var postDto = await _postRepository.AsQueryable()
                 .Where(p => p.Id == postId)
                 .Select(PostMappingExtensions.ToAdminDetailsDto)
@@ -95,6 +102,13 @@ namespace PostApiService.Services
 
                 return NotFound<PostAdminDetailsDto>
                     (PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+            }
+
+            bool isAdmin = _webContext.IsAdmin;
+
+            if (!isAdmin && postDto.AuthorId != userId)
+            {
+                return Forbidden<PostAdminDetailsDto>();
             }
 
             return Success(postDto);
