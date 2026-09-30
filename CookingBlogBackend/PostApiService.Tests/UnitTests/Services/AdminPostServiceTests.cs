@@ -85,7 +85,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext.IsAdmin.Returns(isAdmin);
 
             var mockQueryable = TestDataHelper.GetAdminTestPosts(TestDataHelper.GetCulinaryCategories()).AsQueryable().BuildMock();
-            
+
             _mockRepository.GetAdminFilteredAndSortedPosts(
                 null, null, null, null, null, expectedRepoAuthorId)
                 .Returns(mockQueryable);
@@ -279,6 +279,9 @@ namespace PostApiService.Tests.UnitTests.Services
             int postId = 2;
             var token = CancellationToken.None;
 
+            _mockWebContext.UserId.Returns(TestUserData.AdminId);
+            _mockWebContext.IsAdmin.Returns(true);
+
             var categories = TestDataHelper.GetCulinaryCategories();
 
             string[] authorIds = new[] { TestUserData.AdminId, TestUserData.ContributorId };
@@ -316,8 +319,12 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             int nonExistentId = 999;
+
+            _mockWebContext.UserId.Returns(TestUserData.AdminId);
+            _mockWebContext.IsAdmin.Returns(true);
+
             var testPosts = new List<Post>().AsQueryable().BuildMock();
-            _mockRepository.AsQueryable().Returns(testPosts);
+            _mockRepository.AsQueryable().Returns(mockQueryable => testPosts);
 
             var errorMessage = PostM.Errors.PostNotFound;
             var errorCode = PostM.Errors.PostNotFoundCode;

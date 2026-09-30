@@ -5,6 +5,7 @@
         string Title,
         string Description,
         string Content,
+        string AuthorId,
         string Author,
         string ImageUrl,
         string Slug,
