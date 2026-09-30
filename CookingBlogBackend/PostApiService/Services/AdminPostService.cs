@@ -126,6 +126,14 @@ namespace PostApiService.Services
                 return Unauthorized<PostAdminDetailsDto>();
             }
 
+            bool isAdmin = _webContext.IsAdmin;
+            bool isContributor = _webContext.IsContributor;
+
+            if (!isAdmin && !isContributor)
+            {
+                return Forbidden<PostAdminDetailsDto>();
+            }
+
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
             if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
