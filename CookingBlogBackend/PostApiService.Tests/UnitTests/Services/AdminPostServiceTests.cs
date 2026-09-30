@@ -364,6 +364,28 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task AddPostAsync_ShouldReturnForbidden_WhenUserIsNotAdminOrContributor()
+        {
+            // Arrange            
+            var postCreateDto = TestDataHelper.GetPostCreateDto();
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(false);
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+            Assert.Null(result.Value);
+
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task AddPostAsync_ShouldReturnInvalid_WhenPostIsEmpty()
         {
             // Arrange
@@ -371,6 +393,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postCreateDto = TestDataHelper.GetPostCreateDto(invalidPostContent);
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockWebContext.IsContributor.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
 
             // Act
@@ -394,6 +417,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var createPostDto = TestDataHelper.GetPostCreateDto();
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(true);
@@ -425,6 +449,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postCreateDto = TestDataHelper.GetPostCreateDto();
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsContributor.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
 
@@ -466,6 +491,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var ct = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
@@ -496,6 +522,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var token = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsContributor.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
