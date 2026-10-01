@@ -60,6 +60,37 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.DidNotReceive().GetAdminFilteredAndSortedPosts(null, null, null, null, null, null);
         }
 
+        [Fact]
+        public async Task GetAdminPostsPagedAsync_ShouldReturnForbidden_WhenUserIsNotAdminOrContributor()
+        {
+            // Arrange
+            var dto = new AdminPostQueryDto(
+                SearchTerm: null,
+                CategoryId: null,
+                AuthorId: null,
+                PageNumber: 1,
+                PageSize: 10,
+                SortBy: null,
+                SortDirection: null,
+                OnlyActive: null
+            );
+
+            _mockWebContext.UserId.Returns("regular-user-id");
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(false);
+
+            // Act
+            var result = await _adminPostService.GetAdminPostsPagedAsync(dto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+            Assert.Null(result.Value);
+
+            _mockRepository.DidNotReceive().GetAdminFilteredAndSortedPosts(null, null, null, null, null, null);
+        }
+
         [Theory]
         [InlineData(true, "some-other-id", "some-other-id")]
         [InlineData(false, "some-other-id", "my-actual-id")]
@@ -83,6 +114,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(currentUserId);
             _mockWebContext.IsAdmin.Returns(isAdmin);
+            _mockWebContext.IsContributor.Returns(!isAdmin);
 
             var mockQueryable = TestDataHelper.GetAdminTestPosts(TestDataHelper.GetCulinaryCategories()).AsQueryable().BuildMock();
 
@@ -121,6 +153,7 @@ namespace PostApiService.Tests.UnitTests.Services
             );
 
             _mockWebContext.UserId.Returns("admin-id");
+            _mockWebContext.IsAdmin.Returns(true);
 
             _mockCategoryService.GetNameByIdAsync(categoryId, ct)
                .Returns(Task.FromResult<string?>(expectedName));
