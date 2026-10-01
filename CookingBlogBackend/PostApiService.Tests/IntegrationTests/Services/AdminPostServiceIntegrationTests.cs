@@ -349,6 +349,38 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task UpdatePostAsync_ShouldReturnForbidden_WhenUserIsNotAdminOrContributor()
+        {
+            // Arrange           
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            string[] authorIds = new[] { TestUserData.AdminId };
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, authorIds: authorIds, commentCount: 0);
+            posts.ForEach(p => { p.Id = 0; p.Slug = $"original-{Guid.NewGuid()}"; });
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+            var targetPost = posts.First();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            
+            webContext.UserId = "some-regular-user-id";
+            webContext.IsAdmin = false;
+            webContext.IsContributor = false;
+
+            var updateDto = TestDataHelper.ToPostUpdateDto(targetPost, "Attempt to update");
+
+            // Act                                     
+            var result = await service.UpdatePostAsync(targetPost.Id, updateDto);
+
+            // Assert                
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+            Assert.Null(result.Value);
+        }
+
+        [Fact]
         public async Task DeletePostAsync_ShouldRemovePostSuccessfully()
         {
             // Arrange           
