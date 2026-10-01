@@ -292,11 +292,25 @@ namespace PostApiService.Services
                 return Unauthorized();
             }
 
+            bool isAdmin = _webContext.IsAdmin;
+            bool isContributor = _webContext.IsContributor;
+            
+            if (!isAdmin && !isContributor)
+            {
+                return Forbidden(); 
+            }
+
             var existingPost = await _postRepository.GetByIdAsync(postId, ct);
 
             if (existingPost == null)
             {
                 return NotFound(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
+            }
+
+            if (!isAdmin && existingPost.AuthorId != userId)
+            {
+                Log.Warning(Security.UnauthorizedPostAccessAttempt, userId, postId, existingPost.AuthorId, WebContext.IpAddress);
+                return Forbidden();
             }
 
             await _postRepository.DeleteAsync(existingPost, ct);
