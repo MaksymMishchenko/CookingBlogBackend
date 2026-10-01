@@ -42,6 +42,12 @@ namespace PostApiService.Services
             }
 
             bool isAdmin = _webContext.IsAdmin;
+            bool isContributor = _webContext.IsContributor;
+
+            if (!isAdmin && !isContributor)
+            {
+                return Forbidden<PagedResult<AdminPostListDto>>();
+            }            
 
             var updatedQuery = isAdmin
                  ? postQuery
