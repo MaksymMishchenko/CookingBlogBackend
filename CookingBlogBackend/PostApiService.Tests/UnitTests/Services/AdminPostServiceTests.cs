@@ -281,6 +281,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(TestUserData.AdminId);
             _mockWebContext.IsAdmin.Returns(true);
+            _mockWebContext.IsContributor.Returns(false);
 
             var categories = TestDataHelper.GetCulinaryCategories();
 
@@ -322,6 +323,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(TestUserData.AdminId);
             _mockWebContext.IsAdmin.Returns(true);
+            _mockWebContext.IsContributor.Returns(false);
 
             var testPosts = new List<Post>().AsQueryable().BuildMock();
             _mockRepository.AsQueryable().Returns(mockQueryable => testPosts);
@@ -339,6 +341,50 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(errorCode, result.ErrorCode);
 
             _mockRepository.Received(1).AsQueryable();
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnForbidden_WhenUserIsNotAdminOrContributor()
+        {
+            // Arrange
+            int postId = 1;
+            _mockWebContext.UserId.Returns("regular-user-id");
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(false);
+
+            // Act
+            var result = await _adminPostService.GetPostByIdAsync(postId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+        }
+
+        [Fact]
+        public async Task GetPostByIdAsync_ShouldReturnForbidden_WhenContributorRequestsForeignPost()
+        {
+            // Arrange
+            int postId = 1;
+            string contributorId = "contributor-1-id";
+            string anotherAuthorId = "contributor-2-id";
+
+            _mockWebContext.UserId.Returns(contributorId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var testPosts = TestDataHelper.GetPostsWithComments(count: 1, categories, authorIds: new[] { anotherAuthorId }, generateComments: false, generateIds: true);
+            testPosts.First().Id = postId;
+
+            var mockQueryable = testPosts.AsQueryable().BuildMock();
+            _mockRepository.AsQueryable().Returns(mockQueryable);
+
+            // Act
+            var result = await _adminPostService.GetPostByIdAsync(postId);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
         }
 
         [Fact]
