@@ -7,12 +7,11 @@ using PostApiService.Repositories;
 
 namespace PostApiService.Services
 {
-    public class AdminPostService : BaseService, IAdminPostService
+    public class AdminPostService : AdminBaseService, IAdminPostService
     {
         private readonly IPostRepository _postRepository;
         private readonly IHtmlSanitizationService _sanitizer;
         private readonly IPublicCategoryService _categoryService;
-        private readonly IWebContext _webContext;
 
         public AdminPostService(IPostRepository postRepository,
             IWebContext webContext,
@@ -23,7 +22,6 @@ namespace PostApiService.Services
             _postRepository = postRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
-            _webContext = webContext;
         }
 
         /// <summary>
@@ -33,22 +31,13 @@ namespace PostApiService.Services
         /// </summary>
         public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
             AdminPostQueryDto postQuery, CancellationToken ct = default)
-        {
+        {            
+            var accessError = ValidateAdminOrContributor<PagedResult<AdminPostListDto>>();
+            if (accessError != null) return accessError;
+
             var userId = WebContext!.UserId;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized<PagedResult<AdminPostListDto>>();
-            }
-
-            bool isAdmin = _webContext.IsAdmin;
-            bool isContributor = _webContext.IsContributor;
-
-            if (!isAdmin && !isContributor)
-            {
-                return Forbidden<PagedResult<AdminPostListDto>>();
-            }            
-
+            bool isAdmin = WebContext.IsAdmin;
+            
             var updatedQuery = isAdmin
                  ? postQuery
                  : postQuery with { AuthorId = userId };
@@ -90,20 +79,12 @@ namespace PostApiService.Services
         /// </summary>       
         public async Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default)
         {
+
+            var accessError = ValidateAdminOrContributor<PostAdminDetailsDto>();
+            if (accessError != null) return accessError;
+
             var userId = WebContext!.UserId;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized<PostAdminDetailsDto>();
-            }
-
-            bool isAdmin = _webContext.IsAdmin;
-            bool isContributor = _webContext.IsContributor;
-
-            if (!isAdmin && !isContributor)
-            {
-                return Forbidden<PostAdminDetailsDto>();
-            }
+            bool isAdmin = WebContext!.IsAdmin;
 
             var postDto = await _postRepository.AsQueryable()
                 .Where(p => p.Id == postId)
@@ -131,20 +112,10 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Result<PostAdminDetailsDto>> AddPostAsync(PostCreateDto postDto, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOrContributor<PostAdminDetailsDto>();
+            if (accessError != null) return accessError;
+
             var userId = WebContext!.UserId;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized<PostAdminDetailsDto>();
-            }
-
-            bool isAdmin = _webContext.IsAdmin;
-            bool isContributor = _webContext.IsContributor;
-
-            if (!isAdmin && !isContributor)
-            {
-                return Forbidden<PostAdminDetailsDto>();
-            }
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
@@ -207,20 +178,11 @@ namespace PostApiService.Services
         public async Task<Result<PostAdminDetailsDto>> UpdatePostAsync
             (int postId, PostUpdateDto postDto, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOrContributor<PostAdminDetailsDto>();
+            if (accessError != null) return accessError;
+
             var userId = WebContext!.UserId;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized<PostAdminDetailsDto>();
-            }
-
-            bool isAdmin = _webContext.IsAdmin;
-            bool isContributor = _webContext.IsContributor;
-
-            if (!isAdmin && !isContributor)
-            {
-                return Forbidden<PostAdminDetailsDto>();
-            }
+            bool isAdmin = WebContext!.IsAdmin;
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
@@ -291,20 +253,11 @@ namespace PostApiService.Services
         /// </summary>        
         public async Task<Result> DeletePostAsync(int postId, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOrContributor();
+            if (accessError != null) return accessError;
+
             var userId = WebContext!.UserId;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                return Unauthorized();
-            }
-
-            bool isAdmin = _webContext.IsAdmin;
-            bool isContributor = _webContext.IsContributor;
-            
-            if (!isAdmin && !isContributor)
-            {
-                return Forbidden(); 
-            }
+            bool isAdmin = WebContext!.IsAdmin;
 
             var existingPost = await _postRepository.GetByIdAsync(postId, ct);
 
