@@ -881,12 +881,62 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task DeletePostAsync_ShouldReturnForbidden_WhenUserIsNotAdminOrContributor()
+        {
+            // Arrange
+            const int postId = 1;
+            _mockWebContext.UserId.Returns("regular-user-id");
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(false);
+
+            // Act
+            var result = await _adminPostService.DeletePostAsync(postId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+
+            await _mockRepository.DidNotReceive().GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnForbidden_WhenContributorDeletesForeignPost()
+        {
+            // Arrange
+            const int postId = 1;
+            string contributorId = "contributor-1-id";
+            string anotherAuthorId = "contributor-2-id";
+
+            _mockWebContext.UserId.Returns(contributorId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { Id = postId, AuthorId = anotherAuthorId });
+
+            // Act
+            var result = await _adminPostService.DeletePostAsync(postId);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+
+            await _mockRepository.Received(1).GetByIdAsync(postId, Arg.Any<CancellationToken>());
+            await _mockRepository.DidNotReceive().DeleteAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task DeletePostAsync_ShouldReturn404NotFound_WhenPostDoesNotExist()
         {
             // Arrange
             int postId = 99;
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
                 .Returns((Post)null!);
 
@@ -910,8 +960,13 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             int postId = 1;
-            var existingPost = new Post { Id = postId, Title = "To be deleted" };
-            _mockWebContext.UserId.Returns("user-id");
+            string userId = "contributor-1-id";
+            var existingPost = new Post { Id = postId, Title = "To be deleted", AuthorId = userId };
+
+            _mockWebContext.UserId.Returns(userId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
                 .Returns(existingPost);
 
