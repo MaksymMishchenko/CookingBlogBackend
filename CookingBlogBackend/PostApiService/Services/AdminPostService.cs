@@ -115,7 +115,7 @@ namespace PostApiService.Services
             var accessError = ValidateAdminOrContributor<PostAdminDetailsDto>();
             if (accessError != null) return accessError;
 
-            var userId = WebContext!.UserId;
+            var userId = WebContext!.UserId!;
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
