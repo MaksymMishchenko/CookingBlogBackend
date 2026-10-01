@@ -19,6 +19,14 @@
                 errorCode ?? Auth.LoginM.Errors.UnauthorizedAccessCode);
         }
 
+        protected Result Forbidden()
+        {
+            return Result.Forbidden(
+                Auth.LoginM.Errors.AccessForbidden,
+                Auth.LoginM.Errors.AccessForbiddenErrorCode
+            );
+        }
+
         protected Result<T> Forbidden<T>()
         {
             return Result<T>.Forbidden(
@@ -26,7 +34,6 @@
                 Auth.LoginM.Errors.AccessForbiddenErrorCode
             );
         }
-
         protected Result Forbidden(string message, string code) => Result.Forbidden(message, code);
 
         protected Result<T> Forbidden<T>(string message, string code) => Result<T>.Forbidden(message, code);
