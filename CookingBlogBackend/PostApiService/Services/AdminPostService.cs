@@ -206,7 +206,15 @@ namespace PostApiService.Services
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized<PostAdminDetailsDto>();
-            }            
+            }
+
+            bool isAdmin = _webContext.IsAdmin;
+            bool isContributor = _webContext.IsContributor;
+
+            if (!isAdmin && !isContributor)
+            {
+                return Forbidden<PostAdminDetailsDto>();
+            }
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
@@ -228,7 +236,13 @@ namespace PostApiService.Services
                 Log.Warning(Posts.NotFound, postId);
 
                 return NotFound<PostAdminDetailsDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
-            }            
+            }
+
+            if (!isAdmin && postEntity.AuthorId != userId)
+            {
+                Log.Warning(Security.UnauthorizedPostAccessAttempt, userId, postId, postEntity.AuthorId, WebContext.IpAddress);
+                return Forbidden<PostAdminDetailsDto>();
+            }
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();

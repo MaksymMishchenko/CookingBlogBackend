@@ -39,7 +39,10 @@
             
             public const string RateLimitExceeded =
                  "Security Alert: Rate limit exceeded. IP: {IP}, Path: {Path}, Method: {Method}";
-        }
+
+            public const string UnauthorizedPostAccessAttempt =
+                "Security Alert: User {UserId} attempted to access/modify foreign post {PostId} belonging to {AuthorId}. IP: {IP}";
+        }    
 
         public static class System
         {

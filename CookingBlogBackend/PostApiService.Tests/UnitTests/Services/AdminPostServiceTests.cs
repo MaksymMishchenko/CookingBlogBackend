@@ -624,6 +624,58 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task UpdatePostAsync_ShouldReturnForbidden_WhenUserIsNotAdminOrContributor()
+        {
+            // Arrange
+            const int postId = 1;
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto();
+
+            _mockWebContext.UserId.Returns("regular-user-id");
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(false);
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+            Assert.Null(result.Value);
+
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnForbidden_WhenContributorUpdatesForeignPost()
+        {
+            // Arrange
+            const int postId = 1;
+            string contributorId = "contributor-1-id";
+            string anotherAuthorId = "contributor-2-id";
+            var postUpdateDto = TestDataHelper.GetPostUpdateDto(title: "Title", slug: "slug", content: "Some valid content");
+
+            _mockWebContext.UserId.Returns(contributorId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new Post { Id = postId, AuthorId = anotherAuthorId });
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Forbidden, result.Status);
+            Assert.Null(result.Value);
+
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task UpdatePostAsync_ShouldReturnInvalid_WhenPostIsEmpty()
         {
             // Arrange
@@ -632,6 +684,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postUpdateDto = TestDataHelper.GetPostUpdateDto(invalidPostContent);
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
 
             // Act
@@ -658,6 +711,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postUpdateDto = TestDataHelper.GetPostUpdateDto(content);
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns((Post?)null);
@@ -685,6 +739,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postUpdateDto = TestDataHelper.GetPostUpdateDto(content);
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns(new Post { Id = postId, AuthorId = "3f2504e0-4f89-11d3-9a0c-0305e82c3301" });
@@ -713,6 +768,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var postUpdateDto = TestDataHelper.GetPostUpdateDto(categoryId: 2);
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsContributor.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
@@ -749,6 +805,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var ct = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
@@ -776,6 +833,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var ct = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
