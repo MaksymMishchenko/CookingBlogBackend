@@ -89,7 +89,15 @@ namespace PostApiService.Services
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized<PostAdminDetailsDto>();
-            }            
+            }
+
+            bool isAdmin = _webContext.IsAdmin;
+            bool isContributor = _webContext.IsContributor;
+
+            if (!isAdmin && !isContributor)
+            {
+                return Forbidden<PostAdminDetailsDto>();
+            }
 
             var postDto = await _postRepository.AsQueryable()
                 .Where(p => p.Id == postId)
@@ -103,8 +111,6 @@ namespace PostApiService.Services
                 return NotFound<PostAdminDetailsDto>
                     (PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
             }
-
-            bool isAdmin = _webContext.IsAdmin;
 
             if (!isAdmin && postDto.AuthorId != userId)
             {
@@ -200,7 +206,7 @@ namespace PostApiService.Services
             if (string.IsNullOrEmpty(userId))
             {
                 return Unauthorized<PostAdminDetailsDto>();
-            }
+            }            
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
@@ -222,7 +228,7 @@ namespace PostApiService.Services
                 Log.Warning(Posts.NotFound, postId);
 
                 return NotFound<PostAdminDetailsDto>(PostM.Errors.PostNotFound, PostM.Errors.PostNotFoundCode);
-            }
+            }            
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();

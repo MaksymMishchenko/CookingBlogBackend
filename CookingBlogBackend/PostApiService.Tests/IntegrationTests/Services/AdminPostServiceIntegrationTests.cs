@@ -206,6 +206,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             webContext.UserId = TestUserData.ContributorId;
             webContext.IsAdmin = false;
+            webContext.IsContributor = true;
 
             // Act
             var result = await service.GetPostByIdAsync(targetPost.Id);
