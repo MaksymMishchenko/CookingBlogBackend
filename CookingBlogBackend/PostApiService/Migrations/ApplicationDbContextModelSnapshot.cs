@@ -262,6 +262,9 @@ namespace PostApiService.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsEditedByAdmin")
                         .HasColumnType("boolean");
 

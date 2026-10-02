@@ -11,7 +11,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260921142617_Initial_Postgres")]
+    [Migration("20261002110140_Initial_Postgres")]
     partial class Initial_Postgres
     {
         /// <inheritdoc />
@@ -264,6 +264,9 @@ namespace PostApiService.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsEditedByAdmin")
                         .HasColumnType("boolean");

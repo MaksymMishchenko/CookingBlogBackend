@@ -464,5 +464,70 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockCommentRepo.Received(1).DeleteAsync(existingComment, ct);
             await _mockCommentRepo.Received(1).SaveChangesAsync(ct);
         }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldPerformSoftDelete_WhenCommentHasReplies()
+        {
+            // Arrange
+            const string userId = "3f2504e0-4f89-11d3-9a0c-0305e82c3302";
+            var commentId = 1;
+            var ct = CancellationToken.None;
+
+            var existingComment = new Comment
+            {
+                Id = commentId,
+                UserId = userId,
+                Content = "Original comment text",
+                Replies = new List<Comment> { new Comment { Id = 2, Content = "Reply text" } }
+            };
+
+            _mockCommentRepo.GetByIdAsync(commentId, ct).Returns(existingComment);
+            _mockWebContext.UserId.Returns(userId);
+            _mockWebContext.IsAdmin.Returns(false);
+
+            // Act
+            var result = await _service.DeleteCommentAsync(commentId, ct);
+
+            // Assert            
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
+            
+            Assert.True(existingComment.IsDeleted);
+            Assert.Equal(CommentM.Messages.DeletedCommentContent, existingComment.Content);
+           
+            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+            await _mockCommentRepo.Received(1).SaveChangesAsync(ct);
+        }
+
+        [Fact]
+        public async Task DeleteCommentAsync_ShouldReturnSuccessWithoutChanges_WhenCommentIsAlreadyDeleted()
+        {
+            // Arrange
+            const string userId = "3f2504e0-4f89-11d3-9a0c-0305e82c3302";
+            var commentId = 1;
+            var ct = CancellationToken.None;
+
+            var existingComment = new Comment
+            {
+                Id = commentId,
+                UserId = userId,
+                IsDeleted = true,
+                Content = CommentM.Messages.DeletedCommentContent
+            };
+
+            _mockCommentRepo.GetByIdAsync(commentId, ct).Returns(existingComment);
+            _mockWebContext.UserId.Returns(userId);
+            _mockWebContext.IsAdmin.Returns(false);
+
+            // Act
+            var result = await _service.DeleteCommentAsync(commentId, ct);
+
+            // Assert            
+            Assert.True(result.IsSuccess);
+            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
+           
+            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
+            await _mockCommentRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
     }
 }
