@@ -21,7 +21,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             await _fixture.ResetDatabaseAsync();
             await _fixture.Services!.SeedAdminAsync();
 
-            var (service, _, _) = _fixture.GetScopedService<IAdminUserService>();
+            var (service, _, webContext) = _fixture.GetScopedService<IAdminUserService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
 
             // Act
             var result = await service.GetAdminAndContributorUsersAsync();
