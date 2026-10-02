@@ -1,4 +1,5 @@
 ﻿using PostApiService.Helper;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
@@ -6,13 +7,14 @@ using PostApiService.Repositories;
 
 namespace PostApiService.Services
 {
-    public class AdminCategoryService : BaseResultService, IAdminCategoryService
+    public class AdminCategoryService : AdminBaseService, IAdminCategoryService
     {
         private readonly ICategoryRepository _categoryRepository;
         private readonly IPostRepository _postRepository;
 
         public AdminCategoryService(ICategoryRepository categoryRepository,
-            IPostRepository postRepository)
+            IWebContext webContext,
+            IPostRepository postRepository) : base(webContext)
         {
             _categoryRepository = categoryRepository;
             _postRepository = postRepository;
@@ -20,6 +22,9 @@ namespace PostApiService.Services
 
         public async Task<Result<CategoryDto>> GetCategoryByIdAsync(int id, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOnly<CategoryDto>();
+            if (accessError != null) return accessError;
+
             var category = await _categoryRepository.GetByIdAsync(id, ct);
 
             if (category == null)
@@ -34,6 +39,9 @@ namespace PostApiService.Services
         public async Task<Result<CategoryDto>> AddCategoryAsync
             (CreateCategoryDto categoryDto, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOnly<CategoryDto>();
+            if (accessError != null) return accessError;
+
             categoryDto.Name = categoryDto.Name.StripHtml();
 
             string source = string.IsNullOrWhiteSpace(categoryDto.Slug) ? categoryDto.Name : categoryDto.Slug;
@@ -62,6 +70,9 @@ namespace PostApiService.Services
         public async Task<Result<CategoryDto>> UpdateCategoryAsync
             (int categoryId, UpdateCategoryDto categoryDto, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOnly<CategoryDto>();
+            if (accessError != null) return accessError;
+
             var category = await _categoryRepository
                 .GetByIdAsync(categoryId, ct);
 
@@ -101,6 +112,9 @@ namespace PostApiService.Services
 
         public async Task<Result> DeleteCategoryAsync(int id, CancellationToken ct = default)
         {
+            var accessError = ValidateAdminOnly();
+            if (accessError != null) return accessError;
+
             var category = await _categoryRepository.GetByIdAsync(id, ct);
 
             if (category == null)

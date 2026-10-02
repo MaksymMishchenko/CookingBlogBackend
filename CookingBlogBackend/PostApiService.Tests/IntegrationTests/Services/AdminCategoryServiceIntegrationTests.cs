@@ -20,11 +20,14 @@ namespace PostApiService.Tests.IntegrationTests.Services
         {
             // Arrange
             await _fixture.ResetDatabaseAsync();
+            _fixture.LoginAsAdmin();
 
             var categories = TestDataHelper.GetCulinaryCategories();
             await _fixture.Services!.SeedCategoriesAsync(categories);
 
-            var (service, dbContext, _) = _fixture.GetScopedService<IAdminCategoryService>();
+            var (service, dbContext, webContext) = _fixture.GetScopedService<IAdminCategoryService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
 
             var categoryToFind = await dbContext.Categories
                 .OrderByDescending(o => o.Id)
@@ -51,7 +54,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             _fixture.LoginAsAdmin();
 
             var dto = new CreateCategoryDto { Name = "Soups" };
-            var (service, dbContext, _) = _fixture.GetScopedService<IAdminCategoryService>();
+            var (service, dbContext, webContext) = _fixture.GetScopedService<IAdminCategoryService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
 
             // Act
             var result = await service.AddCategoryAsync(dto);
@@ -82,7 +87,9 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var categories = TestDataHelper.GetCulinaryCategories();
             await _fixture.Services!.SeedCategoriesAsync(categories);
 
-            var (service, dbContext, _) = _fixture.GetScopedService<IAdminCategoryService>();
+            var (service, dbContext, webContext) = _fixture.GetScopedService<IAdminCategoryService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
             var categoryToUpdate = await dbContext.Categories.FirstAsync();
 
             string oldName = categoryToUpdate.Name;
@@ -118,7 +125,11 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var categories = TestDataHelper.GetCulinaryCategories();
             await _fixture.Services!.SeedCategoriesAsync(categories);
 
-            var (service, dbContextArrange, _) = _fixture.GetScopedService<IAdminCategoryService>();
+            var (service, dbContextArrange, webContext) = _fixture.GetScopedService<IAdminCategoryService>();
+
+            webContext.UserId = TestUserData.AdminId;
+            webContext.IsAdmin = true;
+
             var categoryToDelete = await dbContextArrange.Categories.FirstAsync();
             int initialCount = await dbContextArrange.Categories.CountAsync();
 
