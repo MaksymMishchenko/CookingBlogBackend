@@ -230,6 +230,11 @@ namespace PostApiService.Services
                 return NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
             }
 
+            if (existingComment.IsDeleted)
+            {
+                return Success(CommentM.Success.CommentDeletedSuccessfully);
+            }
+
             var isAdmin = WebContext.IsAdmin;
             var ip = WebContext.IpAddress;
 
@@ -240,8 +245,19 @@ namespace PostApiService.Services
                 return Forbidden(CommentM.Errors.AccessDenied, CommentM.Errors.AccessDeniedCode);
             }
 
-            await _commentRepository.DeleteAsync(existingComment, ct);
-            await _commentRepository.SaveChangesAsync(ct);
+            bool hasReplies = existingComment.Replies != null && existingComment.Replies.Any();
+
+            if (hasReplies)
+            {
+                existingComment.IsDeleted = true;
+                existingComment.Content = CommentM.Messages.DeletedCommentContent;
+                await _commentRepository.SaveChangesAsync(ct);
+            }
+            else
+            {
+                await _commentRepository.DeleteAsync(existingComment, ct);
+                await _commentRepository.SaveChangesAsync(ct);
+            }
 
             if (isAdmin && existingComment.UserId != userId)
             {

@@ -64,6 +64,11 @@
                 public const string EmptyCode = "COMMENT_IS_EMPTY";
             }
 
+            public static class Messages
+            {
+                public const string DeletedCommentContent = "Comment has been deleted.";
+            }
+
             public static class Success
             {
                 public const string CommentAddedSuccessfully = "Comment added successfully.";

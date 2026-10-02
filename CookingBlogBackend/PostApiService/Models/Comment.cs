@@ -25,6 +25,8 @@ namespace PostApiService.Models
 
         public bool IsEditedByAdmin { get; set; } = false;
 
+        public bool IsDeleted { get; set; } = false;
+
         public int? ParentId { get; set; }
 
         [JsonIgnore]
