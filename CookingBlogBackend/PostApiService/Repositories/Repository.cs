@@ -23,7 +23,7 @@ namespace PostApiService.Repositories
                 .CountAsync(ct);
         }
 
-        public async Task<T?> GetByIdAsync
+        public virtual async Task<T?> GetByIdAsync
             (int id, CancellationToken ct = default) => await _dbSet.FindAsync(id, ct);
 
         public async Task<bool> AnyAsync

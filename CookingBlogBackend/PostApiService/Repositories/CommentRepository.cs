@@ -1,4 +1,6 @@
-﻿namespace PostApiService.Repositories
+﻿using System.ComponentModel.Design;
+
+namespace PostApiService.Repositories
 {
     public class CommentRepository : Repository<Comment>, ICommentRepository
     {
@@ -7,7 +9,12 @@
         public CommentRepository(ApplicationDbContext context) : base(context)
         {
             _context = context;
+        }        
+
+        public async Task<bool> HasRepliesAsync(int commentId, CancellationToken ct = default) {
+            return await _context.Comments.AnyAsync(c => c.ParentId == commentId, ct);
         }
+
         public async Task<Comment?> GetWithUserAsync(int id, CancellationToken ct = default)
         {
             return await _context.Comments

@@ -211,28 +211,28 @@ namespace PostApiService.Services
         /// <summary>
         /// Deletes a comment by its ID after verifying ownership.
         /// </summary>       
-        public async Task<Result> DeleteCommentAsync(int commentId, CancellationToken ct = default)
+        public async Task<Result<CommentDto>> DeleteCommentAsync(int commentId, CancellationToken ct = default)
         {
-            var authError = ValidateAuthorized();
+            var authError = ValidateAuthorized<CommentDto>();
             if (authError != null) return authError;
 
             var userId = WebContext!.UserId!;
 
-            var existingComment = await _commentRepository.GetByIdAsync(commentId, ct);
+            var existingComment = await _commentRepository.GetWithUserAsync(commentId, ct);
 
             if (existingComment == null)
             {
                 Log.Warning(Comments.NotFound, commentId);
 
-                return NotFound(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
+                return NotFound<CommentDto>(CommentM.Errors.NotFound, CommentM.Errors.NotFoundCode);
             }
 
             if (existingComment.IsDeleted)
             {
-                return Success(CommentM.Success.CommentDeletedSuccessfully);
+                return Success(existingComment.ToCommentDto(), CommentM.Success.CommentDeletedSuccessfully);
             }
 
-            var accessError = ValidateOwnershipOrAdmin(
+            var accessError = ValidateOwnershipOrAdmin<CommentDto>(
                 existingComment.UserId,
                 CommentM.Errors.AccessDeniedCode,
                 CommentM.Errors.AccessDenied
@@ -244,27 +244,27 @@ namespace PostApiService.Services
                 return accessError;
             }
 
-            bool hasReplies = existingComment.Replies != null && existingComment.Replies.Any();
+            var isAdmin = WebContext.IsAdmin;
+            if (isAdmin && existingComment.UserId != userId)
+            {
+                Log.Information(Comments.AdminDeletedComment, userId, commentId, existingComment.UserId, WebContext.IpAddress);
+            }            
+
+            bool hasReplies = await _commentRepository.HasRepliesAsync(commentId, ct);
 
             if (hasReplies)
             {
                 existingComment.IsDeleted = true;
                 existingComment.Content = CommentM.Messages.DeletedCommentContent;
-                await _commentRepository.SaveChangesAsync(ct);
             }
             else
             {
                 await _commentRepository.DeleteAsync(existingComment, ct);
-                await _commentRepository.SaveChangesAsync(ct);
             }
 
-            var isAdmin = WebContext.IsAdmin;
-            if (isAdmin && existingComment.UserId != userId)
-            {
-                Log.Information(Comments.AdminDeletedComment, userId, commentId, existingComment.UserId, WebContext.IpAddress);
-            }
+            await _commentRepository.SaveChangesAsync(ct);
 
-            return Success(CommentM.Success.CommentDeletedSuccessfully);
+            return Success(existingComment.ToCommentDto(), CommentM.Success.CommentDeletedSuccessfully);
         }
     }
 }

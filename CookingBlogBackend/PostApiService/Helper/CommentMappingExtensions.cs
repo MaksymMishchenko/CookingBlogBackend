@@ -40,7 +40,8 @@ namespace PostApiService.Helper
                 UserId: comment.UserId,
                 ReplyToUserName: comment.ReplyToUserName,
                 ParentId: comment.ParentId,
-                IsEditedByAdmin: comment.IsEditedByAdmin
+                IsEditedByAdmin: comment.IsEditedByAdmin,
+                IsDeleted: comment.IsDeleted
             );
         }
     }
