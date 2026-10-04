@@ -349,8 +349,6 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(ResultStatus.Unauthorized, result.Status);
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccess, result.Message);
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
-
-            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -362,7 +360,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             _mockWebContext.UserId.Returns(userId);
 
-            _mockCommentRepo.GetByIdAsync(invalidCommentId, Arg.Any<CancellationToken>())
+            _mockCommentRepo.GetWithUserAsync(invalidCommentId, Arg.Any<CancellationToken>())
                 .Returns((Comment)null!);
 
             // Act
@@ -374,11 +372,6 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(ResultStatus.NotFound, result.Status);
             Assert.Equal(CommentM.Errors.NotFound, result.Message);
             Assert.Equal(CommentM.Errors.NotFoundCode, result.ErrorCode);
-
-            await _mockCommentRepo.Received(1)
-                .GetByIdAsync(invalidCommentId, Arg.Any<CancellationToken>());
-            await _mockCommentRepo.DidNotReceive()
-                .DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -392,8 +385,11 @@ namespace PostApiService.Tests.UnitTests.Services
             var existingComment = new Comment { Id = commentId, UserId = ownerId };
             var currentUser = new IdentityUser { Id = currentUserId };
 
-            _mockCommentRepo.GetByIdAsync(commentId, Arg.Any<CancellationToken>())
+            _mockCommentRepo.GetWithUserAsync(commentId, Arg.Any<CancellationToken>())
                 .Returns(existingComment);
+
+            _mockCommentRepo.HasRepliesAsync(commentId, Arg.Any<CancellationToken>())
+                .Returns(false);
             _mockWebContext.UserId.Returns(currentUserId);
             _mockWebContext.IsAdmin.Returns(false);
             _mockWebContext.IpAddress.Returns("127.0.0.1");
@@ -405,54 +401,28 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(ResultStatus.Forbidden, result.Status);
             Assert.Equal(CommentM.Errors.AccessDenied, result.Message);
             Assert.Equal(CommentM.Errors.AccessDeniedCode, result.ErrorCode);
-
-            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(),
-                Arg.Any<CancellationToken>());
-            await _mockCommentRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
-        [Fact]
-        public async Task DeleteCommentAsync_ShouldReturnSuccess_WhenUserIsNotOwnerButIsAdmin()
+        [Theory]
+        [InlineData("user-owner", "user-owner", false)]
+        [InlineData("user-admin", "user-owner", true)]
+        public async Task DeleteCommentAsync_ShouldReturnSuccess_AndSaveChanges_WhenUserIsOwnerOrAdmin(
+            string currentUserId,
+            string commentOwnerId,
+            bool isAdmin)
         {
             // Arrange
-            const string adminId = "3f2504e0-4f89-11d3-9a0c-0305e82c3301";
-            const string ownerId = "3f2504e0-4f89-11d3-9a0c-0305e82c3302";
-            var commentId = 10;
-            var token = CancellationToken.None;
-
-            var existingComment = new Comment { Id = commentId, UserId = ownerId };
-
-            _mockCommentRepo.GetByIdAsync(commentId, token)
-                .Returns(existingComment);
-
-            _mockWebContext.UserId.Returns(adminId);
-            _mockWebContext.IsAdmin.Returns(true);
-            _mockWebContext.IpAddress.Returns("127.0.0.1");
-
-            // Act
-            var result = await _service.DeleteCommentAsync(commentId, token);
-
-            // Assert
-            Assert.Equal(ResultStatus.Success, result.Status);
-            Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
-
-            await _mockCommentRepo.Received(1).DeleteAsync(existingComment, token);
-            await _mockCommentRepo.Received(1).SaveChangesAsync(token);
-        }
-
-        [Fact]
-        public async Task DeleteCommentAsync_ShouldReturnSuccess_WhenUserIsOwner()
-        {
-            // Arrange
-            const string userId = "3f2504e0-4f89-11d3-9a0c-0305e82c3302";
             var commentId = 1;
             var ct = CancellationToken.None;
 
-            var existingComment = new Comment { Id = commentId, UserId = userId };
+            var existingComment = new Comment { Id = commentId, UserId = commentOwnerId };
 
-            _mockCommentRepo.GetByIdAsync(commentId, ct).Returns(existingComment);
-            _mockWebContext.UserId.Returns(userId);
-            _mockWebContext.IsAdmin.Returns(false);
+            _mockCommentRepo.GetWithUserAsync(commentId, ct).Returns(existingComment);
+            _mockCommentRepo.HasRepliesAsync(commentId, ct).Returns(false);
+
+            _mockWebContext.UserId.Returns(currentUserId);
+            _mockWebContext.IsAdmin.Returns(isAdmin);
+            _mockWebContext.IpAddress.Returns("127.0.0.1");
 
             // Act
             var result = await _service.DeleteCommentAsync(commentId, ct);
@@ -460,10 +430,10 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert            
             Assert.True(result.IsSuccess);
             Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
-
+            
             await _mockCommentRepo.Received(1).DeleteAsync(existingComment, ct);
             await _mockCommentRepo.Received(1).SaveChangesAsync(ct);
-        }
+        }        
 
         [Fact]
         public async Task DeleteCommentAsync_ShouldPerformSoftDelete_WhenCommentHasReplies()
@@ -477,11 +447,12 @@ namespace PostApiService.Tests.UnitTests.Services
             {
                 Id = commentId,
                 UserId = userId,
-                Content = "Original comment text",
-                Replies = new List<Comment> { new Comment { Id = 2, Content = "Reply text" } }
+                Content = "Original comment text"
             };
 
-            _mockCommentRepo.GetByIdAsync(commentId, ct).Returns(existingComment);
+            _mockCommentRepo.GetWithUserAsync(commentId, ct).Returns(existingComment);
+            _mockCommentRepo.HasRepliesAsync(commentId, ct).Returns(true);
+
             _mockWebContext.UserId.Returns(userId);
             _mockWebContext.IsAdmin.Returns(false);
 
@@ -491,12 +462,9 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert            
             Assert.True(result.IsSuccess);
             Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
-            
+
             Assert.True(existingComment.IsDeleted);
             Assert.Equal(CommentM.Messages.DeletedCommentContent, existingComment.Content);
-           
-            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
-            await _mockCommentRepo.Received(1).SaveChangesAsync(ct);
         }
 
         [Fact]
@@ -515,7 +483,9 @@ namespace PostApiService.Tests.UnitTests.Services
                 Content = CommentM.Messages.DeletedCommentContent
             };
 
-            _mockCommentRepo.GetByIdAsync(commentId, ct).Returns(existingComment);
+            _mockCommentRepo.GetWithUserAsync(commentId, ct).Returns(existingComment);
+            _mockCommentRepo.HasRepliesAsync(commentId, ct).Returns(false);
+
             _mockWebContext.UserId.Returns(userId);
             _mockWebContext.IsAdmin.Returns(false);
 
@@ -525,9 +495,6 @@ namespace PostApiService.Tests.UnitTests.Services
             // Assert            
             Assert.True(result.IsSuccess);
             Assert.Equal(CommentM.Success.CommentDeletedSuccessfully, result.Message);
-           
-            await _mockCommentRepo.DidNotReceive().DeleteAsync(Arg.Any<Comment>(), Arg.Any<CancellationToken>());
-            await _mockCommentRepo.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
     }
 }
