@@ -11,6 +11,7 @@ namespace PostApiService.Models.Dto.Response
        [property: JsonIgnore(Condition = JsonIgnoreCondition.Never)]
        int? ParentId = null,
        string? ReplyToUserName = null,
-       bool IsEditedByAdmin = false
+       bool IsEditedByAdmin = false,
+       bool IsDeleted = false
     );
 }
