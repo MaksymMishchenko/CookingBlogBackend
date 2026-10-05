@@ -277,8 +277,7 @@ namespace PostApiService.Tests.UnitTests.Services
             {
                 Id = commentId,
                 UserId = ownerId,
-                User = new IdentityUser { Id = ownerId, UserName = "Author" },
-                IsEditedByAdmin = false
+                User = new IdentityUser { Id = ownerId, UserName = "Author" }                
             };
             var adminUser = new IdentityUser { Id = adminId, UserName = "Admin" };
 
@@ -292,8 +291,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var result = await _service.UpdateCommentAsync(commentId, newContent);
 
             // Assert
-            Assert.True(result.IsSuccess);
-            Assert.True(existingComment.IsEditedByAdmin);
+            Assert.True(result.IsSuccess);            
             Assert.Equal(newContent, existingComment.Content);
 
             await _mockCommentRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -312,8 +310,7 @@ namespace PostApiService.Tests.UnitTests.Services
             {
                 Id = commentId,
                 UserId = userId,
-                User = currentUser,
-                IsEditedByAdmin = false
+                User = currentUser                
             };
 
             _mockWebContext.UserId.Returns(userId);
@@ -327,8 +324,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.True(result.IsSuccess);
-            Assert.Equal(newContent, existingComment.Content);
-            Assert.False(existingComment.IsEditedByAdmin);
+            Assert.Equal(newContent, existingComment.Content);           
 
             await _mockCommentRepo.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }

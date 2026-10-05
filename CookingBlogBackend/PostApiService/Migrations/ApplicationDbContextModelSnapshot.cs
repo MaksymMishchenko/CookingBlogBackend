@@ -265,9 +265,6 @@ namespace PostApiService.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsEditedByAdmin")
-                        .HasColumnType("boolean");
-
                     b.Property<int?>("ParentId")
                         .HasColumnType("integer");
 
