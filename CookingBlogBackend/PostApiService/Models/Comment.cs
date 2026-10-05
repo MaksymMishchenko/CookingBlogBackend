@@ -21,9 +21,7 @@ namespace PostApiService.Models
         public virtual IdentityUser User { get; set; } = default!;
 
         [JsonIgnore]
-        public Post? Post { get; set; }
-
-        public bool IsEditedByAdmin { get; set; } = false;
+        public Post? Post { get; set; }       
 
         public bool IsDeleted { get; set; } = false;
 

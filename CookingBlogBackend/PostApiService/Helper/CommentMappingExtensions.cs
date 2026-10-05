@@ -13,8 +13,7 @@ namespace PostApiService.Helper
                 CreatedAt: comment.CreatedAt,
                 UserId: comment.UserId,
                 ReplyToUserName: comment.ReplyToUserName,
-                ParentId: comment.ParentId,
-                IsEditedByAdmin: comment.IsEditedByAdmin
+                ParentId: comment.ParentId                
             );
         }
 
@@ -25,8 +24,7 @@ namespace PostApiService.Helper
                 Author: authorName,
                 Content: comment.Content,
                 CreatedAt: comment.CreatedAt,
-                UserId: comment.UserId,
-                IsEditedByAdmin: comment.IsEditedByAdmin
+                UserId: comment.UserId                
             );
         }
 
@@ -39,8 +37,7 @@ namespace PostApiService.Helper
                 CreatedAt: comment.CreatedAt,
                 UserId: comment.UserId,
                 ReplyToUserName: comment.ReplyToUserName,
-                ParentId: comment.ParentId,
-                IsEditedByAdmin: comment.IsEditedByAdmin,
+                ParentId: comment.ParentId,                
                 IsDeleted: comment.IsDeleted
             );
         }
