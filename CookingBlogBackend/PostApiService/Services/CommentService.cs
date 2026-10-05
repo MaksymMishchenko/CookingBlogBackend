@@ -192,9 +192,7 @@ namespace PostApiService.Services
 
             existingComment.Content = sanitizedContent;
             if (isAdmin && existingComment.UserId != userId)
-            {
-                existingComment.IsEditedByAdmin = true;
-
+            {                
                 Log.Information(Comments.AdminUpdatedComment,
                      userId,
                      commentId,

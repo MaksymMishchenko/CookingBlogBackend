@@ -7,7 +7,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PostApiService.Migrations
 {
     /// <inheritdoc />
-    public partial class Initial_Postgres : Migration
+    public partial class InitialPostgres : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -217,7 +217,6 @@ namespace PostApiService.Migrations
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     PostId = table.Column<int>(type: "integer", nullable: false),
                     UserId = table.Column<string>(type: "text", nullable: false),
-                    IsEditedByAdmin = table.Column<bool>(type: "boolean", nullable: false),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     ParentId = table.Column<int>(type: "integer", nullable: true),
                     ReplyToUserName = table.Column<string>(type: "text", nullable: true)

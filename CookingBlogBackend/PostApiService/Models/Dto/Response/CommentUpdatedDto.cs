@@ -5,7 +5,6 @@
         string Author,
         string Content,
         DateTime CreatedAt,
-        string UserId,
-        bool IsEditedByAdmin
+        string UserId        
     );
 }
