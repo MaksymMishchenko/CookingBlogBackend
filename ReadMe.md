@@ -170,6 +170,7 @@ reportgenerator -reports:"TestResults/**/coverage.cobertura.xml" -targetdir:"cov
 
 ## Roadmap / To-Do
 * **Redis**: Implement caching for popular posts to improve performance.
+* **Token Refresh Mechanism**: Implement secure JWT refresh token rotation (storing refresh tokens in HttpOnly cookies, handling 401 interceptor retries automatically without forcing the user to log in again).
 
 ## Contact
 - Author: [Maksym Mishchenko](https://github.com/MaksymMishchenko)
