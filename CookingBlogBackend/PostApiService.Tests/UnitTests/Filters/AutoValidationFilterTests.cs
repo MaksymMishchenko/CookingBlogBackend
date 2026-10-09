@@ -79,13 +79,19 @@ namespace PostApiService.Tests.Filters
             var result = Assert.IsType<BadRequestObjectResult>(context.Result);
             var response = Assert.IsType<ApiResponse>(result.Value);
             Assert.Equal(string.Format(Global.Validation.PageSizeExceeded, 10), response.Errors!["PageSize"][0]);
-        }
+        }       
 
-        [Fact]
-        public void OnActionExecuting_ShouldReturnBadRequest_WhenSearchContainsForbiddenCharacters()
+        [Theory]
+        [InlineData("SQL; DROP TABLE posts")]
+        [InlineData("<script>alert(1)</script>")]
+        [InlineData("100%")]
+        [InlineData("a&b")]
+        [InlineData("a=b")]
+        [InlineData("a\\b")]
+        public void OnActionExecuting_ShouldReturnBadRequest_WhenSearchContainsForbiddenCharacters(string search)
         {
             // Arrange
-            var queryParams = new PublicPostQueryParameters { Search = "SQL' injection--" };
+            var queryParams = new PublicPostQueryParameters { Search = search };
             var context = CreateContext(new Dictionary<string, object?> { { "query", queryParams } });
 
             // Act

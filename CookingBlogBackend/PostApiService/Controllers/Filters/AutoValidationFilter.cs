@@ -6,10 +6,10 @@ using System.Text.RegularExpressions;
 namespace PostApiService.Controllers.Filters
 {
     // TODO: Migrate to FluentValidation when ActionArguments grows (Refactor Tech Debt #33)
-    public class AutoValidationFilter : ActionFilterAttribute
+    public partial class AutoValidationFilter : ActionFilterAttribute
     {
-        private static readonly Regex SafeSearchRegex = new Regex(
-            @"^[a-zA-Z0-9\s\-\.]+$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+        [GeneratedRegex(@"^[a-zA-Z0-9\s\-\.\?\!\,\'\:\(\)""]+$", RegexOptions.None, matchTimeoutMilliseconds: 100)]
+        private static partial Regex SafeSearchRegex();
 
         public override void OnActionExecuting(ActionExecutingContext context)
         {
@@ -80,7 +80,7 @@ namespace PostApiService.Controllers.Filters
                             return;
                         }
                     }
-                    
+
                     if (!string.IsNullOrWhiteSpace(adqp.SortBy))
                     {
                         var allowedSortFields = new[] { "title", "createdat" };
@@ -131,7 +131,7 @@ namespace PostApiService.Controllers.Filters
         {
             if (string.IsNullOrWhiteSpace(query)) return null;
             if (!query.Any(char.IsLetterOrDigit)) return Global.Validation.SearchQueryMustContainLetterOrDigit;
-            if (!SafeSearchRegex.IsMatch(query)) return Global.Validation.SearchQueryForbiddenCharacters;
+            if (!SafeSearchRegex().IsMatch(query)) return Global.Validation.SearchQueryForbiddenCharacters;
 
             return null;
         }
