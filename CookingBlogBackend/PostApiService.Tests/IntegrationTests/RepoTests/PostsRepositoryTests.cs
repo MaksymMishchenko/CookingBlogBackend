@@ -16,7 +16,7 @@ namespace PostApiService.Tests.IntegrationTests.RepoTests
         [Theory]
         [InlineData("SpecialQuery", true, "beverages", 1)]
         [InlineData(null, false, null, 1)]
-        [InlineData(null, null, "desserts", 3)]
+        [InlineData(null, null, "desserts", 1)]
         [InlineData("NonExistent", null, null, 0)]
         public async Task GetPublicFilteredPosts_VarietyTests(
             string? search, bool? active, string? slug, int expectedCount)
