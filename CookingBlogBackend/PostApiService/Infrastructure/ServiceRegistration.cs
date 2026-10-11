@@ -544,6 +544,40 @@ namespace PostApiService.Infrastructure
             );
         }
 
+        public static async Task<IApplicationBuilder> SeedCategoriesAsync(this WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var provider = scope.ServiceProvider;
+            var cntx = provider.GetRequiredService<ApplicationDbContext>();
+
+            await ExecuteWithRetryAsync(async () =>
+            {
+                if (await cntx.Categories.AnyAsync())
+                {
+                    Log.Information("--- SeedCategories: Categories already exist. Skipping ---");
+                    return;
+                }
+
+                Log.Information("--- SeedCategories: Seeding default categories ---");
+
+                var defaultCategories = new List<Category>
+            {
+                new Category { Name = "Breakfast" },
+                new Category { Name = "Desserts" },
+                new Category { Name = "Main Course" },
+                new Category { Name = "Healthy Food" },
+                new Category { Name = "Vegetarian" }
+            };
+
+                await cntx.Categories.AddRangeAsync(defaultCategories);
+                await cntx.SaveChangesAsync();
+
+                Log.Information("--- SeedCategories: Default categories added successfully ---");
+            }, "Category Seeding");
+
+            return app;
+        }
+
         public static async Task<IApplicationBuilder> SeedDataAsync(this WebApplication app)
         {
             using (var scope = app.Services.CreateScope())
@@ -598,6 +632,44 @@ namespace PostApiService.Infrastructure
 
                 }, "Fake Data Seeding");
             }
+            return app;
+        }
+
+        public static async Task<IApplicationBuilder> SeedProductionCategoriesAsync(this WebApplication app)
+        {
+            using var scope = app.Services.CreateScope();
+            var provider = scope.ServiceProvider;
+            var cntx = provider.GetRequiredService<ApplicationDbContext>();
+            var env = provider.GetRequiredService<IWebHostEnvironment>();
+            
+            if (!env.IsProduction()) return app;
+
+            await ExecuteWithRetryAsync(async () =>
+            {                
+                if (await cntx.Categories.AnyAsync())
+                {
+                    Log.Information("--- Production SeedCategories: Categories already exist. Skipping ---");
+                    return;
+                }
+
+                Log.Information("--- Production SeedCategories: Seeding default categories ---");
+
+                var defaultCategories = new List<Category>
+                {
+                    new Category { Name = "Breakfast", Slug = StringHelper.GenerateSlug("Breakfast") },
+                    new Category { Name = "Main Course", Slug = StringHelper.GenerateSlug("Main Course") },
+                    new Category { Name = "Desserts", Slug = StringHelper.GenerateSlug("Desserts") },
+                    new Category { Name = "Healthy Food", Slug = StringHelper.GenerateSlug("Healthy Food") },
+                    new Category { Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
+                    new Category { Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
+                };
+
+                await cntx.Categories.AddRangeAsync(defaultCategories);
+                await cntx.SaveChangesAsync();
+
+                Log.Information("--- Production SeedCategories: Default categories added successfully ---");
+            }, "Production Category Seeding");
+
             return app;
         }
 
