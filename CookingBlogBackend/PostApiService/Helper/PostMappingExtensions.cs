@@ -28,8 +28,7 @@ namespace PostApiService.Helper
             p.Description,
             p.Content,
             p.AuthorId,
-            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
-            p.ImageUrl,
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",            
             p.Slug,
             p.MetaTitle,
             p.MetaDescription,
@@ -58,8 +57,7 @@ namespace PostApiService.Helper
                 p.Title,
                 p.Description,
                 p.Content,
-                p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
-                p.ImageUrl,
+                p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",                
                 p.Slug,
                 p.MetaTitle,
                 p.MetaDescription,
@@ -78,8 +76,7 @@ namespace PostApiService.Helper
             p.Description,
             p.Content,
             p.AuthorId,
-            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
-            p.ImageUrl,
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",            
             p.Slug,
             p.MetaTitle,
             p.MetaDescription,
@@ -99,8 +96,7 @@ namespace PostApiService.Helper
                 Title = title,
                 Description = description,
                 Content = sanitizedContent,
-                AuthorId = userId,
-                ImageUrl = dto.ImageUrl,
+                AuthorId = userId,                
                 Slug = dto.Slug.StripHtml(),
                 CategoryId = dto.CategoryId,
 
@@ -121,8 +117,7 @@ namespace PostApiService.Helper
         {
             entity.Title = dto.Title.StripHtml();
             entity.Description = dto.Description.StripHtml();
-            entity.Content = sanitizedContent;            
-            entity.ImageUrl = dto.ImageUrl;
+            entity.Content = sanitizedContent;                        
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId;
 

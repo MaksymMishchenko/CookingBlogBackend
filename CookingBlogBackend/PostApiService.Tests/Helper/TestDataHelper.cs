@@ -62,8 +62,7 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
                 .RuleFor(p => p.Category, f => forcedCategory ?? f.PickRandom(categories))
-                .RuleFor(p => p.AuthorId, f => f.PickRandom(authorIds))
-                .RuleFor(p => p.ImageUrl, f => f.Image.PicsumUrl())
+                .RuleFor(p => p.AuthorId, f => f.PickRandom(authorIds))                
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
@@ -90,8 +89,7 @@ namespace PostApiService.Tests.Helper
             {
                 Title = post.Title,
                 Description = post.Description,
-                Content = post.Content,
-                ImageUrl = post.ImageUrl,
+                Content = post.Content,                
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
@@ -105,8 +103,7 @@ namespace PostApiService.Tests.Helper
             {
                 Title = newTitle ?? post.Title,
                 Description = post.Description,
-                Content = post.Content,
-                ImageUrl = post.ImageUrl,
+                Content = post.Content,                
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
@@ -130,8 +127,7 @@ namespace PostApiService.Tests.Helper
                 Slug = "valid-test-slug",
                 Content = "Full content of the test post.",
                 Description = "Brief description",
-                AuthorId = authorId,
-                ImageUrl = "http://example.com/image.jpg",
+                AuthorId = authorId,                
                 MetaTitle = "Meta Title",
                 MetaDescription = "Meta Description",
                 CategoryId = categoryId
@@ -160,8 +156,7 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 1",
                     Description = "Description lorem ipsum dolor sit amet 1",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 1",
-                    ImageUrl = "http://img-1.com",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 1",                    
                     MetaTitle = "Meta title dolor sit amet 1",
                     MetaDescription = "Meta lorem ipsum dolor 1",
                     Slug = "post-slug-1",
@@ -173,8 +168,7 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 2",
                     Description = "Description lorem ipsum dolor sit amet 2",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 2",
-                    ImageUrl = "http://img-2.com",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 2",                    
                     MetaTitle = "Meta title dolor sit amet 2",
                     MetaDescription = "Meta lorem ipsum dolor 2",
                     Slug = "post-slug-2",
@@ -186,8 +180,7 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 3",
                     Description = "Description lorem ipsum dolor sit amet 3",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 3",
-                    ImageUrl = "http://img-3.com",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 3",                    
                     MetaTitle = "Meta title dolor sit amet 3",
                     MetaDescription = "Meta lorem ipsum dolor 3",
                     Slug = "post-slug-3",
@@ -199,8 +192,7 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 4",
                     Description = "Description lorem ipsum dolor sit amet 4",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 4",
-                    ImageUrl = "http://img-4.com",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 4",                    
                     MetaTitle = "Meta title dolor sit amet 4",
                     MetaDescription = "Meta lorem ipsum dolor 4",
                     Slug = "post-slug-4",
@@ -212,8 +204,7 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 5",
                     Description = "Description lorem ipsum dolor sit amet 5",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 5",
-                    ImageUrl = "http://img-5.com",
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 5",                    
                     MetaTitle = "Meta title dolor sit amet 5",
                     MetaDescription = "Meta lorem ipsum dolor 5",
                     Slug = "post-slug-5",
@@ -279,8 +270,7 @@ namespace PostApiService.Tests.Helper
                 Title = title,
                 Slug = slug,
                 Content = content,
-                Description = "Test Post Description",
-                ImageUrl = "http://example.com/image.jpg",
+                Description = "Test Post Description",                
                 MetaTitle = "Test Meta Title",
                 MetaDescription = "Test Meta Description",
                 CategoryId = categoryId
@@ -298,8 +288,7 @@ namespace PostApiService.Tests.Helper
                 Title = title,
                 Slug = slug,
                 Content = content,
-                Description = "Updated Description",
-                ImageUrl = "http://example.com/image.jpg",
+                Description = "Updated Description",                
                 MetaTitle = "Updated Meta Title",
                 MetaDescription = "Updated Meta Description",
                 CategoryId = categoryId,
@@ -331,8 +320,7 @@ namespace PostApiService.Tests.Helper
                 Content = sanitizedContent,
                 Slug = dto.Slug,
                 MetaTitle = dto.MetaTitle,
-                MetaDescription = dto.MetaDescription,
-                ImageUrl = dto.ImageUrl,
+                MetaDescription = dto.MetaDescription,                
                 CategoryId = dto.CategoryId,
                 AuthorId = userId,
                 IsActive = true
