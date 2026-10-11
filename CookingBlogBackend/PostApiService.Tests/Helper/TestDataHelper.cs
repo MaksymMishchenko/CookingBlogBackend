@@ -62,7 +62,10 @@ namespace PostApiService.Tests.Helper
                 .RuleFor(p => p.Description, f => f.Lorem.Paragraph(1))
                 .RuleFor(p => p.Content, f => f.Lorem.Paragraphs(3))
                 .RuleFor(p => p.Category, f => forcedCategory ?? f.PickRandom(categories))
-                .RuleFor(p => p.AuthorId, f => f.PickRandom(authorIds))                
+                .RuleFor(p => p.AuthorId, f => f.PickRandom(authorIds))
+                .RuleFor(p => p.PreviewImageUrl, f => f.Image.PicsumUrl())
+                .RuleFor(p => p.PreviewImageAlt, _ => "Test preview alt")
+                .RuleFor(p => p.UploadedByUserId, (f, post) => post.AuthorId)
                 .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
                 .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(3).ClampLength(50, 200))
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
@@ -89,7 +92,9 @@ namespace PostApiService.Tests.Helper
             {
                 Title = post.Title,
                 Description = post.Description,
-                Content = post.Content,                
+                Content = post.Content,
+                PreviewImageUrl = post.PreviewImageUrl,
+                PreviewImageAlt = post.PreviewImageAlt,
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
@@ -103,7 +108,9 @@ namespace PostApiService.Tests.Helper
             {
                 Title = newTitle ?? post.Title,
                 Description = post.Description,
-                Content = post.Content,                
+                Content = post.Content,
+                PreviewImageUrl = post.PreviewImageUrl,
+                PreviewImageAlt = post.PreviewImageAlt,
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
@@ -117,7 +124,7 @@ namespace PostApiService.Tests.Helper
             Assert.NotNull(actualDto);
             Assert.Equal(expectedCategory.Id, actualDto.Id);
             Assert.Equal(expectedCategory.Name, actualDto.Name);
-        }        
+        }
 
         public static Post GetSinglePostWithCategoryId(int categoryId, string authorId = "test-admin-id")
         {
@@ -127,7 +134,10 @@ namespace PostApiService.Tests.Helper
                 Slug = "valid-test-slug",
                 Content = "Full content of the test post.",
                 Description = "Brief description",
-                AuthorId = authorId,                
+                AuthorId = authorId,
+                PreviewImageUrl = "https://example.com/images/default-preview.jpg",
+                PreviewImageAlt = "Test preview alt",
+                UploadedByUserId = authorId,
                 MetaTitle = "Meta Title",
                 MetaDescription = "Meta Description",
                 CategoryId = categoryId
@@ -156,7 +166,10 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 1",
                     Description = "Description lorem ipsum dolor sit amet 1",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 1",                    
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 1",
+                    PreviewImageUrl = "https://example.com/images/default-preview-1.jpg",
+                    PreviewImageAlt = "Test preview alt 1",
+                    UploadedByUserId = authorId,
                     MetaTitle = "Meta title dolor sit amet 1",
                     MetaDescription = "Meta lorem ipsum dolor 1",
                     Slug = "post-slug-1",
@@ -168,7 +181,10 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 2",
                     Description = "Description lorem ipsum dolor sit amet 2",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 2",                    
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 2",
+                    PreviewImageUrl = "https://example.com/images/default-preview-2.jpg",
+                    PreviewImageAlt = "Test preview alt 2",
+                    UploadedByUserId = authorId,
                     MetaTitle = "Meta title dolor sit amet 2",
                     MetaDescription = "Meta lorem ipsum dolor 2",
                     Slug = "post-slug-2",
@@ -180,7 +196,10 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 3",
                     Description = "Description lorem ipsum dolor sit amet 3",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 3",                    
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 3",
+                    PreviewImageUrl = "https://example.com/images/default-preview-3.jpg",
+                    PreviewImageAlt = "Test preview alt 3",
+                    UploadedByUserId = authorId,
                     MetaTitle = "Meta title dolor sit amet 3",
                     MetaDescription = "Meta lorem ipsum dolor 3",
                     Slug = "post-slug-3",
@@ -192,7 +211,10 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 4",
                     Description = "Description lorem ipsum dolor sit amet 4",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 4",                    
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 4",
+                    PreviewImageUrl = "https://example.com/images/default-preview-4.jpg",
+                    PreviewImageAlt = "Test preview alt 4",
+                    UploadedByUserId = authorId,
                     MetaTitle = "Meta title dolor sit amet 4",
                     MetaDescription = "Meta lorem ipsum dolor 4",
                     Slug = "post-slug-4",
@@ -204,7 +226,10 @@ namespace PostApiService.Tests.Helper
                     Title = "Title Lorem ipsum dolor sit amet 5",
                     Description = "Description lorem ipsum dolor sit amet 5",
                     AuthorId = authorId,
-                    Content = "Simple comtemt lorem ipsum dolor sit amet 5",                    
+                    Content = "Simple comtemt lorem ipsum dolor sit amet 5",
+                    PreviewImageUrl = "https://example.com/images/default-preview-5.jpg",
+                    PreviewImageAlt = "Test preview alt 5",
+                    UploadedByUserId = authorId,
                     MetaTitle = "Meta title dolor sit amet 5",
                     MetaDescription = "Meta lorem ipsum dolor 5",
                     Slug = "post-slug-5",
@@ -257,7 +282,7 @@ namespace PostApiService.Tests.Helper
                 new Category { Id = 5, Name = "Beverages", Slug = StringHelper.GenerateSlug("Beverages") },
                 new Category { Id = 6, Name = "Vegetarian", Slug = StringHelper.GenerateSlug("Vegetarian") }
             };
-        }        
+        }
 
         public static PostCreateDto GetPostCreateDto(
             string title = "Test Post Title",
@@ -270,7 +295,9 @@ namespace PostApiService.Tests.Helper
                 Title = title,
                 Slug = slug,
                 Content = content,
-                Description = "Test Post Description",                
+                Description = "Test Post Description",
+                PreviewImageUrl = "https://example.com/images/default-preview.jpg",
+                PreviewImageAlt = "Test preview alt",
                 MetaTitle = "Test Meta Title",
                 MetaDescription = "Test Meta Description",
                 CategoryId = categoryId
@@ -288,13 +315,15 @@ namespace PostApiService.Tests.Helper
                 Title = title,
                 Slug = slug,
                 Content = content,
-                Description = "Updated Description",                
+                Description = "Updated Description",
+                PreviewImageUrl = "https://example.com/images/default-preview.jpg",
+                PreviewImageAlt = "Test preview alt",
                 MetaTitle = "Updated Meta Title",
                 MetaDescription = "Updated Meta Description",
                 CategoryId = categoryId,
                 IsActive = true
             };
-        }        
+        }
 
         public static PostRequestBySlug CreatePostRequest(
         string category = "pasta",
@@ -308,7 +337,7 @@ namespace PostApiService.Tests.Helper
         }
 
         public static CommentCreateDto CreateCommentRequest(string content = "Default test content", int? parentId = null) =>
-        new() { Content = content };        
+        new() { Content = content };
 
         public static Post ToEntity(PostCreateDto dto, string sanitizedContent, string userId)
         {
@@ -320,7 +349,7 @@ namespace PostApiService.Tests.Helper
                 Content = sanitizedContent,
                 Slug = dto.Slug,
                 MetaTitle = dto.MetaTitle,
-                MetaDescription = dto.MetaDescription,                
+                MetaDescription = dto.MetaDescription,
                 CategoryId = dto.CategoryId,
                 AuthorId = userId,
                 IsActive = true
