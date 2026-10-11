@@ -99,7 +99,9 @@ namespace PostApiService.Helper
                 AuthorId = userId,                
                 Slug = dto.Slug.StripHtml(),
                 CategoryId = dto.CategoryId,
-
+                PreviewImageUrl = dto.PreviewImageUrl,
+                PreviewImageAlt = dto.PreviewImageAlt?.StripHtml(),
+                UploadedByUserId = userId,
                 MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
                     ? title
                     : dto.MetaTitle.StripHtml(),
@@ -120,6 +122,9 @@ namespace PostApiService.Helper
             entity.Content = sanitizedContent;                        
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId;
+
+            entity.PreviewImageUrl = dto.PreviewImageUrl;
+            entity.PreviewImageAlt = dto.PreviewImageAlt?.StripHtml();
 
             entity.MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
                 ? dto.Title.StripHtml()

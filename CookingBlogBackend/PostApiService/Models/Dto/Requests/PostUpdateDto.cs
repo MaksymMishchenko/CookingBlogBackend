@@ -11,7 +11,13 @@ namespace PostApiService.Models.Dto.Requests
         public string Description { get; init; } = default!;
 
         [Required(ErrorMessage = Global.Validation.Required)]
-        public string Content { get; init; } = default!;                
+        public string Content { get; init; } = default!;
+
+        [Required(ErrorMessage = Global.Validation.Required)]
+        public string PreviewImageUrl { get; init; } = default!;
+
+        [MaxLength(200, ErrorMessage = Global.Validation.MaxLength)]
+        public string? PreviewImageAlt { get; init; }
 
         [MaxLength(100, ErrorMessage = Global.Validation.MaxLength)]
         public string? MetaTitle { get; init; }

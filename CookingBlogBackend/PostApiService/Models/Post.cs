@@ -19,8 +19,15 @@ namespace PostApiService.Models
         public string Description { get; set; } = default!;
 
         [Required]
-        [MaxLength(2500)]
         public string Content { get; set; } = default!;
+
+        [Required]
+        public string PreviewImageUrl { get; set; } = default!;
+
+        public string? PreviewImageAlt { get; set; }
+
+        [Required]
+        public string UploadedByUserId { get; set; } = default!;
 
         [Required]
         public string AuthorId { get; set; } = default!;
@@ -31,7 +38,7 @@ namespace PostApiService.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime? UpdatedAt { get; set; }        
+        public DateTime? UpdatedAt { get; set; }
 
         [MaxLength(100)]
         public string? MetaTitle { get; set; }
