@@ -90,6 +90,9 @@ if (!app.Environment.IsEnvironment("Testing"))
     {
         await app.SeedDataAsync();
     }
+    else {
+        await app.SeedProductionCategoriesAsync();
+    }
 }
 
 app.UseHttpsRedirection();
