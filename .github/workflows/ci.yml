@@ -5,7 +5,16 @@ env:
 
 on:
   push:
-    branches: [dev]
+    branches:
+      - dev
+      - "feature/**"
+      - "refactor/**"
+      - "fix/**"
+      - "bugfix/**"
+      - "testing/**"
+      - "chore/**"
+      - "perf/**"
+      - "security/**"
   pull_request:
     branches: [main, dev]
 
