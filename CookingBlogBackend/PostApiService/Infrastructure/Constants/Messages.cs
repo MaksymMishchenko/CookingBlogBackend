@@ -32,6 +32,15 @@
             }
         }
 
+        public static class ImageM
+        {
+            public static class Errors
+            {
+                public const string ImageTooSmall = "Image dimensions are too small. Minimum required resolution is 250x250 pixels.";
+                public const string ImageTooSmallCode = "IMAGE_TOO_SMALL";
+            }
+        }
+
         public static class CategoryM
         {
             public static class Errors
@@ -147,7 +156,7 @@
             {
                 public const string Required = "{0} is required.";
                 public const string LengthRange = "{0} must be between {2} and {1} characters.";
-                public const string MaxLength = "{0} cannot exceed {1} characters.";                
+                public const string MaxLength = "{0} cannot exceed {1} characters.";
                 public const string SlugFormat = "Slug must only contain lowercase letters, numbers, and hyphens.";
                 public const string InvalidCategory = "Please select a valid category.";
                 public const string InvalidId = "The provided identifier must be greater than 0.";
@@ -155,6 +164,9 @@
                 public const string PageSizeExceeded = "Items per page size exceeds the allowed maximum.";
                 public const string ValidationFailed = "Validation Failed.";
                 public const string InvalidEmail = "Invalid email address.";
+
+                public const string InvalidFormat = "Invalid file format. Allowed formats: .jpg, .jpeg, .png, .webp.";
+                public const string FileTooLarge = "File size exceeds the allowed maximum.";
 
                 public const string InvalidNumberFormat = "The value '{0}' is not a valid number.";
                 public const string SearchQueryForbiddenCharacters =

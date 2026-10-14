@@ -36,18 +36,18 @@
 
             public const string AccessDenied =
                 "Security Alert: User {UserId} attempted unauthorized {Action} on {ResourceType} {ResourceId}. Owner: {OwnerId}, IP: {IP}";
-            
+
             public const string RateLimitExceeded =
                  "Security Alert: Rate limit exceeded. IP: {IP}, Path: {Path}, Method: {Method}";
 
             public const string UnauthorizedPostAccessAttempt =
                 "Security Alert: User {UserId} attempted to access/modify foreign post {PostId} belonging to {AuthorId}. IP: {IP}";
-        }    
+        }
 
         public static class System
         {
             public const string UnhandledException =
-                "Unhandled Exception: An unhandled exception occurred during the request. Message: {Message}, Path: {Path}";           
+                "Unhandled Exception: An unhandled exception occurred during the request. Message: {Message}, Path: {Path}";
         }
 
         public static class Authentication
@@ -90,6 +90,12 @@
                 "Update Category Failed: Category with ID {Id} not found in database. Input Name: {Name}";
             public const string DeleteBlockedByRelatedPosts = "Delete blocked: Category {Name} has active posts";
 
+        }
+
+        public static class Images
+        {
+            public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";
+            public const string InvalidSizeAttempt = "Security Warning: Image size {Size} bytes exceeded limit. File: '{FileName}', IP: {IP}";            
         }
 
         public static class Comments
