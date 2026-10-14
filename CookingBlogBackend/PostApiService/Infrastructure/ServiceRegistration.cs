@@ -69,6 +69,7 @@ namespace PostApiService.Infrastructure
             services.AddScoped<IPublicCategoryService, PublicCategoryService>();
             services.AddScoped<IAdminCategoryService, AdminCategoryService>();
             services.AddScoped<ICommentService, CommentService>();
+            services.AddScoped<IImageService, ImageService>();
 
             services.AddExternalTools(configuration);
             services.AddAppRateLimiting(configuration);
