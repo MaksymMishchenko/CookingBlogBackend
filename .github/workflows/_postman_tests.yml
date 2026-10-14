@@ -2,6 +2,7 @@ name: Postman Tests
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  SixLabors__LicenseKey: ${{ vars.SIX_LABORS_LICENSE_KEY }}
 
 on:
   workflow_call:
@@ -43,7 +44,13 @@ jobs:
           path: ~/.nuget/packages         
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj*', '**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-    
+            ${{ runner.os }}-nuget-  
+            
+      - name: Create Six Labors License File
+        run: echo "${{ vars.SIX_LABORS_LICENSE_KEY }}" > CookingBlogBackend/PostApiService/sixlabors.lic
+
+      - name: Create wwwroot directory for tests
+        run: mkdir -p CookingBlogBackend/PostApiService/wwwroot/images/posts
     
       - name: Build API
         run: dotnet build CookingBlogBackend/PostApiService/PostApiService.csproj --configuration Debug
@@ -77,3 +84,13 @@ jobs:
           -e postman/environment.json \
           --env-var "baseUrl=http://localhost:5189" \
           --reporters cli \
+
+      - name: Show API logs
+        if: always()
+        run: |
+          echo "=== api.log (console) ==="
+          cat api.log || true
+          echo "=== Serilog file logs ==="
+          find . -type f -name "api_validation_*.txt" -print -exec cat {} \; || true
+          echo "=== wwwroot tree ==="
+          find CookingBlogBackend/PostApiService/wwwroot -print || true
