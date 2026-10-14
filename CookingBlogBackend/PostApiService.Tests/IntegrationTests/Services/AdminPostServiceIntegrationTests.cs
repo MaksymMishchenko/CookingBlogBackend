@@ -1,7 +1,9 @@
-﻿using PostApiService.Infrastructure.Common;
+﻿using Microsoft.AspNetCore.Http;
+using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
+using SixLabors.ImageSharp;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {
@@ -265,7 +267,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var existingCategoryId = categories.First().Id;
 
             var newPost = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
-            var postDto = TestDataHelper.ToPostCreateDto(newPost);
+            var postDto = TestDataHelper.ToPostCreateDto(newPost);            
 
             var initialCount = await dbContextBefore.Posts.CountAsync();
 
@@ -293,7 +295,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var finalCount = await dbContextAfter.Posts.CountAsync();
             Assert.Equal(initialCount + 1, finalCount);
-        }
+        }        
 
         [Fact]
         public async Task UpdatePostAsync_ShouldUpdateExistingPostSuccessfully()

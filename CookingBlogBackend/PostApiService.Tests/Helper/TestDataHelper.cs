@@ -1,7 +1,9 @@
 ﻿using Bogus.Extensions;
+using Microsoft.AspNetCore.Http;
 using PostApiService.Helper;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
+using SixLabors.ImageSharp;
 
 namespace PostApiService.Tests.Helper
 {
@@ -86,19 +88,33 @@ namespace PostApiService.Tests.Helper
                 .UseSeed(seed);
         }
 
-        public static PostCreateDto ToPostCreateDto(Post post)
+        public static PostCreateDto ToPostCreateDto(Post post, IFormFile? previewImage = null)
         {
             return new PostCreateDto
             {
                 Title = post.Title,
                 Description = post.Description,
                 Content = post.Content,
-                PreviewImageUrl = post.PreviewImageUrl,
+                PreviewImage = previewImage ?? CreateTestFormFile(),
                 PreviewImageAlt = post.PreviewImageAlt,
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
-                CategoryId = post.CategoryId
+                CategoryId = post.CategoryId,
+            };
+        }
+
+        private static IFormFile CreateTestFormFile()
+        {
+            using var image = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(300, 300);
+            var stream = new MemoryStream();
+            image.SaveAsPng(stream);
+            stream.Position = 0;
+
+            return new FormFile(stream, 0, stream.Length, "PreviewImage", "test-preview.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
             };
         }
 
@@ -296,7 +312,7 @@ namespace PostApiService.Tests.Helper
                 Slug = slug,
                 Content = content,
                 Description = "Test Post Description",
-                PreviewImageUrl = "https://example.com/images/default-preview.jpg",
+                PreviewImage = default!,
                 PreviewImageAlt = "Test preview alt",
                 MetaTitle = "Test Meta Title",
                 MetaDescription = "Test Meta Description",

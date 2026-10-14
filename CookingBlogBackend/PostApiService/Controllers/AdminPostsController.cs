@@ -45,7 +45,7 @@ namespace PostApiService.Controllers
         /// </summary>               
         [HttpPost]
         public async Task<IActionResult> AddPostAsync
-            ([FromBody] PostCreateDto dto, CancellationToken ct = default)
+            ([FromForm] PostCreateDto dto, CancellationToken ct = default)
         {
             var result = await _adminPostService.AddPostAsync(dto, ct);
 

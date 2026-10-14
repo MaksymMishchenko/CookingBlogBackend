@@ -28,14 +28,16 @@ namespace PostApiService.Helper
             p.Description,
             p.Content,
             p.AuthorId,
-            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",            
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
             p.Slug,
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
             p.IsActive,
             p.CreatedAt,
-            p.UpdatedAt
+            p.UpdatedAt,
+            p.PreviewImageUrl,
+            p.PreviewImageAlt!
         );
 
         public static Expression<Func<Post, AdminPostListDto>> ToAdminPostListDto => p => new AdminPostListDto(
@@ -57,7 +59,7 @@ namespace PostApiService.Helper
                 p.Title,
                 p.Description,
                 p.Content,
-                p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",                
+                p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
                 p.Slug,
                 p.MetaTitle,
                 p.MetaDescription,
@@ -76,31 +78,36 @@ namespace PostApiService.Helper
             p.Description,
             p.Content,
             p.AuthorId,
-            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",            
+            p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
             p.Slug,
             p.MetaTitle,
             p.MetaDescription,
             p.CategoryId,
             p.IsActive,
             p.CreatedAt,
-            p.UpdatedAt
+            p.UpdatedAt,
+            p.PreviewImageUrl,
+            p.PreviewImageAlt!
         );
 
-        public static Post ToEntity(this PostCreateDto dto, string sanitizedContent, string userId)
+        public static Post ToEntity(this PostCreateDto dto, string sanitizedContent, string userId, string previewImageUrl)
         {
             var title = dto.Title.StripHtml();
             var description = dto.Description.StripHtml();
+            var fallbackAlt = string.IsNullOrWhiteSpace(dto.PreviewImageAlt)
+                ? $"{title} recipe"
+                : dto.PreviewImageAlt.StripHtml();
 
             return new Post
             {
                 Title = title,
                 Description = description,
                 Content = sanitizedContent,
-                AuthorId = userId,                
+                AuthorId = userId,
                 Slug = dto.Slug.StripHtml(),
                 CategoryId = dto.CategoryId,
-                PreviewImageUrl = dto.PreviewImageUrl,
-                PreviewImageAlt = dto.PreviewImageAlt?.StripHtml(),
+                PreviewImageUrl = previewImageUrl,
+                PreviewImageAlt = fallbackAlt,
                 UploadedByUserId = userId,
                 MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
                     ? title
@@ -119,7 +126,7 @@ namespace PostApiService.Helper
         {
             entity.Title = dto.Title.StripHtml();
             entity.Description = dto.Description.StripHtml();
-            entity.Content = sanitizedContent;                        
+            entity.Content = sanitizedContent;
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId;
 

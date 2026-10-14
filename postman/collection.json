@@ -430,13 +430,62 @@
             "method": "POST",
             "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"title\": \"{{post_title}}\",\r\n    \"description\": \"This is a sample description for the post.\",\r\n    \"content\": \"This is the detailed content of the post. It provides in-depth information about the topic.\",\r\n    \"previewImageUrl\": \"/images/recipes/default-preview.webp\",\r\n    \"previewImageAlt\": \"Sample preview image alternative text\",\r\n    \"metaTitle\": \"Sample Meta Title\",\r\n    \"metaDescription\": \"This is a sample meta description for SEO purposes.\",\r\n    \"isActive\": true,\r\n    \"slug\": \"{{unique_post_slug}}\",\r\n    \"categoryId\": \"{{temp_category_id}}\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "title",
+                  "value": "{{post_title}},",
+                  "type": "text"
+                },
+                {
+                  "key": "description",
+                  "value": "This is a sample description for the post.",
+                  "type": "text"
+                },
+                {
+                  "key": "content",
+                  "value": "This is the detailed content of the post. It provides in-depth information about the topic.   ",
+                  "type": "text"
+                },
+                {
+                  "key": "previewImage",
+                  "type": "file",
+                  "description": "Maximum file size is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp. Minimum resolution: 250x250px.",
+                  "src": [
+                    "postman/data/test-image.jpeg"
+                  ]
+                },
+                {
+                  "key": "previewImageAlt",
+                  "value": "Sample preview image alternative text\"",
+                  "type": "text"
+                },
+                {
+                  "key": "metaTitle",
+                  "value": "Sample Meta Title\"",
+                  "type": "text"
+                },
+                {
+                  "key": "metaDescription",
+                  "value": "This is a sample meta description for SEO purposes.",
+                  "type": "text"
+                },
+                {
+                  "key": "isActive",
+                  "value": "true",
+                  "type": "text"
+                },
+                {
+                  "key": "slug",
+                  "value": "{{unique_post_slug}}",
+                  "type": "text"
+                },
+                {
+                  "key": "categoryId",
+                  "value": " {{temp_category_id}}",
+                  "type": "text"
                 }
-              }
+              ]
             },
             "url": {
               "raw": "{{baseUrl}}/api/admin/posts/",

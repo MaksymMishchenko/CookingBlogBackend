@@ -13,6 +13,8 @@
         int CategoryId,
         bool isActive,
         DateTime CreatedAt,
-        DateTime? UpdatedAt
+        DateTime? UpdatedAt,
+        string PreviewImageUrl,
+        string PreviewImageAlt
     );
 }

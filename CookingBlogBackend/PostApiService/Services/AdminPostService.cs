@@ -10,18 +10,24 @@ namespace PostApiService.Services
     public class AdminPostService : AdminBaseService, IAdminPostService
     {
         private readonly IPostRepository _postRepository;
+
         private readonly IHtmlSanitizationService _sanitizer;
+
         private readonly IPublicCategoryService _categoryService;
+
+        private readonly IImageService _imageService;
 
         public AdminPostService(IPostRepository postRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
-            IPublicCategoryService categoryService
+            IPublicCategoryService categoryService,
+            IImageService imageService
             ) : base(webContext)
         {
             _postRepository = postRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
+            _imageService = imageService;
         }
 
         /// <summary>
@@ -31,13 +37,13 @@ namespace PostApiService.Services
         /// </summary>
         public async Task<Result<PagedResult<AdminPostListDto>>> GetAdminPostsPagedAsync(
             AdminPostQueryDto postQuery, CancellationToken ct = default)
-        {            
+        {
             var accessError = ValidateAdminOrContributor<PagedResult<AdminPostListDto>>();
             if (accessError != null) return accessError;
 
             var userId = WebContext!.UserId;
             bool isAdmin = WebContext.IsAdmin;
-            
+
             var updatedQuery = isAdmin
                  ? postQuery
                  : postQuery with { AuthorId = userId };
@@ -151,9 +157,18 @@ namespace PostApiService.Services
 
                 return NotFound<PostAdminDetailsDto>
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
+            }            
+           
+            var imageResult = await _imageService.SavePostPreviewAsync(postDto.PreviewImage, cleanSlug);
+
+            if (!imageResult.IsSuccess)
+            {                
+                return Invalid<PostAdminDetailsDto>(imageResult.Message!, imageResult.ErrorCode);
             }
 
-            var postEntity = postDto.ToEntity(sanitizedContent, userId);
+            string previewImageUrl = imageResult.Value!;
+            
+            var postEntity = postDto.ToEntity(sanitizedContent, userId, previewImageUrl);                 
 
             await _postRepository.AddAsync(postEntity, ct);
             await _postRepository.SaveChangesAsync(ct);
