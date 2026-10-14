@@ -2,6 +2,7 @@ name: Unit & Integration Tests
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  SixLabors__LicenseKey: ${{ vars.SIX_LABORS_LICENSE_KEY }}
 
 on:
   workflow_call:
@@ -33,20 +34,29 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore CookingBlogBackend/PostApiService.sln
+
+      - name: Create Six Labors License File
+        run: echo "${{ vars.SIX_LABORS_LICENSE_KEY }}" > CookingBlogBackend/PostApiService/sixlabors.lic
+
+      - name: Create wwwroot directory for tests
+        run: mkdir -p CookingBlogBackend/PostApiService/wwwroot/images/posts
       
       - name: Build Solution
-        run: dotnet build CookingBlogBackend/PostApiService.sln --configuration Release --no-restore
+        run: >
+          dotnet build CookingBlogBackend/PostApiService.sln 
+          --configuration Release
+          --no-restore          
       
       - name: Run Tests with Coverage
         env:
           ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}                  
         run: >
           dotnet test CookingBlogBackend/PostApiService.Tests/PostApiService.Tests.csproj 
           --configuration Release 
           --no-build 
           --verbosity normal 
-          --collect:"XPlat Code Coverage"
+          --collect:"XPlat Code Coverage"          
       
       - name: Publish API
         run: dotnet publish CookingBlogBackend/PostApiService/PostApiService.csproj --configuration Release --no-build -o ./publish
