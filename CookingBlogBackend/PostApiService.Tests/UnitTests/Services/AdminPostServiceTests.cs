@@ -1,4 +1,5 @@
-﻿using MockQueryable;
+﻿using Microsoft.AspNetCore.Http;
+using MockQueryable;
 using PostApiService.Helper;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Services;
@@ -17,6 +18,7 @@ namespace PostApiService.Tests.UnitTests.Services
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly IPublicCategoryService _mockCategoryService;
+        private readonly IImageService _mockImageService;
         private readonly AdminPostService _adminPostService;
 
         public AdminPostServiceTests()
@@ -25,8 +27,9 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<IPublicCategoryService>();
+            _mockImageService = Substitute.For<IImageService>();
             _adminPostService = new AdminPostService(_mockRepository,
-                _mockWebContext, _mockSanitizationService, _mockCategoryService);
+                _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockImageService);
         }
 
         [Fact]
@@ -575,6 +578,9 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
 
+            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success("/images/posts/clean-slug.webp"));
+
             var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
             savedPost.Title = postCreateDto.Title.StripHtml();
             savedPost.Slug = postCreateDto.Slug.StripHtml();
@@ -606,6 +612,9 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
             _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token).Returns(true);
+            
+            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success("/images/posts/test-preview.webp"));
 
             var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
             _mockRepository.GetByIdWithAuthorsAsync(Arg.Any<int>(), token)
@@ -632,6 +641,42 @@ namespace PostApiService.Tests.UnitTests.Services
                  p.Slug == postCreateDto.Slug &&
                  p.CategoryId == postCreateDto.CategoryId), token);
             await _mockRepository.Received(1).SaveChangesAsync(token);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnInvalid_WhenImageSaveFails()
+        {
+            // Arrange
+            var postCreateDto = TestDataHelper.GetPostCreateDto();
+            var token = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsContributor.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
+                .Returns(false);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token)
+                .Returns(true);
+            
+            var expectedMessage = "Зовнішнє повідомлення про помилку розміру";
+            var expectedErrorCode = "IMAGE_TOO_SMALL";
+
+            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Invalid(expectedMessage, expectedErrorCode));
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto, token);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(expectedMessage, result.Message);
+            Assert.Equal(expectedErrorCode, result.ErrorCode);
+            
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), token);
+            await _mockRepository.DidNotReceive().SaveChangesAsync(token);
         }
 
         [Fact]
