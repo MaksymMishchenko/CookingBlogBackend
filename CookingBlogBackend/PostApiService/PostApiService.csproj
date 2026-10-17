@@ -13,13 +13,13 @@
 	<ItemGroup>
 		<PackageReference Include="AnyAscii" Version="0.3.3" />
 		<PackageReference Include="AspNetCore.HealthChecks.NpgSql" Version="8.0.2" />
+		<PackageReference Include="CloudinaryDotNet" Version="1.29.3" />
 		<PackageReference Include="EFCore.NamingConventions" Version="8.0.3" />
 		<PackageReference Include="HtmlSanitizer" Version="9.0.892" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.11" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.11" />
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.22.1" />
-		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
-		<PackageReference Include="SixLabors.ImageSharp" Version="4.1.3" />						
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />						
 		<PackageReference Include="Swashbuckle.AspNetCore" Version="6.8.1" />
 	</ItemGroup>
 
@@ -52,11 +52,6 @@
 	<ItemGroup>
 	  <Folder Include="logs\" />
 	  <Folder Include="Migrations\" />
-	  <Folder Include="wwwroot\images\posts\" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <None Include="wwwroot\images\placeholder.jpg" />
 	</ItemGroup>
 
 </Project>

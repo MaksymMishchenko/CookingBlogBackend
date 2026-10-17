@@ -15,19 +15,19 @@ namespace PostApiService.Services
 
         private readonly IPublicCategoryService _categoryService;
 
-        private readonly IImageService _imageService;
+        private readonly IFileStorageService _fileStorageService;
 
         public AdminPostService(IPostRepository postRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
             IPublicCategoryService categoryService,
-            IImageService imageService
+            IFileStorageService fileStorageService
             ) : base(webContext)
         {
             _postRepository = postRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
-            _imageService = imageService;
+            _fileStorageService = fileStorageService;
         }
 
         /// <summary>
@@ -157,18 +157,18 @@ namespace PostApiService.Services
 
                 return NotFound<PostAdminDetailsDto>
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
-            }            
-           
-            var imageResult = await _imageService.SavePostPreviewAsync(postDto.PreviewImage, cleanSlug);
+            }
+
+            var imageResult = await _fileStorageService.SavePostPreviewAsync(postDto.PreviewImage!, cleanSlug);
 
             if (!imageResult.IsSuccess)
-            {                
+            {
                 return Invalid<PostAdminDetailsDto>(imageResult.Message!, imageResult.ErrorCode);
             }
 
             string previewImageUrl = imageResult.Value!;
-            
-            var postEntity = postDto.ToEntity(sanitizedContent, userId, previewImageUrl);                 
+
+            var postEntity = postDto.ToEntity(sanitizedContent, userId, previewImageUrl);
 
             await _postRepository.AddAsync(postEntity, ct);
             await _postRepository.SaveChangesAsync(ct);

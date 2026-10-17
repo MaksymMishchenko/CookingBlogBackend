@@ -41,38 +41,39 @@ jobs:
       - name: Cache NuGet packages
         uses: actions/cache@v4
         with:
-          path: ~/.nuget/packages         
+          path: ~/.nuget/packages
           key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj*', '**/packages.lock.json') }}
           restore-keys: |
-            ${{ runner.os }}-nuget-  
-            
+            ${{ runner.os }}-nuget-
+
       - name: Create Six Labors License File
         run: echo "${{ vars.SIX_LABORS_LICENSE_KEY }}" > CookingBlogBackend/PostApiService/sixlabors.lic
 
       - name: Create wwwroot directory for tests
         run: mkdir -p CookingBlogBackend/PostApiService/wwwroot/images/posts
-    
+
       - name: Build API
         run: dotnet build CookingBlogBackend/PostApiService/PostApiService.csproj --configuration Debug
 
       - name: Start API in background
-        env:
-          ASPNETCORE_ENVIRONMENT: Testing
-          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}   
+        env: 
+          ASPNETCORE_ENVIRONMENT: Development        
+          FileStorage__UseFake: "true"
+          JwtConfiguration__SecretKey: ${{ secrets.SecretKey }}
           SeedSettings__AdminUserName: ${{ vars.ADMIN_USER_NAME }}
           SeedSettings__AdminPassword: ${{ vars.ADMIN_PASSWORD }}
-          SeedSettings__AdminEmail: ${{ vars.SEED_ADMIN_EMAIL }}       
+          SeedSettings__AdminEmail: ${{ vars.SEED_ADMIN_EMAIL }}
           ASPNETCORE_URLS: "http://localhost:5189"
           ConnectionStrings__DefaultConnection: "Host=localhost;Port=5432;Database=CookingBlog;Username=postgres;Password=Password123!"
         run: |
           echo "Waiting for Postgres to warm up..."
-          sleep 15                    
-          dotnet run --project CookingBlogBackend/PostApiService/PostApiService.csproj --no-build > api.log 2>&1 &           
+          sleep 15
+          dotnet run --project CookingBlogBackend/PostApiService/PostApiService.csproj --no-build --no-launch-profile > api.log 2>&1 &
           sleep 20
 
       - name: Check API Status
-        run: | 
-          sleep 5        
+        run: |
+          sleep 5
           curl -i http://localhost:5189/api/posts || (echo "--- API LOGS ---" && cat api.log && exit 1)
 
       - name: Install Newman
@@ -83,7 +84,7 @@ jobs:
           newman run postman/collection.json \
           -e postman/environment.json \
           --env-var "baseUrl=http://localhost:5189" \
-          --reporters cli \
+          --reporters cli
 
       - name: Show API logs
         if: always()

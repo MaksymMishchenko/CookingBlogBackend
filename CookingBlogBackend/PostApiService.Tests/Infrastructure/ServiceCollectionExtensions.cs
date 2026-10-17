@@ -77,7 +77,7 @@ public static class ServiceCollectionExtensions
 
         services.RemoveAll(typeof(IAdminUserService));
         var userServiceMock = Substitute.For<IAdminUserService>();
-        
+
         userServiceMock.GetAdminAndContributorUsersAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Result<List<AuthorsDto>>.Success(new List<AuthorsDto>(), "Success")));
 

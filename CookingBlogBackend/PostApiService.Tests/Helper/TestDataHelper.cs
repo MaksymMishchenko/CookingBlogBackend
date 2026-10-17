@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using PostApiService.Helper;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
-using SixLabors.ImageSharp;
 
 namespace PostApiService.Tests.Helper
 {
@@ -88,6 +87,18 @@ namespace PostApiService.Tests.Helper
                 .UseSeed(seed);
         }
 
+        private static IFormFile CreateTestFormFile()
+        {
+            var bytes = new byte[] { 1, 2, 3, 4, 5 };
+            var stream = new MemoryStream(bytes);
+
+            return new FormFile(stream, 0, stream.Length, "PreviewImage", "test-preview.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+        }
+
         public static PostCreateDto ToPostCreateDto(Post post, IFormFile? previewImage = null)
         {
             return new PostCreateDto
@@ -103,21 +114,6 @@ namespace PostApiService.Tests.Helper
                 CategoryId = post.CategoryId,
             };
         }
-
-        private static IFormFile CreateTestFormFile()
-        {
-            using var image = new SixLabors.ImageSharp.Image<SixLabors.ImageSharp.PixelFormats.Rgba32>(300, 300);
-            var stream = new MemoryStream();
-            image.SaveAsPng(stream);
-            stream.Position = 0;
-
-            return new FormFile(stream, 0, stream.Length, "PreviewImage", "test-preview.png")
-            {
-                Headers = new HeaderDictionary(),
-                ContentType = "image/png"
-            };
-        }
-
         public static PostUpdateDto ToPostUpdateDto(Post post, string? newTitle = null)
         {
             return new PostUpdateDto
