@@ -38,6 +38,8 @@
             {
                 public const string ImageTooSmall = "Image dimensions are too small. Minimum required resolution is 250x250 pixels.";
                 public const string ImageTooSmallCode = "IMAGE_TOO_SMALL";
+                public const string UploadFailed = "Image upload failed";
+                public const string UploadFailedCode = "IMAGE_UPLOAD_FAILED";
             }
         }
 
@@ -181,6 +183,11 @@
                 public const string SearchQueryTooLong = "Query string cannot exceed {0} characters.";
                 public const string InvalidSortField = "Invalid sort field. Allowed values: title, createdAt.";
                 public const string InvalidSortDirection = "Invalid sort direction. Allowed values: asc, desc.";
+            }
+
+            public static class FileSettings
+            {
+                public const int MaxPostImageSizeMb = 5;
             }
 
             public static class System

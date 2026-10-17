@@ -7,15 +7,24 @@
         public const string HealthCheckPath = "/health";
         public const string JwtSection = "JwtConfiguration";
         public const string HtmlSanitizer = "HtmlSanitizer";
+        public const string CloudinarySection = "CloudinarySettings";
         public const string UnknownIp = "Unknown";
         public const string UnknownUser = "Unknown User";
         public const string RateLimitSection = "RateLimiting";
+        public const string FileStorageUseFake = "FileStorage:UseFake";
+
+        public static class Environments
+        {
+            public const string Testing = "Testing";
+        }
 
         public static class Errors
         {
             public const string ConnectionStringNotFound = "Connection string '{0}' is not configured.";
             public const string JwtConfigMissing = "Jwt configuration is missing in the appsettings.json file.";
             public const string ConfigSectionMissing = "Configuration section '{0}' is missing in the appsettings.json file";
+            public const string FakeStorageInProduction =
+            "FileStorage:UseFake cannot be enabled in Production.";
         }
     }
 }
