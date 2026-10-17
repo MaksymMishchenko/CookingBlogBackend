@@ -16,7 +16,7 @@ var connectionString = builder.Configuration.GetConnectionString
     (ConfigConstants.DefaultConnection);
 
 // Register AddDbContext service to the IServiceCollection
-builder.Services.AddApplicationService(builder.Configuration, connectionString!);
+builder.Services.AddApplicationService(builder.Configuration, connectionString!, builder.Environment);
 
 var jwtConfiguration = builder.Configuration.GetSection(ConfigConstants.JwtSection).Get<JwtConfiguration>();
 

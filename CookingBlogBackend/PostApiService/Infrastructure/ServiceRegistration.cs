@@ -12,6 +12,7 @@ using PostApiService.Models.Common;
 using PostApiService.Models.TypeSafe;
 using PostApiService.Repositories;
 using PostApiService.Services;
+using PostApiService.Services.Fakes;
 using Serilog.Exceptions;
 using System.Data.Common;
 using System.Net.Sockets;
@@ -43,7 +44,7 @@ namespace PostApiService.Infrastructure
         /// Registers application-specific services and the database context to the IServiceCollection.
         /// </summary>        
         public static IServiceCollection AddApplicationService(this IServiceCollection services,
-            IConfiguration configuration, string connectionString)
+            IConfiguration configuration, string connectionString, IHostEnvironment environment)
         {
             services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -69,10 +70,10 @@ namespace PostApiService.Infrastructure
             services.AddScoped<IPublicCategoryService, PublicCategoryService>();
             services.AddScoped<IAdminCategoryService, AdminCategoryService>();
             services.AddScoped<ICommentService, CommentService>();
-            services.AddScoped<IImageService, ImageService>();
 
             services.AddExternalTools(configuration);
             services.AddAppRateLimiting(configuration);
+            services.AddCloudinaryStorage(configuration, environment);
 
             return services;
         }
@@ -642,11 +643,11 @@ namespace PostApiService.Infrastructure
             var provider = scope.ServiceProvider;
             var cntx = provider.GetRequiredService<ApplicationDbContext>();
             var env = provider.GetRequiredService<IWebHostEnvironment>();
-            
+
             if (!env.IsProduction()) return app;
 
             await ExecuteWithRetryAsync(async () =>
-            {                
+            {
                 if (await cntx.Categories.AnyAsync())
                 {
                     Log.Information("--- Production SeedCategories: Categories already exist. Skipping ---");
@@ -730,6 +731,47 @@ namespace PostApiService.Infrastructure
                            .AllowAnyHeader();
                 });
             });
+
+            return services;
+        }
+
+        public static IServiceCollection AddCloudinaryStorage(this IServiceCollection services,
+            IConfiguration configuration,
+            IHostEnvironment environment)
+        {            
+            var useFake = configuration.GetValue<bool>(ConfigConstants.FileStorageUseFake);
+            
+            if (useFake && environment.IsProduction())
+                throw new InvalidOperationException(Errors.FakeStorageInProduction);
+
+            if (useFake || environment.IsEnvironment(ConfigConstants.Environments.Testing))
+            {
+                Log.Warning("File storage: using FAKE implementation (UseFake={UseFake}, Env={Env})",
+                    useFake, environment.EnvironmentName);
+                services.AddScoped<IFileStorageService, FakeFileStorageService>();
+                return services;
+            }
+
+            Log.Information("File storage: using real Cloudinary (Env={Env})", environment.EnvironmentName);
+
+            var section = configuration.GetSection(CloudinarySection);
+
+            if (!section.Exists())
+                throw new InvalidOperationException(string.Format(Errors.ConfigSectionMissing, CloudinarySection));
+
+            services.Configure<CloudinarySettings>(section);
+
+            services.AddSingleton(provider =>
+            {
+                var config = provider.GetRequiredService<IOptions<CloudinarySettings>>().Value;
+                var account = new CloudinaryDotNet.Account(config.CloudName, config.ApiKey, config.ApiSecret);
+                var cloudinary = new CloudinaryDotNet.Cloudinary(account);
+                cloudinary.Api.Secure = true;
+                return cloudinary;
+            });
+
+            services.AddSingleton<ICloudinaryWrapper, CloudinaryWrapper>();
+            services.AddScoped<IFileStorageService, FileStorageService>();
 
             return services;
         }
