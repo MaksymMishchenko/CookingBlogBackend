@@ -7,6 +7,7 @@
         public const string HealthCheckPath = "/health";
         public const string JwtSection = "JwtConfiguration";
         public const string HtmlSanitizer = "HtmlSanitizer";
+        public const string CloudinarySection = "CloudinarySettings";
         public const string UnknownIp = "Unknown";
         public const string UnknownUser = "Unknown User";
         public const string RateLimitSection = "RateLimiting";

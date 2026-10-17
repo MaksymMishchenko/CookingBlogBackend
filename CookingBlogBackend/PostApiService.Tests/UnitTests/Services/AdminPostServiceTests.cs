@@ -18,7 +18,7 @@ namespace PostApiService.Tests.UnitTests.Services
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly IPublicCategoryService _mockCategoryService;
-        private readonly IImageService _mockImageService;
+        private readonly IFileStorageService _mockImageService;
         private readonly AdminPostService _adminPostService;
 
         public AdminPostServiceTests()
@@ -27,7 +27,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<IPublicCategoryService>();
-            _mockImageService = Substitute.For<IImageService>();
+            _mockImageService = Substitute.For<IFileStorageService>();
             _adminPostService = new AdminPostService(_mockRepository,
                 _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockImageService);
         }

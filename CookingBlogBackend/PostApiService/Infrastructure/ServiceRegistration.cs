@@ -69,10 +69,10 @@ namespace PostApiService.Infrastructure
             services.AddScoped<IPublicCategoryService, PublicCategoryService>();
             services.AddScoped<IAdminCategoryService, AdminCategoryService>();
             services.AddScoped<ICommentService, CommentService>();
-            services.AddScoped<IImageService, ImageService>();
 
             services.AddExternalTools(configuration);
             services.AddAppRateLimiting(configuration);
+            services.AddCloudinaryStorage(configuration);
 
             return services;
         }
@@ -642,11 +642,11 @@ namespace PostApiService.Infrastructure
             var provider = scope.ServiceProvider;
             var cntx = provider.GetRequiredService<ApplicationDbContext>();
             var env = provider.GetRequiredService<IWebHostEnvironment>();
-            
+
             if (!env.IsProduction()) return app;
 
             await ExecuteWithRetryAsync(async () =>
-            {                
+            {
                 if (await cntx.Categories.AnyAsync())
                 {
                     Log.Information("--- Production SeedCategories: Categories already exist. Skipping ---");
@@ -730,6 +730,35 @@ namespace PostApiService.Infrastructure
                            .AllowAnyHeader();
                 });
             });
+
+            return services;
+        }
+
+        public static IServiceCollection AddCloudinaryStorage(this IServiceCollection services, IConfiguration configuration)
+        {
+            var section = configuration.GetSection(CloudinarySection);
+
+            if (!section.Exists())
+            {
+                throw new InvalidOperationException(string.Format(
+                    Errors.ConfigSectionMissing, CloudinarySection));
+            }
+
+            services.Configure<CloudinarySettings>(section);
+
+            services.AddSingleton(provider =>
+            {
+                var config = provider.GetRequiredService<IOptions<CloudinarySettings>>().Value;
+
+                var account = new CloudinaryDotNet.Account(config.CloudName, config.ApiKey, config.ApiSecret);
+                var cloudinary = new CloudinaryDotNet.Cloudinary(account);
+                cloudinary.Api.Secure = true;
+
+                return cloudinary;
+            });
+
+            services.AddSingleton<ICloudinaryWrapper, CloudinaryWrapper>();
+            services.AddScoped<IFileStorageService, FileStorageService>();
 
             return services;
         }

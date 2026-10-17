@@ -3,7 +3,6 @@ using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
-using SixLabors.ImageSharp;
 
 namespace PostApiService.Tests.IntegrationTests.Services
 {

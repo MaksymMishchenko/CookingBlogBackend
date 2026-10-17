@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authentication;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection;
@@ -77,7 +79,7 @@ public static class ServiceCollectionExtensions
 
         services.RemoveAll(typeof(IAdminUserService));
         var userServiceMock = Substitute.For<IAdminUserService>();
-        
+
         userServiceMock.GetAdminAndContributorUsersAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(Result<List<AuthorsDto>>.Success(new List<AuthorsDto>(), "Success")));
 
@@ -104,5 +106,36 @@ public static class ServiceCollectionExtensions
         services.GetRequiredService<IAuthService>().ClearReceivedCalls();
         services.GetRequiredService<ITokenService>().ClearReceivedCalls();
         services.GetRequiredService<IAdminUserService>().ClearReceivedCalls();
+    }
+
+    public static IServiceCollection AddTestCloudinary(this IServiceCollection services)
+    {
+        services.RemoveAll<Cloudinary>();
+
+        var cloudinaryMock = Substitute.For<Cloudinary>(
+            new Account("test", "test", "test")
+        );
+
+        services.AddSingleton(cloudinaryMock);
+
+        return services;
+    }
+
+    public static IServiceCollection AddTestCloudinaryWrapper(this IServiceCollection services)
+    {        
+        services.RemoveAll<ICloudinaryWrapper>();
+
+        var wrapperMock = Substitute.For<ICloudinaryWrapper>();
+
+        wrapperMock.UploadAsync(Arg.Any<ImageUploadParams>())
+            .Returns(Task.FromResult(new ImageUploadResult
+            {
+                SecureUrl = new Uri("https://res.cloudinary.com/test/image/upload/test.jpg"),
+                PublicId = "test_public_id"
+            }));
+
+        services.AddSingleton(wrapperMock);
+
+        return services;
     }
 }

@@ -71,6 +71,8 @@ namespace PostApiService.Tests.Fixtures
         protected virtual void ConfigureTestServices(IServiceCollection services)
         {
             services.DisableRateLimiting();
+            services.AddTestCloudinary();
+            services.AddTestCloudinaryWrapper();
         }
 
         public async Task ResetDatabaseAsync()

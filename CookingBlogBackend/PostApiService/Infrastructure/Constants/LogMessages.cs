@@ -94,8 +94,8 @@
 
         public static class Images
         {
-            public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";
-            public const string InvalidSizeAttempt = "Security Warning: Image size {Size} bytes exceeded limit. File: '{FileName}', IP: {IP}";            
+            public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";            
+            public const string UploadFailed = "Cloudinary upload failed: {Error}";
         }
 
         public static class Comments

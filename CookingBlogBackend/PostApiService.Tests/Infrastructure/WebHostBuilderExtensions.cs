@@ -10,7 +10,7 @@ namespace PostApiService.Tests.Infrastructure
             return builder.ConfigureAppConfiguration((context, config) =>
             {
                 config.SetBasePath(AppContext.BaseDirectory);
-                config.AddJsonFile("appsettings.Testing.json", optional: false, reloadOnChange: true);
+                config.AddJsonFile("appsettings.Testing.json", optional: false, reloadOnChange: true);                                
                 config.AddEnvironmentVariables();
             });
         }
