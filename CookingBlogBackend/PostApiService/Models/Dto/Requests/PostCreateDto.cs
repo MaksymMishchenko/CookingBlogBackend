@@ -14,8 +14,8 @@ namespace PostApiService.Models.Dto.Requests
         [Required(ErrorMessage = Global.Validation.Required)]
         public string Content { get; init; } = default!;
 
-        [AllowedFile(5)]
-        public IFormFile PreviewImage { get; init; } = default!;
+        [AllowedFile(Global.FileSettings.MaxPostImageSizeMb)]
+        public IFormFile? PreviewImage { get; init; }
 
         [MaxLength(200, ErrorMessage = Global.Validation.MaxLength)]
         public string? PreviewImageAlt { get; init; }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using PostApiService.Controllers.Filters;
+using PostApiService.Models.Dto.Requests;
 using System.ComponentModel.DataAnnotations;
 using ValidationResult = System.ComponentModel.DataAnnotations.ValidationResult;
 
@@ -27,14 +28,20 @@ namespace PostApiService.Tests.UnitTests.Filters
         {
             // Arrange
             var attribute = new AllowedFileAttribute();
-            var context = new ValidationContext(new object());
+            var dto = new PostCreateDto();
+            
+            var context = new ValidationContext(dto, serviceProvider: null, items: null)
+            {
+                MemberName = nameof(PostCreateDto.PreviewImage)
+            };
 
             // Act
             var result = attribute.GetValidationResult(null, context);
 
             // Assert
-            Assert.NotNull(result);
-            Assert.Equal(Global.Validation.Required, result.ErrorMessage);
+            Assert.NotNull(result);            
+            var expectedMessage = string.Format(Global.Validation.Required, "PreviewImage");
+            Assert.Equal(expectedMessage, result.ErrorMessage);
         }
 
         [Fact]

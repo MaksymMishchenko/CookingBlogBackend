@@ -20,7 +20,8 @@ namespace PostApiService.Controllers.Filters
         {            
             if (value is not IFormFile file || file.Length == 0)
             {
-                return new ValidationResult(Global.Validation.Required);
+                return new ValidationResult(string.Format(Global.Validation.Required,
+                    validationContext.DisplayName));
             }
             
             if (file.Length > _maxFileSizeMb * 1024 * 1024)
