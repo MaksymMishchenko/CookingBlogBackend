@@ -58,7 +58,7 @@ namespace PostApiService.Controllers
         /// </summary>               
         [HttpPut("{postId}")]
         public async Task<IActionResult> UpdatePostAsync
-            (int postId, [FromBody] PostUpdateDto postDto, CancellationToken ct = default)
+            (int postId, [FromForm] PostUpdateDto postDto, CancellationToken ct = default)
         {
             var result = await _adminPostService.UpdatePostAsync(postId, postDto, ct);
 

@@ -20,6 +20,8 @@ namespace PostApiService.Tests.UnitTests.Services
         private readonly IPublicCategoryService _mockCategoryService;
         private readonly IFileStorageService _mockImageService;
         private readonly AdminPostService _adminPostService;
+        private const string OldPreviewUrl = "https://res.cloudinary.com/x/image/upload/v1/posts/old-abc123.webp";
+        private const string NewPreviewUrl = "https://res.cloudinary.com/x/image/upload/v2/posts/new-def456.webp";
 
         public AdminPostServiceTests()
         {
@@ -30,6 +32,27 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockImageService = Substitute.For<IFileStorageService>();
             _adminPostService = new AdminPostService(_mockRepository,
                 _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockImageService);
+        }
+
+        private Post ArrangeSuccessfulUpdate(int postId, string? existingPreviewUrl)
+        {
+            var post = new Post
+            {
+                Id = postId,
+                CategoryId = 99,
+                AuthorId = "user-id",
+                PreviewImageUrl = existingPreviewUrl!
+            };
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>()).Returns(post);
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false);
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(true);
+
+            return post;
         }
 
         [Fact]
@@ -612,7 +635,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
             _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token).Returns(true);
-            
+
             _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success("/images/posts/test-preview.webp"));
 
@@ -657,7 +680,7 @@ namespace PostApiService.Tests.UnitTests.Services
                 .Returns(false);
             _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token)
                 .Returns(true);
-            
+
             var expectedMessage = "Зовнішнє повідомлення про помилку розміру";
             var expectedErrorCode = "IMAGE_TOO_SMALL";
 
@@ -674,7 +697,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Null(result.Value);
             Assert.Equal(expectedMessage, result.Message);
             Assert.Equal(expectedErrorCode, result.ErrorCode);
-            
+
             await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), token);
             await _mockRepository.DidNotReceive().SaveChangesAsync(token);
         }
@@ -684,12 +707,12 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int postId = 1;
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto();
+            var dto = TestDataHelper.GetPostUpdateDto();
 
             _mockWebContext.UserId.Returns(string.Empty);
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
@@ -706,14 +729,14 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int postId = 1;
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto();
+            var dto = TestDataHelper.GetPostUpdateDto();
 
             _mockWebContext.UserId.Returns("regular-user-id");
             _mockWebContext.IsAdmin.Returns(false);
             _mockWebContext.IsContributor.Returns(false);
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
@@ -729,20 +752,18 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int postId = 1;
-            string contributorId = "contributor-1-id";
-            string anotherAuthorId = "contributor-2-id";
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto(title: "Title", slug: "slug", content: "Some valid content");
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            post.AuthorId = "contributor-2-id";
 
-            _mockWebContext.UserId.Returns(contributorId);
+            _mockWebContext.UserId.Returns("contributor-1-id");
             _mockWebContext.IsAdmin.Returns(false);
             _mockWebContext.IsContributor.Returns(true);
-            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
 
-            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { Id = postId, AuthorId = anotherAuthorId });
+            var dto = TestDataHelper.GetPostUpdateDto(
+                title: "Title", slug: "slug", content: "Some valid content");
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
@@ -754,19 +775,33 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
+        public async Task UpdatePostAsync_ShouldSucceed_WhenAdminUpdatesForeignPost()
+        {
+            // Arrange
+            const int postId = 1;
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            post.AuthorId = "another-author-id";
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, TestDataHelper.GetPostUpdateDto());
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _mockRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
         public async Task UpdatePostAsync_ShouldReturnInvalid_WhenPostIsEmpty()
         {
             // Arrange
             const int postId = 1;
-            const string invalidPostContent = "<script></script>";
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto(invalidPostContent);
-
-            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-            _mockWebContext.IsAdmin.Returns(true);
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
 
+            var dto = TestDataHelper.GetPostUpdateDto(content: "<script></script>");
+
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
@@ -785,17 +820,14 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int postId = 1;
-            const string content = "<script>alert('xss')</script>";
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto(content);
-
-            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-            _mockWebContext.IsAdmin.Returns(true);
-            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
             _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
                 .Returns((Post?)null);
 
+            var dto = TestDataHelper.GetPostUpdateDto(content: "<script>alert('xss')</script>");
+
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
@@ -811,28 +843,23 @@ namespace PostApiService.Tests.UnitTests.Services
         [Fact]
         public async Task UpdatePostAsync_ShouldReturnConflict_WhenTitleAlreadyExistsForAnotherPost()
         {
-            // Arrange           
+            // Arrange
             const int postId = 1;
-            const string content = "Test post content";
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto(content);
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
 
-            _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
-            _mockWebContext.IsAdmin.Returns(true);
-            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { Id = postId, AuthorId = "3f2504e0-4f89-11d3-9a0c-0305e82c3301" });
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(),
-                Arg.Any<CancellationToken>()).Returns(true);
+            var dto = TestDataHelper.GetPostUpdateDto(content: "Test post content");
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.Conflict, result.Status);
             Assert.Equal(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
-                postUpdateDto.Title, postUpdateDto.Slug), result.Message);
+                dto.Title, dto.Slug), result.Message);
             Assert.Equal(PostM.Errors.PostAlreadyExistCode, result.ErrorCode);
 
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
@@ -843,19 +870,13 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int postId = 1;
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto(categoryId: 2);
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            _mockCategoryService.ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>()).Returns(false);
 
-            _mockWebContext.UserId.Returns("user-id");
-            _mockWebContext.IsContributor.Returns(true);
-            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>()).Returns(false);
-            _mockCategoryService.ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
-                .Returns(false);
+            var dto = TestDataHelper.GetPostUpdateDto(categoryId: 2);
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
             Assert.NotNull(result);
@@ -866,8 +887,51 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(PostM.Errors.CategoryNotFoundCode, result.ErrorCode);
 
             await _mockCategoryService.Received(1)
-                .ExistsAsync(Arg.Is(postUpdateDto.CategoryId), Arg.Any<CancellationToken>());
+                .ExistsAsync(Arg.Is(dto.CategoryId), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldNotCheckCategory_WhenCategoryUnchanged()
+        {
+            // Arrange
+            const int postId = 1;
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            post.CategoryId = 1;
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, TestDataHelper.GetPostUpdateDto());
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _mockCategoryService.DidNotReceive()
+                .ExistsAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnSuccess_WhenPostUpdatedSuccessfully()
+        {
+            // Arrange
+            const int postId = 1;
+            var ct = CancellationToken.None;
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+
+            var dto = TestDataHelper.GetPostUpdateDto();
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto, ct);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+            Assert.Equal(PostM.Success.PostUpdatedSuccessfully, result.Message);
+
+            var data = Assert.IsType<PostAdminDetailsDto>(result.Value);
+            Assert.Equal(dto.Title, data.Title);
+            Assert.Equal(dto.Slug, data.Slug);
+
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
         }
 
         [Fact]
@@ -875,23 +939,15 @@ namespace PostApiService.Tests.UnitTests.Services
         {
             // Arrange
             const int postId = 1;
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto(
-                title: "<h1>Clean Title</h1>",
-                slug: "<b>clean-slug</b>"
-            );
-
             var ct = CancellationToken.None;
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
 
-            _mockWebContext.UserId.Returns("user-id");
-            _mockWebContext.IsAdmin.Returns(true);
-            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
-            _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
+            var dto = TestDataHelper.GetPostUpdateDto(
+                title: "<h1>Clean Title</h1>",
+                slug: "<b>clean-slug</b>");
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto, ct);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto, ct);
 
             // Assert
             Assert.True(result.IsSuccess);
@@ -902,40 +958,115 @@ namespace PostApiService.Tests.UnitTests.Services
         }
 
         [Fact]
-        public async Task UpdatePostAsync_ShouldReturnSuccess_WhenPostUpdatedSuccessfully()
+        public async Task UpdatePostAsync_ShouldReplacePreviewAndDeleteOld_WhenNewFileProvided()
         {
             // Arrange
             const int postId = 1;
-            var postUpdateDto = TestDataHelper.GetPostUpdateDto();
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            var file = Substitute.For<IFormFile>();
+            var dto = TestDataHelper.GetPostUpdateDto(slug: "<b>clean-slug</b>", previewImage: file);
 
-            var ct = CancellationToken.None;
-
-            _mockWebContext.UserId.Returns("user-id");
-            _mockWebContext.IsAdmin.Returns(true);
-            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            _mockRepository.GetByIdWithAuthorsAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { Id = postId, CategoryId = 99, AuthorId = "user-id" });
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
-            _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
-
-            var expectedMessage = PostM.Success.PostUpdatedSuccessfully;
+            _mockImageService.SavePostPreviewAsync(file, "clean-slug")
+                .Returns(Result<string>.Success(NewPreviewUrl));
+            _mockImageService.DeleteByUrlAsync(OldPreviewUrl).Returns(Result.Success());
 
             // Act
-            var result = await _adminPostService.UpdatePostAsync(postId, postUpdateDto, ct);
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
 
             // Assert
-            Assert.NotNull(result);
             Assert.True(result.IsSuccess);
-            Assert.IsType<PostAdminDetailsDto>(result.Value);
-            Assert.Equal(ResultStatus.Success, result.Status);
-            Assert.NotNull(result.Value);
+            Assert.Equal(NewPreviewUrl, post.PreviewImageUrl);
+            Assert.Equal(NewPreviewUrl, result.Value!.PreviewImageUrl);
 
-            var data = result.Value!;
-            Assert.Equal(postUpdateDto.Title, data.Title);
-            Assert.Equal(postUpdateDto.Slug, data.Slug);
-            Assert.Equal(expectedMessage, result.Message);
+            await _mockImageService.Received(1).SavePostPreviewAsync(file, "clean-slug");
+            await _mockImageService.Received(1).DeleteByUrlAsync(OldPreviewUrl);
+            await _mockRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
 
-            await _mockRepository.Received(1).SaveChangesAsync(ct);
+        [Fact]
+        public async Task UpdatePostAsync_ShouldKeepPreview_WhenNoFileProvided()
+        {
+            // Arrange
+            const int postId = 1;
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            var dto = TestDataHelper.GetPostUpdateDto();
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(OldPreviewUrl, post.PreviewImageUrl);
+
+            await _mockImageService.DidNotReceive()
+                .SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>());
+            await _mockImageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnInvalid_WhenImageUploadFails()
+        {
+            // Arrange
+            const int postId = 1;
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            var dto = TestDataHelper.GetPostUpdateDto(previewImage: Substitute.For<IFormFile>());
+
+            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Error(ImageM.Errors.UploadFailed, ImageM.Errors.UploadFailedCode));
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Equal(ImageM.Errors.UploadFailed, result.Message);
+            Assert.Equal(OldPreviewUrl, post.PreviewImageUrl);
+
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _mockImageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldStillSucceed_WhenDeletingOldPreviewFails()
+        {
+            // Arrange
+            const int postId = 1;
+            var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            var dto = TestDataHelper.GetPostUpdateDto(previewImage: Substitute.For<IFormFile>());
+
+            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success(NewPreviewUrl));
+            _mockImageService.DeleteByUrlAsync(OldPreviewUrl)
+                .Returns(Result.Error(ImageM.Errors.DeleteFailed, ImageM.Errors.DeleteFailedCode));
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(NewPreviewUrl, post.PreviewImageUrl);
+            await _mockRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldNotUploadImage_WhenSlugConflicts()
+        {
+            // Arrange
+            const int postId = 1;
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true);
+
+            var dto = TestDataHelper.GetPostUpdateDto(previewImage: Substitute.For<IFormFile>());
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.Equal(ResultStatus.Conflict, result.Status);
+            await _mockImageService.DidNotReceive()
+                .SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>());
         }
 
         [Fact]

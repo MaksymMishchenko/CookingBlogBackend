@@ -37,7 +37,7 @@ namespace PostApiService.Helper
             p.CreatedAt,
             p.UpdatedAt,
             p.PreviewImageUrl,
-            p.PreviewImageAlt!
+            p.PreviewImageAlt ?? string.Empty
         );
 
         public static Expression<Func<Post, AdminPostListDto>> ToAdminPostListDto => p => new AdminPostListDto(
@@ -87,7 +87,7 @@ namespace PostApiService.Helper
             p.CreatedAt,
             p.UpdatedAt,
             p.PreviewImageUrl,
-            p.PreviewImageAlt!
+            p.PreviewImageAlt ?? string.Empty
         );
 
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent, string userId, string previewImageUrl)
@@ -122,7 +122,7 @@ namespace PostApiService.Helper
             };
         }
 
-        public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent)
+        public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent, string? newPreviewUrl)
         {
             entity.Title = dto.Title.StripHtml();
             entity.Description = dto.Description.StripHtml();
@@ -130,7 +130,11 @@ namespace PostApiService.Helper
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId;
 
-            entity.PreviewImageUrl = dto.PreviewImageUrl;
+            if (newPreviewUrl is not null)
+            {
+                entity.PreviewImageUrl = newPreviewUrl;
+            }
+
             entity.PreviewImageAlt = dto.PreviewImageAlt?.StripHtml();
 
             entity.MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
