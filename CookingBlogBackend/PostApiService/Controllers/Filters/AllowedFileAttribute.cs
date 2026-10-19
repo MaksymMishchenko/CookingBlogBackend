@@ -5,6 +5,7 @@ namespace PostApiService.Controllers.Filters
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class AllowedFileAttribute : ValidationAttribute
     {
+        public bool Required { get; set; } = true;
         private readonly int _maxFileSizeMb;
         private readonly string[] _allowedExtensions;
 
@@ -17,7 +18,14 @@ namespace PostApiService.Controllers.Filters
         }
 
         protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
-        {            
+        {
+            if (value is null)
+            {
+                return Required
+                    ? new ValidationResult(string.Format(Global.Validation.Required, validationContext.DisplayName))
+                    : ValidationResult.Success;
+            }
+
             if (value is not IFormFile file || file.Length == 0)
             {
                 return new ValidationResult(string.Format(Global.Validation.Required,
