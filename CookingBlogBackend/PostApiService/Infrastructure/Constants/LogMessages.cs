@@ -89,6 +89,7 @@
             public const string CategoryDoesNotExist =
                 "Update Category Failed: Category with ID {Id} not found in database. Input Name: {Name}";
             public const string DeleteBlockedByRelatedPosts = "Delete blocked: Category {Name} has active posts";
+            public const string OldPreviewNotDeleted = "Post {PostId} updated, but old preview was not deleted: '{Url}'";
 
         }
 
@@ -96,6 +97,9 @@
         {
             public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";            
             public const string UploadFailed = "Cloudinary upload failed: {Error}";
+            public const string DeletedSuccessfully = "Image '{PublicId}' deleted from Cloudinary";
+            public const string DeleteFailed = "Cloudinary delete failed for '{PublicId}': {Error}";
+            public const string CannotExtractPublicId = "Cannot extract Cloudinary public id from url: '{Url}'";
         }
 
         public static class Comments
