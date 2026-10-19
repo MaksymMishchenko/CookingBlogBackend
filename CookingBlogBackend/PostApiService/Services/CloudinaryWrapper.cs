@@ -17,5 +17,8 @@ namespace PostApiService.Services
         {
             return await _cloudinary.UploadAsync(parameters);
         }
+
+        public async Task<DeletionResult> DestroyAsync(DeletionParams parameters)
+            => await _cloudinary.DestroyAsync(parameters);
     }
 }

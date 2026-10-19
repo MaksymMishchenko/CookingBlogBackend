@@ -73,5 +73,62 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.False(result.IsSuccess);
             Assert.Equal(ImageM.Errors.UploadFailedCode, result.ErrorCode);
         }
+
+        [Fact]
+        public async Task DeleteByUrlAsync_ValidUrl_ReturnsSuccess()
+        {
+            // Arrange
+            var url = "https://res.cloudinary.com/demo/image/upload/v123456/posts/test-recipe-123456.webp";
+
+            _cloudinaryWrapperMock.DestroyAsync(Arg.Any<DeletionParams>())
+                .Returns(Task.FromResult(new DeletionResult
+                {
+                    Result = "ok",
+                    Error = null
+                }));
+
+            // Act
+            var result = await _fileStorageService.DeleteByUrlAsync(url);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _cloudinaryWrapperMock.Received(1).DestroyAsync(Arg.Is<DeletionParams>(p => p.PublicId == "posts/test-recipe-123456"));
+        }
+
+        [Fact]
+        public async Task DeleteByUrlAsync_CloudinaryReturnsError_ReturnsFailureResult()
+        {
+            // Arrange
+            var url = "https://res.cloudinary.com/demo/image/upload/v123456/posts/test-recipe-123456.webp";
+
+            _cloudinaryWrapperMock.DestroyAsync(Arg.Any<DeletionParams>())
+                .Returns(Task.FromResult(new DeletionResult
+                {
+                    Error = new Error { Message = "Not Found" }
+                }));
+
+            // Act
+            var result = await _fileStorageService.DeleteByUrlAsync(url);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ImageM.Errors.DeleteFailedCode, result.ErrorCode);
+        }
+
+        [Theory]
+        [InlineData("https://invalid-url-format.com/image.png")]
+        [InlineData("https://res.cloudinary.com/demo/image/not-upload-path/v123/image.webp")]
+        [InlineData("just-a-random-string")]
+        public async Task DeleteByUrlAsync_InvalidUrl_ReturnsFailureResultWithoutCallingCloudinary(string invalidUrl)
+        {
+            // Act
+            var result = await _fileStorageService.DeleteByUrlAsync(invalidUrl);
+
+            // Assert
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ImageM.Errors.DeleteFailedCode, result.ErrorCode);
+
+            await _cloudinaryWrapperMock.DidNotReceive().DestroyAsync(Arg.Any<DeletionParams>());
+        }
     }
 }
