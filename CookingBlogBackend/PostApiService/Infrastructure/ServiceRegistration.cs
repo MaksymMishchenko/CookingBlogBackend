@@ -297,7 +297,7 @@ namespace PostApiService.Infrastructure
             var env = provider.GetRequiredService<IWebHostEnvironment>();
             var config = provider.GetRequiredService<IConfiguration>();
 
-            if (env.IsEnvironment("Testing")) return app;
+            if (env.IsEnvironment(ConfigConstants.Environments.Testing)) return app;
 
             if (env.IsDevelopment())
             {
@@ -589,7 +589,7 @@ namespace PostApiService.Infrastructure
                 var userManager = provider.GetRequiredService<UserManager<IdentityUser>>();
                 var env = provider.GetRequiredService<IWebHostEnvironment>();
 
-                if (env.IsProduction() || env.IsEnvironment("Testing")) return app;
+                if (env.IsProduction() || env.IsEnvironment(ConfigConstants.Environments.Testing)) return app;
 
                 await ExecuteWithRetryAsync(async () =>
                 {

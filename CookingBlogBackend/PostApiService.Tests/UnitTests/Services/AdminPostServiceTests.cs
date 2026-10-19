@@ -18,7 +18,7 @@ namespace PostApiService.Tests.UnitTests.Services
         private readonly IWebContext _mockWebContext;
         private readonly IHtmlSanitizationService _mockSanitizationService;
         private readonly IPublicCategoryService _mockCategoryService;
-        private readonly IFileStorageService _mockImageService;
+        private readonly IFileStorageService _mockFileStorageService;
         private readonly AdminPostService _adminPostService;
         private const string OldPreviewUrl = "https://res.cloudinary.com/x/image/upload/v1/posts/old-abc123.webp";
         private const string NewPreviewUrl = "https://res.cloudinary.com/x/image/upload/v2/posts/new-def456.webp";
@@ -29,9 +29,9 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<IPublicCategoryService>();
-            _mockImageService = Substitute.For<IFileStorageService>();
+            _mockFileStorageService = Substitute.For<IFileStorageService>();
             _adminPostService = new AdminPostService(_mockRepository,
-                _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockImageService);
+                _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockFileStorageService);
         }
 
         private Post ArrangeSuccessfulUpdate(int postId, string? existingPreviewUrl)
@@ -601,7 +601,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), ct).Returns(false);
             _mockCategoryService.ExistsAsync(Arg.Any<int>(), ct).Returns(true);
 
-            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success("/images/posts/clean-slug.webp"));
 
             var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
@@ -636,7 +636,7 @@ namespace PostApiService.Tests.UnitTests.Services
                 .Returns(false);
             _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token).Returns(true);
 
-            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success("/images/posts/test-preview.webp"));
 
             var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
@@ -684,7 +684,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var expectedMessage = "Зовнішнє повідомлення про помилку розміру";
             var expectedErrorCode = "IMAGE_TOO_SMALL";
 
-            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Invalid(expectedMessage, expectedErrorCode));
 
             // Act
@@ -966,9 +966,9 @@ namespace PostApiService.Tests.UnitTests.Services
             var file = Substitute.For<IFormFile>();
             var dto = TestDataHelper.GetPostUpdateDto(slug: "<b>clean-slug</b>", previewImage: file);
 
-            _mockImageService.SavePostPreviewAsync(file, "clean-slug")
+            _mockFileStorageService.SavePostPreviewAsync(file, "clean-slug")
                 .Returns(Result<string>.Success(NewPreviewUrl));
-            _mockImageService.DeleteByUrlAsync(OldPreviewUrl).Returns(Result.Success());
+            _mockFileStorageService.DeleteByUrlAsync(OldPreviewUrl).Returns(Result.Success());
 
             // Act
             var result = await _adminPostService.UpdatePostAsync(postId, dto);
@@ -978,8 +978,8 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(NewPreviewUrl, post.PreviewImageUrl);
             Assert.Equal(NewPreviewUrl, result.Value!.PreviewImageUrl);
 
-            await _mockImageService.Received(1).SavePostPreviewAsync(file, "clean-slug");
-            await _mockImageService.Received(1).DeleteByUrlAsync(OldPreviewUrl);
+            await _mockFileStorageService.Received(1).SavePostPreviewAsync(file, "clean-slug");
+            await _mockFileStorageService.Received(1).DeleteByUrlAsync(OldPreviewUrl);
             await _mockRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
@@ -998,9 +998,9 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(OldPreviewUrl, post.PreviewImageUrl);
 
-            await _mockImageService.DidNotReceive()
+            await _mockFileStorageService.DidNotReceive()
                 .SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>());
-            await _mockImageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
         }
 
         [Fact]
@@ -1011,7 +1011,7 @@ namespace PostApiService.Tests.UnitTests.Services
             var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
             var dto = TestDataHelper.GetPostUpdateDto(previewImage: Substitute.For<IFormFile>());
 
-            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Error(ImageM.Errors.UploadFailed, ImageM.Errors.UploadFailedCode));
 
             // Act
@@ -1024,7 +1024,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(OldPreviewUrl, post.PreviewImageUrl);
 
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
-            await _mockImageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
         }
 
         [Fact]
@@ -1035,9 +1035,9 @@ namespace PostApiService.Tests.UnitTests.Services
             var post = ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
             var dto = TestDataHelper.GetPostUpdateDto(previewImage: Substitute.For<IFormFile>());
 
-            _mockImageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success(NewPreviewUrl));
-            _mockImageService.DeleteByUrlAsync(OldPreviewUrl)
+            _mockFileStorageService.DeleteByUrlAsync(OldPreviewUrl)
                 .Returns(Result.Error(ImageM.Errors.DeleteFailed, ImageM.Errors.DeleteFailedCode));
 
             // Act
@@ -1065,7 +1065,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             // Assert
             Assert.Equal(ResultStatus.Conflict, result.Status);
-            await _mockImageService.DidNotReceive()
+            await _mockFileStorageService.DidNotReceive()
                 .SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>());
         }
 

@@ -63,7 +63,7 @@ builder.Services.AddSwaggerGen();
 
 var healthBuilder = builder.Services.AddHealthChecks();
 
-if (!builder.Environment.IsEnvironment("Testing") && !string.IsNullOrEmpty(connectionString))
+if (!builder.Environment.IsEnvironment(ConfigConstants.Environments.Testing) && !string.IsNullOrEmpty(connectionString))
 {
     healthBuilder.AddNpgSql(connectionString, name: PostgresHealthCheckName);
 }
@@ -82,7 +82,7 @@ if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
     app.UseSwaggerUI();
 }
 
-if (!app.Environment.IsEnvironment("Testing"))
+if (!app.Environment.IsEnvironment(ConfigConstants.Environments.Testing))
 {
     await app.SeedUsersAsync();
 
