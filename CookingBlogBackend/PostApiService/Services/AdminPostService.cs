@@ -253,8 +253,34 @@ namespace PostApiService.Services
                 }
             }
 
-            postDto.UpdateEntity(postEntity, sanitizedContent);
+            string? oldPreviewUrl = null;
+            string? newPreviewUrl = null;
+
+            if (postDto.PreviewImage is not null)
+            {
+                var imageResult = await _fileStorageService.SavePostPreviewAsync(postDto.PreviewImage, cleanSlug);
+
+                if (!imageResult.IsSuccess)
+                {
+                    return Invalid<PostAdminDetailsDto>(imageResult.Message!, imageResult.ErrorCode);
+                }
+
+                oldPreviewUrl = postEntity.PreviewImageUrl;
+                newPreviewUrl = imageResult.Value!;
+            }
+
+            postDto.UpdateEntity(postEntity, sanitizedContent, newPreviewUrl);
             await _postRepository.SaveChangesAsync(ct);
+
+            if(!string.IsNullOrWhiteSpace(oldPreviewUrl))
+            {
+                var deleteResult = await _fileStorageService.DeleteByUrlAsync(oldPreviewUrl);
+
+                if (!deleteResult.IsSuccess)
+                {
+                    Log.Warning(Posts.OldPreviewNotDeleted, postEntity.Id, oldPreviewUrl);
+                }
+            }            
 
             Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
 
