@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using PostApiService.Infrastructure.Constants;
 using PostApiService.Tests.Infrastructure;
 using Respawn;
 
@@ -26,7 +27,7 @@ namespace PostApiService.Tests.Fixtures
 
             _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
             {
-                builder.UseEnvironment("Testing");
+                builder.UseEnvironment(ConfigConstants.Environments.Testing);
                 builder.ConfigureTestConfig();
                 builder.ConfigureTestServices(services =>
                 {
