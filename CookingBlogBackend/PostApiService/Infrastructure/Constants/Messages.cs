@@ -40,6 +40,8 @@
                 public const string ImageTooSmallCode = "IMAGE_TOO_SMALL";
                 public const string UploadFailed = "Image upload failed";
                 public const string UploadFailedCode = "IMAGE_UPLOAD_FAILED";
+                public const string DeleteFailed = "Image deletion failed";
+                public const string DeleteFailedCode = "IMAGE_DELETE_FAILED";
             }
         }
 

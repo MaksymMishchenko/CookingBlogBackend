@@ -1,6 +1,7 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using PostApiService.Interfaces;
+using System.Text.RegularExpressions;
 
 namespace PostApiService.Services
 {
@@ -49,6 +50,41 @@ namespace PostApiService.Services
             Log.Information(Images.SavedSuccessfully, publicId, slug);
 
             return Success<string>(uploadResult.SecureUrl.ToString());
+        }
+
+        public async Task<Result> DeleteByUrlAsync(string url)
+        {
+            var publicId = ExtractPublicId(url);
+
+            if (publicId is null)
+            {
+                Log.Warning(Images.CannotExtractPublicId, url);
+                return Error<bool>(ImageM.Errors.DeleteFailed, ImageM.Errors.DeleteFailedCode);
+            }
+
+            var result = await _cloudinaryWrapper.DestroyAsync(new DeletionParams(publicId));
+
+            if (result.Error != null)
+            {
+                Log.Error(Images.DeleteFailed, publicId, result.Error.Message);
+                return Error<bool>(ImageM.Errors.DeleteFailed, ImageM.Errors.DeleteFailedCode);
+            }
+
+            Log.Information(Images.DeletedSuccessfully, publicId);
+            return Success(true);
+        }
+
+        private static string? ExtractPublicId(string url)
+        {
+            const string marker = "/upload/";
+            var idx = url.IndexOf(marker, StringComparison.Ordinal);
+            if (idx < 0) return null;
+
+            var path = url[(idx + marker.Length)..];
+            path = Regex.Replace(path, @"^v\d+/", "");
+
+            var dot = path.LastIndexOf('.');
+            return dot > 0 ? path[..dot] : path;
         }
     }
 }
