@@ -114,14 +114,15 @@ namespace PostApiService.Tests.Helper
                 CategoryId = post.CategoryId,
             };
         }
-        public static PostUpdateDto ToPostUpdateDto(Post post, string? newTitle = null)
+        public static PostUpdateDto ToPostUpdateDto(Post post,
+            string? newTitle = null, IFormFile? previewImage = null)
         {
             return new PostUpdateDto
             {
                 Title = newTitle ?? post.Title,
                 Description = post.Description,
                 Content = post.Content,
-                PreviewImageUrl = post.PreviewImageUrl,
+                PreviewImage = previewImage,
                 PreviewImageAlt = post.PreviewImageAlt,
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
@@ -320,7 +321,8 @@ namespace PostApiService.Tests.Helper
             string title = "Updated Post Title",
             string slug = "updated-post-title",
             string content = "Updated content of the post.",
-            int categoryId = 1)
+            int categoryId = 1,
+            IFormFile? previewImage = null)
         {
             return new PostUpdateDto
             {
@@ -328,7 +330,7 @@ namespace PostApiService.Tests.Helper
                 Slug = slug,
                 Content = content,
                 Description = "Updated Description",
-                PreviewImageUrl = "https://example.com/images/default-preview.jpg",
+                PreviewImage = previewImage,
                 PreviewImageAlt = "Test preview alt",
                 MetaTitle = "Updated Meta Title",
                 MetaDescription = "Updated Meta Description",

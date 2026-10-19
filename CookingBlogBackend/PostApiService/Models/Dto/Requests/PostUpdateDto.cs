@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using PostApiService.Controllers.Filters;
+using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Models.Dto.Requests
 {
@@ -12,9 +13,9 @@ namespace PostApiService.Models.Dto.Requests
 
         [Required(ErrorMessage = Global.Validation.Required)]
         public string Content { get; init; } = default!;
-
-        [Required(ErrorMessage = Global.Validation.Required)]
-        public string PreviewImageUrl { get; init; } = default!;
+        
+        [AllowedFile(Global.FileSettings.MaxPostImageSizeMb, Required = false)]
+        public IFormFile? PreviewImage { get; init; }
 
         [MaxLength(200, ErrorMessage = Global.Validation.MaxLength)]
         public string? PreviewImageAlt { get; init; }
