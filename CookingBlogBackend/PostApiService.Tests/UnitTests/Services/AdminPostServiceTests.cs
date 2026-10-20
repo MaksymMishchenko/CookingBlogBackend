@@ -1087,6 +1087,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(Auth.LoginM.Errors.UnauthorizedAccessCode, result.ErrorCode);
 
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
         }
 
         [Fact]
@@ -1108,6 +1109,7 @@ namespace PostApiService.Tests.UnitTests.Services
 
             await _mockRepository.DidNotReceive().GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
         }
 
         [Fact]
@@ -1123,7 +1125,7 @@ namespace PostApiService.Tests.UnitTests.Services
             _mockWebContext.IsContributor.Returns(true);
 
             _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())
-                .Returns(new Post { Id = postId, AuthorId = anotherAuthorId });
+                .Returns(new Post { Id = postId, AuthorId = anotherAuthorId, PreviewImageUrl = OldPreviewUrl });
 
             // Act
             var result = await _adminPostService.DeletePostAsync(postId);
@@ -1136,6 +1138,7 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockRepository.Received(1).GetByIdAsync(postId, Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().DeleteAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
         }
 
         [Fact]
@@ -1162,6 +1165,7 @@ namespace PostApiService.Tests.UnitTests.Services
             await _mockRepository.Received(1).GetByIdAsync(postId, Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().DeleteAsync(Arg.Is<Post>(p =>
                     p.Id == postId), Arg.Any<CancellationToken>());
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
         }
 
         [Fact]
@@ -1192,6 +1196,92 @@ namespace PostApiService.Tests.UnitTests.Services
 
             await _mockRepository.Received(1).DeleteAsync(existingPost, ct);
             await _mockRepository.Received(1).SaveChangesAsync(ct);
+            await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldDeletePreviewImage_WhenPostHasPreview()
+        {
+            // Arrange
+            int postId = 1;
+            string userId = "contributor-1-id";
+            var existingPost = new Post { Id = postId, AuthorId = userId, PreviewImageUrl = OldPreviewUrl };
+
+            _mockWebContext.UserId.Returns(userId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
+                .Returns(existingPost);
+
+            _mockFileStorageService.DeleteByUrlAsync(OldPreviewUrl).Returns(Result.Success());
+
+            var ct = CancellationToken.None;
+
+            // Act
+            var result = await _adminPostService.DeletePostAsync(postId, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
+
+            await _mockRepository.Received(1).DeleteAsync(existingPost, ct);
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
+            await _mockFileStorageService.Received(1).DeleteByUrlAsync(OldPreviewUrl);
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldReturnSuccess_WhenPreviewDeletionFails()
+        {
+            // Arrange
+            int postId = 1;
+            string userId = "contributor-1-id";
+            var existingPost = new Post { Id = postId, AuthorId = userId, PreviewImageUrl = OldPreviewUrl };
+
+            _mockWebContext.UserId.Returns(userId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
+                .Returns(existingPost);
+
+            _mockFileStorageService.DeleteByUrlAsync(OldPreviewUrl)
+                .Returns(Result.Error(ImageM.Errors.DeleteFailed, ImageM.Errors.DeleteFailedCode));
+
+            var ct = CancellationToken.None;
+
+            // Act
+            var result = await _adminPostService.DeletePostAsync(postId, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(PostM.Success.PostDeletedSuccessfully, result.Message);
+
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
+            await _mockFileStorageService.Received(1).DeleteByUrlAsync(OldPreviewUrl);
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldDeletePreviewImage_WhenAdminDeletesForeignPost()
+        {
+            // Arrange
+            int postId = 1;
+            var existingPost = new Post { Id = postId, AuthorId = "another-author-id", PreviewImageUrl = OldPreviewUrl };
+
+            _mockWebContext.UserId.Returns("admin-id");
+            _mockWebContext.IsAdmin.Returns(true);
+
+            _mockRepository.GetByIdAsync(postId, Arg.Any<CancellationToken>())!
+                .Returns(existingPost);
+
+            _mockFileStorageService.DeleteByUrlAsync(OldPreviewUrl).Returns(Result.Success());
+
+            // Act
+            var result = await _adminPostService.DeletePostAsync(postId);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            await _mockFileStorageService.Received(1).DeleteByUrlAsync(OldPreviewUrl);
         }
     }
 }
