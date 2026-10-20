@@ -498,6 +498,41 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.False(postExists);
         }
 
+        [Fact]
+        public async Task DeletePostAsync_ShouldRemovePostWithPreview()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, _, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            var posts = TestDataHelper.GetPostsWithComments(1, categories,
+                authorIds: new[] { TestUserData.AdminId }, commentCount: 0);
+            posts.ForEach(p =>
+            {
+                p.Id = 0;
+                p.Slug = $"preview-delete-{Guid.NewGuid()}";
+                p.PreviewImageUrl = "https://res.cloudinary.com/demo/image/upload/v1/posts/test-abc123.webp";
+            });
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+            var targetPost = posts.First();
+
+            // Act
+            var result = await service.DeletePostAsync(targetPost.Id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IPublicPostService>();
+            Assert.False(await dbContextAfter.Posts.AnyAsync(p => p.Id == targetPost.Id));
+        }
+
         private static IFormFile CreateFormFile(string fileName)
         {
             var stream = new MemoryStream(new byte[1024]);

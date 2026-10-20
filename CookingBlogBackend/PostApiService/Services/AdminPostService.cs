@@ -85,7 +85,6 @@ namespace PostApiService.Services
         /// </summary>       
         public async Task<Result<PostAdminDetailsDto>> GetPostByIdAsync(int postId, CancellationToken ct = default)
         {
-
             var accessError = ValidateAdminOrContributor<PostAdminDetailsDto>();
             if (accessError != null) return accessError;
 
@@ -272,7 +271,7 @@ namespace PostApiService.Services
             postDto.UpdateEntity(postEntity, sanitizedContent, newPreviewUrl);
             await _postRepository.SaveChangesAsync(ct);
 
-            if(!string.IsNullOrWhiteSpace(oldPreviewUrl))
+            if (!string.IsNullOrWhiteSpace(oldPreviewUrl))
             {
                 var deleteResult = await _fileStorageService.DeleteByUrlAsync(oldPreviewUrl);
 
@@ -280,7 +279,7 @@ namespace PostApiService.Services
                 {
                     Log.Warning(Posts.OldPreviewNotDeleted, postEntity.Id, oldPreviewUrl);
                 }
-            }            
+            }
 
             Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
 
@@ -313,10 +312,22 @@ namespace PostApiService.Services
                 return Forbidden();
             }
 
+            var imageUrl = existingPost.PreviewImageUrl;
+
             await _postRepository.DeleteAsync(existingPost, ct);
             await _postRepository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Deleted, postId);
+
+            if (!string.IsNullOrWhiteSpace(imageUrl))
+            {
+                var deleteImageResult = await _fileStorageService.DeleteByUrlAsync(imageUrl);
+
+                if (!deleteImageResult.IsSuccess)
+                {
+                    Log.Warning(Posts.PreviewNotDeletedAfterPostDelete, postId, imageUrl);
+                }
+            }
 
             return Success(PostM.Success.PostDeletedSuccessfully);
         }

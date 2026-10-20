@@ -90,7 +90,7 @@
                 "Update Category Failed: Category with ID {Id} not found in database. Input Name: {Name}";
             public const string DeleteBlockedByRelatedPosts = "Delete blocked: Category {Name} has active posts";
             public const string OldPreviewNotDeleted = "Post {PostId} updated, but old preview was not deleted: '{Url}'";
-
+            public const string PreviewNotDeletedAfterPostDelete = "Post {PostId} deleted, but its preview image was not removed from storage: '{Url}'";
         }
 
         public static class Images
