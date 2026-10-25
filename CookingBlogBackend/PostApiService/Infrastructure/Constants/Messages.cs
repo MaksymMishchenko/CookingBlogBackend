@@ -170,7 +170,7 @@
                 public const string InvalidEmail = "Invalid email address.";
 
                 public const string InvalidFormat = "Invalid file format. Allowed formats: .jpg, .jpeg, .png, .webp.";
-                public const string FileTooLarge = "File size exceeds the allowed maximum.";
+                public const string FileTooLarge = "File size exceeds the maximum allowed limit of {0}MB.";
 
                 public const string InvalidNumberFormat = "The value '{0}' is not a valid number.";
                 public const string SearchQueryForbiddenCharacters =

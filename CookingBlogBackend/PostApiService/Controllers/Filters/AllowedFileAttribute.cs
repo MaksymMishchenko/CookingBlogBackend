@@ -34,7 +34,7 @@ namespace PostApiService.Controllers.Filters
             
             if (file.Length > _maxFileSizeMb * 1024 * 1024)
             {
-                return new ValidationResult(Global.Validation.FileTooLarge);
+                return new ValidationResult(string.Format(Global.Validation.FileTooLarge, _maxFileSizeMb));
             }
             
             if (_allowedExtensions.Length > 0)

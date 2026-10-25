@@ -122,9 +122,9 @@ namespace PostApiService.Helper
                     : dto.MetaDescription.StripHtml(),
 
                 CreatedAt = DateTime.UtcNow,
-                IsActive = dto.IsActive ?? false
+                IsActive = dto.IsActive
             };
-        }
+        }        
 
         public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent, string? newPreviewUrl)
         {
@@ -136,15 +136,19 @@ namespace PostApiService.Helper
             entity.Content = sanitizedContent;
             entity.Slug = dto.Slug.StripHtml();
             entity.CategoryId = dto.CategoryId!.Value;
-
+            
             if (newPreviewUrl is not null)
             {
                 entity.PreviewImageUrl = newPreviewUrl;
-            }
 
-            entity.PreviewImageAlt = string.IsNullOrWhiteSpace(dto.PreviewImageAlt)
-                ? $"{title} recipe"
-                : dto.PreviewImageAlt.StripHtml();
+                entity.PreviewImageAlt = string.IsNullOrWhiteSpace(dto.PreviewImageAlt)
+                    ? $"{title} recipe"
+                    : dto.PreviewImageAlt.StripHtml();
+            }
+            else if (!string.IsNullOrWhiteSpace(dto.PreviewImageAlt))
+            {               
+                entity.PreviewImageAlt = dto.PreviewImageAlt.StripHtml();
+            }            
 
             entity.MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
                 ? title
@@ -154,7 +158,7 @@ namespace PostApiService.Helper
                 ? (description.Length > 200 ? description[..197] + "..." : description)
                 : dto.MetaDescription.StripHtml();
 
-            entity.IsActive = dto.IsActive ?? false;
+            entity.IsActive = dto.IsActive;
         }
     }
 }
