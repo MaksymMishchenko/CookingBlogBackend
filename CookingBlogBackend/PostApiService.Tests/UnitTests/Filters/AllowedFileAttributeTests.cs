@@ -88,13 +88,15 @@ namespace PostApiService.Tests.UnitTests.Filters
             Assert.NotNull(result);
             Assert.NotEqual(ValidationResult.Success, result);
         }
-        
+
         [Fact]
         public void IsValid_FileTooLarge_ReturnsFileTooLargeError()
         {
             // Arrange
-            var attribute = new AllowedFileAttribute(maxFileSizeMb: 1);
-            var fileMock = CreateFormFile(2 * 1024 * 1024, "large.png");
+            const int maxFileSize = 5;
+            var attribute = new AllowedFileAttribute(maxFileSizeMb: maxFileSize);
+            
+            var fileMock = CreateFormFile(6 * 1024 * 1024, "large.png");
             var context = new ValidationContext(new object());
 
             // Act
@@ -102,14 +104,15 @@ namespace PostApiService.Tests.UnitTests.Filters
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(Global.Validation.FileTooLarge, result.ErrorMessage);
+            Assert.Equal(string.Format(Global.Validation.FileTooLarge, maxFileSize), result.ErrorMessage);
         }
-        
+
         [Fact]
         public void IsValid_FileTooLargeAndRequiredFalse_StillReturnsFileTooLargeError()
         {
             // Arrange
-            var attribute = new AllowedFileAttribute(maxFileSizeMb: 1) { Required = false };
+            const int maxFileSize = 1;
+            var attribute = new AllowedFileAttribute(maxFileSizeMb: maxFileSize) { Required = false };
             var fileMock = CreateFormFile(2 * 1024 * 1024, "large.png");
             var context = new ValidationContext(new object());
 
@@ -118,9 +121,10 @@ namespace PostApiService.Tests.UnitTests.Filters
 
             // Assert
             Assert.NotNull(result);
-            Assert.Equal(Global.Validation.FileTooLarge, result.ErrorMessage);
+            Assert.NotNull(result.ErrorMessage);
+            Assert.Equal(string.Format(Global.Validation.FileTooLarge, maxFileSize), result.ErrorMessage);
         }
-        
+
         [Fact]
         public void IsValid_InvalidExtension_ReturnsInvalidFormatError()
         {
