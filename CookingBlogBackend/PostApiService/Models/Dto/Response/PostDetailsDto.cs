@@ -5,7 +5,9 @@
         string Title,
         string Description,
         string Content,
-        string Author,        
+        string PreviewImageUrl,
+        string PreviewImageAlt,
+        string Author,
         string Slug,
         string? MetaTitle,
         string? MetaDescription,
@@ -14,5 +16,5 @@
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         int CommentCount
-    );   
+    );
 }
