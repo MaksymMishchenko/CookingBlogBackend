@@ -364,7 +364,7 @@ namespace PostApiService.Tests.Helper
                 Slug = dto.Slug,
                 MetaTitle = dto.MetaTitle,
                 MetaDescription = dto.MetaDescription,
-                CategoryId = dto.CategoryId,
+                CategoryId = dto.CategoryId!.Value,
                 AuthorId = userId,
                 IsActive = true
             };
