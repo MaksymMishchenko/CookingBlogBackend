@@ -140,7 +140,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
                 .AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>());
 
             await _mockCategoryService.Received(1)
-                .ExistsAsync(Arg.Is(postCreateDto.CategoryId), Arg.Any<CancellationToken>());
+                .ExistsAsync(Arg.Is(postCreateDto.CategoryId!.Value), Arg.Any<CancellationToken>());
 
             await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
         }
@@ -195,7 +195,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
-            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token).Returns(true);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token).Returns(true);
 
             _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success("/images/posts/test-preview.webp"));
@@ -239,10 +239,10 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
                 .Returns(false);
-            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId, token)
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token)
                 .Returns(true);
 
-            var expectedMessage = "Зовнішнє повідомлення про помилку розміру";
+            var expectedMessage = "Image is too small.";
             var expectedErrorCode = "IMAGE_TOO_SMALL";
 
             _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
