@@ -36,7 +36,7 @@ namespace PostApiService.Tests.UnitTests.Filters
             // Assert
             Assert.Equal(ValidationResult.Success, result);
         }
-        
+
         [Fact]
         public void IsValid_Null_ReturnsRequiredError()
         {
@@ -54,10 +54,10 @@ namespace PostApiService.Tests.UnitTests.Filters
 
             // Assert
             Assert.NotNull(result);
-            var expectedMessage = string.Format(Global.Validation.Required, "PreviewImage");
+            var expectedMessage = string.Format(Global.Validation.Required, context.DisplayName);
             Assert.Equal(expectedMessage, result.ErrorMessage);
         }
-        
+
         [Fact]
         public void IsValid_EmptyFileAndRequiredFalse_ReturnsError()
         {

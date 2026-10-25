@@ -121,6 +121,7 @@ namespace PostApiService.Services
             if (accessError != null) return accessError;
 
             var userId = WebContext!.UserId!;
+            var categoryId = postDto.CategoryId!.Value;
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
@@ -148,11 +149,11 @@ namespace PostApiService.Services
                     PostM.Errors.PostAlreadyExistCode);
             }
 
-            var categoryExists = await _categoryService.ExistsAsync(postDto.CategoryId, ct);
+            var categoryExists = await _categoryService.ExistsAsync(categoryId, ct);
 
             if (!categoryExists)
             {
-                Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
+                Log.Warning(Posts.CategoryNotFound, categoryId);
 
                 return NotFound<PostAdminDetailsDto>
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
@@ -197,6 +198,7 @@ namespace PostApiService.Services
 
             var userId = WebContext!.UserId;
             bool isAdmin = WebContext!.IsAdmin;
+            var categoryId = postDto.CategoryId!.Value;
 
             var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
 
@@ -240,12 +242,12 @@ namespace PostApiService.Services
                     PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug), PostM.Errors.PostAlreadyExistCode);
             }
 
-            if (postEntity.CategoryId != postDto.CategoryId)
+            if (postEntity.CategoryId != categoryId)
             {
-                var categoryExists = await _categoryService.ExistsAsync(postDto.CategoryId, ct);
+                var categoryExists = await _categoryService.ExistsAsync(categoryId, ct);
                 if (!categoryExists)
                 {
-                    Log.Warning(Posts.CategoryNotFound, postDto.CategoryId);
+                    Log.Warning(Posts.CategoryNotFound, categoryId);
 
                     return NotFound<PostAdminDetailsDto>
                         (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);

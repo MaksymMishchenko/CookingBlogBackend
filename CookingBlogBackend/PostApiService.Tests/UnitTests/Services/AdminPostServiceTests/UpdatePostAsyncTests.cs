@@ -192,7 +192,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             Assert.Equal(PostM.Errors.CategoryNotFoundCode, result.ErrorCode);
 
             await _mockCategoryService.Received(1)
-                .ExistsAsync(Arg.Is(dto.CategoryId), Arg.Any<CancellationToken>());
+                .ExistsAsync(Arg.Is(dto.CategoryId!.Value), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 

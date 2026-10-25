@@ -13,7 +13,8 @@ namespace PostApiService.Models.Dto.Requests
 
         [Required(ErrorMessage = Global.Validation.Required)]
         public string Content { get; init; } = default!;
-        
+
+        [Display(Name = "Preview image")]
         [AllowedFile(Global.FileSettings.MaxPostImageSizeMb, Required = false)]
         public IFormFile? PreviewImage { get; init; }
 
@@ -30,9 +31,12 @@ namespace PostApiService.Models.Dto.Requests
         [RegularExpression("^[a-z0-9]+(?:-[a-z0-9]+)*$", ErrorMessage = Global.Validation.SlugFormat)]
         public string Slug { get; init; } = default!;
 
+        [Display(Name = "Category")]
+        [Required(ErrorMessage = Global.Validation.Required)]
         [Range(1, int.MaxValue, ErrorMessage = Global.Validation.InvalidCategory)]
-        public int CategoryId { get; init; }
+        public int? CategoryId { get; init; }
 
+        [Display(Name = "Active status")]
         [Required(ErrorMessage = Global.Validation.Required)]
         public bool? IsActive { get; init; }
     }

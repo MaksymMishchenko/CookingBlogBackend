@@ -74,6 +74,7 @@ namespace PostApiService.Helper
                 p.Comments.Count
             ));
         }
+
         public static PostAdminDetailsDto MapToAdminDto(this Post p) =>
         new PostAdminDetailsDto(
             p.Id,
@@ -108,7 +109,7 @@ namespace PostApiService.Helper
                 Content = sanitizedContent,
                 AuthorId = userId,
                 Slug = dto.Slug.StripHtml(),
-                CategoryId = dto.CategoryId,
+                CategoryId = dto.CategoryId!.Value,
                 PreviewImageUrl = previewImageUrl,
                 PreviewImageAlt = fallbackAlt,
                 UploadedByUserId = userId,
@@ -121,35 +122,39 @@ namespace PostApiService.Helper
                     : dto.MetaDescription.StripHtml(),
 
                 CreatedAt = DateTime.UtcNow,
-                IsActive = dto.IsActive
+                IsActive = dto.IsActive ?? false
             };
         }
 
         public static void UpdateEntity(this PostUpdateDto dto, Post entity, string sanitizedContent, string? newPreviewUrl)
         {
-            entity.Title = dto.Title.StripHtml();
-            entity.Description = dto.Description.StripHtml();
+            var title = dto.Title.StripHtml();
+            var description = dto.Description.StripHtml();
+
+            entity.Title = title;
+            entity.Description = description;
             entity.Content = sanitizedContent;
             entity.Slug = dto.Slug.StripHtml();
-            entity.CategoryId = dto.CategoryId;
+            entity.CategoryId = dto.CategoryId!.Value;
 
             if (newPreviewUrl is not null)
             {
                 entity.PreviewImageUrl = newPreviewUrl;
             }
 
-            entity.PreviewImageAlt = dto.PreviewImageAlt?.StripHtml();
+            entity.PreviewImageAlt = string.IsNullOrWhiteSpace(dto.PreviewImageAlt)
+                ? $"{title} recipe"
+                : dto.PreviewImageAlt.StripHtml();
 
             entity.MetaTitle = string.IsNullOrWhiteSpace(dto.MetaTitle)
-                ? dto.Title.StripHtml()
+                ? title
                 : dto.MetaTitle.StripHtml();
 
             entity.MetaDescription = string.IsNullOrWhiteSpace(dto.MetaDescription)
-                ? (dto.Description.StripHtml().Length > 200
-                    ? dto.Description.StripHtml()[..197] + "..."
-                    : dto.Description.StripHtml())
+                ? (description.Length > 200 ? description[..197] + "..." : description)
                 : dto.MetaDescription.StripHtml();
-            entity.IsActive = dto.IsActive!.Value;
+
+            entity.IsActive = dto.IsActive ?? false;
         }
     }
 }
