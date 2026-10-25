@@ -83,6 +83,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
                 Assert.Equal(expected.Id, x.item.Id);
                 Assert.Equal(expected.Title, x.item.Title);
                 Assert.Equal(expected.Category.Name, x.item.Category);
+                Assert.Equal(expected.PreviewImageUrl, x.item.PreviewImageUrl);
+                Assert.Equal(expected.PreviewImageAlt, x.item.PreviewImageAlt);
             });
         }
 
@@ -199,6 +201,8 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(targetPost.Category.Slug, data.CategorySlug);
             Assert.Equal(targetPost.Category.Name, data.Category);
             Assert.Equal(ExpectedCommentCount, data.CommentCount);
+            Assert.Equal(targetPost.PreviewImageUrl, data.PreviewImageUrl);
+            Assert.Equal(targetPost.PreviewImageAlt, data.PreviewImageAlt);
         }
     }
 }

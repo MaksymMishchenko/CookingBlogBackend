@@ -55,6 +55,12 @@ namespace PostApiService.Tests.UnitTests
 
             Assert.Equal(expectedItemsCount, data.Items.Count());
             Assert.Equal(totalInDb, data.TotalCount);
+
+            Assert.All(data.Items, item =>
+            {
+                Assert.False(string.IsNullOrEmpty(item.PreviewImageUrl));
+                Assert.NotNull(item.PreviewImageAlt);
+            });
         }
 
         [Fact]
@@ -241,15 +247,13 @@ namespace PostApiService.Tests.UnitTests
 
             var requestDto = TestDataHelper.CreatePostRequest("  PASTA  ", "Classic-Carbonara");
 
-            var pastaCategory = new Category { Slug = expectedCategory, Name = "Italian Pasta" };
-            var recipePost = new Post
-            {
-                Id = 1,
-                Slug = expectedSlug,
-                Category = pastaCategory,
-                Title = "Classic Carbonara with Guanciale",
-                IsActive = true
-            };
+            var pastaCategory = new Category { Id = 1, Slug = expectedCategory, Name = "Italian Pasta" };
+            
+            var recipePost = TestDataHelper.GetSinglePostWithCategoryId(pastaCategory.Id);
+            recipePost.Slug = expectedSlug;
+            recipePost.Category = pastaCategory;
+            recipePost.Title = "Classic Carbonara with Guanciale";
+            recipePost.IsActive = true;
 
             var mockData = new List<Post> { recipePost }.AsQueryable().BuildMock();
             _mockRepository.GetPublicFilteredPosts(
@@ -271,6 +275,8 @@ namespace PostApiService.Tests.UnitTests
             Assert.Equal(expectedSlug, dto.Slug);
             Assert.Equal(expectedCategory, dto.CategorySlug);
             Assert.Contains("Carbonara", dto.Title);
+            Assert.NotNull(dto.PreviewImageUrl);
+            Assert.NotNull(dto.PreviewImageAlt);
 
             _mockRepository.Received(1).GetPublicFilteredPosts(
                 Arg.Any<string>(),

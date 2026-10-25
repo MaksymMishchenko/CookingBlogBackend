@@ -19,6 +19,8 @@ namespace PostApiService.Helper
             p.Description != null && p.Description.Length > 200
                 ? p.Description.Substring(0, 200) + "..."
                 : p.Description ?? string.Empty,
+            p.PreviewImageUrl,
+            p.PreviewImageAlt!,
             p.Comments.Count
         );
 
@@ -59,6 +61,8 @@ namespace PostApiService.Helper
                 p.Title,
                 p.Description,
                 p.Content,
+                p.PreviewImageUrl,
+                p.PreviewImageAlt!,
                 p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
                 p.Slug,
                 p.MetaTitle,
@@ -70,7 +74,6 @@ namespace PostApiService.Helper
                 p.Comments.Count
             ));
         }
-
         public static PostAdminDetailsDto MapToAdminDto(this Post p) =>
         new PostAdminDetailsDto(
             p.Id,
