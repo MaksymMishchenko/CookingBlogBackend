@@ -10,6 +10,8 @@
         DateTime CreatedAt,
         DateTime? UpdatedAt,
         string Description,
+        string PreviewImageUrl,
+        string PreviewImageAlt,
         int CommentsCount
     );
 }
