@@ -80,11 +80,53 @@ jobs:
         run: npm install -g newman
 
       - name: Run Postman Tests
-        run: |
+        run: |         
+          node -e '
+            const fs = require("fs");
+            const file = "postman/collection.json";
+            let content = fs.readFileSync(file, "utf8");
+                       
+            content = content.replace(/postman-cloud:\/\/\/[a-zA-Z0-9-]+/g, "postman/data/test-image.jpeg");
+            
+            fs.writeFileSync(file, content, "utf8");
+            console.log("✅ Collection successfully patched with local file paths for CI!");
+          '          
           newman run postman/collection.json \
-          -e postman/environment.json \
-          --env-var "baseUrl=http://localhost:5189" \
-          --reporters cli
+            -e postman/environment.json \
+            --env-var "baseUrl=http://localhost:5189" \
+            --reporters cli,json \
+            --reporter-json-export newman-run-report.json || export NEWMAN_FAILED=true
+
+          if [ "$NEWMAN_FAILED" = "true" ]; then
+            echo "=========================================="
+            echo "❌ Newman tests failed! Analyzing response..."
+            echo "=========================================="
+            
+            if [ -f "newman-run-report.json" ]; then
+              echo "--- Last Response Body from Newman Report ---"
+              node -e '
+                const fs = require("fs");
+                try {
+                  const report = JSON.parse(fs.readFileSync("newman-run-report.json", "utf8"));
+                  const executions = report.run.executions;
+                  for (let i = executions.length - 1; i >= 0; i--) {
+                    const ex = executions[i];
+                    const failedAssertion = ex.assertions && ex.assertions.some(a => a.error);
+                    if (failedAssertion || (ex.response && ex.response.code >= 400)) {
+                      console.log(`\nFailed Request: ${ex.item.name} (${ex.request.method} ${ex.request.url.toString()})`);
+                      console.log(`Status Code: ${ex.response ? ex.response.code : "N/A"}`);
+                      console.log("Response Body:");
+                      console.log(ex.response ? ex.response.stream.data : "No response body");
+                      break;
+                    }
+                  }
+                } catch (e) {
+                  console.log("Could not parse newman report:", e.message);
+                }
+              '
+            fi
+            exit 1
+          fi
 
       - name: Show API logs
         if: always()
