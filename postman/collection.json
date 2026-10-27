@@ -411,7 +411,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst uniqueTitle = \"Post title \" + timestamp;\r\nconst slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r\n\r\npm.variables.set(\"post_title\", uniqueTitle);\r\npm.variables.set(\"unique_post_slug\", slug);"
+                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst uniqueTitle = \"Post title \" + timestamp;\r\nconst slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r\n\r\nconst content = \"This is an automatically generated content for a test post with a timestamp \" + timestamp + \", designed to successfully pass all backend validation rules and database constraints effortlessly.\";\r\n\r\nconst metaDescription = \"This is an automatically generated SEO meta description for a test post with timestamp \" + timestamp + \", which successfully passes all backend and frontend validation rules.\";\r\n\r\npm.variables.set(\"post_title\", uniqueTitle);\r\npm.variables.set(\"unique_post_slug\", slug);\r\npm.variables.set(\"post_content\", content);\r\npm.variables.set(\"post_meta_description\", metaDescription);"
                 ]
               }
             }
@@ -444,14 +444,16 @@
                 },
                 {
                   "key": "content",
-                  "value": "This is the detailed content of the post. It provides in-depth information about the topic.",
+                  "value": "{{post_content}}",
                   "type": "text"
                 },
                 {
                   "key": "previewImage",
                   "type": "file",
                   "description": "Maximum file size is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp. Minimum resolution: 250x250px.",
-                  "src": "postman/data/test-image.jpeg"
+                  "src": [
+                    "postman-cloud:///1f1c7256-6d74-4f60-8b01-50a408d7c9b3"
+                  ]
                 },
                 {
                   "key": "previewImageAlt",
@@ -465,7 +467,7 @@
                 },
                 {
                   "key": "metaDescription",
-                  "value": "This is a sample meta description for SEO purposes.",
+                  "value": "{{post_meta_description}}",
                   "type": "text"
                 },
                 {
@@ -828,7 +830,9 @@
                   "key": "previewImage",
                   "type": "file",
                   "description": "Maximum file size is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp. Minimum resolution: 250x250px.",
-                  "src": "postman/data/updated-image.webp"
+                  "src": [
+                    "postman-cloud:///1f1cbbfa-3085-43a0-9f6c-c2a722bf8e26"
+                  ]
                 },
                 {
                   "key": "previewImageAlt",
@@ -857,7 +861,7 @@
                 },
                 {
                   "key": "categoryId",
-                  "value": "1",
+                  "value": " 1",
                   "type": "text"
                 }
               ]

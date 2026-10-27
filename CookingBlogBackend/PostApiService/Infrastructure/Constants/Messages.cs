@@ -159,6 +159,7 @@
             public static class Validation
             {
                 public const string Required = "{0} is required.";
+                public const string StringLength = "{0} must be between {2} and {1} characters.";
                 public const string LengthRange = "{0} must be between {2} and {1} characters.";
                 public const string MaxLength = "{0} cannot exceed {1} characters.";
                 public const string SlugFormat = "Slug must only contain lowercase letters, numbers, and hyphens.";
@@ -171,18 +172,11 @@
 
                 public const string InvalidFormat = "Invalid file format. Allowed formats: .jpg, .jpeg, .png, .webp.";
                 public const string FileTooLarge = "File size exceeds the maximum allowed limit of {0}MB.";
-
-                public const string InvalidNumberFormat = "The value '{0}' is not a valid number.";
+                
                 public const string SearchQueryForbiddenCharacters =
                     "Search query contains forbidden characters. Use only letters, numbers, spaces, dots or hyphens.";
                 public const string SearchQueryMustContainLetterOrDigit =
                     "Search query must contain at least one letter or digit.";
-                public const string UnknownValue = "unknown";
-                public const string RequestBodyRequired = "Request body cannot be empty.";
-                public const string UnexpectedErrorException = "An error occurred while processing your request.";
-                public const string SearchQueryRequired = "Search query string is required and cannot be empty.";
-                public const string SearchQueryTooShort = "Query string must be at least {0} characters long.";
-                public const string SearchQueryTooLong = "Query string cannot exceed {0} characters.";
                 public const string InvalidSortField = "Invalid sort field. Allowed values: title, createdAt.";
                 public const string InvalidSortDirection = "Invalid sort direction. Allowed values: asc, desc.";
             }
