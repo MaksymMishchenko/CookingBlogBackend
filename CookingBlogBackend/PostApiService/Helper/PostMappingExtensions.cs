@@ -158,7 +158,7 @@ namespace PostApiService.Helper
                 ? (description.Length > 200 ? description[..197] + "..." : description)
                 : dto.MetaDescription.StripHtml();
 
-            entity.IsActive = dto.IsActive;
+            entity.IsActive = dto.IsActive ?? true;
         }
     }
 }

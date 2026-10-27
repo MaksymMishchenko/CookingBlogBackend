@@ -790,7 +790,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst updatedSlug = \"updated-slug-\" + timestamp;\r\n\r\npm.environment.set(\"updated_post_title\", \"Updated title \" + timestamp);\r\npm.environment.set(\"updated_post_slug\", updatedSlug);\r\npm.environment.set(\"unique_post_slug\", updatedSlug);"
+                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst updatedTitle = \"Updated title \" + timestamp;\r\nconst updatedSlug = updatedTitle.toLowerCase().replace(/ /g, '-');\r\n\r\nconst updatedContent = (\"<p>Updated test content for post \" + timestamp + \". </p>\").repeat(5);\r\n\r\nconst updatedMetaDescription = \r\n    \"Updated meta description for post \" + timestamp + \r\n    \". This text is intentionally made long enough to successfully pass the minimum length validation.\";\r\n\r\nconst updatedMetaTitle = \"Updated Meta \" + timestamp;\r\n\r\npm.environment.set(\"updated_post_title\", updatedTitle);\r\npm.environment.set(\"updated_post_slug\", updatedSlug);\r\npm.environment.set(\"updated_post_content\", updatedContent);\r\npm.environment.set(\"updated_post_meta_description\", updatedMetaDescription);\r\npm.environment.set(\"updated_post_meta_title\", updatedMetaTitle);\r\npm.environment.set(\"unique_post_slug\", updatedSlug);"
                 ]
               }
             }
@@ -823,7 +823,7 @@
                 },
                 {
                   "key": "content",
-                  "value": "This is the detailed content of the post. It provides in-depth information about the topic.",
+                  "value": "{{updated_post_content}}",
                   "type": "text"
                 },
                 {
@@ -841,12 +841,12 @@
                 },
                 {
                   "key": "metaTitle",
-                  "value": "Sample changed Meta Title 151",
+                  "value": "{{updated_post_meta_title}}",
                   "type": "text"
                 },
                 {
                   "key": "metaDescription",
-                  "value": "This is a changed sample meta description for SEO purposes.",
+                  "value": "{{updated_post_meta_description}}",
                   "type": "text"
                 },
                 {
