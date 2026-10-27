@@ -20,7 +20,7 @@ namespace PostApiService.Helper
                 ? p.Description.Substring(0, 200) + "..."
                 : p.Description ?? string.Empty,
             p.PreviewImageUrl,
-            p.PreviewImageAlt!,
+            p.PreviewImageAlt,
             p.Comments.Count
         );
 
@@ -39,7 +39,7 @@ namespace PostApiService.Helper
             p.CreatedAt,
             p.UpdatedAt,
             p.PreviewImageUrl,
-            p.PreviewImageAlt ?? string.Empty
+            p.PreviewImageAlt
         );
 
         public static Expression<Func<Post, AdminPostListDto>> ToAdminPostListDto => p => new AdminPostListDto(
@@ -62,7 +62,7 @@ namespace PostApiService.Helper
                 p.Description,
                 p.Content,
                 p.PreviewImageUrl,
-                p.PreviewImageAlt!,
+                p.PreviewImageAlt,
                 p.Author != null ? p.Author.UserName ?? "Unknown" : "Unknown",
                 p.Slug,
                 p.MetaTitle,
@@ -91,7 +91,7 @@ namespace PostApiService.Helper
             p.CreatedAt,
             p.UpdatedAt,
             p.PreviewImageUrl,
-            p.PreviewImageAlt ?? string.Empty
+            p.PreviewImageAlt
         );
 
         public static Post ToEntity(this PostCreateDto dto, string sanitizedContent, string userId, string previewImageUrl)

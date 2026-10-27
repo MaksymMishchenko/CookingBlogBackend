@@ -19,17 +19,23 @@ namespace PostApiService.Models
         public string Description { get; set; } = default!;
 
         [Required]
+        [MaxLength(50000)]
         public string Content { get; set; } = default!;
 
         [Required]
+        [MaxLength(500)]
         public string PreviewImageUrl { get; set; } = default!;
 
-        public string? PreviewImageAlt { get; set; }
+        [Required]
+        [MaxLength(200)]
+        public string PreviewImageAlt { get; set; } = default!;
 
         [Required]
+        [MaxLength(450)]
         public string UploadedByUserId { get; set; } = default!;
 
         [Required]
+        [MaxLength(450)]
         public string AuthorId { get; set; } = default!;
 
         [ValidateNever]
@@ -50,6 +56,7 @@ namespace PostApiService.Models
         [MaxLength(200)]
         public string Slug { get; set; } = default!;
 
+        [Required]
         public int CategoryId { get; set; }
 
         [ValidateNever]
