@@ -97,10 +97,22 @@
 			"value": "",
 			"type": "default",
 			"enabled": true
+		},
+		{
+			"key": "unique_post_content",
+			"value": "",
+			"type": "default",
+			"enabled": true
+		},
+		{
+			"key": "unique_post_meta_description",
+			"value": "",
+			"type": "default",
+			"enabled": true
 		}
 	],
 	"color": null,
 	"_postman_variable_scope": "environment",
-	"_postman_exported_at": "2026-10-19T13:48:43.426Z",
-	"_postman_exported_using": "Postman/12.32.4"
+	"_postman_exported_at": "2026-10-27T13:11:08.905Z",
+	"_postman_exported_using": "Postman/12.34.0"
 }
