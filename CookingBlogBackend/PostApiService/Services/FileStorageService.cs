@@ -31,12 +31,9 @@ namespace PostApiService.Services
                 PublicId = publicId,
                 Folder = "posts",
                 Transformation = new Transformation()
-                    .Width(250)
-                    .Height(250)
-                    .Crop("fill")
-                    .Gravity("center")
-                    .FetchFormat("webp")
-                    .Quality("80")
+                    .Width(640)
+                    .Height(480)                    
+                    .FetchFormat("webp")                    
             };
             
             var uploadResult = await _cloudinaryWrapper.UploadAsync(uploadParams);
