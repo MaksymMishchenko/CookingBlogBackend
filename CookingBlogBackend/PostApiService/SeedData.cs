@@ -43,8 +43,30 @@ namespace PostApiService
                 .RuleFor(p => p.PreviewImageUrl, f => f.Image.PicsumUrl())
                 .RuleFor(p => p.PreviewImageAlt, _ => "Test preview alt")
                 .RuleFor(p => p.UploadedByUserId, (f, post) => post.AuthorId)
-                .RuleFor(p => p.MetaTitle, f => f.Lorem.Sentence(2))
-                .RuleFor(p => p.MetaDescription, f => f.Lorem.Sentence(8))
+                .RuleFor(p => p.MetaTitle, f =>
+                {
+                    var text = f.Lorem.Sentence(3);
+
+                    if (text.Length < 10)
+                    {
+                        text += " " + f.Lorem.Word();
+                    }
+
+                    return text.Length > 100
+                        ? text.Substring(0, 97) + "..."
+                        : text;
+                })
+                .RuleFor(p => p.MetaDescription, f =>
+                {                    
+                    var text = f.Lorem.Sentences(2);
+                   
+                    if (text.Length < 70)
+                    {
+                        text += " " + f.Lorem.Sentence();
+                    }
+                    
+                    return text.Length > 200 ? text.Substring(0, 197) + "..." : text;
+                })
                 .RuleFor(p => p.Slug, f => f.Lorem.Slug())
                 .RuleFor(p => p.UpdatedAt, f => f.Date.Recent(7).ToUniversalTime())
                 .RuleFor(p => p.Comments, (f, post) =>

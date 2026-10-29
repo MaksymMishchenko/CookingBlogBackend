@@ -16,9 +16,7 @@
                 public const string PostTitleAlreadyExistCode = "TITLE_ALREADY_EXISTS";
                 public const string PostSlugAlreadyExist = "Post with the same Slug already exists.";
                 public const string PostSlugAlreadyExistCode = "SLUG_ALREADY_EXISTS";
-                public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
-                public const string AddPostFailed = "Failed to add post with title '{0}'.";
-                public const string NoPostsFound = "No posts found for the requested page.";
+                public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";                
                 public const string Empty = "Post content cannot be empty.";
                 public const string EmptyCode = "POST_CONTENT_IS_EMPTY";
             }
@@ -37,9 +35,7 @@
         public static class ImageM
         {
             public static class Errors
-            {
-                public const string ImageTooSmall = "Image dimensions are too small. Minimum required resolution is 250x250 pixels.";
-                public const string ImageTooSmallCode = "IMAGE_TOO_SMALL";
+            {                
                 public const string UploadFailed = "Image upload failed";
                 public const string UploadFailedCode = "IMAGE_UPLOAD_FAILED";
                 public const string DeleteFailed = "Image deletion failed";
@@ -126,9 +122,7 @@
             public static class Registration
             {
                 public static class Errors
-                {
-                    public const string InvalidRegistrationData = "Invalid registration data. Please check the provided information.";
-                    public const string InvalidRegistrationDataCode = "REG_INVALID_DATA";
+                {                    
                     public const string DefaultRegistrationError = "An error occurred during registration. Please check your data or try again later.";
                     public const string DefaultRegistrationErrorCode = "REGISTRATION_FAILED";
                     public const string UserAlreadyExists = "Username or email is already taken.";
@@ -181,19 +175,13 @@
                     "Search query must contain at least one letter or digit.";
                 public const string InvalidSortField = "Invalid sort field. Allowed values: title, createdAt.";
                 public const string InvalidSortDirection = "Invalid sort direction. Allowed values: asc, desc.";
-            }
-
-            public static class FileSettings
-            {
-                public const int MaxPostImageSizeMb = 5;
-            }
+            }           
 
             public static class System
             {
                 public const string DatabaseCriticalError = "A technical problem occurred with the data storage. Please try again later.";
                 public const string DbUpdateError = "Database error occurred while processing data.";
-                public const string Timeout = "The request timed out.";
-                public const string DatabaseError = "Database error.";
+                public const string Timeout = "The request timed out.";                
                 public const string RequestCancelled = "The operation was canceled.";
             }
         }

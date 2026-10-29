@@ -1,4 +1,5 @@
 ﻿using PostApiService.Controllers.Filters;
+using PostApiService.Infrastructure.Constants;
 using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Models.Dto.Requests
@@ -18,7 +19,7 @@ namespace PostApiService.Models.Dto.Requests
         public string Content { get; init; } = default!;
 
         [Display(Name = "Preview Image")]
-        [AllowedFile(Global.FileSettings.MaxPostImageSizeMb, Required = false)]
+        [AllowedFile(FileLimits.MaxPostImageSizeMb, Required = false)]
         public IFormFile? PreviewImage { get; init; }
 
         [Display(Name = "Preview Image Alt")]
