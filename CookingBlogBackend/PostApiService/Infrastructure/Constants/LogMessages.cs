@@ -2,26 +2,8 @@
 {
     public static class LogMessages
     {
-        public static class Validation
-        {
-            public const string InvalidIdValue =
-            "Validation Warning: Invalid ID value. Parameter: {ParamName}, Value: {Value}, Path: {Path}";
-
-            public const string PaginationLimitExceeded =
-                "Resource Warning: PageSize {RequestedSize} exceeded limit {MaxSize}. IP: {IP}";
-
-            public const string MissingRequestBody =
-                "Payload Error: Missing request body. Method: {Method}, Path: {Path}, IP: {IP}";
-
-            public const string BindingTypeMismatch =
-                "Binding Error: Property '{Key}' received invalid format '{Value}'";
-        }
-
         public static class Security
         {
-            public const string SecurityForbiddenCharacters =
-                "Security Alert: Forbidden characters detected. IP: {IP}, Input: {Input}, Path: {Path}";
-
             public const string XssDetectedOnPostCreate =
                 "Security Alert: XSS detected during Post creation. Title: {Title}, User: {UserId}, IP: {IP}. Original: {RawContent}";
 
@@ -81,7 +63,6 @@
             public const string Created = "Post '{Title}' created successfully with ID {Id}";
             public const string Updated = "Post '{Title}' updated successfully with ID {Id}";
             public const string Deleted = "Post with ID {Id} deleted successfully";
-            public const string AlreadyExists = "Post with title '{0}' or slug '{1}' already exists.";
             public const string NotFound = "Admin Post Search: Post with ID {PostId} was not found.";
             public const string NotFoundByPath = "Post not found or category mismatch for slug: {Slug} in category: {Category}";
             public const string CategoryExists = "Add category failed: Name already exists. Name: {Name}";
@@ -95,7 +76,7 @@
 
         public static class Images
         {
-            public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";            
+            public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";
             public const string UploadFailed = "Cloudinary upload failed: {Error}";
             public const string DeletedSuccessfully = "Image '{PublicId}' deleted from Cloudinary";
             public const string DeleteFailed = "Cloudinary delete failed for '{PublicId}': {Error}";

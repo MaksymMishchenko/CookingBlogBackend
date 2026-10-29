@@ -19,9 +19,7 @@
         }
 
         public static class Errors
-        {
-            public const string ConnectionStringNotFound = "Connection string '{0}' is not configured.";
-            public const string JwtConfigMissing = "Jwt configuration is missing in the appsettings.json file.";
+        {            
             public const string ConfigSectionMissing = "Configuration section '{0}' is missing in the appsettings.json file";
             public const string FakeStorageInProduction =
             "FileStorage:UseFake cannot be enabled in Production.";
