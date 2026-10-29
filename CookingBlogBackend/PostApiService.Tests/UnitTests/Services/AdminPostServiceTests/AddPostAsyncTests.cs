@@ -77,33 +77,55 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
         }
 
         [Fact]
-        public async Task AddPostAsync_ShouldReturnConflict_WhenPostExists()
+        public async Task AddPostAsync_ShouldReturnConflict_WhenTitleAlreadyExists()
         {
             // Arrange
-            var createPostDto = TestDataHelper.GetPostCreateDto();
+            var postCreateDto = TestDataHelper.GetPostCreateDto(title: "Existing Title");
 
             _mockWebContext.UserId.Returns("user-id");
             _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
-                .Returns(true);
+                .Returns(true, false);
 
             // Act
-            var result = await _adminPostService.AddPostAsync(createPostDto);
+            var result = await _adminPostService.AddPostAsync(postCreateDto);
 
             // Assert
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.Conflict, result.Status);
             Assert.Null(result.Value);
-            Assert.Equal(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
-                createPostDto.Title, createPostDto.Slug), result.Message);
-            Assert.Equal(PostM.Errors.PostAlreadyExistCode, result.ErrorCode);
+            Assert.Equal(string.Format(PostM.Errors.PostTitleAlreadyExist, postCreateDto.Title), result.Message);
+            Assert.Equal(PostM.Errors.PostTitleAlreadyExistCode, result.ErrorCode);
 
-            await _mockRepository.Received(1)
-                .AnyAsync(Arg.Is<Expression<Func<Post, bool>>>(p =>
-                    p.Compile()(new Post { Title = createPostDto.Title, Slug = createPostDto.Slug })),
-                    Arg.Any<CancellationToken>());
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnConflict_WhenSlugAlreadyExists()
+        {
+            // Arrange
+            var postCreateDto = TestDataHelper.GetPostCreateDto(slug: "existing-slug");
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+           
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false, true);
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Conflict, result.Status);
+            Assert.Null(result.Value);
+            Assert.Equal(string.Format(PostM.Errors.PostSlugAlreadyExist, postCreateDto.Slug), result.Message);
+            Assert.Equal(PostM.Errors.PostSlugAlreadyExistCode, result.ErrorCode);
 
             await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
         }
@@ -136,7 +158,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             Assert.Equal(expectedMessage, result.Message);
             Assert.Equal(expectedErrorCode, result.ErrorCode);
 
-            await _mockRepository.Received(1)
+            await _mockRepository.Received(2)
                 .AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>());
 
             await _mockCategoryService.Received(1)

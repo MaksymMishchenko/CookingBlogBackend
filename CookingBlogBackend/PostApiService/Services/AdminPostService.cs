@@ -137,17 +137,12 @@ namespace PostApiService.Services
             }
 
             var cleanTitle = postDto.Title.StripHtml();
-            var cleanSlug = postDto.Slug.StripHtml();
+            var cleanSlug = postDto.Slug.StripHtml();                    
 
-            var alreadyExists = await _postRepository
-               .AnyAsync(p => p.Title == cleanTitle || p.Slug == cleanSlug, ct);
+            var uniquenessError = await ValidatePostUniquenessAsync<PostAdminDetailsDto>(
+                _postRepository, cleanTitle, cleanSlug, ct);
 
-            if (alreadyExists)
-            {
-                return Conflict<PostAdminDetailsDto>(string.Format(
-                    PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug),
-                    PostM.Errors.PostAlreadyExistCode);
-            }
+            if (uniquenessError != null) return uniquenessError;
 
             var categoryExists = await _categoryService.ExistsAsync(categoryId, ct);
 
@@ -230,17 +225,11 @@ namespace PostApiService.Services
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();
+            
+            var uniquenessError = await ValidatePostUniquenessAsync<PostAdminDetailsDto>(
+                _postRepository, cleanTitle, cleanSlug, ct, postId);
 
-            var alreadyExists = await _postRepository.AnyAsync(p => (p.Title == cleanTitle ||
-            p.Slug == cleanSlug) && p.Id != postId, ct);
-
-            if (alreadyExists)
-            {
-                Log.Information(Posts.AlreadyExists, cleanTitle, cleanSlug);
-
-                return Conflict<PostAdminDetailsDto>(string.Format(
-                    PostM.Errors.PostTitleOrSlugAlreadyExist, cleanTitle, cleanSlug), PostM.Errors.PostAlreadyExistCode);
-            }
+            if (uniquenessError != null) return uniquenessError;
 
             if (postEntity.CategoryId != categoryId)
             {
