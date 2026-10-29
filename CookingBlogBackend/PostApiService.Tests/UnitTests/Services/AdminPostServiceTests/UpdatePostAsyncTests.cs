@@ -151,10 +151,11 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             // Arrange
             const int postId = 1;
             ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
-            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
-                .Returns(true);
 
-            var dto = TestDataHelper.GetPostUpdateDto(content: "Test post content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(true, false);
+
+            var dto = TestDataHelper.GetPostUpdateDto(title: "Existing Title", content: "Test post content");
 
             // Act
             var result = await _adminPostService.UpdatePostAsync(postId, dto);
@@ -163,9 +164,33 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             Assert.NotNull(result);
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.Conflict, result.Status);
-            Assert.Equal(string.Format(PostM.Errors.PostTitleOrSlugAlreadyExist,
-                dto.Title, dto.Slug), result.Message);
-            Assert.Equal(PostM.Errors.PostAlreadyExistCode, result.ErrorCode);
+            Assert.Equal(string.Format(PostM.Errors.PostTitleAlreadyExist, dto.Title), result.Message);
+            Assert.Equal(PostM.Errors.PostTitleAlreadyExistCode, result.ErrorCode);
+
+            await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldReturnConflict_WhenSlugAlreadyExistsForAnotherPost()
+        {
+            // Arrange
+            const int postId = 1;
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
+                .Returns(false, true);
+
+            var dto = TestDataHelper.GetPostUpdateDto(slug: "existing-slug", content: "Test post content");
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Conflict, result.Status);
+            Assert.Equal(string.Format(PostM.Errors.PostSlugAlreadyExist, dto.Slug), result.Message);
+            Assert.Equal(PostM.Errors.PostSlugAlreadyExistCode, result.ErrorCode);
 
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
         }
