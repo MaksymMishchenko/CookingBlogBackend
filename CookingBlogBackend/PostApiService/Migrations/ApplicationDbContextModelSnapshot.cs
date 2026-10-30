@@ -331,8 +331,10 @@ namespace PostApiService.Migrations
 
                     b.Property<string>("PreviewImageAlt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("Default alt text");
 
                     b.Property<string>("PreviewImageUrl")
                         .IsRequired()

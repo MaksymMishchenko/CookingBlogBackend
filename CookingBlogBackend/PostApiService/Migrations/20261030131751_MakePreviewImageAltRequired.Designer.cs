@@ -11,8 +11,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace PostApiService.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261027100353_RefinePostEntitySchema")]
-    partial class RefinePostEntitySchema
+    [Migration("20261030131751_MakePreviewImageAltRequired")]
+    partial class MakePreviewImageAltRequired
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -334,8 +334,10 @@ namespace PostApiService.Migrations
 
                     b.Property<string>("PreviewImageAlt")
                         .IsRequired()
+                        .ValueGeneratedOnAdd()
                         .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasColumnType("character varying(200)")
+                        .HasDefaultValue("Default alt text");
 
                     b.Property<string>("PreviewImageUrl")
                         .IsRequired()
