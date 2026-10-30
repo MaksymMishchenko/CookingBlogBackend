@@ -26,6 +26,9 @@
 
             entity.HasIndex(p => p.IsActive);
 
+            entity.Property(p => p.PreviewImageAlt)
+                  .HasDefaultValue("Default alt text");
+
             entity.HasOne(p => p.Category)
                 .WithMany(c => c.Posts)
                 .HasForeignKey(p => p.CategoryId)
