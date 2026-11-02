@@ -27,6 +27,9 @@ namespace PostApiService.Middlewares
 
                 var (statusCode, message) = ex switch
                 {
+                    BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } or InvalidDataException
+                        => (HttpStatusCode.RequestEntityTooLarge, Global.System.PayloadTooLarge),
+
                     TimeoutException or OperationCanceledException
                         => (HttpStatusCode.RequestTimeout, Global.System.Timeout),
 

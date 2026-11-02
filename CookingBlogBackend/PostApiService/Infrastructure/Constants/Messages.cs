@@ -179,6 +179,7 @@
 
             public static class System
             {
+                public const string PayloadTooLarge = "Request body is too large.";
                 public const string DatabaseCriticalError = "A technical problem occurred with the data storage. Please try again later.";
                 public const string DbUpdateError = "Database error occurred while processing data.";
                 public const string Timeout = "The request timed out.";                
