@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
 using NSubstitute.ExceptionExtensions;
 using PostApiService.Interfaces;
 using PostApiService.Models.Common;
@@ -21,6 +22,8 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
+        [InlineData(typeof(BadHttpRequestException), HttpStatusCode.RequestEntityTooLarge)]
+        [InlineData(typeof(InvalidDataException), HttpStatusCode.RequestEntityTooLarge)]
         [InlineData(typeof(DbUpdateException), HttpStatusCode.InternalServerError)]
         [InlineData(typeof(OperationCanceledException), HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TaskCanceledException), HttpStatusCode.RequestTimeout)]
@@ -35,6 +38,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             var exception = exceptionType switch
             {
+                Type t when t == typeof(BadHttpRequestException) =>
+                    new BadHttpRequestException(Global.System.PayloadTooLarge, StatusCodes.Status413PayloadTooLarge),
+                Type t when t == typeof(InvalidDataException) =>
+                    new InvalidDataException(Global.System.PayloadTooLarge),
                 Type t when t == typeof(DbUpdateException) =>
                     new DbUpdateException(Global.System.DbUpdateError),
                 Type t when t == typeof(OperationCanceledException) =>
@@ -63,14 +70,18 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             Assert.NotNull(errorResponse);
 
             string expectedMessage = exceptionType switch
-            {                
+            {
+                Type t when t == typeof(BadHttpRequestException) ||
+                            t == typeof(InvalidDataException)
+                    => Global.System.PayloadTooLarge,
+
                 Type t when t == typeof(OperationCanceledException) ||
                             t == typeof(TaskCanceledException) ||
                             t == typeof(TimeoutException)
                     => Global.System.Timeout,
-                
+
                 Type t when t == typeof(DbUpdateException)
-                    => Global.System.DbUpdateError,               
+                    => Global.System.DbUpdateError,
                 _ => Global.System.DatabaseCriticalError
             };
 
@@ -79,7 +90,7 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             await authServiceMock!.Received(1).RegisterUserAsync(
                 Arg.Any<RegisterUserDto>(), Arg.Any<CancellationToken>());
         }
-       
+
         [Fact]
         public async Task AuthenticateAsync_ShouldReturn500_WhenTokenGenerationFails()
         {

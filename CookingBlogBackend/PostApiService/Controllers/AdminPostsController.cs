@@ -44,6 +44,8 @@ namespace PostApiService.Controllers
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
         public async Task<IActionResult> AddPostAsync
             ([FromForm] PostCreateDto dto, CancellationToken ct = default)
         {
@@ -57,6 +59,8 @@ namespace PostApiService.Controllers
         /// Updates an existing post.
         /// </summary>               
         [HttpPut("{postId}")]
+        [RequestSizeLimit(6 * 1024 * 1024)]
+        [RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
         public async Task<IActionResult> UpdatePostAsync
             (int postId, [FromForm] PostUpdateDto postDto, CancellationToken ct = default)
         {
