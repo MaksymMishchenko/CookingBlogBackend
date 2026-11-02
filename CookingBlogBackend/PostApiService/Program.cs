@@ -11,6 +11,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.AddAppLogging(builder.Configuration);
 
+// Global request body limit (Kestrel)
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024;
+});
+
 // Get a connection string from appsettings.json and check for null
 var connectionString = builder.Configuration.GetConnectionString
     (ConfigConstants.DefaultConnection);
@@ -69,11 +75,9 @@ if (!builder.Environment.IsEnvironment(ConfigConstants.Environments.Testing) && 
 }
 
 var app = builder.Build();
-app.UseCors("AllowFrontend");
-
-app.MapHealthChecks(HealthCheckPath);
-
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseCors("AllowFrontend");
+app.MapHealthChecks(HealthCheckPath);
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment() || app.Environment.IsStaging())
