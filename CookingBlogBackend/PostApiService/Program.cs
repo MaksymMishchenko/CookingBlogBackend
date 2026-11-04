@@ -14,7 +14,7 @@ builder.Host.AddAppLogging(builder.Configuration);
 // Global request body limit (Kestrel)
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.Limits.MaxRequestBodySize = 10 * 1024 * 1024;
+    options.Limits.MaxRequestBodySize = FileLimits.MaxPostRequestBytes;
 });
 
 // Get a connection string from appsettings.json and check for null

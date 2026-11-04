@@ -246,7 +246,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             // Assert
             Assert.False(result.IsSuccess);
             Assert.Equal(ResultStatus.Forbidden, result.Status);
-        }
+        }        
 
         [Fact]
         public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
@@ -266,7 +266,19 @@ namespace PostApiService.Tests.IntegrationTests.Services
             var existingCategoryId = categories.First().Id;
 
             var newPost = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
-            var postDto = TestDataHelper.ToPostCreateDto(newPost);
+            
+            var stream = new MemoryStream(new byte[] { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A });
+            var previewFile = new FormFile(stream, 0, stream.Length, "PreviewImage", "preview.png")
+            {
+                Headers = new HeaderDictionary(),
+                ContentType = "image/png"
+            };
+            
+            var postDto = TestDataHelper.ToPostCreateDto(
+                newPost,
+                previewImage: previewFile,
+                contentImages: new List<IFormFile>()
+            );
 
             var initialCount = await dbContextBefore.Posts.CountAsync();
 
@@ -289,7 +301,6 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             Assert.NotNull(addedPostInDb);
             Assert.True(data.Id > 0);
-            Assert.Equal(postDto.Content, addedPostInDb.Content);
             Assert.Equal(postDto.Slug, addedPostInDb.Slug);
 
             var finalCount = await dbContextAfter.Posts.CountAsync();

@@ -56,14 +56,28 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
         {
             // Arrange
             const string invalidPostContent = "<script></script>";
-            var postCreateDto = TestDataHelper.GetPostCreateDto(invalidPostContent);
+            var postCreateDto = TestDataHelper.GetPostCreateDto(
+                content: invalidPostContent,
+                contentImages: new List<IFormFile>()
+            );
+            var token = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("3f2504e0-4f89-11d3-9a0c-0305e82c3301");
             _mockWebContext.IsContributor.Returns(true);
+
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token).Returns(false);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token).Returns(true);
+            
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success("/images/posts/preview.webp"));
+           
+            _mockFileStorageService.SavePostContentImagesAsync(Arg.Any<IReadOnlyList<IFormFile>>(), Arg.Any<string>())
+                .Returns(Result<List<string>>.Success(new List<string>()));
+            
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
 
             // Act
-            var result = await _adminPostService.AddPostAsync(postCreateDto);
+            var result = await _adminPostService.AddPostAsync(postCreateDto, token);
 
             // Assert
             Assert.NotNull(result);
@@ -85,7 +99,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockWebContext.UserId.Returns("user-id");
             _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            
+
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(true, false);
 
@@ -112,7 +126,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockWebContext.UserId.Returns("user-id");
             _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-           
+
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(false, true);
 
@@ -170,10 +184,11 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
         [Fact]
         public async Task AddPostAsync_ShouldStripHtmlFromTitleAndSlug()
         {
-            // Arrange            
+            // Arrange                        
             var postCreateDto = TestDataHelper.GetPostCreateDto(
                 title: "<h1>Clean Title</h1>",
-                slug: "<b>clean-slug</b>"
+                slug: "<b>clean-slug</b>",
+                contentImages: new List<IFormFile>()
             );
 
             var ct = CancellationToken.None;
@@ -186,6 +201,9 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
 
             _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success("/images/posts/clean-slug.webp"));
+            
+            _mockFileStorageService.SavePostContentImagesAsync(Arg.Any<IReadOnlyList<IFormFile>>(), Arg.Any<string>())
+                .Returns(Result<List<string>>.Success(new List<string>()));
 
             var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
             savedPost.Title = postCreateDto.Title.StripHtml();
@@ -208,8 +226,8 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
         [Fact]
         public async Task AddPostAsync_ShouldReturnSuccess_WhenPostAddedSuccessfully()
         {
-            // Arrange                       
-            var postCreateDto = TestDataHelper.GetPostCreateDto();
+            // Arrange                                   
+            var postCreateDto = TestDataHelper.GetPostCreateDto(contentImages: new List<IFormFile>());
             var token = CancellationToken.None;
 
             _mockWebContext.UserId.Returns("user-id");
@@ -221,6 +239,9 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
 
             _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
                 .Returns(Result<string>.Success("/images/posts/test-preview.webp"));
+
+            _mockFileStorageService.SavePostContentImagesAsync(Arg.Any<IReadOnlyList<IFormFile>>(), Arg.Any<string>())
+                .Returns(Result<List<string>>.Success(new List<string>()));
 
             var savedPost = TestDataHelper.ToEntity(postCreateDto, "Safe content", "user-id");
             _mockRepository.GetByIdWithAuthorsAsync(Arg.Any<int>(), token)
@@ -283,6 +304,150 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
 
             await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), token);
             await _mockRepository.DidNotReceive().SaveChangesAsync(token);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldReturnInvalid_WhenContentImagesMismatchPlaceholders()
+        {
+            // Arrange            
+            var postCreateDto = TestDataHelper.GetPostCreateDto(
+                content: "<p>Test <img src=\"{{image_0}}\" /></p>"
+            );            
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Equal(PostM.Errors.ContentImagesMismatch, result.Message);
+            Assert.Equal(PostM.Errors.ContentImagesMismatchCode, result.ErrorCode);
+            
+            await _mockFileStorageService.DidNotReceive()
+                .SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>());
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldRollbackPreview_WhenContentImagesUploadFails()
+        {
+            // Arrange
+            var fileMock = Substitute.For<IFormFile>();
+            var postCreateDto = TestDataHelper.GetPostCreateDto(
+                content: "<p><img src=\"{{image_0}}\" /></p>",
+                contentImages: new List<IFormFile> { fileMock }
+            );
+            var token = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token).Returns(false);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token).Returns(true);
+            
+            string previewUrl = "https://res.cloudinary.com/demo/image/upload/preview.webp";
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success(previewUrl));
+            
+            _mockFileStorageService.SavePostContentImagesAsync(Arg.Any<IReadOnlyList<IFormFile>>(), Arg.Any<string>())
+                .Returns(Result<List<string>>.Invalid("Upload failed", "UPLOAD_FAILED"));
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto, token);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            
+            await _mockFileStorageService.Received(1).DeleteByUrlAsync(previewUrl);          
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), token);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldRollbackAllImages_WhenSanitizedContentIsEmpty()
+        {
+            // Arrange
+            var fileMock = Substitute.For<IFormFile>();
+            var postCreateDto = TestDataHelper.GetPostCreateDto(
+                content: "<p><img src=\"{{image_0}}\" /></p>",
+                contentImages: new List<IFormFile> { fileMock }
+            );
+            var token = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token).Returns(false);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token).Returns(true);
+
+            string previewUrl = "https://res.cloudinary.com/demo/image/upload/preview.webp";
+            string contentUrl = "https://res.cloudinary.com/demo/image/upload/content1.webp";
+
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success(previewUrl));
+
+            _mockFileStorageService.SavePostContentImagesAsync(Arg.Any<IReadOnlyList<IFormFile>>(), Arg.Any<string>())
+                .Returns(Result<List<string>>.Success(new List<string> { contentUrl }));
+            
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(string.Empty);
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto, token);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.False(result.IsSuccess);
+            Assert.Equal(ResultStatus.Invalid, result.Status);
+            Assert.Equal(PostM.Errors.Empty, result.Message);
+           
+            await _mockFileStorageService.Received(1).DeleteByUrlsAsync(
+                Arg.Is<IEnumerable<string>>(urls => urls.Count() == 2 && urls.Contains(previewUrl) && urls.Contains(contentUrl))
+            );
+
+            await _mockRepository.DidNotReceive().AddAsync(Arg.Any<Post>(), token);
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldRollbackAllImages_WhenDatabaseThrowsException()
+        {
+            // Arrange
+            var fileMock = Substitute.For<IFormFile>();
+            var postCreateDto = TestDataHelper.GetPostCreateDto(
+                content: "<p><img src=\"{{image_0}}\" /></p>",
+                contentImages: new List<IFormFile> { fileMock }
+            );
+            var token = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token).Returns(false);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token).Returns(true);
+
+            string previewUrl = "https://res.cloudinary.com/demo/image/upload/preview.webp";
+            string contentUrl = "https://res.cloudinary.com/demo/image/upload/content1.webp";
+
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success(previewUrl));
+
+            _mockFileStorageService.SavePostContentImagesAsync(Arg.Any<IReadOnlyList<IFormFile>>(), Arg.Any<string>())
+                .Returns(Result<List<string>>.Success(new List<string> { contentUrl }));
+            
+            _mockRepository.When(x => x.AddAsync(Arg.Any<Post>(), token))
+                .Do(x => throw new Exception("Database connection lost"));
+
+            // Act & Assert
+            var exception = await Assert.ThrowsAsync<Exception>(() => _adminPostService.AddPostAsync(postCreateDto, token));
+            Assert.Equal("Database connection lost", exception.Message);
+           
+            await _mockFileStorageService.Received(1).DeleteByUrlsAsync(
+                Arg.Is<IEnumerable<string>>(urls => urls.Count() == 2 && urls.Contains(previewUrl) && urls.Contains(contentUrl))
+            );
         }
     }
 }

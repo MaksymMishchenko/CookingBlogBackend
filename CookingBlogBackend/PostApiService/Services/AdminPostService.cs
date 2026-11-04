@@ -4,6 +4,8 @@ using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
 using PostApiService.Repositories;
+using System.Net;
+using System.Text.RegularExpressions;
 
 namespace PostApiService.Services
 {
@@ -28,6 +30,34 @@ namespace PostApiService.Services
             _sanitizer = sanitizer;
             _categoryService = categoryService;
             _fileStorageService = fileStorageService;
+        }        
+
+        private static readonly Regex PlaceholderRegex = new(
+            @"(?<=\ssrc="")\{\{image_(\d{1,3})\}\}(?="")",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
+        private static readonly Regex ImgWithoutAltRegex = new(
+            @"<img\b(?![^>]*\balt\s*=\s*""[^""]+"")[^>]*>",
+            RegexOptions.IgnoreCase | RegexOptions.Compiled);
+       
+        private static bool PlaceholdersMatchFiles(string html, int filesCount)
+        {
+            var used = PlaceholderRegex.Matches(html)
+                .Select(m => int.Parse(m.Groups[1].Value))
+                .ToHashSet();
+
+            return used.Count == filesCount && used.All(i => i < filesCount);
+        }
+
+        private static string ApplyUrls(string html, IReadOnlyList<string> urls, string title)
+        {
+            html = PlaceholderRegex.Replace(html, m => urls[int.Parse(m.Groups[1].Value)]);
+
+            var safeTitle = WebUtility.HtmlEncode(title);
+            var n = 0;
+
+            return ImgWithoutAltRegex.Replace(html, m =>
+                $"{m.Value[..^1]} alt=\"{safeTitle} {++n}\">");
         }
 
         /// <summary>
@@ -122,22 +152,15 @@ namespace PostApiService.Services
 
             var userId = WebContext!.UserId!;
             var categoryId = postDto.CategoryId!.Value;
-
-            var sanitizedContent = _sanitizer.SanitizePost(postDto.Content);
-
-            if (!string.Equals(postDto.Content, sanitizedContent, StringComparison.Ordinal))
+            
+            if (!PlaceholdersMatchFiles(postDto.Content, postDto.ContentImages.Count))
             {
-                var traceContent = postDto.Content.Truncate(500);
-                Log.Warning(Security.XssDetectedOnPostCreate, postDto.Title, userId, WebContext.IpAddress, traceContent);
-            }
-
-            if (string.IsNullOrWhiteSpace(sanitizedContent))
-            {
-                return Invalid<PostAdminDetailsDto>(PostM.Errors.Empty, PostM.Errors.EmptyCode);
+                return Invalid<PostAdminDetailsDto>(
+                    PostM.Errors.ContentImagesMismatch, PostM.Errors.ContentImagesMismatchCode);
             }
 
             var cleanTitle = postDto.Title.StripHtml();
-            var cleanSlug = postDto.Slug.StripHtml();                    
+            var cleanSlug = postDto.Slug.StripHtml();
 
             var uniquenessError = await ValidatePostUniquenessAsync<PostAdminDetailsDto>(
                 _postRepository, cleanTitle, cleanSlug, ct);
@@ -152,8 +175,8 @@ namespace PostApiService.Services
 
                 return NotFound<PostAdminDetailsDto>
                     (CategoryM.Errors.CategoryNotFound, PostM.Errors.CategoryNotFoundCode);
-            }
-
+            }                     
+            
             var imageResult = await _fileStorageService.SavePostPreviewAsync(postDto.PreviewImage!, cleanSlug);
 
             if (!imageResult.IsSuccess)
@@ -162,11 +185,45 @@ namespace PostApiService.Services
             }
 
             string previewImageUrl = imageResult.Value!;
+            
+            var contentImagesResult = await _fileStorageService
+                .SavePostContentImagesAsync(postDto.ContentImages, cleanSlug);
 
+            if (!contentImagesResult.IsSuccess)
+            {
+                await _fileStorageService.DeleteByUrlAsync(previewImageUrl);
+                return Invalid<PostAdminDetailsDto>(contentImagesResult.Message!, contentImagesResult.ErrorCode);
+            }
+
+            var uploadedUrls = contentImagesResult.Value!.Append(previewImageUrl).ToList();
+            
+            var htmlWithUrls = ApplyUrls(postDto.Content, contentImagesResult.Value!, cleanTitle);
+            var sanitizedContent = _sanitizer.SanitizePost(htmlWithUrls);
+
+            if (!string.Equals(htmlWithUrls, sanitizedContent, StringComparison.Ordinal))
+            {
+                var traceContent = htmlWithUrls.Truncate(500);
+                Log.Warning(Security.XssDetectedOnPostCreate, postDto.Title, userId, WebContext.IpAddress, traceContent);
+            }
+
+            if (string.IsNullOrWhiteSpace(sanitizedContent))
+            {
+                await _fileStorageService.DeleteByUrlsAsync(uploadedUrls);
+                return Invalid<PostAdminDetailsDto>(PostM.Errors.Empty, PostM.Errors.EmptyCode);
+            }
+            
             var postEntity = postDto.ToEntity(sanitizedContent, userId, previewImageUrl);
 
-            await _postRepository.AddAsync(postEntity, ct);
-            await _postRepository.SaveChangesAsync(ct);
+            try
+            {
+                await _postRepository.AddAsync(postEntity, ct);
+                await _postRepository.SaveChangesAsync(ct);
+            }
+            catch
+            {
+                await _fileStorageService.DeleteByUrlsAsync(uploadedUrls);
+                throw;
+            }
 
             Log.Information(Posts.Created, postEntity.Title, postEntity.Id);
 
@@ -225,7 +282,7 @@ namespace PostApiService.Services
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();
-            
+
             var uniquenessError = await ValidatePostUniquenessAsync<PostAdminDetailsDto>(
                 _postRepository, cleanTitle, cleanSlug, ct, postId);
 

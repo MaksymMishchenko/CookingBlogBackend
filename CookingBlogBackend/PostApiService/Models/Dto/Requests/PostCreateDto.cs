@@ -18,6 +18,10 @@ namespace PostApiService.Models.Dto.Requests
         [StringLength(50000, MinimumLength = 100, ErrorMessage = Global.Validation.StringLength)]
         public string Content { get; init; } = default!;
 
+        [Display(Name = "Content Images")]
+        [AllowedFile(FileLimits.MaxPostImageSizeMb, Required = false, MaxFiles = FileLimits.MaxContentImagesCount)]
+        public List<IFormFile> ContentImages { get; init; } = new();
+
         [Display(Name = "Preview Image")]
         [AllowedFile(FileLimits.MaxPostImageSizeMb)]
         public IFormFile? PreviewImage { get; init; }

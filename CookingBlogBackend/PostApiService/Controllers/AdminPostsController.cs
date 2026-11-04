@@ -1,4 +1,5 @@
-﻿using PostApiService.Interfaces;
+﻿using PostApiService.Infrastructure.Constants;
+using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.TypeSafe;
 
@@ -44,8 +45,8 @@ namespace PostApiService.Controllers
         /// Adds a new post to the system.
         /// </summary>               
         [HttpPost]
-        [RequestSizeLimit(6 * 1024 * 1024)]
-        [RequestFormLimits(MultipartBodyLengthLimit = 6 * 1024 * 1024)]
+        [RequestSizeLimit(FileLimits.MaxPostRequestBytes)]
+        [RequestFormLimits(MultipartBodyLengthLimit = FileLimits.MaxPostRequestBytes)]
         public async Task<IActionResult> AddPostAsync
             ([FromForm] PostCreateDto dto, CancellationToken ct = default)
         {

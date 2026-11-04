@@ -99,7 +99,10 @@ namespace PostApiService.Tests.Helper
             };
         }
 
-        public static PostCreateDto ToPostCreateDto(Post post, IFormFile? previewImage = null)
+        public static PostCreateDto ToPostCreateDto(
+            Post post,
+            IFormFile? previewImage = null,
+            List<IFormFile>? contentImages = null)
         {
             return new PostCreateDto
             {
@@ -111,9 +114,11 @@ namespace PostApiService.Tests.Helper
                 MetaTitle = post.MetaTitle,
                 MetaDescription = post.MetaDescription,
                 Slug = post.Slug,
-                CategoryId = post.CategoryId,
+                CategoryId = post.CategoryId,                
+                ContentImages = contentImages ?? new List<IFormFile>()
             };
         }
+
         public static PostUpdateDto ToPostUpdateDto(Post post,
             string? newTitle = null, IFormFile? previewImage = null)
         {
@@ -301,7 +306,8 @@ namespace PostApiService.Tests.Helper
             string title = "Test Post Title",
             string slug = "test-post-title",
             string content = "This is the content of the test post.",
-            int categoryId = 1)
+            int categoryId = 1,
+            List<IFormFile>? contentImages = null)
         {
             return new PostCreateDto
             {
@@ -313,7 +319,8 @@ namespace PostApiService.Tests.Helper
                 PreviewImageAlt = "Test preview alt",
                 MetaTitle = "Test Meta Title",
                 MetaDescription = "Test Meta Description",
-                CategoryId = categoryId
+                CategoryId = categoryId,
+                ContentImages = contentImages ?? new()
             };
         }
 
