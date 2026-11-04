@@ -88,6 +88,10 @@ jobs:
                        
             content = content.replace(/postman-cloud:\/\/\/[a-zA-Z0-9-]+/g, "postman/data/test-image.jpeg");
             
+            content = content.replace(/postman-cloud:\/\/\/[a-zA-Z0-9-]+-plate1/g, "postman/data/plate1.jpg");
+            content = content.replace(/postman-cloud:\/\/\/[a-zA-Z0-9-]+-plate2/g, "postman/data/plate2.jpg");
+            content = content.replace(/postman-cloud:\/\/\/[a-zA-Z0-9-]+-plate3/g, "postman/data/plate3.webp");
+            
             fs.writeFileSync(file, content, "utf8");
             console.log("✅ Collection successfully patched with local file paths for CI!");
           '          

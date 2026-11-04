@@ -136,6 +136,21 @@
         },
         {
           "name": "GetAdminAndContributorUsers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -400,19 +415,78 @@
             {
               "listen": "test",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Post created and ID saved\", function () {    \r\n    pm.response.to.have.status(201);        \r\n    pm.environment.set(\"temp_post_id\", response.data.id);\r\n    pm.environment.set(\"unique_post_slug\", response.data.slug);\r\n    pm.environment.set(\"created_preview_url\", response.data.previewImageUrl);        \r\n});\r\n\r\npm.test(\"Preview image URL is returned\", function () {\r\n    pm.expect(response.data.previewImageUrl).to.be.a(\"string\").and.not.empty;\r\n    pm.expect(response.data.previewImageUrl).to.match(/^https:\\/\\//);\r\n});"
-                ]
+                  "const response = pm.response.json();\r",
+                  "\r",
+                  "pm.test(\"Post created and ID saved\", function () {    \r",
+                  "    pm.response.to.have.status(201);        \r",
+                  "    pm.environment.set(\"temp_post_id\", response.data.id);\r",
+                  "    pm.environment.set(\"unique_post_slug\", response.data.slug);\r",
+                  "    pm.environment.set(\"created_preview_url\", response.data.previewImageUrl);        \r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Preview image URL is returned\", function () {\r",
+                  "    pm.expect(response.data.previewImageUrl).to.be.a(\"string\").and.not.empty;\r",
+                  "    pm.expect(response.data.previewImageUrl).to.match(/^https:\\/\\//);\r",
+                  "});\r",
+                  "\r",
+                  "// НОВІ ТЕСТИ НА ЗАМІНУ ПЛЕЙСХОЛДЕРІВ\r",
+                  "pm.test(\"Content placeholders are successfully replaced with URLs\", function () {\r",
+                  "    const postContent = response.data.content;\r",
+                  "\r",
+                  "    // 1. Перевіряємо, що старі плейсхолдери {{image_X}} повністю зникли з тексту\r",
+                  "    pm.expect(postContent).to.not.include(\"{{image_0}}\");\r",
+                  "    pm.expect(postContent).to.not.include(\"{{image_1}}\");\r",
+                  "    pm.expect(postContent).to.not.include(\"{{image_2}}\");\r",
+                  "\r",
+                  "    // 2. Перевіряємо, що в тексті з'явилися теги <img> з реальними посиланнями\r",
+                  "    pm.expect(postContent).to.include(\"<img src=\");\r",
+                  "});\r",
+                  "\r",
+                  "pm.test(\"Content images URLs are correctly structured\", function () {\r",
+                  "    const postContent = response.data.content;\r",
+                  "    \r",
+                  "    // Перевіряємо, що у контенті є посилання, які містять домени або шляхи \r",
+                  "    // як для реального Cloudinary, так і для вашого Fake-сервісу\r",
+                  "    const hasCloudinary = postContent.includes(\"res.cloudinary.com\");\r",
+                  "    const hasFakeStorage = postContent.includes(\"fake-storage.local\") || postContent.includes(\"/image/upload/\");\r",
+                  "    \r",
+                  "    pm.expect(hasCloudinary || hasFakeStorage).to.be.true;\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             },
             {
               "listen": "prerequest",
               "script": {
-                "type": "text/javascript",
                 "exec": [
-                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst uniqueTitle = \"Post title \" + timestamp;\r\nconst slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r\n\r\nconst content = \"This is an automatically generated content for a test post with a timestamp \" + timestamp + \", designed to successfully pass all backend validation rules and database constraints effortlessly.\";\r\n\r\nconst metaDescription = \"This is an automatically generated SEO meta description for a test post with timestamp \" + timestamp + \", which successfully passes all backend and frontend validation rules.\";\r\n\r\npm.variables.set(\"post_title\", uniqueTitle);\r\npm.variables.set(\"unique_post_slug\", slug);\r\npm.variables.set(\"post_content\", content);\r\npm.variables.set(\"post_meta_description\", metaDescription);"
-                ]
+                  "const timestamp = Math.floor(Date.now() / 1000);\r",
+                  "const uniqueTitle = \"Post title \" + timestamp;\r",
+                  "const slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r",
+                  "\r",
+                  "const content = `\r",
+                  "    <p>Test content for post ${timestamp}. Welcome to our culinary blog where we share the best recipes!</p>\r",
+                  "    <p><img src=\"{{image_0}}\" /></p>\r",
+                  "    <p>Here is how you prepare the ingredients for step two. Make sure everything is fresh and chopped properly.</p>\r",
+                  "    <p><img src=\"{{image_1}}\" /></p>\r",
+                  "    <p>And finally, the serving suggestion and final presentation look amazing!</p>\r",
+                  "    <p><img src=\"{{image_2}}\" /></p>\r",
+                  "    <p>Enjoy your meal and don't forget to leave a comment below!</p>\r",
+                  "`;\r",
+                  "\r",
+                  "const metaDescription = \"This is an automatically generated SEO meta description for a test post with timestamp \" + timestamp + \", which successfully passes all backend and frontend validation rules.\";\r",
+                  "\r",
+                  "pm.variables.set(\"post_title\", uniqueTitle);\r",
+                  "pm.variables.set(\"unique_post_slug\", slug);\r",
+                  "pm.variables.set(\"post_content\", content);\r",
+                  "pm.variables.set(\"post_meta_description\", metaDescription);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
               }
             }
           ],
@@ -451,14 +525,33 @@
                   "key": "previewImage",
                   "type": "file",
                   "description": "Maximum file size is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp. Minimum resolution: 250x250px.",
-                  "src": [
-                    "postman-cloud:///1f1c7256-6d74-4f60-8b01-50a408d7c9b3"
-                  ]
+                  "src": "postman-cloud:///1f1c7256-6d74-4f60-8b01-50a408d7c9b3"
                 },
                 {
                   "key": "previewImageAlt",
                   "value": "Sample preview image alternative text",
                   "type": "text"
+                },
+                {
+                  "key": "contentImages",
+                  "description": "Maximum total size for all content images is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp",
+                  "type": "file",
+                  "uuid": "cf0d3f97-9364-4840-8bfe-f639f487e260",
+                  "src": "postman-cloud:///1f1d84f1-a05f-44d0-8891-9ad104daffa9"
+                },
+                {
+                  "key": "contentImages",
+                  "description": "Maximum total size for all content images is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp",
+                  "type": "file",
+                  "uuid": "5d84eecd-d949-4071-998a-41fd6b9bc880",
+                  "src": "postman-cloud:///1f1d84f1-9f66-4470-ba08-a44782c653cf"
+                },
+                {
+                  "key": "contentImages",
+                  "description": "Maximum total size for all content images is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp",
+                  "type": "file",
+                  "uuid": "c3b5c1d1-a1a8-4371-8c97-0b7e3d541ee3",
+                  "src": "postman-cloud:///1f1d84f1-9f26-4cd0-8cdd-264485c97772"
                 },
                 {
                   "key": "metaTitle",
