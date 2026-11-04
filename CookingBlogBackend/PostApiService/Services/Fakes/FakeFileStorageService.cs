@@ -1,4 +1,5 @@
-﻿using PostApiService.Interfaces;
+﻿using PostApiService.Infrastructure.Constants;
+using PostApiService.Interfaces;
 
 namespace PostApiService.Services.Fakes
 {
@@ -7,6 +8,27 @@ namespace PostApiService.Services.Fakes
         public Task<Result> DeleteByUrlAsync(string url)
         {
             return Task.FromResult(Result.Success());
+        }
+
+        public Task<Result> DeleteByUrlsAsync(IEnumerable<string> urls)
+        {
+            return Task.FromResult(Result.Success());
+        }
+
+        public Task<Result<List<string>>> SavePostContentImagesAsync(
+            IReadOnlyList<IFormFile> files, string slug)
+        {
+            var safeSlug = string.IsNullOrWhiteSpace(slug) ? "post" : slug.ToLowerInvariant();
+            
+            var urls = files
+                .Select((_, i) =>
+                {
+                    var suffix = Guid.NewGuid().ToString("N")[..6];
+                    return $"https://res.cloudinary.com/fake/image/upload/{FileLimits.ContentImagesFolder}/{safeSlug}-{i + 1}-{suffix}.webp";
+                })
+                .ToList();
+
+            return Task.FromResult(Result<List<string>>.Success(urls));
         }
 
         public Task<Result<string>> SavePostPreviewAsync(IFormFile file, string slug)

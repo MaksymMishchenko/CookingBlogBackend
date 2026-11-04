@@ -1,5 +1,6 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using PostApiService.Infrastructure.Constants;
 using PostApiService.Interfaces;
 using System.Text.RegularExpressions;
 
@@ -12,6 +13,19 @@ namespace PostApiService.Services
         public FileStorageService(ICloudinaryWrapper cloudinaryWrapper)
         {
             _cloudinaryWrapper = cloudinaryWrapper;
+        }
+
+        private static string? ExtractPublicId(string url)
+        {
+            const string marker = "/upload/";
+            var idx = url.IndexOf(marker, StringComparison.Ordinal);
+            if (idx < 0) return null;
+
+            var path = url[(idx + marker.Length)..];
+            path = Regex.Replace(path, @"^v\d+/", "");
+
+            var dot = path.LastIndexOf('.');
+            return dot > 0 ? path[..dot] : path;
         }
 
         /// <summary>
@@ -29,13 +43,13 @@ namespace PostApiService.Services
             {
                 File = new FileDescription(file.FileName, stream),
                 PublicId = publicId,
-                Folder = "posts",
+                Folder = FileLimits.PreviewImagesFolder,
                 Transformation = new Transformation()
                     .Width(640)
-                    .Height(480)                    
-                    .FetchFormat("webp")                    
+                    .Height(480)
+                    .FetchFormat("webp")
             };
-            
+
             var uploadResult = await _cloudinaryWrapper.UploadAsync(uploadParams);
 
             if (uploadResult.Error != null)
@@ -47,6 +61,49 @@ namespace PostApiService.Services
             Log.Information(Images.SavedSuccessfully, publicId, slug);
 
             return Success<string>(uploadResult.SecureUrl.ToString());
+        }
+
+        /// <summary>
+        /// Uploads images embedded in post content. Returned URLs keep the order of the input files,
+        /// so urls[N] corresponds to the {{image_N}} placeholder. On any failure, already uploaded images are removed.
+        /// </summary>
+        public async Task<Result<List<string>>> SavePostContentImagesAsync(
+            IReadOnlyList<IFormFile> files, string slug)
+        {
+            var urls = new List<string>(files.Count);
+            var safeSlug = string.IsNullOrWhiteSpace(slug) ? "post" : slug.ToLowerInvariant();
+
+            for (int i = 0; i < files.Count; i++)
+            {
+                var suffix = Guid.NewGuid().ToString("N")[..6];
+                var publicId = $"{safeSlug}-{i + 1}-{suffix}";
+
+                using var stream = files[i].OpenReadStream();
+
+                var uploadParams = new ImageUploadParams
+                {
+                    File = new FileDescription(files[i].FileName, stream),
+                    PublicId = publicId,
+                    Folder = FileLimits.ContentImagesFolder,
+                    Transformation = new Transformation().Width(1600).Crop("limit").Quality("auto")
+                };
+
+                var result = await _cloudinaryWrapper.UploadAsync(uploadParams);
+
+                if (result.Error != null)
+                {
+                    Log.Error(Images.UploadFailed, result.Error.Message);
+
+                    await DeleteByUrlsAsync(urls);
+
+                    return Error<List<string>>(ImageM.Errors.UploadFailed, ImageM.Errors.UploadFailedCode);
+                }
+
+                urls.Add(result.SecureUrl.ToString());
+                Log.Information(Images.SavedSuccessfully, publicId, slug);
+            }
+
+            return Success(urls);
         }
 
         public async Task<Result> DeleteByUrlAsync(string url)
@@ -71,17 +128,46 @@ namespace PostApiService.Services
             return Success(true);
         }
 
-        private static string? ExtractPublicId(string url)
+        /// <summary>
+        /// Deletes many images by URL using Cloudinary bulk delete (up to 100 per request).
+        /// </summary>
+        public async Task<Result> DeleteByUrlsAsync(IEnumerable<string> urls)
         {
-            const string marker = "/upload/";
-            var idx = url.IndexOf(marker, StringComparison.Ordinal);
-            if (idx < 0) return null;
+            var publicIds = new List<string>();
 
-            var path = url[(idx + marker.Length)..];
-            path = Regex.Replace(path, @"^v\d+/", "");
+            foreach (var url in urls.Distinct())
+            {
+                var publicId = ExtractPublicId(url);
 
-            var dot = path.LastIndexOf('.');
-            return dot > 0 ? path[..dot] : path;
+                if (publicId is null)
+                    Log.Warning(Images.CannotExtractPublicId, url);
+                else
+                    publicIds.Add(publicId);
+            }
+
+            if (publicIds.Count == 0)
+                return Success(true);
+
+            var hasErrors = false;
+
+            foreach (var batch in publicIds.Chunk(100))
+            {
+                var result = await _cloudinaryWrapper.DeleteResourcesAsync(
+                    new DelResParams { PublicIds = batch.ToList() });
+
+                if (result.Error != null)
+                {
+                    Log.Error(Images.DeleteFailed, string.Join(", ", batch), result.Error.Message);
+                    hasErrors = true;
+                    continue;
+                }
+
+                Log.Information(Images.DeletedSuccessfully, string.Join(", ", batch));
+            }
+
+            return hasErrors
+                ? Error<bool>(ImageM.Errors.DeleteFailed, ImageM.Errors.DeleteFailedCode)
+                : Success(true);
         }
     }
 }
