@@ -7,7 +7,7 @@
             public static class Errors
             {
                 public const string PostNotFound = "Post not found.";
-                public const string PostNotFoundCode = "POST_NOT_FOUND";
+                public const string PostNotFoundCode = "POST_NOT_FOUND";                
                 public const string SlugAndCategoryRequired = "Slug and category are required and must be valid.";
                 public const string SlugAndCategoryRequiredCode = "SLUG_AND_CATEGORY_REQUIRED";
                 public const string PostNotFoundByPath = "Post not found or category mismatch for slug: {Slug} in category: {Category}";
@@ -19,6 +19,8 @@
                 public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";                
                 public const string Empty = "Post content cannot be empty.";
                 public const string EmptyCode = "POST_CONTENT_IS_EMPTY";
+                public const string ContentImagesMismatch = "Content images do not match the uploaded files.";
+                public const string ContentImagesMismatchCode = "CONTENT_IMAGES_MISMATCH";
             }
 
             public static class Success
