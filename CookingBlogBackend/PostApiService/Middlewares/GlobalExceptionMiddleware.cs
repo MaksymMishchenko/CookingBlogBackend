@@ -32,11 +32,14 @@ namespace PostApiService.Middlewares
 
                     TimeoutException or OperationCanceledException
                         => (HttpStatusCode.RequestTimeout, Global.System.Timeout),
+                   
+                    HttpRequestException
+                        => (HttpStatusCode.BadGateway, Global.System.ExternalServiceUnavailable),
 
                     NpgsqlException or DbUpdateException
                         => (HttpStatusCode.InternalServerError, Global.System.DbUpdateError),
-
-                    _ => (HttpStatusCode.InternalServerError, Global.System.DatabaseCriticalError)
+                    
+                    _ => (HttpStatusCode.InternalServerError, Global.System.InternalServerError)
                 };
 
                 await WriteResponseAsync(context, statusCode, message);
