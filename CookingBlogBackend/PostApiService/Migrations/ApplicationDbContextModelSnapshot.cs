@@ -373,6 +373,40 @@ namespace PostApiService.Migrations
                     b.ToTable("Posts");
                 });
 
+            modelBuilder.Entity("PostApiService.Models.PostImage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Alt")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("PostId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PublicId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PostId");
+
+                    b.ToTable("PostImages");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -469,6 +503,16 @@ namespace PostApiService.Migrations
                     b.Navigation("Category");
                 });
 
+            modelBuilder.Entity("PostApiService.Models.PostImage", b =>
+                {
+                    b.HasOne("PostApiService.Models.Post", "Post")
+                        .WithMany("Images")
+                        .HasForeignKey("PostId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Post");
+                });
+
             modelBuilder.Entity("PostApiService.Models.Category", b =>
                 {
                     b.Navigation("Posts");
@@ -482,6 +526,8 @@ namespace PostApiService.Migrations
             modelBuilder.Entity("PostApiService.Models.Post", b =>
                 {
                     b.Navigation("Comments");
+
+                    b.Navigation("Images");
                 });
 #pragma warning restore 612, 618
         }
