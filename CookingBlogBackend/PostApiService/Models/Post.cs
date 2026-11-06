@@ -62,8 +62,10 @@ namespace PostApiService.Models
         [ValidateNever]
         public virtual Category Category { get; set; } = default!;
 
+        public ICollection<PostImage> Images { get; set; } = new List<PostImage>();
+
         public ICollection<Comment> Comments { get; set; } = new List<Comment>();
 
-        public bool IsActive { get; set; } = true;
+        public bool IsActive { get; set; } = true;        
     }
 }
