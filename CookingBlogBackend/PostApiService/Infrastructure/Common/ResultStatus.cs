@@ -10,6 +10,7 @@
         Unauthorized,
         Forbidden,
         Invalid,
-        Error
+        Error,
+        BadGateway
     }
 }

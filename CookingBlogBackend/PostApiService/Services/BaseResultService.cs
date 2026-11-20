@@ -35,5 +35,9 @@
 
         // --- Error ---
         protected Result<T> Error<T>(string message, string errorCode) => Result<T>.Error(message, errorCode);
+
+        // --- BadGateway ---
+        protected Result BadGateway(string message, string? code = null) => Result.BadGateway(message, code);
+        protected Result<T> BadGateway<T>(string message, string? code = null) => Result<T>.BadGateway(message, code);
     }
 }
