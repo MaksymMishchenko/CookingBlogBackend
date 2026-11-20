@@ -20,6 +20,7 @@ namespace PostApiService.Extensions
                 ResultStatus.Invalid => new BadRequestObjectResult(errorResponse),
                 ResultStatus.Unauthorized => new UnauthorizedObjectResult(errorResponse),
                 ResultStatus.Forbidden => new ObjectResult(errorResponse) { StatusCode = 403 },
+                ResultStatus.BadGateway => new ObjectResult(errorResponse) { StatusCode = StatusCodes.Status502BadGateway },
                 ResultStatus.Error => new ObjectResult(errorResponse) { StatusCode = 500 },
                 _ => new ObjectResult(errorResponse) { StatusCode = 500 }
             };

@@ -29,6 +29,7 @@
         public static Result Error(string? msg, string? code = null) => new(ResultStatus.Error, msg, code);
         public static Result Unauthorized(string? msg, string? code = null) => new(ResultStatus.Unauthorized, msg, code);
         public static Result Forbidden(string? msg, string? code = null) => new(ResultStatus.Forbidden, msg, code);
+        public static Result BadGateway(string? msg, string? code = null) => new(ResultStatus.BadGateway, msg, code);
     }
 
     public class Result<T> : Result
@@ -57,5 +58,6 @@
         public new static Result<T> Unauthorized(string? msg, string? code = null) => new(default, ResultStatus.Unauthorized, msg, code);
         public new static Result<T> Forbidden(string? msg, string? code = null) => new(default, ResultStatus.Forbidden, msg, code);
         public new static Result<T> Error(string? msg, string? code = null) => new(default, ResultStatus.Error, msg, code);
+        public new static Result<T> BadGateway(string? msg, string? code = null) => new(default, ResultStatus.BadGateway, msg, code);
     }
 }
