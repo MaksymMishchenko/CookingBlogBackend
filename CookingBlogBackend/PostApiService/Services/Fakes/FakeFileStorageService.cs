@@ -25,22 +25,27 @@ namespace PostApiService.Services.Fakes
             return Task.FromResult(Result<string>.Success(url));
         }
 
-        public Task<Result<PostImageUploadResponseDto>> UploadContentImageAsync(IFormFile file, string? alt)
+        public Task<Result<PostImageUploadResponseDto>> UploadContentImageAsync(
+            IFormFile file,
+            string? alt,
+            CancellationToken ct = default)
         {
             var accessError = ValidateAdminOrContributor<PostImageUploadResponseDto>();
             if (accessError != null) return Task.FromResult(accessError);
 
-            var imageId = Guid.NewGuid();
+            ct.ThrowIfCancellationRequested();
+
             var suffix = Guid.NewGuid().ToString("N")[..StorageConstants.ImageProcessing.PublicIdSuffixLength];
-            var fakeUrl = $"https://fake-storage.local/{StorageConstants.Folders.PostContent}/{StorageConstants.Folders.ContentImagePrefix}-{imageId}-{suffix}.{StorageConstants.ImageProcessing.WebpFormat}";
+            var fakeId = Random.Shared.Next(1, int.MaxValue);
+            var fakeUrl = $"https://fake-storage.local/{StorageConstants.Folders.PostContent}/{StorageConstants.Folders.ContentImagePrefix}-{suffix}.{StorageConstants.ImageProcessing.WebpFormat}";
 
             var responseDto = new PostImageUploadResponseDto(
-                Id: imageId,
+                Id: fakeId,
                 Url: fakeUrl,
                 Alt: alt ?? string.Empty
             );
 
             return Task.FromResult(Result<PostImageUploadResponseDto>.Success(responseDto));
-        }
+        }       
     }
 }
