@@ -23,7 +23,7 @@ namespace PostApiService.Controllers
             [FromForm] UploadContentImageDto dto,
             CancellationToken ct = default)
         {
-            var result = await _fileStorageService.UploadContentImageAsync(dto.ContentImage, dto.Alt);
+            var result = await _fileStorageService.UploadContentImageAsync(dto.ContentImage, dto.Alt, ct);
 
             return result.ToActionResult();
         }

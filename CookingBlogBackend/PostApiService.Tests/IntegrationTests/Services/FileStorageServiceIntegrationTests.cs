@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
 using PostApiService.Infrastructure.Common;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Response;
@@ -48,7 +49,7 @@ namespace PostApiService.Tests.IntegrationTests.Services
             Assert.Equal(ResultStatus.Success, result.Status);
 
             var dto = Assert.IsType<PostImageUploadResponseDto>(result.Value);
-            Assert.NotEqual(Guid.Empty, dto.Id);
+            Assert.True(dto.Id > 0);
             Assert.False(string.IsNullOrWhiteSpace(dto.Url));
             Assert.Equal(alt, dto.Alt);
 

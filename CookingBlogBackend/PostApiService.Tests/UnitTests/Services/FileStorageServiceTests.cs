@@ -4,6 +4,7 @@ using PostApiService.Infrastructure.Common;
 using PostApiService.Infrastructure.Constants;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
+using PostApiService.Repositories;
 using PostApiService.Services;
 
 namespace PostApiService.Tests.UnitTests.Services
@@ -11,24 +12,19 @@ namespace PostApiService.Tests.UnitTests.Services
     public class FileStorageServiceTests
     {
         private readonly ICloudinaryWrapper _cloudinaryWrapperMock;
+        private readonly IPostImageRepository _postImageRepositoryMock;
         private readonly IWebContext _webContextMock;
-        private readonly ApplicationDbContext _contextMock;
-        private readonly DbSet<PostImage> _postImagesSetMock;
         private readonly FileStorageService _fileStorageService;
 
         public FileStorageServiceTests()
         {
             _cloudinaryWrapperMock = Substitute.For<ICloudinaryWrapper>();
+            _postImageRepositoryMock = Substitute.For<IPostImageRepository>();
             _webContextMock = Substitute.For<IWebContext>();
-            _postImagesSetMock = Substitute.For<DbSet<PostImage>>();
-
-            var options = new DbContextOptions<ApplicationDbContext>();
-            _contextMock = Substitute.For<ApplicationDbContext>(options);
-            _contextMock.PostImages.Returns(_postImagesSetMock);
 
             _fileStorageService = new FileStorageService(
                 _cloudinaryWrapperMock,
-                _contextMock,
+                _postImageRepositoryMock,
                 _webContextMock);
         }
 
@@ -115,11 +111,13 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(expectedSecureUrl.ToString(), result.Value!.Url);
             Assert.Equal(alt, result.Value.Alt);
 
-            _postImagesSetMock.Received(1).Add(Arg.Is<PostImage>(x =>
-                x.Url == expectedSecureUrl.ToString() &&
-                x.Alt == alt &&
-                x.PostId == null));
-            await _contextMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _postImageRepositoryMock.Received(1).AddAsync(
+                Arg.Is<PostImage>(x =>
+                    x.Url == expectedSecureUrl.ToString() &&
+                    x.Alt == alt &&
+                    x.PostId == null),
+                Arg.Any<CancellationToken>());
+            await _postImageRepositoryMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -148,7 +146,7 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.True(result.IsSuccess);
             Assert.Equal(expectedSecureUrl.ToString(), result.Value!.Url);
             await _cloudinaryWrapperMock.Received(2).UploadAsync(Arg.Any<ImageUploadParams>());
-            await _contextMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _postImageRepositoryMock.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -174,8 +172,8 @@ namespace PostApiService.Tests.UnitTests.Services
             Assert.Equal(ResultStatus.BadGateway, result.Status);
             Assert.Equal(Messages.ImageM.Errors.UploadFailedCode, result.ErrorCode);
 
-            _postImagesSetMock.DidNotReceive().Add(Arg.Any<PostImage>());
-            await _contextMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+            await _postImageRepositoryMock.DidNotReceive().AddAsync(Arg.Any<PostImage>(), Arg.Any<CancellationToken>());
+            await _postImageRepositoryMock.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
             await _cloudinaryWrapperMock.Received(3).UploadAsync(Arg.Any<ImageUploadParams>());
         }
 

@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+using PostApiService.Repositories;
 using System.ComponentModel.DataAnnotations;
 
 namespace PostApiService.Models
 {
-    public class PostImage
+    public class PostImage : IEntity
     {
         [Required]
-        public Guid Id { get; set; } = Guid.NewGuid();
+        public int Id { get; set; }
         
         public int? PostId { get; set; }
 
