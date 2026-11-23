@@ -19,7 +19,7 @@ namespace PostApiService.Models.Dto.Requests
         public string Content { get; init; } = default!;
 
         [Display(Name = "Preview Image")]
-        [AllowedFile(FileLimits.MaxPostImageSizeMb, Required = false)]
+        [AllowedFile(StorageConstants.Limits.MaxImageSizeMb, Required = false)]
         public IFormFile? PreviewImage { get; init; }
 
         [Display(Name = "Preview Image Alt")]

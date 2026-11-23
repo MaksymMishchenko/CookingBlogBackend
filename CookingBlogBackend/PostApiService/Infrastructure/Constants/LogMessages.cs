@@ -78,6 +78,9 @@
         {
             public const string SavedSuccessfully = "Recipe preview image '{FileName}' successfully saved for slug: '{Slug}'";
             public const string UploadFailed = "Cloudinary upload failed: {Error}";
+            public const string UploadAttemptFailed = "Cloudinary upload attempt {Attempt} failed: {Error}";
+            public const string UploadNetworkException = "Network exception during Cloudinary upload attempt {Attempt}";
+            public const string UploadRetriesExhausted = "Failed to upload content image to Cloudinary after {MaxRetries} attempts.";
             public const string DeletedSuccessfully = "Image '{PublicId}' deleted from Cloudinary";
             public const string DeleteFailed = "Cloudinary delete failed for '{PublicId}': {Error}";
             public const string CannotExtractPublicId = "Cannot extract Cloudinary public id from url: '{Url}'";
