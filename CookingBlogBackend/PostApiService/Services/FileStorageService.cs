@@ -1,17 +1,25 @@
 ﻿using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
+using PostApiService.Infrastructure.Constants;
+using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
+using PostApiService.Models.Dto.Response;
 using System.Text.RegularExpressions;
 
 namespace PostApiService.Services
 {
-    public class FileStorageService : BaseService, IFileStorageService
+    public class FileStorageService : AdminBaseService, IFileStorageService
     {
         private readonly ICloudinaryWrapper _cloudinaryWrapper;
+        private readonly ApplicationDbContext _context;
 
-        public FileStorageService(ICloudinaryWrapper cloudinaryWrapper)
+        public FileStorageService(
+            ICloudinaryWrapper cloudinaryWrapper,
+            ApplicationDbContext context,
+            IWebContext webContext) : base(webContext)
         {
             _cloudinaryWrapper = cloudinaryWrapper;
+            _context = context;
         }
 
         /// <summary>
@@ -19,23 +27,23 @@ namespace PostApiService.Services
         /// </summary>
         public async Task<Result<string>> SavePostPreviewAsync(IFormFile file, string slug)
         {
-            var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, 6);
-            var safeSlug = string.IsNullOrWhiteSpace(slug) ? "recipe-preview" : slug.ToLowerInvariant();
+            var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, StorageConstants.ImageProcessing.PublicIdSuffixLength);
+            var safeSlug = string.IsNullOrWhiteSpace(slug) ? StorageConstants.Folders.DefaultPreviewSlug : slug.ToLowerInvariant();
             var publicId = $"{safeSlug}-{uniqueSuffix}";
 
-            using var stream = file.OpenReadStream();
+            await using var stream = file.OpenReadStream();
 
             var uploadParams = new ImageUploadParams
             {
                 File = new FileDescription(file.FileName, stream),
                 PublicId = publicId,
-                Folder = "posts",
+                Folder = StorageConstants.Folders.Posts,
                 Transformation = new Transformation()
-                    .Width(640)
-                    .Height(480)                    
-                    .FetchFormat("webp")                    
+                    .Width(StorageConstants.ImageProcessing.PreviewWidth)
+                    .Height(StorageConstants.ImageProcessing.PreviewHeight)
+                    .FetchFormat(StorageConstants.ImageProcessing.WebpFormat)
             };
-            
+
             var uploadResult = await _cloudinaryWrapper.UploadAsync(uploadParams);
 
             if (uploadResult.Error != null)
@@ -47,6 +55,78 @@ namespace PostApiService.Services
             Log.Information(Images.SavedSuccessfully, publicId, slug);
 
             return Success<string>(uploadResult.SecureUrl.ToString());
+        }
+
+        public async Task<Result<PostImageUploadResponseDto>> UploadContentImageAsync(IFormFile file, string? alt)
+        {
+            var accessError = ValidateAdminOrContributor<PostImageUploadResponseDto>();
+            if (accessError != null) return accessError;
+
+            var imageId = Guid.NewGuid();
+            var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, StorageConstants.ImageProcessing.PublicIdSuffixLength);
+            var publicId = $"{StorageConstants.Folders.PostContent}/{StorageConstants.Folders.ContentImagePrefix}-{imageId}-{uniqueSuffix}";
+
+            ImageUploadResult? uploadResult = null;
+            int maxRetries = 3;
+            int currentRetry = 0;
+
+            while (currentRetry < maxRetries)
+            {
+                try
+                {
+                    await using var stream = file.OpenReadStream();
+                    var uploadParams = new ImageUploadParams
+                    {
+                        File = new FileDescription(file.FileName, stream),
+                        PublicId = publicId,
+                        Transformation = new Transformation().FetchFormat(StorageConstants.ImageProcessing.WebpFormat)
+                    };
+
+                    uploadResult = await _cloudinaryWrapper.UploadAsync(uploadParams);
+
+                    if (uploadResult?.Error == null)
+                    {
+                        break;
+                    }
+
+                    Log.Warning(Images.UploadAttemptFailed, currentRetry + 1, uploadResult.Error.Message);
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    Log.Warning(ex, LogMessages.Images.UploadNetworkException, currentRetry + 1);
+                }
+
+                currentRetry++;
+                if (currentRetry < maxRetries)
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(currentRetry));
+                }
+            }
+
+            if (uploadResult == null || uploadResult.Error != null)
+            {
+                Log.Error(Images.UploadRetriesExhausted, maxRetries);
+                return BadGateway<PostImageUploadResponseDto>(ImageM.Errors.UploadFailed, ImageM.Errors.UploadFailedCode);
+            }
+
+            var postImage = new PostImage
+            {
+                Id = imageId,
+                PostId = null,
+                Url = uploadResult.SecureUrl.ToString(),
+                PublicId = publicId,
+                Alt = alt ?? string.Empty,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.PostImages.Add(postImage);
+            await _context.SaveChangesAsync();
+
+            return Success(new PostImageUploadResponseDto(postImage.Id, postImage.Url, postImage.Alt));
         }
 
         public async Task<Result> DeleteByUrlAsync(string url)
@@ -73,7 +153,7 @@ namespace PostApiService.Services
 
         private static string? ExtractPublicId(string url)
         {
-            const string marker = "/upload/";
+            var marker = StorageConstants.ImageProcessing.CloudinaryUploadSegment;
             var idx = url.IndexOf(marker, StringComparison.Ordinal);
             if (idx < 0) return null;
 

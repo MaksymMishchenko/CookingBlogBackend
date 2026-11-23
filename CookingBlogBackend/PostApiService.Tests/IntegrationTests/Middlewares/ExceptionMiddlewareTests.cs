@@ -22,26 +22,22 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
         }
 
         [Theory]
-        [InlineData(typeof(BadHttpRequestException), HttpStatusCode.RequestEntityTooLarge)]
-        [InlineData(typeof(InvalidDataException), HttpStatusCode.RequestEntityTooLarge)]
         [InlineData(typeof(DbUpdateException), HttpStatusCode.InternalServerError)]
         [InlineData(typeof(OperationCanceledException), HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TaskCanceledException), HttpStatusCode.RequestTimeout)]
         [InlineData(typeof(TimeoutException), HttpStatusCode.RequestTimeout)]
+        [InlineData(typeof(HttpRequestException), HttpStatusCode.BadGateway)]
         [InlineData(typeof(Exception), HttpStatusCode.InternalServerError)]
-        public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown
-            (Type exceptionType, HttpStatusCode expectedStatus)
+        public async Task RegisterUser_ShouldReturnExpectedStatusCode_WhenExceptionThrown(
+    Type exceptionType,
+    HttpStatusCode expectedStatus)
         {
             // Arrange
             string url = Authentication.Register;
             var authServiceMock = _fixture?.Services?.GetRequiredService<IAuthService>();
 
-            var exception = exceptionType switch
+            Exception exception = exceptionType switch
             {
-                Type t when t == typeof(BadHttpRequestException) =>
-                    new BadHttpRequestException(Global.System.PayloadTooLarge, StatusCodes.Status413PayloadTooLarge),
-                Type t when t == typeof(InvalidDataException) =>
-                    new InvalidDataException(Global.System.PayloadTooLarge),
                 Type t when t == typeof(DbUpdateException) =>
                     new DbUpdateException(Global.System.DbUpdateError),
                 Type t when t == typeof(OperationCanceledException) =>
@@ -50,8 +46,10 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
                     new TaskCanceledException(Global.System.RequestCancelled),
                 Type t when t == typeof(TimeoutException) =>
                     new TimeoutException(Global.System.Timeout),
+                Type t when t == typeof(HttpRequestException) =>
+                    new HttpRequestException(Global.System.ExternalServiceUnavailable),
                 Type t when t == typeof(Exception) =>
-                   new Exception(Global.System.DatabaseCriticalError),
+                    new Exception(Global.System.InternalServerError),
                 _ => new Exception($"Unsupported exception type: {exceptionType}")
             };
 
@@ -71,10 +69,6 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
             string expectedMessage = exceptionType switch
             {
-                Type t when t == typeof(BadHttpRequestException) ||
-                            t == typeof(InvalidDataException)
-                    => Global.System.PayloadTooLarge,
-
                 Type t when t == typeof(OperationCanceledException) ||
                             t == typeof(TaskCanceledException) ||
                             t == typeof(TimeoutException)
@@ -82,7 +76,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
 
                 Type t when t == typeof(DbUpdateException)
                     => Global.System.DbUpdateError,
-                _ => Global.System.DatabaseCriticalError
+
+                Type t when t == typeof(HttpRequestException)
+                    => Global.System.ExternalServiceUnavailable,
+
+                _ => Global.System.InternalServerError
             };
 
             Assert.Equal(expectedMessage, errorResponse.Message);
@@ -108,9 +106,11 @@ namespace PostApiService.Tests.IntegrationTests.Middlewares
             Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
             var errorResponse = await response.Content.ReadFromJsonAsync<ApiResponse>();
 
-            Assert.Equal(Global.System.DatabaseCriticalError, errorResponse!.Message);
+            Assert.NotNull(errorResponse);
+            Assert.Equal(Global.System.InternalServerError, errorResponse.Message);
 
-            await authServiceMock!.Received(1).AuthenticateAsync(Arg.Any<LoginUserDto>(),
+            await authServiceMock!.Received(1).AuthenticateAsync(
+                Arg.Any<LoginUserDto>(),
                 Arg.Any<CancellationToken>());
         }
     }
