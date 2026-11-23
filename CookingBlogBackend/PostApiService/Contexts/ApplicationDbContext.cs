@@ -48,7 +48,7 @@
             entity.HasOne(pi => pi.Post)
                   .WithMany(p => p.Images)
                   .HasForeignKey(pi => pi.PostId)
-                  .OnDelete(DeleteBehavior.Cascade);
+                  .OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<Comment>(entity =>
