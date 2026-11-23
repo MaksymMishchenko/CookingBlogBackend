@@ -136,6 +136,21 @@
         },
         {
           "name": "GetAdminAndContributorUsers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\r",
+                  "    pm.response.to.have.status(200);\r",
+                  "});"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -402,7 +417,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const response = pm.response.json();\r\n\r\npm.test(\"Post created and ID saved\", function () {    \r\n    pm.response.to.have.status(201);        \r\n    pm.environment.set(\"temp_post_id\", response.data.id);\r\n    pm.environment.set(\"unique_post_slug\", response.data.slug);\r\n    pm.environment.set(\"created_preview_url\", response.data.previewImageUrl);        \r\n});\r\n\r\npm.test(\"Preview image URL is returned\", function () {\r\n    pm.expect(response.data.previewImageUrl).to.be.a(\"string\").and.not.empty;\r\n    pm.expect(response.data.previewImageUrl).to.match(/^https:\\/\\//);\r\n});"
+                  "const response = pm.response.json();\r\n\r\npm.test(\"Post created and ID saved\", function () {\r\n    pm.response.to.have.status(201);\r\n    pm.environment.set(\"temp_post_id\", response.data.id);\r\n    pm.environment.set(\"unique_post_slug\", response.data.slug);\r\n    pm.environment.set(\"created_preview_url\", response.data.previewImageUrl);\r\n});\r\n\r\npm.test(\"Preview image URL is returned\", function () {\r\n    pm.expect(response.data.previewImageUrl).to.be.a(\"string\").and.not.empty;\r\n    pm.expect(response.data.previewImageUrl).to.match(/^https:\\/\\//);\r\n});"
                 ]
               }
             },
@@ -411,7 +426,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst uniqueTitle = \"Post title \" + timestamp;\r\nconst slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r\n\r\nconst content = \"This is an automatically generated content for a test post with a timestamp \" + timestamp + \", designed to successfully pass all backend validation rules and database constraints effortlessly.\";\r\n\r\nconst metaDescription = \"This is an automatically generated SEO meta description for a test post with timestamp \" + timestamp + \", which successfully passes all backend and frontend validation rules.\";\r\n\r\npm.variables.set(\"post_title\", uniqueTitle);\r\npm.variables.set(\"unique_post_slug\", slug);\r\npm.variables.set(\"post_content\", content);\r\npm.variables.set(\"post_meta_description\", metaDescription);"
+                  "const timestamp = Math.floor(Date.now() / 1000);\r\nconst uniqueTitle = \"Post title \" + timestamp;\r\nconst slug = uniqueTitle.toLowerCase().replace(/ /g, '-');\r\n\r\nconst content = `\r\n    <p>Test content for post ${timestamp}. Welcome to our culinary blog where we share the best recipes!</p>\r\n    <p>Here is how you prepare the ingredients for step two. Make sure everything is fresh and chopped properly.</p>\r\n    <p>And finally, the serving suggestion and final presentation look amazing!</p>\r\n    <p>Enjoy your meal and don't forget to leave a comment below!</p>\r\n`;\r\n\r\nconst metaDescription = \"This is an automatically generated SEO meta description for a test post with timestamp \" + timestamp + \", which successfully passes all backend and frontend validation rules.\";\r\n\r\npm.variables.set(\"post_title\", uniqueTitle);\r\npm.variables.set(\"unique_post_slug\", slug);\r\npm.variables.set(\"post_content\", content);\r\npm.variables.set(\"post_meta_description\", metaDescription);"
                 ]
               }
             }
@@ -451,14 +466,30 @@
                   "key": "previewImage",
                   "type": "file",
                   "description": "Maximum file size is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp. Minimum resolution: 250x250px.",
-                  "src": [
-                    "postman-cloud:///1f1c7256-6d74-4f60-8b01-50a408d7c9b3"
-                  ]
+                  "src": "postman-cloud:///1f1c7256-6d74-4f60-8b01-50a408d7c9b3"
                 },
                 {
                   "key": "previewImageAlt",
                   "value": "Sample preview image alternative text",
                   "type": "text"
+                },
+                {
+                  "key": "contentImages",
+                  "type": "file",
+                  "description": "Maximum total size for all content images is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp",
+                  "src": "postman-cloud:///1f1d84f1-a05f-44d0-8891-9ad104daffa9"
+                },
+                {
+                  "key": "contentImages",
+                  "type": "file",
+                  "description": "Maximum total size for all content images is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp",
+                  "src": "postman-cloud:///1f1d84f1-9f66-4470-ba08-a44782c653cf"
+                },
+                {
+                  "key": "contentImages",
+                  "type": "file",
+                  "description": "Maximum total size for all content images is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp",
+                  "src": "postman-cloud:///1f1d84f1-9f26-4cd0-8cdd-264485c97772"
                 },
                 {
                   "key": "metaTitle",
@@ -1127,6 +1158,53 @@
                 "admin",
                 "categories",
                 "{{temp_category_id}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "UploadContentImage",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwtToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "ContentImage",
+                  "type": "file",
+                  "description": "Maximum file size is 5 MB. Allowed formats: .jpg, .jpeg, .png, .webp. Minimum resolution: 600x400px.",
+                  "src": [
+                    "postman-cloud:///1f1e72e9-7c8d-47f0-8f0c-3470543e9060"
+                  ]
+                },
+                {
+                  "key": "Alt",
+                  "value": "Alt picture text",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/admin/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "admin",
+                "image"
               ]
             }
           },

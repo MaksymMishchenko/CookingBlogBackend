@@ -10,6 +10,7 @@ namespace PostApiService.Tests.Fixtures
             base.ConfigureTestServices(services);
 
             services.AddTestWebContext();
+            //services.UseRealFileStorageForTests();
         }
 
         public (T service, ApplicationDbContext dbContext, TestWebContext webContext) GetScopedService<T>() where T : class

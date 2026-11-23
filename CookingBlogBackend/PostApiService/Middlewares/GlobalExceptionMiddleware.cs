@@ -25,18 +25,18 @@ namespace PostApiService.Middlewares
             {
                 Log.Error(ex, LogMessages.System.UnhandledException, ex.Message, context.Request.Path);
 
-                var (statusCode, message) = ex switch
+                (HttpStatusCode statusCode, string message) = ex switch
                 {
-                    BadHttpRequestException { StatusCode: StatusCodes.Status413PayloadTooLarge } or InvalidDataException
-                        => (HttpStatusCode.RequestEntityTooLarge, Global.System.PayloadTooLarge),
-
                     TimeoutException or OperationCanceledException
                         => (HttpStatusCode.RequestTimeout, Global.System.Timeout),
+
+                    HttpRequestException
+                        => (HttpStatusCode.BadGateway, Global.System.ExternalServiceUnavailable),
 
                     NpgsqlException or DbUpdateException
                         => (HttpStatusCode.InternalServerError, Global.System.DbUpdateError),
 
-                    _ => (HttpStatusCode.InternalServerError, Global.System.DatabaseCriticalError)
+                    _ => (HttpStatusCode.InternalServerError, Global.System.InternalServerError)
                 };
 
                 await WriteResponseAsync(context, statusCode, message);

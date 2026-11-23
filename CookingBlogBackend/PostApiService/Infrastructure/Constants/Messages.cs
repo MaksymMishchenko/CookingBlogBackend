@@ -16,7 +16,7 @@
                 public const string PostTitleAlreadyExistCode = "TITLE_ALREADY_EXISTS";
                 public const string PostSlugAlreadyExist = "Post with the same Slug already exists.";
                 public const string PostSlugAlreadyExistCode = "SLUG_ALREADY_EXISTS";
-                public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";                
+                public const string CategoryNotFoundCode = "CATEGORY_NOT_FOUND";
                 public const string Empty = "Post content cannot be empty.";
                 public const string EmptyCode = "POST_CONTENT_IS_EMPTY";
             }
@@ -35,7 +35,7 @@
         public static class ImageM
         {
             public static class Errors
-            {                
+            {
                 public const string UploadFailed = "Image upload failed";
                 public const string UploadFailedCode = "IMAGE_UPLOAD_FAILED";
                 public const string DeleteFailed = "Image deletion failed";
@@ -122,7 +122,7 @@
             public static class Registration
             {
                 public static class Errors
-                {                    
+                {
                     public const string DefaultRegistrationError = "An error occurred during registration. Please check your data or try again later.";
                     public const string DefaultRegistrationErrorCode = "REGISTRATION_FAILED";
                     public const string UserAlreadyExists = "Username or email is already taken.";
@@ -168,22 +168,23 @@
 
                 public const string InvalidFormat = "Invalid file format. Allowed formats: .jpg, .jpeg, .png, .webp.";
                 public const string FileTooLarge = "File size exceeds the maximum allowed limit of {0}MB.";
-                
+
                 public const string SearchQueryForbiddenCharacters =
                     "Search query contains forbidden characters. Use only letters, numbers, spaces, dots or hyphens.";
                 public const string SearchQueryMustContainLetterOrDigit =
                     "Search query must contain at least one letter or digit.";
                 public const string InvalidSortField = "Invalid sort field. Allowed values: title, createdAt.";
                 public const string InvalidSortDirection = "Invalid sort direction. Allowed values: asc, desc.";
-            }           
+            }
 
             public static class System
             {
-                public const string PayloadTooLarge = "Request body is too large.";
                 public const string DatabaseCriticalError = "A technical problem occurred with the data storage. Please try again later.";
                 public const string DbUpdateError = "Database error occurred while processing data.";
-                public const string Timeout = "The request timed out.";                
+                public const string Timeout = "The request timed out.";
                 public const string RequestCancelled = "The operation was canceled.";
+                public const string ExternalServiceUnavailable = "External service is temporarily unavailable. Please try again later.";
+                public const string InternalServerError = "An unexpected internal server error occurred.";
             }
         }
 

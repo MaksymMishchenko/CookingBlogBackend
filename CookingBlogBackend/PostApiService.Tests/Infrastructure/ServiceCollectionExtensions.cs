@@ -10,6 +10,7 @@ using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Requests;
 using PostApiService.Models.Dto.Response;
+using PostApiService.Services;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 public static class ServiceCollectionExtensions
@@ -97,6 +98,39 @@ public static class ServiceCollectionExtensions
         });
 
         return services;
+    }
+
+    public static IServiceCollection UseRealFileStorageForTests(this IServiceCollection services)
+    {
+        services.RemoveAll<IFileStorageService>();
+        services.RemoveAll<ICloudinaryWrapper>();
+
+        var cloudinaryMock = Substitute.For<ICloudinaryWrapper>();
+        ConfigureSuccessCloudinaryMock(cloudinaryMock);
+
+        services.AddSingleton<ICloudinaryWrapper>(cloudinaryMock);
+        services.AddScoped<IFileStorageService, FileStorageService>();
+
+        return services;
+    }
+
+    public static void ConfigureSuccessCloudinaryMock(ICloudinaryWrapper cloudinaryMock)
+    {
+        cloudinaryMock.ClearReceivedCalls();
+
+        cloudinaryMock.UploadAsync(Arg.Any<CloudinaryDotNet.Actions.ImageUploadParams>())
+            .Returns(_ => Task.FromResult(new CloudinaryDotNet.Actions.ImageUploadResult
+            {
+                SecureUrl = new Uri($"https://fake-storage.local/posts/content/{Guid.NewGuid():N}.webp"),
+                Error = null
+            }));
+
+        cloudinaryMock.DestroyAsync(Arg.Any<CloudinaryDotNet.Actions.DeletionParams>())
+            .Returns(_ => Task.FromResult(new CloudinaryDotNet.Actions.DeletionResult
+            {
+                Result = "ok",
+                Error = null
+            }));
     }
 
     public static void ClearAllMocks(this IServiceProvider services)
