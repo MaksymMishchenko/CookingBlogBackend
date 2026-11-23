@@ -4,6 +4,7 @@ using PostApiService.Infrastructure.Constants;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Dto.Response;
+using PostApiService.Repositories;
 using System.Text.RegularExpressions;
 
 namespace PostApiService.Services
@@ -11,15 +12,15 @@ namespace PostApiService.Services
     public class FileStorageService : AdminBaseService, IFileStorageService
     {
         private readonly ICloudinaryWrapper _cloudinaryWrapper;
-        private readonly ApplicationDbContext _context;
+        private readonly IPostImageRepository _postImageRepository;
 
         public FileStorageService(
             ICloudinaryWrapper cloudinaryWrapper,
-            ApplicationDbContext context,
+            IPostImageRepository postImageRepository,
             IWebContext webContext) : base(webContext)
         {
             _cloudinaryWrapper = cloudinaryWrapper;
-            _context = context;
+            _postImageRepository = postImageRepository;
         }
 
         /// <summary>
@@ -57,14 +58,16 @@ namespace PostApiService.Services
             return Success<string>(uploadResult.SecureUrl.ToString());
         }
 
-        public async Task<Result<PostImageUploadResponseDto>> UploadContentImageAsync(IFormFile file, string? alt)
+        public async Task<Result<PostImageUploadResponseDto>> UploadContentImageAsync(
+            IFormFile file,
+            string? alt,
+            CancellationToken ct = default)
         {
             var accessError = ValidateAdminOrContributor<PostImageUploadResponseDto>();
             if (accessError != null) return accessError;
 
-            var imageId = Guid.NewGuid();
-            var uniqueSuffix = Guid.NewGuid().ToString("N").Substring(0, StorageConstants.ImageProcessing.PublicIdSuffixLength);
-            var publicId = $"{StorageConstants.Folders.PostContent}/{StorageConstants.Folders.ContentImagePrefix}-{imageId}-{uniqueSuffix}";
+            var uniqueToken = Guid.NewGuid().ToString("N")[..12];
+            var publicId = $"{StorageConstants.Folders.PostContent}/{StorageConstants.Folders.ContentImagePrefix}-{uniqueToken}";
 
             ImageUploadResult? uploadResult = null;
             int maxRetries = 3;
@@ -115,7 +118,6 @@ namespace PostApiService.Services
 
             var postImage = new PostImage
             {
-                Id = imageId,
                 PostId = null,
                 Url = uploadResult.SecureUrl.ToString(),
                 PublicId = publicId,
@@ -123,8 +125,8 @@ namespace PostApiService.Services
                 CreatedAt = DateTime.UtcNow
             };
 
-            _context.PostImages.Add(postImage);
-            await _context.SaveChangesAsync();
+            await _postImageRepository.AddAsync(postImage, ct);
+            await _postImageRepository.SaveChangesAsync(ct);
 
             return Success(new PostImageUploadResponseDto(postImage.Id, postImage.Url, postImage.Alt));
         }
@@ -149,7 +151,7 @@ namespace PostApiService.Services
 
             Log.Information(Images.DeletedSuccessfully, publicId);
             return Success(true);
-        }
+        }        
 
         private static string? ExtractPublicId(string url)
         {
@@ -162,6 +164,6 @@ namespace PostApiService.Services
 
             var dot = path.LastIndexOf('.');
             return dot > 0 ? path[..dot] : path;
-        }
+        }        
     }
 }
