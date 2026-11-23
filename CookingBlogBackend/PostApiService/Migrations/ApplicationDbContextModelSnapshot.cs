@@ -508,7 +508,7 @@ namespace PostApiService.Migrations
                     b.HasOne("PostApiService.Models.Post", "Post")
                         .WithMany("Images")
                         .HasForeignKey("PostId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Post");
                 });
