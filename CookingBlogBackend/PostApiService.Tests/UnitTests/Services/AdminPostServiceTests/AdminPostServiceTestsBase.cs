@@ -9,6 +9,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
     public class AdminPostServiceTestsBase
     {
         protected readonly IPostRepository _mockRepository;
+        protected readonly IPostImageRepository _mockPostImageRepository;
         protected readonly IWebContext _mockWebContext;
         protected readonly IHtmlSanitizationService _mockSanitizationService;
         protected readonly IPublicCategoryService _mockCategoryService;
@@ -20,11 +21,18 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
         public AdminPostServiceTestsBase()
         {
             _mockRepository = Substitute.For<IPostRepository>();
+            _mockPostImageRepository = Substitute.For<IPostImageRepository>();
             _mockWebContext = Substitute.For<IWebContext>();
             _mockSanitizationService = Substitute.For<IHtmlSanitizationService>();
             _mockCategoryService = Substitute.For<IPublicCategoryService>();
             _mockFileStorageService = Substitute.For<IFileStorageService>();
-            _adminPostService = new AdminPostService(_mockRepository,
+            _mockPostImageRepository
+                .GetByPostIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>())
+                .Returns([]);
+            _mockPostImageRepository
+                .GetUnattachedByUrlsAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+                .Returns([]);
+            _adminPostService = new AdminPostService(_mockRepository, _mockPostImageRepository,
                 _mockWebContext, _mockSanitizationService, _mockCategoryService, _mockFileStorageService);
         }
 

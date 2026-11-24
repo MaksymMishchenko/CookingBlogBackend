@@ -297,6 +297,57 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task AddPostAsync_ShouldAttachContentImage_WhenContentContainsUnattachedImage()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, dbContextBefore, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            await _fixture.Services!.SeedBlogDataAsync(new List<Post>(), categories);
+
+            const string imageUrl = "https://res.cloudinary.com/demo/image/upload/post-content/content-img-1.webp";
+            var unattachedImage = new PostImage
+            {
+                PostId = null,
+                Url = imageUrl,
+                PublicId = "post-content/content-img-1",
+                Alt = "Content image",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            dbContextBefore.PostImages.Add(unattachedImage);
+            await dbContextBefore.SaveChangesAsync();
+
+            var existingCategoryId = categories.First().Id;
+            var post = TestDataHelper.GetSinglePostWithCategoryId(existingCategoryId);
+            post.Content = $"<p>Recipe steps</p><img src=\"{imageUrl}\" alt=\"Content image\" />";
+            var postDto = TestDataHelper.ToPostCreateDto(post);
+
+            // Act
+            var result = await service.AddPostAsync(postDto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            var data = Assert.IsType<PostAdminDetailsDto>(result.Value);
+
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IAdminPostService>();
+            var imageInDb = await dbContextAfter.PostImages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(img => img.Id == unattachedImage.Id);
+
+            Assert.NotNull(imageInDb);
+            Assert.Equal(data.Id, imageInDb.PostId);
+        }
+
+        [Fact]
         public async Task UpdatePostAsync_ShouldUpdateExistingPostSuccessfully()
         {
             // Arrange           
@@ -423,6 +474,76 @@ namespace PostApiService.Tests.IntegrationTests.Services
         }
 
         [Fact]
+        public async Task UpdatePostAsync_ShouldDetachRemovedImageAndKeepRemainingImage_WhenContentUpdated()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, dbContextBefore, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            string[] authorIds = [TestUserData.AdminId, TestUserData.ContributorId];
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, authorIds: authorIds, commentCount: 0);
+            posts.ForEach(p => { p.Id = 0; p.Slug = $"original-{Guid.NewGuid()}"; });
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+            var targetPost = posts.First();
+
+            const string keptUrl = "https://res.cloudinary.com/demo/image/upload/post-content/kept-img.webp";
+            const string removedUrl = "https://res.cloudinary.com/demo/image/upload/post-content/removed-img.webp";
+
+            var keptImage = new PostImage
+            {
+                PostId = targetPost.Id,
+                Url = keptUrl,
+                PublicId = "post-content/kept-img",
+                Alt = "Kept image",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var removedImage = new PostImage
+            {
+                PostId = targetPost.Id,
+                Url = removedUrl,
+                PublicId = "post-content/removed-img",
+                Alt = "Removed image",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            dbContextBefore.PostImages.AddRange(keptImage, removedImage);
+            await dbContextBefore.SaveChangesAsync();
+
+            targetPost.Content = $"<p>Updated recipe</p><img src=\"{keptUrl}\" alt=\"Kept image\" />";
+            var updateDto = TestDataHelper.ToPostUpdateDto(targetPost, targetPost.Title);
+
+            // Act
+            var result = await service.UpdatePostAsync(targetPost.Id, updateDto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IAdminPostService>();
+
+            var keptInDb = await dbContextAfter.PostImages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(img => img.Id == keptImage.Id);
+            var removedInDb = await dbContextAfter.PostImages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(img => img.Id == removedImage.Id);
+
+            Assert.NotNull(keptInDb);
+            Assert.Equal(targetPost.Id, keptInDb.PostId);
+
+            Assert.NotNull(removedInDb);
+            Assert.Null(removedInDb.PostId);
+        }
+
+        [Fact]
         public async Task DeletePostAsync_ShouldRemovePostSuccessfully()
         {
             // Arrange           
@@ -531,6 +652,73 @@ namespace PostApiService.Tests.IntegrationTests.Services
 
             var (_, dbContextAfter, _) = _fixture.GetScopedService<IPublicPostService>();
             Assert.False(await dbContextAfter.Posts.AnyAsync(p => p.Id == targetPost.Id));
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldDetachAttachedContentImages_WhenPostIsDeleted()
+        {
+            // Arrange
+            await _fixture.ResetDatabaseAsync();
+            await _fixture.Services!.SeedDefaultUsersAsync();
+
+            var (service, dbContextBefore, webContext) = _fixture.GetScopedService<IAdminPostService>();
+            webContext.UserId = TestUserData.AdminId;
+            webContext.UserName = TestUserData.AdminUserName;
+            webContext.IsAdmin = true;
+
+            var categories = TestDataHelper.GetCulinaryCategories();
+            string[] authorIds = [TestUserData.AdminId, TestUserData.ContributorId];
+            var posts = TestDataHelper.GetPostsWithComments(1, categories, authorIds: authorIds, commentCount: 0);
+            posts.ForEach(p => { p.Id = 0; p.Slug = $"delete-images-{Guid.NewGuid()}"; });
+
+            await _fixture.Services!.SeedBlogDataAsync(posts, categories);
+            var targetPost = posts.First();
+
+            var img1 = new PostImage
+            {
+                PostId = targetPost.Id,
+                Url = "https://res.cloudinary.com/demo/image/upload/post-content/del-1.webp",
+                PublicId = "post-content/del-1",
+                Alt = "Image 1",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            var img2 = new PostImage
+            {
+                PostId = targetPost.Id,
+                Url = "https://res.cloudinary.com/demo/image/upload/post-content/del-2.webp",
+                PublicId = "post-content/del-2",
+                Alt = "Image 2",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            dbContextBefore.PostImages.AddRange(img1, img2);
+            await dbContextBefore.SaveChangesAsync();
+
+            // Act
+            var result = await service.DeletePostAsync(targetPost.Id);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(ResultStatus.Success, result.Status);
+
+            var (_, dbContextAfter, _) = _fixture.GetScopedService<IAdminPostService>();
+
+            var postExists = await dbContextAfter.Posts.AnyAsync(p => p.Id == targetPost.Id);
+            Assert.False(postExists);
+
+            var img1InDb = await dbContextAfter.PostImages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(img => img.Id == img1.Id);
+            var img2InDb = await dbContextAfter.PostImages
+                .AsNoTracking()
+                .FirstOrDefaultAsync(img => img.Id == img2.Id);
+
+            Assert.NotNull(img1InDb);
+            Assert.Null(img1InDb.PostId);
+
+            Assert.NotNull(img2InDb);
+            Assert.Null(img2InDb.PostId);
         }
 
         private static IFormFile CreateFormFile(string fileName)

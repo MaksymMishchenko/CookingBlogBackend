@@ -10,6 +10,7 @@ namespace PostApiService.Services
     public class AdminPostService : AdminBaseService, IAdminPostService
     {
         private readonly IPostRepository _postRepository;
+        private readonly IPostImageRepository _postImageRepository;
 
         private readonly IHtmlSanitizationService _sanitizer;
 
@@ -18,6 +19,7 @@ namespace PostApiService.Services
         private readonly IFileStorageService _fileStorageService;
 
         public AdminPostService(IPostRepository postRepository,
+            IPostImageRepository postImageRepository,
             IWebContext webContext,
             IHtmlSanitizationService sanitizer,
             IPublicCategoryService categoryService,
@@ -25,9 +27,64 @@ namespace PostApiService.Services
             ) : base(webContext)
         {
             _postRepository = postRepository;
+            _postImageRepository = postImageRepository;
             _sanitizer = sanitizer;
             _categoryService = categoryService;
             _fileStorageService = fileStorageService;
+        }
+
+        private async Task SyncContentImagesAsync(
+            int postId,
+            IReadOnlyCollection<string> imageUrls,
+            CancellationToken ct)
+        {
+            if (imageUrls.Count == 0)
+            {
+                return;
+            }
+
+            var unattachedImages = await _postImageRepository.GetUnattachedByUrlsAsync(imageUrls, ct);
+
+            if (unattachedImages.Count == 0)
+            {
+                return;
+            }
+
+            foreach (var image in unattachedImages)
+            {
+                image.PostId = postId;
+            }
+
+            await _postImageRepository.SaveChangesAsync(ct);
+        }
+
+        private async Task DetachContentImagesAsync(
+            int postId,
+            IReadOnlyCollection<string>? keepUrls,
+            CancellationToken ct)
+        {
+            var attachedImages = await _postImageRepository.GetByPostIdAsync(postId, ct);
+            if (attachedImages.Count == 0)
+            {
+                return;
+            }
+
+            var urlSet = keepUrls?.ToHashSet(StringComparer.OrdinalIgnoreCase);
+            var hasDetached = false;
+
+            foreach (var image in attachedImages)
+            {
+                if (urlSet == null || !urlSet.Contains(image.Url))
+                {
+                    image.PostId = null;
+                    hasDetached = true;
+                }
+            }
+
+            if (hasDetached)
+            {
+                await _postImageRepository.SaveChangesAsync(ct);
+            }
         }
 
         /// <summary>
@@ -137,7 +194,7 @@ namespace PostApiService.Services
             }
 
             var cleanTitle = postDto.Title.StripHtml();
-            var cleanSlug = postDto.Slug.StripHtml();                    
+            var cleanSlug = postDto.Slug.StripHtml();
 
             var uniquenessError = await ValidatePostUniquenessAsync<PostAdminDetailsDto>(
                 _postRepository, cleanTitle, cleanSlug, ct);
@@ -169,6 +226,9 @@ namespace PostApiService.Services
             await _postRepository.SaveChangesAsync(ct);
 
             Log.Information(Posts.Created, postEntity.Title, postEntity.Id);
+
+            var contentImageUrls = HtmlContentImageExtractor.ExtractImageUrls(sanitizedContent);
+            await SyncContentImagesAsync(postEntity.Id, contentImageUrls, ct);
 
             var createdPost = await _postRepository.GetByIdWithAuthorsAsync(postEntity.Id, ct);
 
@@ -225,7 +285,7 @@ namespace PostApiService.Services
 
             var cleanTitle = postDto.Title.StripHtml();
             var cleanSlug = postDto.Slug.StripHtml();
-            
+
             var uniquenessError = await ValidatePostUniquenessAsync<PostAdminDetailsDto>(
                 _postRepository, cleanTitle, cleanSlug, ct, postId);
 
@@ -272,6 +332,10 @@ namespace PostApiService.Services
                 }
             }
 
+            var contentImageUrls = HtmlContentImageExtractor.ExtractImageUrls(sanitizedContent);
+            await DetachContentImagesAsync(postEntity.Id, contentImageUrls, ct);
+            await SyncContentImagesAsync(postEntity.Id, contentImageUrls, ct);
+
             Log.Information(Posts.Updated, postEntity.Title, postEntity.Id);
 
             var responseDto = postEntity.MapToAdminDto();
@@ -304,6 +368,8 @@ namespace PostApiService.Services
             }
 
             var imageUrl = existingPost.PreviewImageUrl;
+
+            await DetachContentImagesAsync(postId, null, ct);
 
             await _postRepository.DeleteAsync(existingPost, ct);
             await _postRepository.SaveChangesAsync(ct);

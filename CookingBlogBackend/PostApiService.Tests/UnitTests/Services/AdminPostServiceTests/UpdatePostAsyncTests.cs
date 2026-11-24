@@ -262,6 +262,8 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             Assert.Equal(dto.Slug, data.Slug);
 
             await _mockRepository.Received(1).SaveChangesAsync(ct);
+            await _mockPostImageRepository.DidNotReceive()
+                .GetUnattachedByUrlsAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -397,6 +399,69 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             Assert.Equal(ResultStatus.Conflict, result.Status);
             await _mockFileStorageService.DidNotReceive()
                 .SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldDetachRemovedContentImages_WhenImageRemovedFromContent()
+        {
+            // Arrange
+            const int postId = 1;
+            const string keptUrl = "https://res.cloudinary.com/demo/image/upload/post-content/kept.webp";
+            const string removedUrl = "https://res.cloudinary.com/demo/image/upload/post-content/removed.webp";
+            var sanitizedHtml = $"<p>Updated text</p><img src=\"{keptUrl}\" />";
+
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(sanitizedHtml);
+
+            var keptImage = new PostImage { Id = 1, Url = keptUrl, PostId = postId };
+            var removedImage = new PostImage { Id = 2, Url = removedUrl, PostId = postId };
+
+            _mockPostImageRepository.GetByPostIdAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new List<PostImage> { keptImage, removedImage });
+            _mockPostImageRepository.GetUnattachedByUrlsAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>())
+                .Returns(new List<PostImage>());
+
+            var dto = TestDataHelper.GetPostUpdateDto(content: sanitizedHtml);
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(postId, keptImage.PostId);
+            Assert.Null(removedImage.PostId);
+            await _mockPostImageRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task UpdatePostAsync_ShouldAttachNewUnattachedContentImages_WhenAddedToContent()
+        {
+            // Arrange
+            const int postId = 1;
+            const string newUrl = "https://res.cloudinary.com/demo/image/upload/post-content/new-img.webp";
+            var sanitizedHtml = $"<p>Updated text</p><img src=\"{newUrl}\" />";
+
+            ArrangeSuccessfulUpdate(postId, OldPreviewUrl);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(sanitizedHtml);
+
+            var newImage = new PostImage { Id = 5, Url = newUrl, PostId = null };
+
+            _mockPostImageRepository.GetByPostIdAsync(postId, Arg.Any<CancellationToken>())
+                .Returns(new List<PostImage>());
+            _mockPostImageRepository.GetUnattachedByUrlsAsync(
+                    Arg.Is<IEnumerable<string>>(urls => urls.Contains(newUrl)),
+                    Arg.Any<CancellationToken>())
+                .Returns(new List<PostImage> { newImage });
+
+            var dto = TestDataHelper.GetPostUpdateDto(content: sanitizedHtml);
+
+            // Act
+            var result = await _adminPostService.UpdatePostAsync(postId, dto);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Equal(postId, newImage.PostId);
+            await _mockPostImageRepository.Received(1).SaveChangesAsync(Arg.Any<CancellationToken>());
         }
     }
 }
