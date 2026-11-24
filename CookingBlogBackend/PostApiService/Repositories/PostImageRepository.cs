@@ -9,11 +9,16 @@
             return _dbSet
                 .Where(img => img.PostId == postId)
                 .ToListAsync(ct);
-        }
+        }        
 
         public Task<List<PostImage>> GetUnattachedByUrlsAsync(IEnumerable<string> urls, CancellationToken ct = default)
         {
-            var urlList = urls.ToList();
+            var urlList = urls
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .Select(u => u.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
             if (urlList.Count == 0)
             {
                 return Task.FromResult(new List<PostImage>());
