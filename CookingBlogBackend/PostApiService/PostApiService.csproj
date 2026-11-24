@@ -54,4 +54,7 @@
 	  <Folder Include="Migrations\" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="PostApiService.Tests" />
+	</ItemGroup>
 </Project>
