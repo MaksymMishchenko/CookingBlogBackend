@@ -85,7 +85,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockWebContext.UserId.Returns("user-id");
             _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-            
+
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(true, false);
 
@@ -112,7 +112,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockWebContext.UserId.Returns("user-id");
             _mockWebContext.IsAdmin.Returns(true);
             _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns("Safe content");
-           
+
             _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), Arg.Any<CancellationToken>())
                 .Returns(false, true);
 
@@ -194,6 +194,9 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             _mockRepository.GetByIdWithAuthorsAsync(Arg.Any<int>(), ct)
                 .Returns(savedPost);
 
+            _mockPostImageRepository.GetUnattachedByUrlsAsync(Arg.Any<IEnumerable<string>>(), ct)
+                .Returns(new List<PostImage>());
+
             // Act
             var result = await _adminPostService.AddPostAsync(postCreateDto, ct);
 
@@ -247,6 +250,64 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
                  p.Slug == postCreateDto.Slug &&
                  p.CategoryId == postCreateDto.CategoryId), token);
             await _mockRepository.Received(1).SaveChangesAsync(token);
+            await _mockPostImageRepository.DidNotReceive()
+                .GetUnattachedByUrlsAsync(Arg.Any<IEnumerable<string>>(), Arg.Any<CancellationToken>());
+            await _mockPostImageRepository.DidNotReceive()
+                .SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task AddPostAsync_ShouldAttachUnattachedContentImages_WhenContentContainsImages()
+        {
+            // Arrange
+            const string imgUrl1 = "https://res.cloudinary.com/demo/image/upload/post-content/img-1.webp";
+            const string imgUrl2 = "https://res.cloudinary.com/demo/image/upload/post-content/img-2.webp";
+            var sanitizedHtml = $"<p>Recipe</p><img src=\"{imgUrl1}\" /><img src=\"{imgUrl2}\" />";
+
+            var postCreateDto = TestDataHelper.GetPostCreateDto(sanitizedHtml);
+            var token = CancellationToken.None;
+
+            _mockWebContext.UserId.Returns("user-id");
+            _mockWebContext.IsAdmin.Returns(true);
+            _mockSanitizationService.SanitizePost(Arg.Any<string>()).Returns(sanitizedHtml);
+            _mockRepository.AnyAsync(Arg.Any<Expression<Func<Post, bool>>>(), token)
+                .Returns(false);
+            _mockCategoryService.ExistsAsync(postCreateDto.CategoryId!.Value, token)
+                .Returns(true);
+
+            _mockFileStorageService.SavePostPreviewAsync(Arg.Any<IFormFile>(), Arg.Any<string>())
+                .Returns(Result<string>.Success("/images/posts/test-preview.webp"));
+
+            const int createdPostId = 77;
+            _mockRepository.AddAsync(Arg.Do<Post>(p => p.Id = createdPostId), token)
+                .Returns(Task.CompletedTask);
+
+            var savedPost = TestDataHelper.ToEntity(postCreateDto, sanitizedHtml, "user-id");
+            savedPost.Id = createdPostId;
+            _mockRepository.GetByIdWithAuthorsAsync(createdPostId, token)
+                .Returns(savedPost);
+
+            var img1 = new PostImage { Id = 10, Url = imgUrl1, PostId = null };
+            var img2 = new PostImage { Id = 11, Url = imgUrl2, PostId = null };
+
+            _mockPostImageRepository.GetUnattachedByUrlsAsync(
+                    Arg.Is<IEnumerable<string>>(urls => urls.Contains(imgUrl1) && urls.Contains(imgUrl2)),
+                    token)
+                .Returns(new List<PostImage> { img1, img2 });
+
+            // Act
+            var result = await _adminPostService.AddPostAsync(postCreateDto, token);
+
+            // Assert
+            Assert.NotNull(result);
+            Assert.True(result.IsSuccess);
+            Assert.Equal(createdPostId, img1.PostId);
+            Assert.Equal(createdPostId, img2.PostId);
+
+            await _mockPostImageRepository.Received(1)
+                .GetUnattachedByUrlsAsync(Arg.Any<IEnumerable<string>>(), token);
+            await _mockPostImageRepository.Received(1)
+                .SaveChangesAsync(token);
         }
 
         [Fact]

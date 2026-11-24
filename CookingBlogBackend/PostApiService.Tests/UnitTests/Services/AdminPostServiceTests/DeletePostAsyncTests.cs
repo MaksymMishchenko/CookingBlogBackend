@@ -23,6 +23,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
 
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
             await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockPostImageRepository.DidNotReceive().GetByPostIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -45,6 +46,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             await _mockRepository.DidNotReceive().GetByIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
             await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockPostImageRepository.DidNotReceive().GetByPostIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -74,6 +76,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             await _mockRepository.DidNotReceive().DeleteAsync(Arg.Any<Post>(), Arg.Any<CancellationToken>());
             await _mockRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
             await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockPostImageRepository.DidNotReceive().GetByPostIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -101,6 +104,7 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             await _mockRepository.DidNotReceive().DeleteAsync(Arg.Is<Post>(p =>
                     p.Id == postId), Arg.Any<CancellationToken>());
             await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockPostImageRepository.DidNotReceive().GetByPostIdAsync(Arg.Any<int>(), Arg.Any<CancellationToken>());
         }
 
         [Fact]
@@ -132,6 +136,41 @@ namespace PostApiService.Tests.UnitTests.Services.AdminPostServiceTests
             await _mockRepository.Received(1).DeleteAsync(existingPost, ct);
             await _mockRepository.Received(1).SaveChangesAsync(ct);
             await _mockFileStorageService.DidNotReceive().DeleteByUrlAsync(Arg.Any<string>());
+            await _mockPostImageRepository.DidNotReceive().SaveChangesAsync(Arg.Any<CancellationToken>());
+        }
+
+        [Fact]
+        public async Task DeletePostAsync_ShouldDetachAttachedContentImages_WhenPostIsDeleted()
+        {
+            // Arrange
+            const int postId = 1;
+            const string userId = "contributor-1-id";
+            var existingPost = new Post { Id = postId, Title = "Post with images", AuthorId = userId };
+            var ct = CancellationToken.None;
+
+            var img1 = new PostImage { Id = 1, Url = "https://res.cloudinary.com/demo/image/upload/post-content/1.webp", PostId = postId };
+            var img2 = new PostImage { Id = 2, Url = "https://res.cloudinary.com/demo/image/upload/post-content/2.webp", PostId = postId };
+
+            _mockWebContext.UserId.Returns(userId);
+            _mockWebContext.IsAdmin.Returns(false);
+            _mockWebContext.IsContributor.Returns(true);
+
+            _mockRepository.GetByIdAsync(postId, ct).Returns(existingPost);
+            _mockPostImageRepository.GetByPostIdAsync(postId, ct)
+                .Returns(new List<PostImage> { img1, img2 });
+
+            // Act
+            var result = await _adminPostService.DeletePostAsync(postId, ct);
+
+            // Assert
+            Assert.True(result.IsSuccess);
+            Assert.Null(img1.PostId);
+            Assert.Null(img2.PostId);
+
+            await _mockPostImageRepository.Received(1).GetByPostIdAsync(postId, ct);
+            await _mockPostImageRepository.Received(1).SaveChangesAsync(ct);
+            await _mockRepository.Received(1).DeleteAsync(existingPost, ct);
+            await _mockRepository.Received(1).SaveChangesAsync(ct);
         }
 
         [Fact]
