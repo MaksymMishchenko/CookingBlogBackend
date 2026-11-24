@@ -94,5 +94,17 @@
             public const string AdminDeletedComment =
                 "Moderation: Admin {AdminId} deleted comment {CommentId} owned by user {OwnerId}. IP: {IP}";
         }
+
+        public static class OrphanedImagesCleanup
+        {
+            public const string Started = "OrphanedPostImagesCleanupService started.";
+            public const string Stopped = "OrphanedPostImagesCleanupService stopped.";
+            public const string CleanupFailed = "Error while cleaning up orphaned post images.";
+            public const string NoneFound = "No orphaned post images older than {CutoffUtc} found.";
+            public const string StorageDeleteFailed =
+                "Failed to delete orphaned image {ImageId} ({Url}) from storage. Keeping DB record for retry.";
+            public const string Finished =
+                "Orphaned post images cleanup finished. Deleted {DeletedCount} of {TotalFound}.";
+        }
     }
 }

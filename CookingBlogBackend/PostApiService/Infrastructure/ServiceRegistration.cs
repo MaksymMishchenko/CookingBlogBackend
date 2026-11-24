@@ -6,6 +6,7 @@ using PostApiService.Helper;
 using PostApiService.Infrastructure.Authorization.Requirements;
 using PostApiService.Infrastructure.Configuration;
 using PostApiService.Infrastructure.Constants;
+using PostApiService.Infrastructure.Jobs;
 using PostApiService.Infrastructure.Services;
 using PostApiService.Interfaces;
 using PostApiService.Models.Common;
@@ -75,6 +76,7 @@ namespace PostApiService.Infrastructure
             services.AddExternalTools(configuration);
             services.AddAppRateLimiting(configuration);
             services.AddCloudinaryStorage(configuration, environment);
+            services.AddHostedService<OrphanedPostImagesCleanupService>();
 
             return services;
         }
@@ -739,9 +741,9 @@ namespace PostApiService.Infrastructure
         public static IServiceCollection AddCloudinaryStorage(this IServiceCollection services,
             IConfiguration configuration,
             IHostEnvironment environment)
-        {            
+        {
             var useFake = configuration.GetValue<bool>(ConfigConstants.FileStorageUseFake);
-            
+
             if (useFake && environment.IsProduction())
                 throw new InvalidOperationException(Errors.FakeStorageInProduction);
 
