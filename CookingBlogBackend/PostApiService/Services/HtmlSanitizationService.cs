@@ -48,7 +48,7 @@ namespace PostApiService.Services
 
             sanitizer.AllowedCssProperties.UnionWith(new[]
             {
-                "color", "background-color", "text-align"
+                "color", "background-color", "text-align", "display", "max-width", "height"
             });
 
             return sanitizer;
